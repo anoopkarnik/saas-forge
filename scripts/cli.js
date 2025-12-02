@@ -1,23 +1,42 @@
 #!/usr/bin/env node
 
 const { execSync } = require('child_process');
+const fs = require('fs');
 const path = require('path');
 
 const repoUrl = 'https://github.com/anoopkarnik/saas-forge.git';
 
 const main = () => {
+  // Parse args
   const args = process.argv.slice(2);
-  const targetDir = args[0] || 'saas-forge';
+  const targetDir = args[0] && !args[0].startsWith('--') ? args[0] : 'saas-forge';
+
+  // Extract --theme argument
+  const themeArg = args.find(arg => arg.startsWith('--theme='));
+  const theme = themeArg ? themeArg.split('=')[1] : null;
 
   console.log(`Cloning the repository into ${targetDir}...`);
   execSync(`git clone --depth=1 ${repoUrl} ${targetDir}`, { stdio: 'inherit' });
 
-  console.log('Copying environment file for next-js app...');
-  execSync(`cp ${path.join(targetDir, 'apps/web/.env.example')} ${path.join(targetDir, 'apps/web/.env')}`, { stdio: 'inherit' });
+  // Path to envs
+  const envExamplePath = path.join(targetDir, 'apps/web/.env.example');
+  const envPath = path.join(targetDir, 'apps/web/.env');
+
+  console.log('Preparing environment file...');
+
+  // Copy .env.example → .env
+  let envContent = fs.readFileSync(envExamplePath, 'utf-8');
+
+  // Replace theme only if provided
+  if (theme) {
+    console.log(`Applying theme: ${theme}`);
+    envContent = envContent.replace(/NEXT_PUBLIC_THEME=.*/, `NEXT_PUBLIC_THEME=${theme}`);
+  }
+
+  fs.writeFileSync(envPath, envContent, 'utf-8');
 
   console.log('Installing dependencies...');
-  execSync(`cd ${targetDir} && npm install`, { stdio: 'inherit' });
-
+  execSync(`cd ${targetDir} && pnpm install`, { stdio: 'inherit' });
 
   console.log('Your SaaS is ready! 🎉');
 };

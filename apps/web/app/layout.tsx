@@ -1,17 +1,10 @@
-import { Geist, Geist_Mono } from "next/font/google"
-
 import "@workspace/ui/globals.css"
-import { Providers } from "@/components/providers"
+import { ThemeProvider } from "@workspace/ui/providers/theme-provider"
+import { geistSans, geistMono, cyberdyne} from "@workspace/ui/typography/font"
 
-const fontSans = Geist({
-  subsets: ["latin"],
-  variable: "--font-sans",
-})
+const THEME = process.env.NEXT_PUBLIC_THEME ?? "neutral";
 
-const fontMono = Geist_Mono({
-  subsets: ["latin"],
-  variable: "--font-mono",
-})
+const themeClass = `theme-${THEME}-dark`;
 
 export default function RootLayout({
   children,
@@ -20,10 +13,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body
-        className={`${fontSans.variable} ${fontMono.variable} font-sans antialiased `}
-      >
-        <Providers>{children}</Providers>
+      <body className={`${themeClass} ${geistSans.className} ${geistMono.variable} ${cyberdyne.variable} `}>
+        <ThemeProvider>
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   )

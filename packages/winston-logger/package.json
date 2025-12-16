@@ -1,0 +1,23 @@
+{
+  "name": "@workspace/winston-logger",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "exports": {
+    "./index": "./src/index.ts"
+  },
+  "license": "ISC",
+  "dependencies": {
+    "@logtail/node": "^0.5.6",
+    "@logtail/winston": "^0.5.6",
+    "axios": "^1.13.2",
+    "fs": "0.0.1-security",
+    "pino-loki": "^2.6.0",
+    "winston": "^3.19.0"
+  }
+}

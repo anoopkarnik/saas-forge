@@ -21,7 +21,7 @@ const LandingPage = () => {
         <HeroSection heroSection={data.heroSection} />
         <FeatureSection featureSection={data.featureSection} />
         <TestimonialSection testimonialSection={data.testimonialSection}/>
-        <PricingSection pricingSection={data.pricingSection} />
+        {data.pricingSection.plans.length > 0 && <PricingSection pricingSection={data.pricingSection} />}
         <FAQSection  FAQSection={data.faqSection} />
         <FooterSection  footerSection={data.footerSection} />
     </div>

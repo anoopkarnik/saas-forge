@@ -7,8 +7,7 @@
     "test": "vitest"
   },
   "exports": {
-    "./notion-client": "./src/modify.ts",
-    "./notion-functions/*": "./src/*.tsx"
+    "./*": "./src/*.ts"
   },
   "keywords": [],
   "author": "",

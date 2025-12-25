@@ -69,7 +69,7 @@ const TestimonialSection = ({testimonialSection}:{testimonialSection:Testimonial
                             <div className="flex flex-row gap-2 items-center">
                                 <Avatar className="h-10 w-10 overflow-hidden">
                                     <AvatarImage src={testimonial.imageUrl} className="h-full w-full object-cover" />
-                                    <AvatarFallback>{testimonial.name.slice(0,1)}</AvatarFallback>
+                                    <AvatarFallback>{testimonial.name}</AvatarFallback>
                                 </Avatar>
                                 <div className="flex flex-col items-start text-">
                                     <div className="text-sm ">{testimonial.name}</div>

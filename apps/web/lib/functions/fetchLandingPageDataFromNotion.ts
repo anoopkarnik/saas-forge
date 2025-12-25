@@ -1,5 +1,6 @@
 import { FAQProps, FAQSectionProps, FeatureSectionProps, FooterLinkProps, FooterSectionProps, HeroSectionProps, LandingPageProps, NavbarSectionProps, PricingSectionProps, TestimonialSectionProps } from "@/lib/ts-types/landing";
-import { queryAllNotionDatabase } from "@workspace/notion/notion-client";
+import { queryAllNotionDatabase } from "@workspace/notion/database/queryDatabase";
+import { CancellationRefundPoliciesProps, ContactUsProps, PrivacyPolicyProps, TermsOfServiceProps } from "../ts-types/legal";
 
 export async function fetchLandingPageData():Promise<LandingPageProps> {
     const landingPageResults = await queryAllNotionDatabase({
@@ -137,6 +138,42 @@ export async function fetchLandingPageData():Promise<LandingPageProps> {
         }))
     }
 
+    const cancellationRefundPolicies:CancellationRefundPoliciesProps = {
+        supportEmailAddress: landingPageData.supportEmailAddress[0],
+        siteName: landingPageData.title,
+        companyLegalName: landingPageData.companyLegalName[0],
+        websiteUrl: landingPageData.websiteUrl[0],
+        lastUpdated: landingPageData.lastUpdated[0],
+    }
+
+    const privacyPolicy:PrivacyPolicyProps = {
+        supportEmailAddress: landingPageData.supportEmailAddress[0],
+        siteName: landingPageData.title,
+        companyLegalName: landingPageData.companyLegalName[0],
+        country: landingPageData.country[0],
+        websiteUrl: landingPageData.websiteUrl[0],
+        lastUpdated: landingPageData.lastUpdated[0],
+    }
+
+    const contactUs: ContactUsProps = {
+        supportEmailAddress: landingPageData.supportEmailAddress[0],
+        companyLegalName: landingPageData.companyLegalName[0],
+        lastUpdated: landingPageData.lastUpdated[0],
+        contactNumber: landingPageData.contactNumber[0],
+        address: landingPageData.address[0],
+    }
+
+    const termsOfService:TermsOfServiceProps = {
+        supportEmailAddress: landingPageData.supportEmailAddress[0],
+        siteName: landingPageData.title,
+        companyLegalName: landingPageData.companyLegalName[0],
+        country: landingPageData.country[0],
+        websiteUrl: landingPageData.websiteUrl[0],
+        lastUpdated: landingPageData.lastUpdated[0],
+        version: landingPageData.version[0],
+        address: landingPageData.address[0],
+    }
+
     return {
         navbarSection,
         heroSection,
@@ -144,7 +181,11 @@ export async function fetchLandingPageData():Promise<LandingPageProps> {
         testimonialSection,
         pricingSection,
         faqSection,
-        footerSection
+        footerSection,
+        cancellationRefundPolicies,
+        privacyPolicy,
+        contactUs,
+        termsOfService
 
     }
 }

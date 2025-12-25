@@ -39,7 +39,7 @@ const FooterSection = ({footerSection}:{footerSection:FooterSectionProps}) => {
                             <a
                                 rel="noreferrer noopener"
                                 href={item.href}
-                                className="opacity-60 hover:opacity-100 text-description"
+                                className="opacity-60 hover:opacity-100 text-xs"
                             >
                             {item.label}
                             </a>
@@ -50,7 +50,7 @@ const FooterSection = ({footerSection}:{footerSection:FooterSectionProps}) => {
         </div>
 
 
-        <section className="container pb-14 text-center text-paragraph">
+        <section className="container pb-14 text-center text-sm opacity-80">
             <h3>
             &copy; 2024 Made by {" "}
             <a

@@ -1,3 +1,5 @@
+import { CancellationRefundPoliciesProps, ContactUsProps, PrivacyPolicyProps, TermsOfServiceProps } from "./legal";
+
 export interface LandingPageProps {
     navbarSection: NavbarSectionProps;
     heroSection: HeroSectionProps;
@@ -6,7 +8,10 @@ export interface LandingPageProps {
     pricingSection: PricingSectionProps;
     faqSection: FAQSectionProps;
     footerSection: FooterSectionProps;
-
+    cancellationRefundPolicies: CancellationRefundPoliciesProps;
+    privacyPolicy: PrivacyPolicyProps;
+    termsOfService: TermsOfServiceProps;
+    contactUs: ContactUsProps;
 }
 
 export interface NavbarSectionProps {

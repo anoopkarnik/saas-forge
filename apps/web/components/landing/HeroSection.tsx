@@ -64,7 +64,7 @@ const HeroSection = ({heroSection}:{heroSection:HeroSectionProps }) => {
                 className="flex items-center gap-1"
                   variant="default"
                   size="sm"
-                  onClick={() => router.push("/signup")}
+                  onClick={() => router.push("/sign-up")}
                 > 
                   <p className="text-sm">Getting Started</p>
                   <ArrowRight size={15} />

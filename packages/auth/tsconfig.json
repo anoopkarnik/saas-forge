@@ -1,0 +1,8 @@
+{
+  "extends": "@workspace/typescript-config/react-library.json",
+  "compilerOptions": {
+    "baseUrl": "."
+  },
+  "include": ["src/**/*", "next-auth.d.ts", "./next-auth.d.ts"],
+  "exclude": ["node_modules"]
+}

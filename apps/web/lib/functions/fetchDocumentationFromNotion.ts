@@ -1,4 +1,4 @@
-import { queryAllNotionDatabase } from "@workspace/notion/database/queryDatabase";
+import { queryAllNotionDatabase } from "@workspace/cms/notion/database/queryDatabase";
 import { DocumentationProps } from "../ts-types/doc";
 
 export async function fetchDocumentation():Promise<DocumentationProps> {

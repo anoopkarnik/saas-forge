@@ -1,5 +1,5 @@
 import { FAQProps, FAQSectionProps, FeatureSectionProps, FooterLinkProps, FooterSectionProps, HeroSectionProps, LandingPageProps, NavbarSectionProps, PricingSectionProps, TestimonialSectionProps } from "@/lib/ts-types/landing";
-import { queryAllNotionDatabase } from "@workspace/notion/database/queryDatabase";
+import { queryAllNotionDatabase } from "@workspace/cms/notion/database/queryDatabase";
 import { CancellationRefundPoliciesProps, ContactUsProps, PrivacyPolicyProps, TermsOfServiceProps } from "../ts-types/legal";
 
 export async function fetchLandingPageData():Promise<LandingPageProps> {

@@ -1,0 +1,28 @@
+{
+  "name": "@workspace/cms",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "vitest"
+  },
+  "exports": {
+    "./*": "./src/*.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@notionhq/client": "^2.3.0",
+    "@workspace/observability": "workspace:*",
+    "express": "^5.2.1",
+    "moment-timezone": "^0.6.0",
+    "winston": "^3.19.0",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@jest/globals": "^30.2.0",
+    "ts-jest": "^29.4.6",
+    "vitest": "^4.0.15"
+  }
+}

@@ -78,9 +78,9 @@
     "./postcss.config": "./postcss.config.mjs",
     "./lib/*": "./src/lib/*.ts",
     "./components/*": "./src/components/*.tsx",
-    "./hooks/*": "./src/hooks/*.ts",
+    "./hooks/*": "./src/hooks/*.tsx",
     "./utils/*": "./src/lib/utils/*.ts",
     "./providers/*": "./src/providers/*.tsx",
-    "./typography/*": "./src/components/typography/*.tsx"
+    "./typography/*": "./src/typography/*.tsx"
   }
 }

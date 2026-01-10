@@ -49,7 +49,7 @@ const FeatureSection = ({featureSection}:{featureSection:FeatureSectionProps}) =
                 ))}
             </Accordion>
             <Image 
-                src={featureSection.features?.[featureImage]?.imageUrl || ""}
+                src={featureSection.features?.[featureImage]?.imageUrl || "/loading.webp"}
                 alt={featureSection.features?.[featureImage]?.title || "Feature Image"}
                 width={350}
                 height={200}

@@ -1,3 +1,5 @@
+"use client"
+
 import NavbarSection from '@/components/landing/NavbarSection'
 import { useTRPC } from '@/trpc/client'
 import { useSuspenseQuery } from '@tanstack/react-query'

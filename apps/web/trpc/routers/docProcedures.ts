@@ -2,7 +2,7 @@ import { fetchDocumentation } from "@/lib/functions/fetchDocumentationFromNotion
 import { DocumentationProps } from "@/lib/ts-types/doc";
 import { redis } from "@/server/redis";
 import { createTRPCRouter, baseProcedure } from "@/trpc/init";
-import { retrieveBlocksTree } from "@workspace/notion/block/retrieveBlockChildren";
+import { retrieveBlocksTree } from "@workspace/cms/notion/block/retrieveBlockChildren";
 import { z } from "zod";
 
 const DOCUMENTATION_PAGE_CACHE_KEY = "documentation-page:notion:v1";

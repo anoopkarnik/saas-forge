@@ -11,7 +11,6 @@ export const dynamic = "force-dynamic";
 const HomePage = async () => {
   const queryClient = getQueryClient();
   await Promise.all([
-    // queryClient.ensureQueryData(trpc.portfolio.getPortfolioDataFromStrapi.queryOptions()),
     queryClient.ensureQueryData(trpc.landing.getLandingInfoFromNotion.queryOptions()),
   ]);
   return (

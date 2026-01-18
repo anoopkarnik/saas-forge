@@ -10,6 +10,7 @@
     "lint": "next lint",
     "lint:fix": "next lint --fix",
     "typecheck": "tsc --noEmit",
+    "install": "cd ../../ && pnpm run install",
     "generate": "cd ../../packages/database && pnpm run generate"
   },
   "dependencies": {

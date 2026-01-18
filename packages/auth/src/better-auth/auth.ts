@@ -28,7 +28,7 @@ export const auth:any = betterAuth({
         updateAge: 60 * 60 * 24, // 1 day 
         cookieCache: {
             enabled: true,
-            maxAge: 5* 60
+            maxAge: 5 * 60,
         }
     },
     user: {
@@ -74,6 +74,7 @@ export const auth:any = betterAuth({
     },
     emailAndPassword: {
         enabled: true,
+        autoSignIn: false,
         requireEmailVerification: true,
         sendResetPassword : async ({user, url}) =>{
             await sendResetEmail(user.email, url)

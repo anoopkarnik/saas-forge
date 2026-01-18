@@ -4,7 +4,7 @@ import { getQueryClient, trpc } from "@/trpc/server"
 import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
 import { Suspense } from "react";
 import { ErrorBoundary } from "react-error-boundary";
-import { AppSidebar } from "@/blocks/AppSidebar";
+import { AppSidebar } from "@/blocks/home/AppSidebar";
 import { SidebarProvider, SidebarTrigger } from "@workspace/ui/components/shadcn/sidebar";
 import { Separator } from "@workspace/ui/components/shadcn/separator";
 import {BreadcrumbsHeader} from "@/components/home/BreadcrumbsHeader"

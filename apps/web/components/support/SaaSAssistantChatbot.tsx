@@ -118,7 +118,7 @@ const SaaSAssistantChatbot = () => {
           </div>
         ))}
 
-        <div className="text-description self-end">
+        <div className="text-xs opacity-50 self-end">
           {waitingForReply && (
             <div className="flex items-center gap-4">
               <span className="text-xs">Assistant is typing (may take upto a minute)</span>

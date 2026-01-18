@@ -19,7 +19,7 @@ export const BreadcrumbsHeader = () => {
                         <Button variant={'ghost'} size={'sm'} 
                         className='capitalize cursor-pointer  mx-0 px-0' 
                         onClick={() => router.push("/")}>
-                            Home
+                            /
                         </Button>
                     </BreadcrumbItem>
                     {paths.map((path, index) => (

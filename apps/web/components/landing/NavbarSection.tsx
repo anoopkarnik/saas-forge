@@ -163,9 +163,9 @@ const NavbarSection = ({navbarSection}: {navbarSection: NavbarSectionProps}) => 
               className="flex items-center gap-1"
                 variant="default"
                 size="sm"
-                onClick={() => router.push("/sign-up")}
+                onClick={() => router.push("/sign-in")}
               > 
-                <p className="text-sm">Getting Started</p>
+                <p className="text-sm">Login</p>
               </Button>
           </div>
         </NavigationMenuList>

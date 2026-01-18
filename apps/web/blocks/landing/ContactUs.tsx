@@ -11,7 +11,7 @@ const ContactUs = () => {
             <NavbarSection navbarSection={data.navbarSection}/>
             <div className='p-6 mx-[20%]'>
                 <h2 className='text-title-h1'>Contact Us</h2>
-                <p className="text-description mb-6">Last updated: {data.contactUs?.lastUpdated}</p>
+                <p className="text-xs opacity-50 mb-6">Last updated: {data.contactUs?.lastUpdated}</p>
                 <p className="mb-4">Merchant Legal entiy name: {data.contactUs?.companyLegalName}</p>
                 <p className="mb-4">Registered Address: {data.contactUs?.address}</p>
                 <p className="mb-4">Operational Address: {data.contactUs?.address}</p>

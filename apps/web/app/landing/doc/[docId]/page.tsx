@@ -1,4 +1,4 @@
-import DocPostPage from "@/blocks/DocPostPage";
+import DocPostPage from "@/blocks/landing/DocPostPage";
 import { getQueryClient, trpc } from "@/trpc/server";
 import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
 import ErrorState from "@workspace/ui/components/misc/ErrorState";

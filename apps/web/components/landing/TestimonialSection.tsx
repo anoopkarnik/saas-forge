@@ -73,7 +73,7 @@ const TestimonialSection = ({testimonialSection}:{testimonialSection:Testimonial
                                 </Avatar>
                                 <div className="flex flex-col items-start text-">
                                     <div className="text-sm ">{testimonial.name}</div>
-                                    <div className="text-description">{testimonial.title}</div>
+                                    <div className="text-xs opacity-50">{testimonial.title}</div>
                                 </div>
                                
                             </div>

@@ -1,5 +1,5 @@
 import ErrorState from "@workspace/ui/components/misc/ErrorState";
-import LandingPage from "@/blocks/LandingPage";
+import LandingPage from "@/blocks/landing/LandingPage";
 import LoadingState from "@workspace/ui/components/misc/LoadingState";
 import { getQueryClient, trpc } from "@/trpc/server"
 import { dehydrate, HydrationBoundary } from "@tanstack/react-query";

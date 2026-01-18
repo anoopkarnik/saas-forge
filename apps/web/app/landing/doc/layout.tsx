@@ -4,7 +4,7 @@ import { getQueryClient, trpc } from "@/trpc/server"
 import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
 import { Suspense } from "react";
 import { ErrorBoundary } from "react-error-boundary";
-import DocSidebar from "@/blocks/DocSidebar";
+import DocSidebar from "@/blocks/landing/DocSidebar";
 import { SidebarProvider } from "@workspace/ui/components/shadcn/sidebar";
 
 // export const revalidate = 600;

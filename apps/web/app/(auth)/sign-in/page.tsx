@@ -18,8 +18,7 @@ const LoginContent = () => {
 
 
   const loginWithSocials = async (type: string) => {
-    const {error} = await authClient.signIn.social({provider: type})
-    await waitFor(3000)
+    const {error} = await authClient.signIn.social({provider: type, callbackUrl: "/", rememberMe: true,})
     if (error) {
       setError(error.message)
     } else {
@@ -28,10 +27,10 @@ const LoginContent = () => {
   }
 
   const loginWithEmail = async (data:  z.infer<typeof LoginSchema>) => {
-    const {error} = await authClient.signIn.email(data )
+    const {error} = await authClient.signIn.email({...data, callbackUrl: "/", rememberMe: true,})
     if (error) {
       setError(error.message)
-    } else {
+    }else {
       router.push("/")
     }
   }

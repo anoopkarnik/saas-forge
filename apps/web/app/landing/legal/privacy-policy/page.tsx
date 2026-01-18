@@ -4,7 +4,7 @@ import { getQueryClient, trpc } from "@/trpc/server"
 import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
 import { Suspense } from "react";
 import { ErrorBoundary } from "react-error-boundary";
-import PrivacyPolicy from "@/blocks/PrivacyPolicy";
+import PrivacyPolicy from "@/blocks/landing/PrivacyPolicy";
 
 // export const revalidate = 600;
 export const dynamic = "force-dynamic";

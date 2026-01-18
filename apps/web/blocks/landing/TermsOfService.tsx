@@ -13,7 +13,7 @@ const TermsOfService = () => {
         <NavbarSection navbarSection={data.navbarSection}/>
         <div className="p-6 mx-[20%]">
             <h1 className="text-title-h1">Terms of Service</h1>
-            <p className="text-description mb-6">Version {data.termsOfService.version} | Last updated: {data.termsOfService.lastUpdated}</p>
+            <p className="text-xs opacity-50 mb-6">Version {data.termsOfService.version} | Last updated: {data.termsOfService.lastUpdated}</p>
         <p className="mb-4">
             The {data.termsOfService.siteName} website located at <a href={data.termsOfService.websiteUrl} className="text-blue-600 underline hover:text-blue-800">
             {data.termsOfService.websiteUrl}

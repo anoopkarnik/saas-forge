@@ -9,7 +9,8 @@
     "start": "next start",
     "lint": "next lint",
     "lint:fix": "next lint --fix",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "generate": "cd ../../packages/database && pnpm run generate"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

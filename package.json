@@ -8,6 +8,9 @@
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "generate": "cd packages/database && pnpm run generate"
   },
+  "dependencies": {
+    "next": "^15.4.5"
+  },
   "devDependencies": {
     "@workspace/eslint-config": "workspace:*",
     "@workspace/typescript-config": "workspace:*",

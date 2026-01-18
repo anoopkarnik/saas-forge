@@ -3,9 +3,8 @@ import EmailVerification from '../templates/EmailVerification';
 import ResetPassword from '../templates/ResetPassword';
 import { render } from "@react-email/render";
 
-const resend = new Resend(process.env.RESEND_API_KEY)
-
 export const sendVerificationEmail = async (email: string, verificationUrl: string) => {
+    const resend = new Resend(process.env.RESEND_API_KEY)
     const from = process.env.NEXT_PUBLIC_SUPPORT_MAIL!;
     const company = process.env.NEXT_PUBLIC_COMPANY_NAME || "Company";
     const subject = "Verify Your Email Address";
@@ -19,6 +18,7 @@ export const sendVerificationEmail = async (email: string, verificationUrl: stri
 }
 
 export const sendResetEmail = async (email: string, resetUrl: string) => {
+  const resend = new Resend(process.env.RESEND_API_KEY)
 
   let from = process.env.NEXT_PUBLIC_SUPPORT_MAIL!;
   let subject = "Reset your password";
@@ -31,6 +31,7 @@ export const sendResetEmail = async (email: string, resetUrl: string) => {
 }
 
 export const sendSupportEmail = async (subject:string,body:string) => {
+  const resend = new Resend(process.env.RESEND_API_KEY)
 
   try {
     const response = await resend.emails.send({

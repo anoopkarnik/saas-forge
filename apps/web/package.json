@@ -9,9 +9,7 @@
     "start": "next start",
     "lint": "next lint",
     "lint:fix": "next lint --fix",
-    "typecheck": "tsc --noEmit",
-    "install": "cd ../../ && pnpm run install",
-    "generate": "cd ../../packages/database && pnpm run generate"
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -28,7 +26,6 @@
     "@workspace/cms": "workspace:*",
     "@workspace/database": "workspace:*",
     "@workspace/observability": "workspace:*",
-    "@workspace/storage": "workspace:*",
     "@workspace/ui": "workspace:*",
     "better-auth": "^1.4.9",
     "date-fns": "^4.1.0",

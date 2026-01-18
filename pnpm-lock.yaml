@@ -68,9 +68,6 @@ importers:
       '@workspace/observability':
         specifier: workspace:*
         version: link:../../packages/observability
-      '@workspace/storage':
-        specifier: workspace:*
-        version: link:../../packages/storage
       '@workspace/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -322,8 +319,6 @@ importers:
       winston:
         specifier: ^3.19.0
         version: 3.19.0
-
-  packages/storage: {}
 
   packages/typescript-config: {}
 

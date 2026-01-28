@@ -51,7 +51,7 @@ const TestimonialSection = ({testimonialSection}:{testimonialSection:Testimonial
       </span>
     </h2>
 
-      <p className="text-xl text-muted-foreground pt-4 pb-8">
+      <p className="text-xl text-muted-foreground pb-8 opacity-70">
         {testimonialSection.description}
       </p>
         </div>

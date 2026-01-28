@@ -9,7 +9,7 @@ export default function Page() {
       <div className="flex flex-col items-center justify-center gap-4">
         <h1 className="text-2xl font-bold">Home</h1>
         <pre>
-          {JSON.stringify(session, null, 2)}
+          
         </pre>
       </div>
     </div>

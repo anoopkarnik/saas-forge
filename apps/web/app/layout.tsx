@@ -5,6 +5,7 @@ import type { Metadata } from "next";
 import { Toaster } from "@workspace/ui/components/shadcn/sonner";
 import { Analytics } from "@vercel/analytics/react"
 import { GoogleAnalytics } from "@next/third-parties/google";
+import { SpeedInsights } from "@vercel/speed-insights/next"
 import { TRPCReactProvider } from "@/trpc/client";
 import Support from "@/blocks/Support";
 
@@ -32,6 +33,7 @@ export default function RootLayout({
             <Support />
             <Toaster />
             <Analytics />
+            <SpeedInsights />
             <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_MEASUREMENT_ID as string}/>
           </ThemeProvider>
         </TRPCReactProvider>

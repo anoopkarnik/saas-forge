@@ -1,0 +1,32 @@
+model BillingAddress {
+  id            String          @id @default(cuid())
+  userId        String        @unique
+  customerId    String
+  name          String
+  email         String
+  city          String
+  country       String
+  state         String
+  street        String
+  zipcode       String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@schema("billing_schema")
+}
+
+model Transaction {
+    id            String          @id @default(cuid())
+    userId        String
+    eventId       String
+    description   String
+    amount        Int
+    currency      String
+    date          DateTime @default(now())
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+  @@schema("billing_schema")
+}

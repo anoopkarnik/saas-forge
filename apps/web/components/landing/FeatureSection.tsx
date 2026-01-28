@@ -34,7 +34,7 @@ const FeatureSection = ({featureSection}:{featureSection:FeatureSectionProps}) =
           {headingArray.slice(Math.ceil(headingArray.length / 2)).join(" ")}
         </span>
       </h2>
-      <p className="text-muted-foreground text-xl mt-4 mb-8 ">
+      <p className="text-muted-foreground text-xl mb-8 opacity-70">
         {featureSection.description}
       </p>
         <div className="grid grid-cols-2 gap-10">

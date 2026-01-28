@@ -9,6 +9,7 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 import { BackgroundBeams } from "@workspace/ui/components/aceternity/background-beams";
 import Image from "next/image";
 import { ContainerScroll } from "@workspace/ui/components/aceternity/container-scroll-animation";
+import { HeroCodeBlock} from "@workspace/ui/components/misc/HeroCodeBlock";
 
 
 const HeroSection = ({heroSection}:{heroSection:HeroSectionProps }) => {
@@ -22,7 +23,7 @@ const HeroSection = ({heroSection}:{heroSection:HeroSectionProps }) => {
   return (
     <section className="container flex flex-col justify-center items-center py-20 md:py-32  gap-10 relative ">
 
-        <div className="text-center space-y-6 lg:mt-28">
+        <div className="text-center space-y-6 lg:mt-28 justify-center flex flex-col items-center">
             <main className="text-5xl md:text-6xl text-center leading-tight">
               <h1 className="inline-block">
                 <span className="bg-gradient-to-r from-[#F596D3] to-[#D247BF] text-transparent bg-clip-text">
@@ -48,7 +49,11 @@ const HeroSection = ({heroSection}:{heroSection:HeroSectionProps }) => {
                   loop: true,
                 }}/>
             </div>
-
+            <HeroCodeBlock 
+              
+              language="bash"
+              code={heroSection.codeSnippet || "Coming Soon"}
+            />
             <div className="flex items-center justify-center space-y-4 md:space-y-0 md:space-x-4">
 
                 <Button

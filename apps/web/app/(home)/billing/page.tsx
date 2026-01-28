@@ -1,12 +1,21 @@
-import { Button } from "@workspace/ui/components/shadcn/button"
 
-export default function Page() {
+import { Skeleton } from '@workspace/ui/components/shadcn/skeleton'
+import React, { Suspense } from 'react'
+
+export default function BillingPage() {
   return (
-    <div className="flex items-center justify-center min-h-svh">
-      <div className="flex flex-col items-center justify-center gap-4">
-        <h1 className="text-2xl font-bold">Billing</h1>
-        <Button size="sm">Button</Button>
-      </div>
+    <div className='mx-auto p-4 space-y-8 w-full'>
+      <h1 className='text-3xl font-bold'>Billing</h1>
+      {/* <Suspense fallback={<Skeleton className='h-[166px] w-full'/>}>
+        <BalanceCard />
+      </Suspense>
+      <CreditsPurchase/>
+      <Suspense fallback={<Skeleton className='h-[300px] w-full'/>}>
+        <CreditsUsageCard/>
+      </Suspense>
+      <Suspense fallback={<Skeleton className='h-[300px] w-full'/>}>
+        <TransactionHistoryCard/>
+      </Suspense> */}
     </div>
   )
 }

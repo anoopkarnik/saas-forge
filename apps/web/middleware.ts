@@ -1,16 +1,14 @@
 import { NextResponse, type NextRequest } from "next/server"
 import { getCookieCache } from "better-auth/cookies";
 
-const publicRoutes = ["/landing","/public","/api/payments/dodo/webhook",
-    "/api/payments/stripe/webhook"]
+const publicRoutes = ["/landing","/public","/api/payments/dodo/webhook"]
 
-const authRoutes =["/sign-in","/sign-up","/error","/forgot-password","/reset-password",'/email-verified']
+const authRoutes =["/sign-in","/sign-up","/error","/forgot-password","/reset-password",'/email-verified',"/api/auth"]
 
 const apiAuthPrefix = "/api/auth"
 
 const allowedOrigins = ['http://localhost:3000', 'https://dev.boilerplate.bayesian-labs.com',
-    'https://boilerplate.bayesian-labs.com','http://localhost:3001',
-    'http://127.0.0.1:3000','http://127.0.0.1:3001']
+    'https://boilerplate.bayesian-labs.com']
 
 const corsOptions = {
     'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',

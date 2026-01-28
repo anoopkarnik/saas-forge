@@ -84,6 +84,7 @@ export const auth:any = betterAuth({
         sendOnSignUp: true,
         autoSignInAfterVerification: true,
         sendVerificationEmail: async({user,token})=>{
+            console.log("Sending verification email to:", user.email);
             const fullUser = await db.user.findUnique({
                 where: { id: user.id },
                 include: {
@@ -95,7 +96,7 @@ export const auth:any = betterAuth({
                 fullUser?.accounts?.some((account) =>
                   ["google", "github", "linkedin"].includes(account.providerId)
                 ) ?? false;
-            
+             console.log("isSocial:", isSocial);
               if (isSocial) {
                 console.log("Skipping email verification for social login user");
                 return;

@@ -34,6 +34,7 @@ export async function fetchLandingPageData():Promise<LandingPageProps> {
         tagline: landingPageData.tagline[0],
         description: landingPageData.description[0],
         appointmentLink: landingPageData.appointmentLink,
+        codeSnippet: landingPageData.codeSnippet[0],
         heroImages: heroSectionResults.results.map((item:any) => ({
             title: item.title,
             imageUrl: item.image[0],

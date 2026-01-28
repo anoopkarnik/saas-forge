@@ -18,7 +18,7 @@ const LoginContent = () => {
 
 
   const loginWithSocials = async (type: string) => {
-    const {error} = await authClient.signIn.social({provider: type, callbackUrl: "/", rememberMe: true,})
+    const {error} = await authClient.signIn.social({provider: type})
     if (error) {
       setError(error.message)
     } else {

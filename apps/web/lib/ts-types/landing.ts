@@ -28,6 +28,7 @@ export interface HeroSectionProps {
     appointmentLink?: string;
     tagline?: string;
     description?: string;
+    codeSnippet: string;
     heroImages: HeroImageProps[];
 }
 

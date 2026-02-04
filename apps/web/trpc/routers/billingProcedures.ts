@@ -71,16 +71,18 @@ export const billingRouter = createTRPCRouter({
 
       const session = await client.checkoutSessions.create({
         product_cart: [
-          { product_id: process.env.DODO_CREDITS_PRODUCT_ID!, quantity }
-              ],
-              return_url: `${process.env.NEXT_PUBLIC_URL}/billing`,
-              customer: {
-                email: ctx.session.user.email ?? undefined,
-                name: ctx.session.user.name ?? undefined,
-              },
-              metadata: { userId: String(userId), credits: String(input.credits) }
-            });
+        { product_id: process.env.DODO_CREDITS_PRODUCT_ID!, quantity }
+            ],
+            return_url: `${process.env.NEXT_PUBLIC_URL}/billing`,
+            customer: {
+              email: ctx.session.user.email ?? undefined,
+              name: ctx.session.user.name ?? undefined,
+            },
+            metadata: { userId: String(userId), credits: String(input.credits) }
+          });
+      
+      console.log("Checkout session created:", session);
 
-            return { checkoutUrl: session.checkout_url };
-          }),
+      return { checkoutUrl: session.checkout_url };
+    }),
 });

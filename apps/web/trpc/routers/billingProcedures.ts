@@ -6,8 +6,8 @@ import { billingAddressSchema } from "@/lib/zod/billing";
 import { TRPCError } from "@trpc/server";
 
 const client = new DodoPayments({
-  bearerToken: process.env['DODO_PAYMENTS_API_KEY'], // This is the default and can be omitted
-  environment: 'test_mode', // defaults to 'live_mode'
+  bearerToken: process.env.DODO_PAYMENTS_API_KEY, // This is the default and can be omitted
+  environment: process.env.DODO_PAYMENTS_ENVIRONMENT! as  'test_mode' | 'live_mode', // defaults to 'live_mode'
 });
 
 const CREDITS_PER_UNIT = 50; // example: 1 quantity = 50 credits

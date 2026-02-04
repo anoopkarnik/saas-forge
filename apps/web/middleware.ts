@@ -1,5 +1,4 @@
 import { NextResponse, type NextRequest } from "next/server"
-import { getCookieCache } from "better-auth/cookies";
 
 const publicRoutes = ["/landing","/public","/api/payments/dodo/webhook"]
 
@@ -34,17 +33,17 @@ export default async function middleware(req:NextRequest){
         return response;
     }
 
-    const session = await getCookieCache(req);
+    // Check for session by looking at the session token cookie directly
+    // getCookieCache wasn't working on Vercel Edge - the cookies exist but decryption fails
+    const sessionToken = req.cookies.get('better-auth.session_token')?.value;
     
     // Debug logging - check Vercel function logs
     console.log('[Middleware Debug]', {
         path: pathName,
-        hasSession: !!session,
-        sessionData: session ? 'exists' : 'null',
-        cookies: req.cookies.getAll().map(c => c.name),
+        hasSessionToken: !!sessionToken,
     });
     
-    const isLoggedIn = !!session;
+    const isLoggedIn = !!sessionToken;
 
 
     // Handle preflighted requests

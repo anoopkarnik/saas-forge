@@ -9,7 +9,11 @@ export const auth:any = betterAuth({
     plugins: [openAPI(),admin({
         impersonationSessionDuration: 3600
     })],
-    trustedOrigins: ["myapp://", "myapp://*"],
+    trustedOrigins: [
+        "myapp://", 
+        "myapp://*",
+        process.env.NEXT_PUBLIC_URL || ""
+    ].filter(Boolean),
     database: prismaAdapter(db, {
         provider: "postgresql", // or "mysql", "postgresql", ...etc
     }),

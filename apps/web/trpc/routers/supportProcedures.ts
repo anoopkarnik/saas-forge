@@ -1,4 +1,5 @@
 import { createTRPCRouter, baseProcedure } from "@/trpc/init";
+import { sendSupportEmail } from "@workspace/email/resend/index";
 import { z } from "zod";
 
 export const supportRouter = createTRPCRouter({
@@ -12,24 +13,11 @@ export const supportRouter = createTRPCRouter({
     )
     .mutation(async ({ input }) => {
       const { subject, email, message } = input;
+      let newSubject = subject + " from " + email + " for " + process.env.NEXT_PUBLIC_SAAS_NAME ; 
+      const res = await sendSupportEmail(newSubject,message)
 
-      const webhookUrl = process.env.N8N_SAAS_SUPPORT_WEBHOOK_URL;
-      if (!webhookUrl) {
-        console.error("Missing N8N_SAAS_SUPPORT_WEBHOOK_URL");
-        throw new Error("Server misconfigured");
-      }
 
-      const res = await fetch(webhookUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ subject, email, message }),
-        cache: "no-store",
-      });
-
-      const raw = await res.json();
-
-      if (!res.ok) {
-        console.error("n8n error", raw);
+      if (!res) {
         throw new Error("Failed to send support message");
       }
 

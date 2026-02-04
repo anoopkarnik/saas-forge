@@ -29,6 +29,7 @@
     "@workspace/database": "workspace:*",
     "@workspace/observability": "workspace:*",
     "@workspace/ui": "workspace:*",
+    "@workspace/email": "workspace:*",
     "archiver": "^7.0.1",
     "better-auth": "^1.4.9",
     "date-fns": "^4.1.0",

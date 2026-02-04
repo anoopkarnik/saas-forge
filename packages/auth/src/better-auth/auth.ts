@@ -97,7 +97,7 @@ export const auth:any = betterAuth({
               });
             
               const isSocial =
-                fullUser?.accounts?.some((account) =>
+                fullUser?.accounts?.some((account:any) =>
                   ["google", "github", "linkedin"].includes(account.providerId)
                 ) ?? false;
              console.log("isSocial:", isSocial);

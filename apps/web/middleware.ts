@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server"
 
-const publicRoutes = ["/landing","/public","/api/payments/dodo/webhook"]
+const publicRoutes = ["/landing","/public","/api/payments/dodo/webhook","/api/trpc"]
 
 const authRoutes =["/sign-in","/sign-up","/error","/forgot-password","/reset-password",'/email-verified',"/api/auth"]
 
@@ -36,12 +36,6 @@ export default async function middleware(req:NextRequest){
     // Check for session by looking at the session token cookie directly
     // getCookieCache wasn't working on Vercel Edge - the cookies exist but decryption fails
     const sessionToken = req.cookies.get('better-auth.session_token')?.value;
-    
-    // Debug logging - check Vercel function logs
-    console.log('[Middleware Debug]', {
-        path: pathName,
-        hasSessionToken: !!sessionToken,
-    });
     
     const isLoggedIn = !!sessionToken;
 

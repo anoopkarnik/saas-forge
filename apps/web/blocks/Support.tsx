@@ -88,7 +88,7 @@ const Support = () => {
               </div>
 
               <a
-                href="https://calendly.com/anoop-karnik-bayesian-labs/discovery-call"
+                href={process.env.NEXT_PUBLIC_CALENDLY_BOOKING_URL}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex flex-col items-center gap-1 w-[80px] rounded-md p-2 cursor-pointer hover:opacity-80 hover:shadow-lg hover:scale-105"
@@ -99,7 +99,7 @@ const Support = () => {
                 <div className="text-center text-xs">Book a meeting</div>
               </a>
 
-              <div
+              {/* <div
                 className="flex flex-col items-center gap-1 w-[80px] rounded-md p-2 cursor-pointer hover:opacity-80 hover:shadow-lg hover:scale-105"
                 onClick={() => togglePanel("assistant")}
               >
@@ -107,7 +107,7 @@ const Support = () => {
                   <FaRobot size={40} />
                 </div>
                 <div className="text-center text-xs">SaaS Assistant</div>
-              </div>
+              </div> */}
             </div>
           )}
 

@@ -75,6 +75,9 @@ importers:
       '@workspace/database':
         specifier: workspace:*
         version: link:../../packages/database
+      '@workspace/email':
+        specifier: workspace:*
+        version: link:../../packages/email
       '@workspace/observability':
         specifier: workspace:*
         version: link:../../packages/observability

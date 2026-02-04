@@ -6,6 +6,7 @@ import db from "@workspace/database/client";
 import InvoiceBtn from "./InvoiceBtn";
 import { formatDate } from "@/lib/utils/formatDate";
 import { formatAmount } from "@/lib/utils/formatAmount";
+import { Key } from "react";
 
 export async function TransactionHistoryCard() {
   const session = await auth.api.getSession({
@@ -38,7 +39,7 @@ export async function TransactionHistoryCard() {
             No transactions found
           </p>
         )}
-        {purchases.map((purchase, index) => (
+        {purchases.map((purchase: { id: Key | null | undefined; date: Date; amount: number; currency: string; eventId: string; }, index: number) => (
           <div key={purchase.id} className='flex justify-between items-center py-3 border-b last:border-b-0'>
             <div className='flex items-center gap-2 '>
               <div>

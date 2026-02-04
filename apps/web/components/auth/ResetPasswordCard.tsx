@@ -2,14 +2,16 @@
 import { FormResult } from './FormResult';
 import { Card, CardContent, CardFooter, CardHeader } from '@workspace/ui/components/shadcn/card';
 
-import {   Form,
+import {
+  Form,
   FormControl,
   FormField,
   FormItem,
   FormLabel,
-  FormMessage, } from '@workspace/ui/components/shadcn/form';
+  FormMessage,
+} from '@workspace/ui/components/shadcn/form';
 import { useForm } from 'react-hook-form';
-import {z} from "zod"
+import { z } from "zod"
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Input } from '@workspace/ui/components/shadcn/input';
 import { useRouter } from 'next/navigation';
@@ -17,12 +19,13 @@ import { useState } from 'react';
 import LoadingButton from '@workspace/ui/components/misc/LoadingButton';
 import { ResetPasswordSchema } from '@workspace/auth/utils/zod';
 import { ResetPasswordCardProps } from '@workspace/auth/utils/typescript';
+import { toast } from 'sonner'
 
-const ResetPasswordCard = ({errorMessage,successMessage,token,resetFunction}:ResetPasswordCardProps) => {
+const ResetPasswordCard = ({ errorMessage, successMessage, token, resetFunction }: ResetPasswordCardProps) => {
   const [pending, setPending] = useState(false)
   const form = useForm<z.infer<typeof ResetPasswordSchema>>({
     resolver: zodResolver(ResetPasswordSchema),
-    defaultValues:{
+    defaultValues: {
       password: '',
       confirmPassword: '',
     },
@@ -30,8 +33,10 @@ const ResetPasswordCard = ({errorMessage,successMessage,token,resetFunction}:Res
 
   async function handleSubmit(data: z.infer<typeof ResetPasswordSchema>) {
     setPending(true)
-     await resetFunction(token,data.password)
-      setPending(false)
+    await resetFunction(token, data.password)
+    toast.success("Password reset successfully")
+    router.push('/sign-in')
+    setPending(false)
   }
   const router = useRouter();
   return (
@@ -44,27 +49,27 @@ const ResetPasswordCard = ({errorMessage,successMessage,token,resetFunction}:Res
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className='space-y-6'>
             <div className='space-y-4 mb-4'>
-              <FormField control={form.control} name="password" render={({field})=>(
+              <FormField control={form.control} name="password" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Password</FormLabel>
                   <FormControl>
-                    <Input type="password" placeholder='******'    {...field}/>
+                    <Input type="password" placeholder='******'    {...field} />
                   </FormControl>
-                  <FormMessage/>
+                  <FormMessage />
                 </FormItem>
-              )}/>
-              <FormField control={form.control} name="confirmPassword" render={({field})=>(
+              )} />
+              <FormField control={form.control} name="confirmPassword" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Confirm Password</FormLabel>
                   <FormControl>
-                    <Input type="password" placeholder='******'   {...field}/>
+                    <Input type="password" placeholder='******'   {...field} />
                   </FormControl>
-                  <FormMessage/>
+                  <FormMessage />
                 </FormItem>
-              )}/>
+              )} />
             </div>
-            <FormResult type="error" message={errorMessage }/>
-            <FormResult type="success" message={successMessage}/>
+            <FormResult type="error" message={errorMessage} />
+            <FormResult type="success" message={successMessage} />
             <LoadingButton variant="default" pending={pending}>
               Reset Password
             </LoadingButton>
@@ -72,7 +77,7 @@ const ResetPasswordCard = ({errorMessage,successMessage,token,resetFunction}:Res
         </Form>
       </CardContent>
       <CardFooter className='flex justify-center'>
-        <button onClick={()=>router.push('/sign-in')} className='text-sm text-center cursor-pointer hover:underline'>Go to Login Page</button>
+        <button onClick={() => router.push('/sign-in')} className='text-sm text-center cursor-pointer hover:underline'>Go to Login Page</button>
       </CardFooter>
     </Card>
   )

@@ -7,9 +7,10 @@ import {
   Section,
   Text,
   Tailwind,
+  Button
 } from '@react-email/components';
 
-const ResetPassword = ({ resetPasswordLink }: { resetPasswordLink: string }) => {
+const ResetPassword = ({ resetPasswordLink, company }: { resetPasswordLink: string, company: string }) => {
   return (
     <Html>
       <Head />
@@ -27,13 +28,12 @@ const ResetPassword = ({ resetPasswordLink }: { resetPasswordLink: string }) => 
               <Text className="mb-4">
                 Please click the button below to reset your password:
               </Text>
-              <a
+              <Button
                 href={resetPasswordLink}
-                className="inline-block px-6 py-3 bg-green-500 text-white font-medium rounded-md shadow-md hover:bg-green-800 transition"
-                style={{ color: 'white' }}
+                className="box-border w-full px-6 py-3 bg-green-500 text-white font-medium rounded-md shadow-md text-center"
               >
                 Reset Password
-              </a>
+              </Button>
               <Text className="mt-6">
                 If the button above doesn't work, copy and paste the following
                 link into your browser:
@@ -50,14 +50,10 @@ const ResetPassword = ({ resetPasswordLink }: { resetPasswordLink: string }) => 
             {/* Footer */}
             <Section className="bg-gray-50 text-center text-sm p-4">
               <Text className="text-gray-500">
-                &copy; 2024 Bayesian Labs. All rights reserved.
+                &copy; 2025 {company}. All rights reserved.
               </Text>
               <Text className="text-gray-500 mt-2">
-                If you have any questions, feel free to <a
-                  href="mailto:support@bsamaritan.com"
-                  className="text-green-500 underline"
-                >
-                  contact us</a>.
+                If you have any questions, feel free to reply to this email
               </Text>
             </Section>
           </Container>

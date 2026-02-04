@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import {z} from "zod"
+import { z } from "zod"
 import { Card, CardContent, CardFooter, CardHeader } from '@workspace/ui/components/shadcn/card';
 import { Button } from '@workspace/ui/components/shadcn/button';
-import {  useForm } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Form,
@@ -19,13 +19,13 @@ import { ForgotPasswordSchema } from '@workspace/auth/utils/zod';
 import { ForgotPasswordCardProps } from '@workspace/auth/utils/typescript';
 import { Input } from '@workspace/ui/components/shadcn/input';
 
-const ForgotPasswordCard = ({errorMessage,successMessage,resetFunction}
-  :ForgotPasswordCardProps
+const ForgotPasswordCard = ({ errorMessage, successMessage, resetFunction }
+  : ForgotPasswordCardProps
 ) => {
   const [pending, setPending] = useState(false)
   const form = useForm<z.infer<typeof ForgotPasswordSchema>>({
     resolver: zodResolver(ForgotPasswordSchema),
-    defaultValues:{
+    defaultValues: {
       email: '',
     },
   })
@@ -33,8 +33,8 @@ const ForgotPasswordCard = ({errorMessage,successMessage,resetFunction}
 
   async function handleSubmit(data: z.infer<typeof ForgotPasswordSchema>) {
     setPending(true)
-      await resetFunction(data.email)
-      setPending(false)
+    await resetFunction(data.email)
+    setPending(false)
   }
 
   const router = useRouter();
@@ -49,18 +49,18 @@ const ForgotPasswordCard = ({errorMessage,successMessage,resetFunction}
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className='space-y-6'>
             <div className='space-y-4 mb-4'>
-              <FormField control={form.control} name="email" render={({field})=>(
+              <FormField control={form.control} name="email" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Email</FormLabel>
                   <FormControl>
-                    <Input  type="email" placeholder='example@gmail.com'  {...field}/>
+                    <Input type="email" placeholder='example@gmail.com'  {...field} />
                   </FormControl>
-                  <FormMessage/>
+                  <FormMessage />
                 </FormItem>
-              )}/>
+              )} />
             </div>
-            <FormResult type="error" message={errorMessage}/>
-            <FormResult type="success" message={successMessage}/>
+            {errorMessage && <FormResult type="error" message={JSON.stringify(errorMessage)} />}
+            {successMessage && <FormResult type="success" message={JSON.stringify(successMessage)} />}
             <LoadingButton variant="default" pending={pending}>
               Send Email
             </LoadingButton>
@@ -68,8 +68,8 @@ const ForgotPasswordCard = ({errorMessage,successMessage,resetFunction}
         </Form>
       </CardContent>
       <CardFooter className='flex justify-center'>
-        <Button onClick={()=>router.push('/sign-in')} variant={'ghost'}
-        className='text-sm text-center  cursor-pointer hover:underline'>
+        <Button onClick={() => router.push('/sign-in')} variant={'ghost'}
+          className='text-sm text-center  cursor-pointer hover:underline'>
           Go to Login Page
         </Button>
       </CardFooter>

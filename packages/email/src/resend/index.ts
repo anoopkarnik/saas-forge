@@ -22,11 +22,13 @@ export const sendResetEmail = async (email: string, resetUrl: string) => {
 
   let from = process.env.NEXT_PUBLIC_SUPPORT_MAIL!;
   let subject = "Reset your password";
+  const company = process.env.NEXT_PUBLIC_COMPANY_NAME || "Company";
+  const html = await render(ResetPassword({ resetPasswordLink: resetUrl, company }))
   return resend.emails.send({
     from,
     to: email,
     subject,
-    html: await render(ResetPassword({ resetPasswordLink: resetUrl })),
+    html: html,
   });
 }
 

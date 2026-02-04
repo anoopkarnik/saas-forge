@@ -17,7 +17,6 @@ const getNameSchema = () =>
         .max(50, "Name must be less than 50 characters")
         
 export const ResetPasswordSchema = z.object({
-    oldPassword: getPasswordSchema("password"),
     password: getPasswordSchema("password"),
     confirmPassword: getPasswordSchema("confirmPassword"),
 })

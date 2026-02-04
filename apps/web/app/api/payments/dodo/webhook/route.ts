@@ -1,5 +1,6 @@
 import { Webhooks } from "@dodopayments/nextjs";
 import db from "@workspace/database/client";
+import { revalidatePath } from "next/cache";
 
 export const POST = Webhooks({
   webhookKey: process.env.DODO_PAYMENTS_WEBHOOK_KEY!,
@@ -10,6 +11,8 @@ export const POST = Webhooks({
   onPaymentSucceeded: async (payload) => {
     const credits = payload?.data?.metadata?.credits;
     const userId = payload?.data?.metadata?.userId;
+    const currency = payload?.data?.settlement_currency;
+    const amount = payload?.data?.total_amount;
     
     if (!credits || !userId) {
       throw new Error("Invalid payload");
@@ -31,10 +34,13 @@ export const POST = Webhooks({
         userId,
         eventId: payload?.data?.payment_id,
         description: "Credit Purchase",
-        amount: Number(credits),
-        currency: "USD",
+        amount: Number(amount),
+        currency: currency,
       },
     });
+
+    // Revalidate the billing page cache so updated credits show immediately
+    revalidatePath("/(home)/billing");
     
   },
 });

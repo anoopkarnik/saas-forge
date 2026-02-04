@@ -58,3 +58,13 @@ export const ResetPasswordSettingsSchema = z.object({
         message: "Passwords do not match",
         path: ["confirmPassword"],
     });
+
+// Schema for adding password to social-only accounts (no current password required)
+export const AddPasswordSchema = z.object({
+    newPassword: getPasswordSchema('password'),
+    confirmPassword: getPasswordSchema('confirmPassword'),
+})
+    .refine((data) => data.newPassword === data.confirmPassword, {
+        message: "Passwords do not match",
+        path: ["confirmPassword"],
+    });

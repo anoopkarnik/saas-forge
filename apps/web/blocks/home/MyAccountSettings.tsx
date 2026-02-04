@@ -17,22 +17,54 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import SettingsHeadar from "@/components/home/SettingsHeader";
 import { authClient, useSession } from "@workspace/auth/better-auth/auth-client";
 import { useRouter } from "next/navigation";
-import { ResetPasswordSettingsSchema } from "@workspace/auth/utils/zod";
+import { ResetPasswordSettingsSchema, AddPasswordSchema } from "@workspace/auth/utils/zod";
 import { toast } from "sonner";
 import { FormResult } from "@/components/auth/FormResult";
+import { useTRPC } from "@/trpc/client";
+import { useMutation } from "@tanstack/react-query";
 
 
 const MyAccountSettings = () => {
 
   const { pending, data: session } = useSession();
 
-  const [user, setUser] = useState<any>(null)
   const [name, setName] = useState<string>(session?.user?.name as string)
   const [showOldPassword, setShowOldPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [hasPassword, setHasPassword] = useState<boolean | null>(null); // null = loading
 
   const router = useRouter();
+  const trpc = useTRPC();
+
+  // Check if user has a credential (password) account
+  useEffect(() => {
+    const checkHasPassword = async () => {
+      try {
+        const { data: accounts } = await authClient.listAccounts();
+        const hasCredential = accounts?.some((acc: any) => acc.providerId === "credential");
+        setHasPassword(!!hasCredential);
+      } catch (error) {
+        console.error("Error checking accounts:", error);
+        setHasPassword(false);
+      }
+    };
+    checkHasPassword();
+  }, []);
+
+  // tRPC mutation for setting password (social-only accounts)
+  const setPasswordMutation = useMutation(
+    trpc.home.setPassword.mutationOptions({
+      onSuccess: async () => {
+        toast.success("Password added successfully!");
+        setHasPassword(true); // Update state so form switches to change password mode
+        form.reset();
+      },
+      onError: (error) => {
+        toast.error("Failed to add password", { description: error.message });
+      },
+    })
+  );
 
 
 
@@ -43,10 +75,13 @@ const MyAccountSettings = () => {
   const description = "For modifying Email, you need to verify your new email address"
 
 
-  const form = useForm<z.infer<typeof ResetPasswordSettingsSchema>>({
-    resolver: zodResolver(ResetPasswordSettingsSchema),
+  // Use the appropriate schema based on whether user has a password
+  const passwordSchema = hasPassword === false ? AddPasswordSchema : ResetPasswordSettingsSchema;
+
+  const form = useForm<z.infer<typeof ResetPasswordSettingsSchema> | z.infer<typeof AddPasswordSchema>>({
+    resolver: zodResolver(passwordSchema),
     defaultValues: {
-      currentPassword: '',
+      ...(hasPassword !== false && { currentPassword: '' }),
       newPassword: '',
       confirmPassword: '',
     },
@@ -60,7 +95,7 @@ const MyAccountSettings = () => {
     inputFileRef.current?.click(); // Programmatically open file input
   };
 
-  async function handleSubmit(data: z.infer<typeof ResetPasswordSettingsSchema>) {
+  async function handleSubmit(data: z.infer<typeof ResetPasswordSettingsSchema | typeof AddPasswordSchema>) {
     if (pending || !session?.user) {
       toast.error("Unauthorized", { description: "Session not loaded. Try again in a second." });
       return;
@@ -69,21 +104,31 @@ const MyAccountSettings = () => {
     setPasswordSuccess("");
     if (session?.user?.email === process.env.NEXT_PUBLIC_GUEST_MAIL || session?.user?.email === process.env.NEXT_PUBLIC_ADMIN_MAIL) {
       setPasswordError("Guest account cannot modify password");
+      return;
+    }
+
+    // If user doesn't have a password, use setPassword mutation
+    if (!hasPassword) {
+      console.log("Adding password for social-only account");
+      await setPasswordMutation.mutateAsync({
+        newPassword: data.newPassword,
+        confirmPassword: data.confirmPassword
+      });
+      return;
+    }
+
+    // User has password, use changePassword
+    const { error } = await authClient.changePassword({
+      newPassword: data.newPassword,
+      currentPassword: 'currentPassword' in data ? data.currentPassword : '',
+      revokeOtherSessions: true
+    })
+    if (error) {
+      toast.error("Error", { description: error?.statusText })
     }
     else {
-      const { error } = await authClient.changePassword({
-        newPassword: data.newPassword,
-        currentPassword: data.currentPassword,
-        revokeOtherSessions: true
-      })
-      if (error) {
-        toast.error("Error", { description: error?.statusText })
-
-      }
-      else {
-        toast.success("Successfully modified password")
-      }
-
+      toast.success("Successfully modified password")
+      form.reset();
     }
   }
 
@@ -187,30 +232,34 @@ const MyAccountSettings = () => {
       <div className="flex flex-col gap-4 mt-4 w-1/2">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)}>
-            <FormField control={form.control} name="currentPassword" render={({ field }) => (
-              <FormItem>
-                <FormControl>
-                  <div className="relative">
-                    <FloatingLabelInput
-                      id="currentPassword"
-                      label="Current Password"
-                      type={showOldPassword ? "text" : "password"}
-                      className="w-full my-2 pr-10"
-                      {...field}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowOldPassword((v) => !v)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                      aria-label={showOldPassword ? "Hide password" : "Show password"}
-                    >
-                      {showOldPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
-                  </div>
-                </FormControl>
-                <FormMessage>{form.formState.errors.currentPassword?.message}</FormMessage>
-              </FormItem>
-            )} />
+            {/* Only show current password field if user has a password */}
+            {hasPassword !== false && (
+              <FormField control={form.control} name="currentPassword" render={({ field }) => (
+                <FormItem>
+                  <FormControl>
+                    <div className="relative">
+                      <FloatingLabelInput
+                        id="currentPassword"
+                        label="Current Password"
+                        type={showOldPassword ? "text" : "password"}
+                        className={`w-full my-2 pr-10 ${hasPassword === null ? 'opacity-50' : ''}`}
+                        disabled={hasPassword === null}
+                        {...field}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowOldPassword((v) => !v)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        aria-label={showOldPassword ? "Hide password" : "Show password"}
+                      >
+                        {showOldPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                  </FormControl>
+                  <FormMessage>{(form.formState.errors as any).currentPassword?.message}</FormMessage>
+                </FormItem>
+              )} />
+            )}
             <FormField control={form.control} name="newPassword" render={({ field }) => (
               <FormItem>
                 <FormControl>
@@ -261,8 +310,17 @@ const MyAccountSettings = () => {
             )} />
             <FormResult type="error" message={passwordError} />
             <FormResult type="success" message={passwordSuccess} />
-            <Button type="submit" className="w-1/2 text-wrap my-4" >
-              Modify Password
+            <Button
+              type="submit"
+              className="w-1/2 text-wrap my-4"
+              disabled={hasPassword === null || setPasswordMutation.isPending}
+            >
+              {setPasswordMutation.isPending
+                ? "Adding..."
+                : hasPassword
+                  ? "Change Password"
+                  : "Add Password"
+              }
             </Button>
           </form>
         </Form>

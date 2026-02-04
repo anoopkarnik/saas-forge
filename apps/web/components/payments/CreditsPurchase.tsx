@@ -52,15 +52,16 @@ const CreditsPurchase = () => {
                 <CardTitle className="text-2xl font-bold flex items-center gap-2">
                     Purchase Credits
                 </CardTitle>
-            </CardHeader>
-
-            <CardContent>
                 <CardDescription>
                     <div className="flex items-center gap-2">
                         <Info className="h-4 w-4" />
                         <p>Around 20 credits are required to download a basic boilerplate</p>
                     </div>
                 </CardDescription>
+            </CardHeader>
+
+            <CardContent>
+
 
                 <div className="h-4" />
 

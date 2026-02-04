@@ -1,5 +1,5 @@
 import { Card, CardContent, CardDescription, CardTitle } from "@workspace/ui/components/shadcn/card";
-import { ArrowLeftRightIcon } from "lucide-react";
+import { ArrowLeftRightIcon, Info } from "lucide-react";
 import { auth } from "@workspace/auth/better-auth/auth";
 import { headers } from "next/headers";
 import db from "@workspace/database/client";
@@ -26,13 +26,16 @@ export async function TransactionHistoryCard() {
   })
   return (
     <Card className='bg-sidebar p-4'>
-      <CardTitle className='text-2xl font-bold flex items-center gap-2'>
-        <ArrowLeftRightIcon className="h-6 w-6 text-primary" />
-        Transaction History
+      <CardTitle className='text-2xl font-bold flex flex-col gap-2'>
+        <div className="flex items-center gap-2">
+          Transaction History
+        </div>
+        <div className="flex items-center gap-2 text-sm opacity-50">
+          <Info className="h-4 w-4" />
+          <p className="text-left">View your transaction history and download invoices</p>
+        </div>
       </CardTitle>
-      <CardDescription>
-        View your transaction history and download invoices
-      </CardDescription>
+
       <CardContent className='space-y-4'>
         {purchases.length === 0 && (
           <p className='text-muted-foreground text-center'>

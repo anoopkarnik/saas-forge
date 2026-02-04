@@ -7,8 +7,7 @@ const authRoutes =["/sign-in","/sign-up","/error","/forgot-password","/reset-pas
 
 const apiAuthPrefix = "/api/auth"
 
-const allowedOrigins = ['http://localhost:3000', 'https://dev.boilerplate.bayesian-labs.com',
-    'https://boilerplate.bayesian-labs.com']
+const allowedOrigins = ['http://localhost:3000', process.env.NEXT_PUBLIC_URL].filter(Boolean) as string[]
 
 const corsOptions = {
     'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
@@ -36,6 +35,14 @@ export default async function middleware(req:NextRequest){
     }
 
     const session = await getCookieCache(req);
+    
+    // Debug logging - check Vercel function logs
+    console.log('[Middleware Debug]', {
+        path: pathName,
+        hasSession: !!session,
+        sessionData: session ? 'exists' : 'null',
+        cookies: req.cookies.getAll().map(c => c.name),
+    });
     
     const isLoggedIn = !!session;
 

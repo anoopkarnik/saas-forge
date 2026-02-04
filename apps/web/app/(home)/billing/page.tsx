@@ -1,4 +1,7 @@
 
+// Force dynamic rendering - ensures fresh data after webhook updates credits
+export const dynamic = 'force-dynamic';
+
 import { BalanceCard } from '@/components/payments/BalanceCard'
 import CreditsPurchase from '@/components/payments/CreditsPurchase'
 import { TransactionHistoryCard } from '@/components/payments/TransactionHistoryCard'

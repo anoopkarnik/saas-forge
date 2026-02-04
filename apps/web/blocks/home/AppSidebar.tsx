@@ -29,7 +29,6 @@ export function AppSidebar() {
     const { data} = useSuspenseQuery(trpc.landing.getLandingInfoFromNotion.queryOptions());
     const router = useRouter()
     const pathname = usePathname();
-    const { isPending,data:session } = useSession();
     return (
         <Sidebar>
             <SidebarHeader>

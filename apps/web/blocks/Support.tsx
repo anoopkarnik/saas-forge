@@ -15,12 +15,14 @@ import { IoNewspaper } from "react-icons/io5";
 import SaaSAssistantChatbot from "@/components/support/SaaSAssistantChatbot";
 import Message from "@/components/support/Message";
 import Newsletter from "@/components/support/Newsletter";
+import { useRouter } from "next/navigation";
 
 type ActivePanel = "message" | "newsletter" | "assistant" | null;
 
 const Support = () => {
   const [open, setOpen] = useState(false);
   const triggerRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
 
   const [activePanel, setActivePanel] = useState<ActivePanel>(null);
 
@@ -65,7 +67,7 @@ const Support = () => {
                 <div className="text-center text-xs">Send us a message</div>
               </div>
 
-              <div
+              {/* <div
                 className="flex flex-col items-center gap-1 w-[80px] rounded-md p-2 cursor-pointer hover:opacity-80 hover:shadow-lg hover:scale-105"
                 onClick={() => togglePanel("newsletter")}
               >
@@ -73,6 +75,16 @@ const Support = () => {
                   <IoNewspaper size={40} />
                 </div>
                 <div className="text-center text-xs">Join our newsletter</div>
+              </div> */}
+
+              <div
+                className="flex flex-col items-center gap-1 w-[80px] rounded-md p-2 cursor-pointer hover:opacity-80 hover:shadow-lg hover:scale-105"
+                onClick={() => router.push("/landing/doc")}
+              >
+                <div className="bg-violet-900 rounded-md p-2 w-[60px] flex items-center justify-center">
+                  <IoNewspaper size={40} />
+                </div>
+                <div className="text-center text-xs">Documentation</div>
               </div>
 
               <a
@@ -107,15 +119,15 @@ const Support = () => {
             `}
           >
             {activePanel === "message" && (
-                <Message setActivePanel={setActivePanel} />
+              <Message setActivePanel={setActivePanel} />
             )}
 
             {activePanel === "newsletter" && (
-                <Newsletter setActivePanel={setActivePanel} />
+              <Newsletter setActivePanel={setActivePanel} />
             )}
 
             {activePanel === "assistant" && (
-                <SaaSAssistantChatbot  />
+              <SaaSAssistantChatbot />
             )}
           </div>
         </DropdownMenuContent>

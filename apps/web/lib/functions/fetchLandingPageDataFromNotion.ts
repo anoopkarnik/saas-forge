@@ -25,7 +25,7 @@ export async function fetchLandingPageData():Promise<LandingPageProps> {
     const heroSectionResults = await queryAllNotionDatabase({
         apiToken: process.env.NOTION_API_TOKEN!,
         database_id: process.env.HERO_DATABASE_ID!,
-        filters: [{name: "SaaS Landing Page", type: "relation", condition: "contains", value: landingPageData.id}],
+        filters: [{name: "Landing Page", type: "relation", condition: "contains", value: landingPageData.id}],
         filter_condition: "and",
         sorts: [],
     })
@@ -44,7 +44,7 @@ export async function fetchLandingPageData():Promise<LandingPageProps> {
     const featureSectionResults = await queryAllNotionDatabase({
         apiToken: process.env.NOTION_API_TOKEN!,
         database_id: process.env.FEATURE_DATABASE_ID!,
-        filters: [{name: "SaaS Landing Page", type: "relation", condition: "contains", value: landingPageData.id}],
+        filters: [{name: "Landing Page", type: "relation", condition: "contains", value: landingPageData.id}],
         filter_condition: "and",
         sorts: [],
     })
@@ -63,7 +63,7 @@ export async function fetchLandingPageData():Promise<LandingPageProps> {
     const testimonialSectionResults = await queryAllNotionDatabase({
         apiToken: process.env.NOTION_API_TOKEN!,
         database_id: process.env.TESTIMONIAL_DATABASE_ID!,
-        filters: [{name: "SaaS Landing Page", type: "relation", condition: "contains", value: landingPageData.id}],
+        filters: [{name: "Landing Page", type: "relation", condition: "contains", value: landingPageData.id}],
         filter_condition: "and",
         sorts: [],
     })
@@ -82,7 +82,7 @@ export async function fetchLandingPageData():Promise<LandingPageProps> {
     const pricingSectionResults = await queryAllNotionDatabase({
         apiToken: process.env.NOTION_API_TOKEN!,
         database_id: process.env.PRICING_DATABASE_ID!,  
-        filters: [{name: "SaaS Landing Page", type: "relation", condition: "contains", value: landingPageData.id}],
+        filters: [{name: "Landing Page", type: "relation", condition: "contains", value: landingPageData.id}],
         filter_condition: "and",
         sorts: [],
     })
@@ -104,7 +104,7 @@ export async function fetchLandingPageData():Promise<LandingPageProps> {
     const faqSectionResults = await queryAllNotionDatabase({
         apiToken: process.env.NOTION_API_TOKEN!,
         database_id: process.env.FAQ_DATABASE_ID!,
-        filters: [{name: "SaaS Landing Page", type: "relation", condition: "contains", value: landingPageData.id}],
+        filters: [{name: "Landing Page", type: "relation", condition: "contains", value: landingPageData.id}],
         filter_condition: "and",
         sorts: [],
     })
@@ -121,7 +121,7 @@ export async function fetchLandingPageData():Promise<LandingPageProps> {
     const footerSectionResults = await queryAllNotionDatabase({
         apiToken: process.env.NOTION_API_TOKEN!,
         database_id: process.env.FOOTER_DATABASE_ID!,
-        filters: [{name: "SaaS Landing Page", type: "relation", condition: "contains", value: landingPageData.id}],
+        filters: [{name: "Landing Page", type: "relation", condition: "contains", value: landingPageData.id}],
         filter_condition: "and",
         sorts: [],
     })

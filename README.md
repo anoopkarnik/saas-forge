@@ -1,191 +1,504 @@
-## Project layout and technology stack
+<div align="center">
 
-- **Monorepo toolchain**: Turborepo + pnpm workspaces.
-  - Root scripts delegate to Turbo: `build`, `dev`, `lint`.
-  - Workspaces are defined in `pnpm-workspace.yaml` (`apps/*`, `packages/*`).
-- **Primary app**: `apps/web` – Next.js 15 (App Router) SaaS frontend.
-  - Uses React 19, `@tanstack/react-query`, `@trpc/*`, `better-auth`, and a shared UI library.
-  - TRPC API is exposed via `app/api/trpc/[trpc]/route.ts` and consumed via React Query.
-  - Caching and rate-limiting rely on environment configuration (Upstash Redis, external webhooks, etc.).
-- **Shared packages** (under `packages/`):
-  - `@workspace/ui`: Design system and shared React components (shadcn/ui-based, MDX and Notion renderers, various visual effects). Next.js is configured to transpile this package (`apps/web/next.config.mjs`).
-  - `@workspace/auth`: Better Auth configuration and client helpers. Orchestrates Prisma-based persistence, social login providers, email flows, and user metadata.
-  - `@workspace/database`: Prisma-based Postgres client and schema. Exposes a singleton Prisma client via `src/client.ts` and includes Prisma schema + migration helpers.
-  - `@workspace/email`: Email delivery utilities using Resend + React Email templates for verification, password reset, support, and contacts.
-  - `@workspace/cms`: Notion data access layer and transformation utilities (wrapped and re-exported as `@workspace/cms/notion/...`). Used by the web app to fetch landing and documentation content.
-  - `@workspace/observability`: Centralized logging via Winston + Logtail. Used primarily by the CMS / Notion layer.
-  - `@workspace/eslint-config`, `@workspace/typescript-config`: Shared ESLint and TypeScript configs.
-- **CLI**: `scripts/cli.js` is exposed as the `saas-forge` binary when this repo is installed as a package. It clones this repo into a target directory, copies `apps/web/.env.example` to `.env`, optionally patches `NEXT_PUBLIC_THEME`, then runs `pnpm install`.
+# 🔥 SaaS Forge
 
-## High-level architecture and data flow
+### The Ultimate Production-Ready SaaS Boilerplate
 
-### Next.js app (`apps/web`)
+[![Version](https://img.shields.io/badge/version-0.3.0-blue.svg)](https://github.com/anoopkarnik/saas-forge)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
+[![Node Version](https://img.shields.io/badge/node-%3E%3D20-brightgreen)](https://nodejs.org)
+[![pnpm](https://img.shields.io/badge/pnpm-10.4.1-orange.svg)](https://pnpm.io)
 
-- **Routing and layouts**:
-  - Uses the App Router under `apps/web/app`.
-  - Authentication-related pages live under `app/(auth)/...` and integrate with the Better Auth client from `@workspace/auth`.
-  - Marketing / legal / documentation pages live under `app/landing`, `app/landing/doc/[docId]`, and `app/landing/legal/...`, with UI blocks in `apps/web/blocks` and `apps/web/components/landing`.
-- **TRPC layer** (`apps/web/trpc`):
-  - `init.ts` defines `createTRPCContext`, `createTRPCRouter`, and `baseProcedure`. Currently the context only exposes a stubbed `userId`; if you add auth-aware logic, extend this context first.
-  - `routers/_app.ts` aggregates feature routers:
-    - `landingRouter` – reads landing page content from Notion via the CMS package.
-    - `documentationRouter` – reads documentation structure and blocks from Notion via the CMS package, with optional Redis caching.
-    - `supportRouter` – proxies support, newsletter subscription, and chatbot messages to external n8n webhooks.
-  - `app/api/trpc/[trpc]/route.ts` wires the `appRouter` to Next.js API routes using `fetchRequestHandler` and the shared context.
-  - `trpc/query-client.ts` configures a shared React Query client with custom dehydration rules.
-  - `trpc/client.tsx` establishes the `TRPCReactProvider` that binds the TRPC client and React Query for client-side use.
-- **State and caching**:
-  - TRPC queries for landing/docs use a combination of Notion reads and Upstash Redis caching.
-  - `apps/web/server/redis.ts` exports a configured `Redis` client using `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN`.
-- **Middleware and access control** (`apps/web/middleware.ts`):
-  - Uses `better-auth` cookie cache via `getCookieCache` to determine session state.
-  - Defines `publicRoutes`, `authRoutes`, and an `apiAuthPrefix`:
-    - Public routes bypass auth checks.
-    - Auth routes redirect logged-in users to `/`.
-    - Non-public, non-auth routes require a session and redirect unauthenticated users to `/landing`.
-  - Also configures CORS headers for a specific list of allowed origins; matched routes are defined in the exported `config.matcher`.
+[Features](#-features) •
+[Quick Start](#-quick-start) •
+[Documentation](#-documentation) •
+[Tech Stack](#-tech-stack) •
+[Contributing](#-contributing)
 
-### CMS / Notion integration (`@workspace/cms`)
+</div>
 
-- **Purpose**: Provides a stable abstraction over the Notion API, handling pagination, filtering, sorting, and transformation of raw Notion responses into application-friendly objects.
-- **Key pieces**:
-  - `src/notion/database/queryDatabase.ts`:
-    - `queryDatabase` wraps `@notionhq/client` queries and logs requests + responses via the shared `logger` from `@workspace/observability/winston-logger`.
-    - `queryNotionDatabase` and `queryAllNotionDatabase` implement filtered and fully-paginated queries, mapping results through `modifyResult`.
-    - Filter/sort construction utilities (`constructFilterBody`, `constructSortBody`, `modifyFilter`, `modifySort`) convert high-level filter descriptors into Notion query payloads.
-  - `src/notion/page/createPage.ts`:
-    - `createPage` issues raw Notion page creation requests with logging.
-    - `createNotionPage` translates a higher-level `properties` array into Notion-compatible properties via `modifyProperty`, then returns a normalized result via `modifyResult`.
-  - Utility modules under `src/notion/utils` perform the low-level shape transformation between Notion’s nested JSON and your flatter domain structures (e.g., mapping rich text, relations, IDs, etc.).
-  - Tests in `packages/cms/testing/index.test.ts` validate the Notion abstraction using Vitest with a mocked `@notionhq/client`.
-- **Usage from the app**:
-  - `apps/web/lib/functions/fetchLandingPageDataFromNotion.ts` calls `queryAllNotionDatabase` with specific filters and database IDs to assemble strongly typed domain models for:
-    - Navbar, hero, feature, testimonial, pricing, FAQ, and footer sections.
-    - Legal pages (cancellation/refund, privacy, terms, contact) that reuse common landing-page properties.
-  - `apps/web/lib/functions/fetchDocumentationFromNotion.ts` uses `queryAllNotionDatabase` to locate the landing page and documentation entries, then returns a `DocumentationProps` structure.
-  - The TRPC routers (`landingProcedures.ts`, `docProcedures.ts`) wrap these functions with Redis-backed caching and input validation.
+---
 
-### Authentication, database, and email
+## 📖 Overview
 
-- **Database (`@workspace/database`)**:
-  - Prisma schema is in `packages/database/prisma/schema.prisma` targeting Postgres with the `user_schema` schema.
-  - The generated Prisma client is output to `packages/database/src/generated/prisma`, and a singleton `PrismaClient` instance is exported from `packages/database/src/client.ts`.
-  - This client is used by the auth package to persist users, accounts, sessions, and related data.
-- **Authentication (`@workspace/auth`)**:
-  - `src/better-auth/auth.ts` configures Better Auth with:
-    - Prisma adapter backed by `@workspace/database/client`.
-    - Plugins: OpenAPI and admin (with impersonation and session settings).
-    - Session configuration (TTL, update age, cookie cache).
-    - Additional user fields (e.g., `creditsUsed`, `creditsTotal`).
-    - Social providers (GitHub, Google, LinkedIn) configured via `AUTH_*` environment variables.
-    - Email/password flows with verification and password reset, delegating to email utilities.
-    - Email verification logic that checks whether a user signed up via social login and skips verification emails in that case.
-  - `src/better-auth/auth-client.ts` defines a `createAuthClient` instance (`authClient`) with an optional `baseURL` and exposes `signIn`, `signOut`, and `useSession` helpers for the frontend.
-- **Email (`@workspace/email`)**:
-  - `src/resend/index.ts` wraps the Resend SDK to send:
-    - Verification emails (using the `EmailVerification` React Email template).
-    - Reset password emails (using the `ResetPassword` template).
-    - Simple support emails and newsletter contact creation.
-  - Templates under `src/templates` define Tailwind-styled React Email components.
-  - Auth flows in `@workspace/auth` call these helpers directly, so any changes to email layout or sender/recipient behaviour should be made here.
+**SaaS Forge** is a production-ready, full-stack SaaS boilerplate built with modern technologies. Launch your SaaS product in days, not months. Built with scalability, performance, and developer experience in mind.
 
-### Observability
+### Why SaaS Forge?
 
-- **Logger (`@workspace/observability`)**:
-  - `src/winston-logger.ts` configures a Winston logger with:
-    - Console transport.
-    - Logtail transport (using `BETTERSTACK_TELEMETRY_SOURCE_TOKEN` and `BETTERSTACK_TELEMETRY_INGESTING_HOST`).
-  - Formats logs with timestamp + colorization and is used throughout the CMS / Notion layer for database and page operations.
+- ⚡ **Lightning Fast Setup** - Get up and running in minutes with automated CLI
+- 🏗️ **Production Ready** - Battle-tested architecture used in real products
+- 🎨 **Beautiful UI** - Pre-built components with shadcn/ui and Tailwind CSS
+- 🔐 **Enterprise Auth** - Complete authentication with social logins and email verification
+- 💳 **Payment Integration** - Built-in payment handling with webhooks
+- 📱 **Responsive Design** - Mobile-first approach with modern aesthetics
+- 🚀 **Optimized Performance** - Redis caching, React Query, and Next.js 15 optimizations
+- 🧪 **Type Safe** - End-to-end type safety with TypeScript and tRPC
+- 📦 **Monorepo Architecture** - Organized with Turborepo for scalability
+- 🎯 **Developer Experience** - Hot reload, ESLint, Prettier, and comprehensive tooling
 
-### UI / Design system (`@workspace/ui`)
+---
 
-- Centralized component library for the monorepo:
-  - `src/components/shadcn/*`: shadcn/ui primitives.
-  - `src/components/mdx/*`: MDX-specific components and helpers (e.g., headings, lists, table of contents, code blocks).
-  - `src/components/notion/*`: Renderers for Notion blocks and rich text.
-  - `src/components/aceternity/*` and `src/components/misc/*`: Visual/animated components shared across the app.
-- The README describes how to add new shadcn components so that they land in `packages/ui/src/components` and can be imported from `@workspace/ui`.
+## ✨ Features
 
-## Commands and workflows
+<table>
+<tr>
+<td width="50%">
 
-All commands below are intended to be run from the repository root unless otherwise noted.
+### 🔑 Authentication & Authorization
+- Email/Password authentication
+- Social logins (GitHub, Google, LinkedIn)
+- Email verification flows
+- Password reset functionality
+- Session management
+- Protected routes middleware
+- User impersonation (admin)
 
-### Installation and setup
+### 💰 Payments & Billing
+- Dodo Payments integration
+- Webhook handling
+- Subscription management
+- Usage-based billing support
+- Credit system
 
-- **Install dependencies** (respecting the configured package manager and Node engine):
-  - `pnpm install`
-- **Environment configuration**:
-  - Copy `apps/web/.env.example` to `apps/web/.env` and fill in the required environment variables (Notion API credentials, Redis, auth providers, Resend, n8n webhook URLs, etc.).
-  - The `saas-forge` CLI (`scripts/cli.js`) performs this copy and can optionally set `NEXT_PUBLIC_THEME` when used from a fresh clone.
+</td>
+<td width="50%">
 
-### Running the app
+### 🎨 UI/UX Components
+- 50+ pre-built shadcn/ui components
+- Notion-style block renderer
+- MDX support for documentation
+- Dark mode support
+- Animated components (Aceternity)
+- Responsive design system
+- Loading states & error boundaries
 
-- **Start all dev tasks via Turbo**:
-  - `pnpm dev`
-- **Run only the web app dev server**:
-  - `pnpm --filter web dev`
-- **Build the entire workspace**:
-  - `pnpm build`
-- **Build only the web app**:
-  - `pnpm --filter web build`
+### 🛠️ Developer Tools
+- tRPC for type-safe APIs
+- React Query for data fetching
+- Prisma ORM with PostgreSQL
+- Redis caching (Upstash)
+- Winston + Logtail logging
+- Vitest for testing
 
-### Linting, formatting, and type-checking
+</td>
+</tr>
+</table>
 
-- **Lint all workspaces**:
-  - `pnpm lint`
-- **Lint only the web app**:
-  - `pnpm --filter web lint`
-- **Auto-fix lint issues in the web app**:
-  - `pnpm --filter web lint:fix`
-- **Format TypeScript/TSX/Markdown using Prettier**:
-  - `pnpm format`
-- **Type-check the Next.js app**:
-  - `pnpm --filter web typecheck`
+### 📄 Content Management
+- **Notion CMS Integration** - Manage content directly from Notion
+- Dynamic landing pages
+- Documentation system
+- Legal pages (Terms, Privacy, Refund Policy)
+- Newsletter & support forms
+- n8n webhook automation
+
+### 📊 Observability & Monitoring
+- Centralized logging with Winston
+- Logtail integration for log aggregation
+- Request/response logging for Notion API
+- Performance monitoring hooks
+
+---
+
+## 🚀 Quick Start
+
+### Using CLI (Recommended)
+
+```bash
+npx saas-forge my-saas-app
+cd my-saas-app
+pnpm install
+pnpm dev
+```
+
+### Manual Installation
+
+```bash
+# Clone the repository
+git clone https://github.com/anoopkarnik/saas-forge.git
+cd saas-forge
+
+# Install dependencies
+pnpm install
+
+# Copy environment variables
+cp apps/web/.env.example apps/web/.env
+
+# Generate Prisma client
+pnpm run generate
+
+# Run development server
+pnpm dev
+```
+
+Visit [http://localhost:3000](http://localhost:3000) to see your app! 🎉
+
+---
+
+## 📚 Documentation
+
+### Environment Configuration
+
+Create a [apps/web/.env](apps/web/.env) file with the following variables:
+
+```env
+# Database
+DATABASE_URL="postgresql://..."
+
+# Redis (Upstash)
+UPSTASH_REDIS_REST_URL="https://..."
+UPSTASH_REDIS_REST_TOKEN="..."
+
+# Better Auth
+BETTER_AUTH_SECRET="..."
+BETTER_AUTH_URL="http://localhost:3000"
+
+# OAuth Providers
+AUTH_GITHUB_ID="..."
+AUTH_GITHUB_SECRET="..."
+AUTH_GOOGLE_ID="..."
+AUTH_GOOGLE_SECRET="..."
+AUTH_LINKEDIN_ID="..."
+AUTH_LINKEDIN_SECRET="..."
+
+# Email (Resend)
+RESEND_API_KEY="..."
+
+# Notion CMS
+NOTION_API_KEY="..."
+LANDING_DATABASE_ID="..."
+DOCUMENTATION_DATABASE_ID="..."
+
+# Payments (Dodo)
+DODO_API_KEY="..."
+DODO_WEBHOOK_SECRET="..."
+
+# Observability
+BETTERSTACK_TELEMETRY_SOURCE_TOKEN="..."
+BETTERSTACK_TELEMETRY_INGESTING_HOST="..."
+
+# Webhooks (n8n)
+N8N_SUPPORT_WEBHOOK="..."
+N8N_NEWSLETTER_WEBHOOK="..."
+N8N_CHATBOT_WEBHOOK="..."
+```
+
+See [apps/web/.env.example](apps/web/.env.example) for a complete list.
+
+---
+
+## 🏗️ Tech Stack
+
+<table>
+<tr>
+<td width="50%">
+
+### Frontend
+- **Framework**: Next.js 15 (App Router)
+- **Language**: TypeScript 5.7
+- **UI Library**: React 19
+- **Styling**: Tailwind CSS 4.x
+- **Components**: shadcn/ui
+- **Animations**: Framer Motion
+- **Forms**: React Hook Form + Zod
+- **State**: React Query + tRPC
+
+</td>
+<td width="50%">
+
+### Backend
+- **API**: tRPC (Type-safe)
+- **Database**: PostgreSQL + Prisma
+- **Caching**: Redis (Upstash)
+- **Auth**: Better Auth
+- **Email**: Resend + React Email
+- **Payments**: Dodo Payments
+- **CMS**: Notion API
+- **Logging**: Winston + Logtail
+
+</td>
+</tr>
+</table>
+
+### Tooling & DevOps
+- **Monorepo**: Turborepo + pnpm workspaces
+- **Testing**: Vitest
+- **Linting**: ESLint 9 + Prettier
+- **CI/CD**: GitHub Actions
+- **Deployment**: Vercel (recommended)
+
+---
+
+## 📦 Project Structure
+
+```
+saas-forge/
+├── apps/
+│   └── web/                    # Main Next.js application
+│       ├── app/                # App router pages
+│       │   ├── (auth)/        # Authentication pages
+│       │   ├── (home)/        # Protected home pages
+│       │   ├── landing/       # Public landing pages
+│       │   └── api/           # API routes
+│       ├── blocks/            # Page-level components
+│       ├── components/        # Feature components
+│       ├── lib/               # Utility functions
+│       ├── server/            # Server-side utilities
+│       └── trpc/              # tRPC configuration
+│
+├── packages/
+│   ├── ui/                    # Shared UI components
+│   ├── auth/                  # Authentication logic
+│   ├── database/              # Prisma schema & client
+│   ├── email/                 # Email templates
+│   ├── cms/                   # Notion CMS integration
+│   ├── observability/         # Logging utilities
+│   ├── eslint-config/         # Shared ESLint config
+│   └── typescript-config/     # Shared TS config
+│
+├── scripts/
+│   └── cli.js                 # CLI for project scaffolding
+│
+└── templates/
+    └── saas-boilerplate/      # Template for new projects
+```
+
+---
+
+## 🎯 Commands
+
+### Development
+
+```bash
+# Start all workspaces in dev mode
+pnpm dev
+
+# Start only web app
+pnpm --filter web dev
+
+# Build all workspaces
+pnpm build
+
+# Build only web app
+pnpm --filter web build
+```
+
+### Code Quality
+
+```bash
+# Lint all workspaces
+pnpm lint
+
+# Lint with auto-fix
+pnpm --filter web lint:fix
+
+# Format code with Prettier
+pnpm format
+
+# Type check
+pnpm --filter web typecheck
+```
+
+### Database
+
+```bash
+# Generate Prisma client
+pnpm --filter @workspace/database postgres:generate
+
+# Run migrations
+pnpm --filter @workspace/database postgres:migrate
+
+# Reset database (⚠️ destroys data)
+pnpm --filter @workspace/database postgres:reset
+```
 
 ### Testing
 
-Currently, the main automated tests live in the CMS / Notion integration.
+```bash
+# Run all tests
+pnpm --filter @workspace/cms test
 
-- **Run all CMS tests**:
-  - `pnpm --filter @workspace/cms test`
-- **Run a single CMS test file** (Vitest passes additional args through to the test runner):
-  - `pnpm --filter @workspace/cms test -- testing/index.test.ts`
+# Run specific test file
+pnpm --filter @workspace/cms test -- testing/index.test.ts
+```
 
-### Database and Prisma utilities
+---
 
-From the repo root, using pnpm filters:
+## 🎨 Adding UI Components
 
-- **Generate Prisma client for the database package**:
-  - `pnpm --filter @workspace/database postgres:generate`
-- **Apply local dev migrations**:
-  - `pnpm --filter @workspace/database postgres:migrate`
-- **Reset the dev database (drops data)**:
-  - `pnpm --filter @workspace/database postgres:reset`
+SaaS Forge uses shadcn/ui for components. To add a new component:
 
-### Notion-driven content
+```bash
+# Add a component (e.g., button)
+pnpm dlx shadcn@latest add button -c apps/web
 
-- The landing page, documentation, and legal content are all driven from Notion databases whose IDs and filters are specified via environment variables (e.g., `LANDING_DATABASE_ID`, `HERO_DATABASE_ID`, `DOCUMENTATION_DATABASE_ID`, etc.).
-- The recommended way to change content structure is:
-  1. Update Notion databases and properties.
-  2. Adjust the query and mapping logic in `apps/web/lib/functions/fetchLandingPageDataFromNotion.ts` and/or `apps/web/lib/functions/fetchDocumentationFromNotion.ts`.
-  3. If necessary, extend the type definitions in `apps/web/lib/ts-types/*` and corresponding UI components in `apps/web/blocks` and `@workspace/ui`.
+# Import in your code
+import { Button } from "@workspace/ui/components/button"
+```
 
-### Adding UI components via shadcn
+Components are automatically placed in [packages/ui/src/components](packages/ui/src/components) and can be used across all apps.
 
-- As noted in `README.md`, to add a new shadcn component into the shared UI package:
-  - From the repo root, run (example for `button`):
-    - `pnpm dlx shadcn@latest add button -c apps/web`
-  - The generated component will be placed in `packages/ui/src/components`, and you can then import it in the app as:
-    - `import { Button } from "@workspace/ui/components/button"`.
+---
 
-## How future Warp agents should approach changes
+## 🔧 Customization
 
-- **For backend/data changes**:
-  - Prefer implementing Notion or DB-related logic in the shared packages (`@workspace/cms`, `@workspace/database`, `@workspace/auth`, `@workspace/email`) instead of directly in `apps/web`.
-  - Expose new behaviour via TRPC routers under `apps/web/trpc/routers`, then consume them from React components using the TRPC React/Query hooks.
-- **For frontend/UX changes**:
-  - Reuse and extend components in `@workspace/ui` where possible so they can serve multiple apps if more are added to the monorepo.
-  - Keep marketing/landing-specific composition in `apps/web/blocks` and `apps/web/components/landing`, and avoid coupling them directly to low-level Notion logic.
-- **For auth and middleware**:
-  - Changes to session rules, route protection, or CORS should primarily happen in `apps/web/middleware.ts` and `@workspace/auth/src/better-auth/auth.ts`.
-  - If you need per-request user context inside TRPC, extend `createTRPCContext` in `apps/web/trpc/init.ts` and thread that through procedures instead of reading cookies or headers directly from routers.
+### Theming
+
+Modify theme colors in [apps/web/app/globals.css](apps/web/app/globals.css):
+
+```css
+@layer base {
+  :root {
+    --primary: 222 47% 11%;
+    --primary-foreground: 210 40% 98%;
+    /* ... more variables */
+  }
+}
+```
+
+### Content Management
+
+All content is managed through Notion databases:
+
+1. **Landing Page**: Configure in Notion database specified by `LANDING_DATABASE_ID`
+2. **Documentation**: Configure in Notion database specified by `DOCUMENTATION_DATABASE_ID`
+3. **Legal Pages**: Managed through the same landing database with filters
+
+Update content in Notion, and it reflects automatically on your site!
+
+### Authentication Providers
+
+Add/remove providers in [packages/auth/src/better-auth/auth.ts](packages/auth/src/better-auth/auth.ts):
+
+```typescript
+socialProviders: {
+  github: {
+    clientId: process.env.AUTH_GITHUB_ID!,
+    clientSecret: process.env.AUTH_GITHUB_SECRET!,
+  },
+  // Add more providers...
+}
+```
+
+---
+
+## 🚢 Deployment
+
+### Vercel (Recommended)
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/anoopkarnik/saas-forge)
+
+1. Push your code to GitHub
+2. Import project in Vercel
+3. Add environment variables
+4. Deploy!
+
+### Other Platforms
+
+SaaS Forge works with any platform that supports Next.js:
+
+- **Railway**: [Railway.app](https://railway.app)
+- **Fly.io**: [Fly.io](https://fly.io)
+- **AWS Amplify**: [AWS Amplify](https://aws.amazon.com/amplify/)
+- **Digital Ocean**: [App Platform](https://www.digitalocean.com/products/app-platform)
+
+---
+
+## 🤝 Contributing
+
+We love contributions! Please read our [Contributing Guide](CONTRIBUTING.md) before submitting a Pull Request.
+
+### Development Workflow
+
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/amazing-feature`
+3. Make your changes
+4. Run tests: `pnpm test`
+5. Commit changes: `git commit -m 'Add amazing feature'`
+6. Push to branch: `git push origin feature/amazing-feature`
+7. Open a Pull Request
+
+### Code Standards
+
+- Write TypeScript with strict mode
+- Follow ESLint rules
+- Add tests for new features
+- Update documentation
+- Keep components small and focused
+- Use semantic commit messages
+
+---
+
+## 📝 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+## 🙏 Acknowledgments
+
+Built with amazing open-source projects:
+
+- [Next.js](https://nextjs.org) - The React Framework
+- [shadcn/ui](https://ui.shadcn.com) - Beautiful components
+- [Turborepo](https://turbo.build) - Monorepo tooling
+- [tRPC](https://trpc.io) - Type-safe APIs
+- [Prisma](https://prisma.io) - Next-gen ORM
+- [Better Auth](https://better-auth.com) - Authentication solution
+- [Notion](https://notion.so) - Content management
+
+---
+
+## 💬 Support & Community
+
+- 📧 **Email**: [support@saasforge.dev](mailto:support@saasforge.dev)
+- 🐛 **Issues**: [GitHub Issues](https://github.com/anoopkarnik/saas-forge/issues)
+- 💡 **Discussions**: [GitHub Discussions](https://github.com/anoopkarnik/saas-forge/discussions)
+- 🐦 **Twitter**: [@anoopkarnik](https://twitter.com/anoopkarnik)
+
+---
+
+## 🗺️ Roadmap
+
+### Current Focus
+- ✅ Core authentication flows
+- ✅ Payment integration
+- ✅ Notion CMS integration
+- ✅ Monorepo architecture
+
+### Upcoming Features
+- 🔄 Multi-tenancy support
+- 🔄 Advanced RBAC (Role-Based Access Control)
+- 🔄 Team collaboration features
+- 🔄 API key management
+- 🔄 Advanced analytics dashboard
+- 🔄 Email templates library
+- 🔄 Mobile app support (React Native)
+- 🔄 GraphQL support
+- 🔄 i18n (Internationalization)
+- 🔄 A/B testing framework
+
+See our [GitHub Projects](https://github.com/anoopkarnik/saas-forge/projects) for detailed progress.
+
+---
+
+## ⭐ Show Your Support
+
+If you find SaaS Forge helpful, please consider:
+
+- ⭐ Starring the repository
+- 🐛 Reporting bugs
+- 💡 Suggesting new features
+- 📖 Improving documentation
+- 🔀 Submitting pull requests
+
+---
+
+<div align="center">
+
+### Built with ❤️ by [Anoop Karnik](https://github.com/anoopkarnik)
+
+**[⬆ back to top](#-saas-forge)**
+
+</div>

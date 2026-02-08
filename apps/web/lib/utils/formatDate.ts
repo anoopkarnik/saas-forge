@@ -1,7 +1,7 @@
-export function formatDate (date:Date){
+export function formatDate (date: Date | string | number){
   return new Intl.DateTimeFormat("en-US",{
     year: "numeric",
     month: "long",
     day: "numeric"
-  }).format(date)
+  }).format(new Date(date))
 }

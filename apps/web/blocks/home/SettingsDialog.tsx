@@ -1,7 +1,8 @@
 "use client"
 
 import React, { useEffect, useState } from "react"
-import { BadgeCheck,Bell,  CircleUserIcon,  Globe,Link, Lock,  RadioIcon,  ReceiptIcon,  Settings, 
+import {
+  BadgeCheck, Bell, CircleUserIcon, Globe, Link, Lock, RadioIcon, ReceiptIcon, Settings,
 } from "lucide-react"
 
 import {
@@ -27,10 +28,11 @@ import { cn } from "@workspace/ui/lib/utils"
 import { Button } from "@workspace/ui/components/shadcn/button"
 import MyAccountSettings from "./MyAccountSettings"
 import SessionSettings from "./SessionSettings"
+import PlansBilling from "./PlansBilling"
 
 const data = {
   nav: [
-    { name: "My Account", icon: CircleUserIcon},
+    { name: "My Account", icon: CircleUserIcon },
     { name: "Sessions", icon: RadioIcon },
     { name: "Plans & Billing", icon: ReceiptIcon },
     // { name: "Notifications", icon: Bell },
@@ -40,14 +42,15 @@ const data = {
 }
 
 
-export function SettingsDialog({children, open: controlledOpen, onOpenChange: setControlledOpen,
-  openedTab}: {children?: React.ReactNode,
-  open?: boolean,
-  onOpenChange?: (open: boolean) => void,
-  openedTab?: string,
-}) {
-  
-    const { data:session,status } = useSession();
+export function SettingsDialog({ children, open: controlledOpen, onOpenChange: setControlledOpen,
+  openedTab }: {
+    children?: React.ReactNode,
+    open?: boolean,
+    onOpenChange?: (open: boolean) => void,
+    openedTab?: string,
+  }) {
+
+  const { data: session, status } = useSession();
 
 
   const [internalOpen, setInternalOpen] = React.useState(false)
@@ -64,60 +67,65 @@ export function SettingsDialog({children, open: controlledOpen, onOpenChange: se
     <Dialog open={isOpen} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         {children || (
-        <>
+          <>
             <BadgeCheck />
             Account
-        </>)}
+          </>)}
       </DialogTrigger>
-      <DialogContent className="overflow-hidden p-0 max-h-[80%] max-w-[80%] min-w-[1200px]">
+      <DialogContent className="overflow-hidden p-0 h-[85vh] w-full max-w-5xl sm:max-w-5xl md:rounded-2xl border-none shadow-2xl bg-card">
         <DialogTitle className="sr-only">Settings</DialogTitle>
         <DialogDescription className="sr-only">
           Customize your settings here.
         </DialogDescription>
-        <SidebarProvider>
-          <Sidebar collapsible="none" className="hidden md:flex bg-secondary">
-            <SidebarContent>
+        <SidebarProvider className="w-full h-full min-h-0">
+          <Sidebar collapsible="none" className="min-w-[280px] hidden md:flex bg-muted/30 border-r border-border/50 h-full">
+            <SidebarContent className="p-4">
               <SidebarGroup>
+                <div className="flex items-center gap-3 px-2 py-4 mb-4 border-b border-border/40">
+                  <Avatar className="h-10 w-10 rounded-full border border-border/50 shadow-sm">
+                    <AvatarImage src={session?.user?.image ?? ''} alt={session?.user?.name ?? ''} className="object-cover" />
+                    <AvatarFallback className="rounded-full bg-secondary text-primary font-medium">{session?.user?.name ? session?.user?.name[0]?.toUpperCase() : 'U'}</AvatarFallback>
+                  </Avatar>
+                  <div className="grid flex-1 text-left">
+                    <span className="truncate font-semibold text-sm text-foreground">{session?.user?.name}</span>
+                    <span className="truncate text-xs text-muted-foreground">{session?.user?.email}</span>
+                  </div>
+                </div>
                 <SidebarGroupContent>
-                  <SidebarMenu >
-                    <div className="flex items-center space-x-2 ">
-                      <Avatar className="h-8 w-8 rounded-lg">
-                        <AvatarImage src={session?.user?.image ?? ''} alt={session?.user?.name ?? ''} className="object-cover"/>
-                        <AvatarFallback className="rounded-lg bg-sidebar">{session?.user?.name?session?.user?.name[0]?.toUpperCase() :'U'}</AvatarFallback>
-                      </Avatar>
-                      <div className="grid flex-1 text-left text-sm leading-tight">
-                        <span className="truncate font-semibold">{session?.user?.name}</span>
-                        <span className="truncate text-xs opacity-50">{session?.user?.email}</span>
-                      </div>
-                    </div>
-                    <div className="flex flex-col items-start my-2 gap-1 w-full">
-                      {data.nav.map((item) => (
-                        <SidebarMenuItem key={item.name}>
-                          <SidebarMenuButton
-                            asChild
-                            className={cn("cursor-pointer hover:bg-sidebar", item.name === currentOpenedTab && "bg-sidebar")}
-                          >
-                            <Button variant={'secondary'} className="cursor-pointer shadow-none" onClick={()=>setCurrentOpenedTab(item.name)}>
-                              <item.icon />
-                              <span>{item.name}</span>
-                            </Button>
-                          </SidebarMenuButton>
-                        </SidebarMenuItem>
-                      ))}
-                    </div>
+                  <SidebarMenu className="gap-2">
+                    {data.nav.map((item) => (
+                      <SidebarMenuItem key={item.name}>
+                        <SidebarMenuButton
+                          asChild
+                          isActive={item.name === currentOpenedTab}
+                          onClick={() => setCurrentOpenedTab(item.name)}
+                          className={cn(
+                            "flex items-center gap-3 px-3 py-2 h-10 rounded-lg transition-all duration-200 cursor-pointer font-medium",
+                            item.name === currentOpenedTab
+                              ? "bg-primary/10 text-primary shadow-sm hover:bg-primary/15"
+                              : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                          )}
+                        >
+                          <div className="flex items-center gap-3 w-full">
+                            <item.icon className={cn("h-4 w-4", item.name === currentOpenedTab ? "text-primary" : "text-muted-foreground/70")} />
+                            <span>{item.name}</span>
+                          </div>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    ))}
                   </SidebarMenu>
                 </SidebarGroupContent>
               </SidebarGroup>
             </SidebarContent>
           </Sidebar>
-          <main className="flex flex-1 flex-col overflow-auto h-[90vh] bg-sidebar">
-            {currentOpenedTab === "My Account" && 
-            <MyAccountSettings/>}
-            {currentOpenedTab === "Sessions" && 
-            <SessionSettings />}
-            {/* {currentOpenedTab === "Plans & Billing" &&
-            <PlansBilling pricingList={pricingList} supportEmailAddress={supportEmailAddress || ''}/>} */}
-            
+          <main className="flex flex-1 flex-col overflow-auto h-full bg-background/50">
+            {currentOpenedTab === "My Account" &&
+              <MyAccountSettings />}
+            {currentOpenedTab === "Sessions" &&
+              <SessionSettings />}
+            {currentOpenedTab === "Plans & Billing" &&
+              <PlansBilling />}
+
           </main>
         </SidebarProvider>
       </DialogContent>

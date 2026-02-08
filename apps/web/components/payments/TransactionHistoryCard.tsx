@@ -1,65 +1,76 @@
-import { Card, CardContent, CardDescription, CardTitle } from "@workspace/ui/components/shadcn/card";
-import { ArrowLeftRightIcon, Info } from "lucide-react";
-import { auth } from "@workspace/auth/better-auth/auth";
-import { headers } from "next/headers";
-import db from "@workspace/database/client";
+"use client";
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@workspace/ui/components/shadcn/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@workspace/ui/components/shadcn/table";
+import { Badge } from "@workspace/ui/components/shadcn/badge";
+import { FileText, History, Loader2 } from "lucide-react";
 import InvoiceBtn from "./InvoiceBtn";
 import { formatDate } from "@/lib/utils/formatDate";
 import { formatAmount } from "@/lib/utils/formatAmount";
-import { Key } from "react";
+import { useTRPC } from "@/trpc/client";
+import { useQuery } from "@tanstack/react-query";
 
-export async function TransactionHistoryCard() {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-  if (!session?.user?.id) {
-    throw new Error("User not authenticated");
-  }
+export function TransactionHistoryCard() {
+  const trpc = useTRPC();
+  const { data: purchases, isLoading } = useQuery(
+    trpc.billing.getTransactions.queryOptions()
+  );
 
-  const purchases = await db.transaction.findMany({
-    where: {
-      userId: session.user.id
-    },
-    orderBy: {
-      date: "desc"
-    }
-  })
   return (
-    <Card className='bg-sidebar p-4'>
-      <CardTitle className='text-2xl font-bold flex flex-col gap-2'>
-        <div className="flex items-center gap-2">
-          Transaction History
+    <Card className='shadow-sm border-border/60'>
+      <CardHeader>
+        <div className="flex items-center gap-2 mb-1">
+          <History className="h-5 w-5 text-muted-foreground" />
+          <CardTitle className='text-xl font-bold'>Transaction History</CardTitle>
         </div>
-        <div className="flex items-center gap-2 text-sm opacity-50">
-          <Info className="h-4 w-4" />
-          <p className="text-left">View your transaction history and download invoices</p>
-        </div>
-      </CardTitle>
+        <CardDescription>
+          View your purchase history and download invoices for your records.
+        </CardDescription>
+      </CardHeader>
 
-      <CardContent className='space-y-4'>
-        {purchases.length === 0 && (
-          <p className='text-muted-foreground text-center'>
-            No transactions found
-          </p>
-        )}
-        {purchases.map((purchase: { id: Key | null | undefined; date: Date; amount: number; currency: string; eventId: string; }, index: number) => (
-          <div key={purchase.id} className='flex justify-between items-center py-3 border-b last:border-b-0'>
-            <div className='flex items-center gap-2 '>
-              <div>
-                {index + 1})
-              </div>
-              <div >
-                <p className='font-medium'> {formatDate(purchase.date)}</p>
-              </div>
-            </div>
-            <div className='text-right flex items-center gap-4'>
-              <p className='font-medium'>
-                {formatAmount(purchase.amount, purchase.currency)}
-              </p>
-              <InvoiceBtn id={purchase.eventId} />
-            </div>
+      <CardContent>
+        {isLoading ? (
+          <div className="flex justify-center p-8">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
-        ))}
+        ) : purchases?.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 text-center bg-muted/20 rounded-lg border border-dashed border-border/50">
+            <FileText className="h-10 w-10 text-muted-foreground/30 mb-3" />
+            <p className='text-muted-foreground font-medium'>No transactions found</p>
+            <p className='text-xs text-muted-foreground/70 mt-1'>Purchases you make will appear here.</p>
+          </div>
+        ) : (
+          <div className="rounded-md border overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/50">
+                  <TableHead className="w-[100px]">#</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Description</TableHead>
+                  <TableHead>Amount</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Invoice</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {purchases?.map((purchase, index) => (
+                  <TableRow key={purchase.id}>
+                    <TableCell className="font-medium text-muted-foreground">{index + 1}</TableCell>
+                    <TableCell>{formatDate(purchase.date)}</TableCell>
+                    <TableCell className="text-muted-foreground">Credit Purchase</TableCell>
+                    <TableCell className="font-semibold">{formatAmount(purchase.amount, purchase.currency)}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-200 dark:border-green-800">Paid</Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <InvoiceBtn id={purchase.eventId} />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
       </CardContent>
     </Card>
   )

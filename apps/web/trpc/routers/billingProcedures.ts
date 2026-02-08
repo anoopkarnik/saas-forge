@@ -85,4 +85,17 @@ export const billingRouter = createTRPCRouter({
 
       return { checkoutUrl: session.checkout_url };
     }),
+    getTransactions: protectedProcedure
+    .query(async ({ ctx }) => {
+      const userId = ctx.session.user.id;
+      const transactions = await db.transaction.findMany({
+        where: {
+          userId: userId,
+        },
+        orderBy: {
+          date: "desc",
+        },
+      });
+      return transactions;
+    }),
 });

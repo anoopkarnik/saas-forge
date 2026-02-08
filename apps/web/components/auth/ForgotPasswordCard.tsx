@@ -40,10 +40,12 @@ const ForgotPasswordCard = ({ errorMessage, successMessage, resetFunction }
   const router = useRouter();
 
   return (
-    <Card className='w-[400px] shadow-xl shadow-white/20'>
-      <CardHeader>
-        <div className='text-4xl font-bold text-center'>Forgot Password</div>
-        <div className='text-md font-extralight text-center'>Send Reset Password Mail</div>
+    <Card className='w-full max-w-md border-border/50 shadow-xl bg-card/50 backdrop-blur-sm'>
+      <CardHeader className="space-y-1 pb-6">
+        <h2 className='text-3xl font-bold tracking-tight text-center'>Forgot Password</h2>
+        <p className='text-sm text-muted-foreground text-center'>
+          Enter your email to reset your password
+        </p>
       </CardHeader>
       <CardContent>
         <Form {...form}>
@@ -53,7 +55,7 @@ const ForgotPasswordCard = ({ errorMessage, successMessage, resetFunction }
                 <FormItem>
                   <FormLabel>Email</FormLabel>
                   <FormControl>
-                    <Input type="email" placeholder='example@gmail.com'  {...field} />
+                    <Input type="email" placeholder='name@example.com' className="h-10" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -61,16 +63,16 @@ const ForgotPasswordCard = ({ errorMessage, successMessage, resetFunction }
             </div>
             {errorMessage && <FormResult type="error" message={JSON.stringify(errorMessage)} />}
             {successMessage && <FormResult type="success" message={JSON.stringify(successMessage)} />}
-            <LoadingButton variant="default" pending={pending}>
-              Send Email
+            <LoadingButton variant="default" className="w-full h-10 font-medium" pending={pending}>
+              Send Reset Link
             </LoadingButton>
           </form>
         </Form>
       </CardContent>
-      <CardFooter className='flex justify-center'>
+      <CardFooter className='flex justify-center pt-2'>
         <Button onClick={() => router.push('/sign-in')} variant={'ghost'}
-          className='text-sm text-center  cursor-pointer hover:underline'>
-          Go to Login Page
+          className='text-sm text-center font-normal hover:bg-muted'>
+          Back to Login
         </Button>
       </CardFooter>
     </Card>

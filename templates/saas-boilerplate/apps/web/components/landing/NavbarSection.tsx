@@ -21,16 +21,16 @@ import Image from 'next/image';
 import { NavbarSectionProps } from "@/lib/ts-types/landing";
 import { useRouter } from "next/navigation";
 
-const NavbarSection = ({navbarSection}: {navbarSection: NavbarSectionProps}) => {
+const NavbarSection = ({ navbarSection }: { navbarSection: NavbarSectionProps }) => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
-  const {theme} = useTheme();
+  const { theme } = useTheme();
   const [starCount, setStarCount] = useState<number>(0);
   const router = useRouter()
 
   useEffect(() => {
     const fetchStarCount = async () => {
       try {
-        const response = await fetch("https://api.github.com/repos/"+navbarSection.githubUsername+"/"+ navbarSection.githubRepositoryName);
+        const response = await fetch("https://api.github.com/repos/" + navbarSection.githubUsername + "/" + navbarSection.githubRepositoryName);
         if (response.ok) {
           const data = await response.json();
           setStarCount(data.stargazers_count);
@@ -41,11 +41,11 @@ const NavbarSection = ({navbarSection}: {navbarSection: NavbarSectionProps}) => 
         console.log("Error fetching star count:", error);
       }
     };
-    if(navbarSection.githubLink){
+    if (navbarSection.githubLink) {
       fetchStarCount();
     }
 
-  }, [theme,navbarSection.githubLink]);
+  }, [theme, navbarSection.githubLink]);
   return (
     <header className="sticky border-b-[1px] top-0 z-40 w-full bg-background">
       <NavigationMenu className="mx-auto">
@@ -56,14 +56,20 @@ const NavbarSection = ({navbarSection}: {navbarSection: NavbarSectionProps}) => 
               href="/"
               className="ml-2 font-bold text-xl flex items-center gap-2"
             >
-              {theme === "dark" ?
-               <Image src={navbarSection.darkLogo} alt={navbarSection.title} width={30} height={30} /> : 
-               <Image src={navbarSection.logo} alt={navbarSection.title} width={30} height={30} />}
-               <div className="hidden lg:flex">{navbarSection.title}</div>
+              {theme === "dark" ? (
+                navbarSection.darkLogo ? (
+                  <Image src={navbarSection.darkLogo} alt={navbarSection.title} width={30} height={30} />
+                ) : <span className="text-xl">🚀</span>
+              ) : (
+                navbarSection.logo ? (
+                  <Image src={navbarSection.logo} alt={navbarSection.title} width={30} height={30} />
+                ) : <span className="text-xl">🚀</span>
+              )}
+              <div className="hidden lg:flex">{navbarSection.title}</div>
             </a>
           </NavigationMenuItem>
 
-          
+
           <span className="flex md:hidden">
 
             <Sheet
@@ -71,7 +77,7 @@ const NavbarSection = ({navbarSection}: {navbarSection: NavbarSectionProps}) => 
               onOpenChange={setIsOpen}
             >
               <SheetTrigger className="px-2">
-                <MenuIcon  onClick={() => setIsOpen(true)} className="flex md:hidden h-5 w-5" />
+                <MenuIcon onClick={() => setIsOpen(true)} className="flex md:hidden h-5 w-5" />
               </SheetTrigger>
 
               <SheetContent side={"left"}>
@@ -81,25 +87,25 @@ const NavbarSection = ({navbarSection}: {navbarSection: NavbarSectionProps}) => 
                   </SheetTitle>
                 </SheetHeader>
                 <nav className="flex flex-col justify-center items-center gap-2 mt-4">
-                  
-                    <a
-                      rel="noreferrer noopener" href={"#features"} onClick={() => setIsOpen(false)}
-                      className={buttonVariants({ variant: "ghost" })}
-                    >
-                      Features
-                    </a>
-                    <a
-                      rel="noreferrer noopener" href={"#testimonials"} onClick={() => setIsOpen(false)}
-                      className={buttonVariants({ variant: "ghost" })}
-                    >
-                      Testimonials
-                    </a>
-                    <a
-                      rel="noreferrer noopener" href={"#faq"} onClick={() => setIsOpen(false)}
-                      className={buttonVariants({ variant: "ghost" })}
-                    >
-                      FAQ
-                    </a>
+
+                  <a
+                    rel="noreferrer noopener" href={"#features"} onClick={() => setIsOpen(false)}
+                    className={buttonVariants({ variant: "ghost" })}
+                  >
+                    Features
+                  </a>
+                  <a
+                    rel="noreferrer noopener" href={"#testimonials"} onClick={() => setIsOpen(false)}
+                    className={buttonVariants({ variant: "ghost" })}
+                  >
+                    Testimonials
+                  </a>
+                  <a
+                    rel="noreferrer noopener" href={"#faq"} onClick={() => setIsOpen(false)}
+                    className={buttonVariants({ variant: "ghost" })}
+                  >
+                    FAQ
+                  </a>
 
                   <a
                     rel="noreferrer noopener"
@@ -109,7 +115,7 @@ const NavbarSection = ({navbarSection}: {navbarSection: NavbarSectionProps}) => 
                       variant: "secondary",
                     })}`}
                   >
-                      <GitHubLogoIcon className="mr-2 w-5 h-5" />
+                    <GitHubLogoIcon className="mr-2 w-5 h-5" />
 
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -128,24 +134,24 @@ const NavbarSection = ({navbarSection}: {navbarSection: NavbarSectionProps}) => 
 
           {/* desktop */}
           <nav className="hidden md:flex gap-2">
-              <a
-                rel="noreferrer noopener" href={"#features"} onClick={() => setIsOpen(false)}
-                className={buttonVariants({ variant: "ghost" })}
-              >
-                Features
-              </a>
-              <a
-                rel="noreferrer noopener" href={"#testimonials"} onClick={() => setIsOpen(false)}
-                className={buttonVariants({ variant: "ghost" })}
-              >
-                Testimonials
-              </a>
-              <a
-                rel="noreferrer noopener" href={"#faq"} onClick={() => setIsOpen(false)}
-                className={buttonVariants({ variant: "ghost" })}
-              >
-                FAQ
-              </a>
+            <a
+              rel="noreferrer noopener" href={"#features"} onClick={() => setIsOpen(false)}
+              className={buttonVariants({ variant: "ghost" })}
+            >
+              Features
+            </a>
+            <a
+              rel="noreferrer noopener" href={"#testimonials"} onClick={() => setIsOpen(false)}
+              className={buttonVariants({ variant: "ghost" })}
+            >
+              Testimonials
+            </a>
+            <a
+              rel="noreferrer noopener" href={"#faq"} onClick={() => setIsOpen(false)}
+              className={buttonVariants({ variant: "ghost" })}
+            >
+              FAQ
+            </a>
           </nav>
           <div className="flex items-center gap-2">
             <div className="hidden md:flex gap-2">
@@ -161,12 +167,12 @@ const NavbarSection = ({navbarSection}: {navbarSection: NavbarSectionProps}) => 
             </div>
             <Button
               className="flex items-center gap-1"
-                variant="default"
-                size="sm"
-                onClick={() => router.push("/sign-in")}
-              > 
-                <p className="text-sm">Login</p>
-              </Button>
+              variant="default"
+              size="sm"
+              onClick={() => router.push("/sign-in")}
+            >
+              <p className="text-sm">Login</p>
+            </Button>
           </div>
         </NavigationMenuList>
       </NavigationMenu>

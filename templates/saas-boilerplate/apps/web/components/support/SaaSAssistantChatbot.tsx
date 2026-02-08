@@ -27,7 +27,7 @@ const SaaSAssistantChatbot = () => {
 
   const trpc = useTRPC();
   const updateChat = useMutation(
-    trpc.support.chatWithSaaSAssistant.mutationOptions({ })
+    trpc.support.chatWithSaaSAssistant.mutationOptions({})
   )
   const formatMessage = (message: string): string => {
     return message
@@ -70,89 +70,100 @@ const SaaSAssistantChatbot = () => {
   };
 
   return (
-    <div className="flex flex-col gap-3 rounded-md bg-popover">
+    <div className="flex flex-col h-[500px] flex-1">
       {/* Header + description */}
-      <div className="space-y-1 px-1 border-b border-border pb-2">
-        <h3 className="text-sm font-semibold flex items-center gap-2">
-          <ChatBubbleIcon className="w-4 h-4" />
+      <div className="space-y-1.5 pb-4 border-b border-border/50">
+        <h3 className="text-lg font-semibold tracking-tight flex items-center gap-2">
+          <div className="p-1.5 bg-primary/10 rounded-lg">
+            <ChatBubbleIcon className="w-4 h-4 text-primary" />
+          </div>
           SaaS Assistant
         </h3>
-        <p className="text-xs text-muted-foreground">
-          Talk to an AI assistant trained on this SaaS platform.
-          Ask anything about the platform, how it works, features, etc.
+        <p className="text-xs text-muted-foreground leading-relaxed">
+          Ask anything about the platform, features, or how it works.
         </p>
       </div>
 
       {/* Chat window */}
-      <div className="text-foreground h-[380px] overflow-y-auto px-1 pb-2 flex flex-col gap-2 text-paragraph scrollbar scrollbar-track-secondary scrollbar-thumb-sidebar">
+      <div className="flex-1 overflow-y-auto py-4 flex flex-col gap-4 scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent pr-2">
         {messages.map((message, index) => (
           <div
             key={index}
-            className={`p-2 rounded-lg max-w-[80%] flex items-start gap-2 ${
-              message.role === "user"
-                ? "bg-sidebar-accent text-foreground self-start"
-                : "bg-sidebar-accent text-foreground self-end"
-            }`}
+            className={`flex items-end gap-2.5 max-w-[85%] ${message.role === "user" ? "self-end flex-row-reverse" : "self-start"
+              }`}
           >
-            {message.role === "user" &&  (
-              <Image
-                src={"/anoop.jpg"}
-                alt="User"
-                width={30}
-                height={30}
-                className="rounded-full"
-              />
+            {message.role === "user" ? (
+              <div className="w-8 h-8 rounded-full overflow-hidden shrink-0 border border-border/50 shadow-sm">
+                <Image
+                  src={"/anoop.jpg"}
+                  alt="User"
+                  width={32}
+                  height={32}
+                  className="object-cover w-full h-full"
+                />
+              </div>
+            ) : (
+              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0 border border-primary/20 shadow-sm">
+                <FaRobot className="w-4 h-4 text-primary" />
+              </div>
             )}
-            {message.role === "assistant" && (
-                <FaRobot size={25} className="text-foreground" />
-            )}
+
             <div
-              dangerouslySetInnerHTML={{
-                __html:
-                  message.role === "assistant"
-                    ? formatMessage(message.value)
-                    : message.value,
-              }}
-              className="py-1 pr-2 rounded-lg max-w-full"
-            ></div>
+              className={`px-4 py-2.5 rounded-2xl text-sm leading-relaxed shadow-sm ${message.role === "user"
+                  ? "bg-primary text-primary-foreground rounded-br-none"
+                  : "bg-muted/50 text-foreground border border-border/50 rounded-bl-none"
+                }`}
+            >
+              <div
+                dangerouslySetInnerHTML={{
+                  __html:
+                    message.role === "assistant"
+                      ? formatMessage(message.value)
+                      : message.value,
+                }}
+              />
+            </div>
           </div>
         ))}
 
-        <div className="text-xs opacity-50 self-end">
-          {waitingForReply && (
-            <div className="flex items-center gap-4">
-              <span className="text-xs">Assistant is typing (may take upto a minute)</span>
-              <Skeleton className="w-[140px] h-[24px] rounded-lg bg-primary text-primary" />
+        {waitingForReply && (
+          <div className="flex items-end gap-2.5 self-start max-w-[85%]">
+            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0 border border-primary/20 shadow-sm">
+              <FaRobot className="w-4 h-4 text-primary" />
             </div>
-          )}
-        </div>
+            <div className="bg-muted/50 px-4 py-3 rounded-2xl rounded-bl-none border border-border/50 flex items-center gap-1.5">
+              <div className="w-1.5 h-1.5 bg-primary/50 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+              <div className="w-1.5 h-1.5 bg-primary/50 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+              <div className="w-1.5 h-1.5 bg-primary/50 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Input + buttons */}
-    <div className="flex flex-col gap-2">
+      <div className="pt-2">
         <div
-            role="button"
-            tabIndex={0}
-            className="flex items-center rounded-xl bg-background border border-border shadow-sm 
-                    hover:shadow-md transition-shadow duration-200"
-            onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && sendMessage()}
+          className="flex items-end rounded-xl bg-muted/30 border border-border/50 shadow-sm focus-within:ring-1 focus-within:ring-ring focus-within:border-ring/50 transition-all duration-200 overflow-hidden"
+          onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && sendMessage()}
         >
-            <Textarea
-            className="flex-1 border-none bg-transparent px-4 py-3 resize-none min-h-[60px] max-h-[90px]
-                        focus-visible:ring-0 focus-visible:ring-offset-0"
+          <Textarea
+            className="flex-1 border-none bg-transparent px-4 py-3 resize-none min-h-[52px] max-h-[120px] 
+                        focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/70"
             value={userInput}
             onChange={(e) => setUserInput(e.target.value)}
-            placeholder="Ask something about Anoop’s portfolio…"
-            />
+            placeholder="Type your question..."
+          />
 
-            <Button
-                onClick={sendMessage}
-                className="m-0 px-6 rounded-none rounded-tr-lg border-0 min-h-[60px] max-h-[90px] pb-6 font-bold"
-            >
-                Send
-            </Button>
+          <Button
+            onClick={sendMessage}
+            size="icon"
+            className="h-9 w-9 mb-2 mr-2 rounded-lg shrink-0"
+            disabled={!userInput.trim() || waitingForReply}
+          >
+            <ChatBubbleIcon className="w-4 h-4" />
+          </Button>
         </div>
-    </div>
+      </div>
     </div>
   );
 };

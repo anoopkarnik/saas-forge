@@ -194,146 +194,132 @@ const MyAccountSettings = () => {
 
   return (
     <SettingsHeadar title={title} description={description} >
-      <div className="flex items-center gap-4">
-        <div className="flex flex-col items-center ">
-          <div className="text-xs opacity-50">Profile Pic</div>
-          <div className="relative group cursor-pointer">
-            <Avatar className="h-20 w-20 rounded-full border-2 bg-secondary hover:bg-accent2">
-              <AvatarImage src={session?.user?.image ?? ''} alt={session?.user?.name ?? ''} className="object-cover" />
-              <AvatarFallback className="text-3xl">{session?.user?.name ? session?.user?.name[0]?.toUpperCase() : 'U'}</AvatarFallback>
-            </Avatar>
-            <button onClick={handleAvatarClick} className="absolute inset-0 flex flex-col items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
-              <div><CameraIcon /></div>
-              <div className="text-xs">Upload Photo</div>
-            </button>
+
+      {/* Profile Section */}
+      <div className="flex flex-col gap-6">
+        <section className="space-y-4">
+          <h3 className="text-lg font-medium">Profile Picture</h3>
+          <div className="flex items-center gap-6">
+            <div className="relative group cursor-pointer shrink-0">
+              <Avatar className="h-24 w-24 rounded-full border-4 border-background shadow-lg">
+                <AvatarImage src={session?.user?.image ?? ''} alt={session?.user?.name ?? ''} className="object-cover" />
+                <AvatarFallback className="text-3xl bg-muted">{session?.user?.name ? session?.user?.name[0]?.toUpperCase() : 'U'}</AvatarFallback>
+              </Avatar>
+              <button onClick={handleAvatarClick} className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-200">
+                <CameraIcon className="w-6 h-6 text-white mb-1" />
+                <span className="text-[10px] uppercase font-bold text-white tracking-wider">Upload</span>
+              </button>
+            </div>
+            <div className="text-sm text-muted-foreground w-64">
+              Click the image to upload a new photo. standard formats (JPG, PNG) are supported.
+            </div>
+            {/* Hidden file input */}
+            <input ref={inputFileRef} type="file" className="hidden" accept="image/*" onChange={(e) => handleAvatar(e)} />
           </div>
-          {/* Hidden file input */}
-          <input
-            ref={inputFileRef}
-            type="file"
-            className="hidden"
-            accept="image/*" // Accept only images
-            onChange={(e) => handleAvatar(e)} // Handle file selection
-          />
+        </section>
+
+        <section className="space-y-4 max-w-md">
+          <h3 className="text-lg font-medium">Username</h3>
+          <div className="flex gap-3 items-end">
+            <div className="w-full">
+              <FloatingLabelInput id="name" label="Display Name" className="w-full bg-background" defaultValue={name} onChange={(e) => { setName(e.target.value) }} />
+            </div>
+            <Button onClick={() => handleName(name as string)} variant="secondary" className="shrink-0 h-10 px-6 ">Update</Button>
+          </div>
+        </section>
+      </div>
+
+      {/* Password Section */}
+      <section className="pt-8 mt-4 border-t border-border/40">
+        <div className="mb-6">
+          <h3 className="text-lg font-medium">Security</h3>
+          <p className="text-sm text-muted-foreground mt-1">Manage your password and authentication methods.</p>
         </div>
-      </div>
-      <div className="flex items-center justify-between gap-4 mt-4">
-        <FloatingLabelInput id="name" label="Username" className="w-full my-2" defaultValue={name}
-          onChange={(e) => { setName(e.target.value) }} />
-        <Button onClick={() => handleName(name as string)} className="w-1/4 text-wrap">Update Username</Button>
-      </div>
-      {/* <div className="flex items-center justify-between gap-4 mt-4">
-              <FloatingLabelInput id="email" label="Email" className="flex-grow-1 my-2" defaultValue={email} type="email"
-              onChange={(e)=>{setCurrentEmail(e.target.value)}}/>
-              <Button onClick={()=>{}} className="w-1/4 text-wrap" >Verify New Email Address</Button>
-            </div> */}
-      <div className="text-md font-bold mt-10"> Add / Change Password</div>
-      <div className="text-xs opacity-50 pb-2 border-b-2">Add Password if not assigned for Accounts with Social Accounts or change password if already assigned</div>
-      <div className="flex flex-col gap-4 mt-4 w-1/2">
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)}>
-            {/* Only show current password field if user has a password */}
-            {hasPassword !== false && (
-              <FormField control={form.control} name="currentPassword" render={({ field }) => (
-                <FormItem>
-                  <FormControl>
-                    <div className="relative">
-                      <FloatingLabelInput
-                        id="currentPassword"
-                        label="Current Password"
-                        type={showOldPassword ? "text" : "password"}
-                        className={`w-full my-2 pr-10 ${hasPassword === null ? 'opacity-50' : ''}`}
-                        disabled={hasPassword === null}
-                        {...field}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowOldPassword((v) => !v)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                        aria-label={showOldPassword ? "Hide password" : "Show password"}
-                      >
-                        {showOldPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </button>
-                    </div>
-                  </FormControl>
-                  <FormMessage>{(form.formState.errors as any).currentPassword?.message}</FormMessage>
-                </FormItem>
-              )} />
-            )}
-            <FormField control={form.control} name="newPassword" render={({ field }) => (
-              <FormItem>
-                <FormControl>
-                  <div className="relative">
-                    <FloatingLabelInput
-                      id="password"
-                      label="Password"
-                      type={showNewPassword ? "text" : "password"}
-                      className="w-full my-2 pr-10"
-                      {...field}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowNewPassword((v) => !v)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                      aria-label={showNewPassword ? "Hide password" : "Show password"}
-                    >
-                      {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
-                  </div>
-                </FormControl>
-                <FormMessage>{form.formState.errors.newPassword?.message}</FormMessage>
-              </FormItem>
-            )} />
-            <FormField control={form.control} name="confirmPassword" render={({ field }) => (
-              <FormItem>
-                <FormControl>
-                  <div className="relative">
-                    <FloatingLabelInput
-                      id="confirmPassword"
-                      label="Confirm Password"
-                      type={showConfirmPassword ? "text" : "password"}
-                      className="w-full my-2 pr-10"
-                      {...field}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowConfirmPassword((v) => !v)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                      aria-label={showConfirmPassword ? "Hide password" : "Show password"}
-                    >
-                      {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
-                  </div>
-                </FormControl>
-                <FormMessage>{form.formState.errors.confirmPassword?.message}</FormMessage>
-              </FormItem>
-            )} />
-            <FormResult type="error" message={passwordError} />
-            <FormResult type="success" message={passwordSuccess} />
-            <Button
-              type="submit"
-              className="w-1/2 text-wrap my-4"
-              disabled={hasPassword === null || setPasswordMutation.isPending}
-            >
-              {setPasswordMutation.isPending
-                ? "Adding..."
-                : hasPassword
-                  ? "Change Password"
-                  : "Add Password"
-              }
-            </Button>
-          </form>
-        </Form>
-      </div>
-      <div className="text-md font-bold mt-10"> Delete Account</div>
-      <div className="text-xs opacity-50 pb-2 border-b-2">Once you delete your account and account data, there is no going back.</div>
-      <div className="flex flex-col gap-4 mt-4 w-1/2">
-        <FloatingLabelInput id="permanently delete" label="Type 'permanently delete'" type="name" className="w-full my-2"
-          onChange={(e) => { setDeleteAccountConfirmation(e.target.value) }} />
-        <FormResult type="error" message={deleteAccountError} />
-        <Button variant="destructive" onClick={handleDeleteAccount} className="w-1/2 text-wrap">Delete Account</Button>
-      </div>
-      <div className="text-md font-bold border-b-2 pb-4 mt-10"> Account Security</div>
+
+        <div className="max-w-md">
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+              {hasPassword !== false && (
+                <FormField control={form.control} name="currentPassword" render={({ field }) => (
+                  <FormItem>
+                    <FormControl>
+                      <div className="relative group">
+                        <FloatingLabelInput id="currentPassword" label="Current Password" type={showOldPassword ? "text" : "password"} className={`w-full pr-10 bg-background ${hasPassword === null ? 'opacity-50' : ''}`} disabled={hasPassword === null} {...field} />
+                        <button type="button" onClick={() => setShowOldPassword((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-foreground transition-colors">
+                          {showOldPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
+                      </div>
+                    </FormControl>
+                    <FormMessage>{(form.formState.errors as any).currentPassword?.message}</FormMessage>
+                  </FormItem>
+                )} />
+              )}
+
+              <div className="grid grid-cols-2 gap-4">
+                <FormField control={form.control} name="newPassword" render={({ field }) => (
+                  <FormItem>
+                    <FormControl>
+                      <div className="relative">
+                        <FloatingLabelInput id="password" label="New Password" type={showNewPassword ? "text" : "password"} className="w-full pr-10 bg-background" {...field} />
+                        <button type="button" onClick={() => setShowNewPassword((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-foreground transition-colors">
+                          {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
+                      </div>
+                    </FormControl>
+                    <FormMessage>{form.formState.errors.newPassword?.message}</FormMessage>
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="confirmPassword" render={({ field }) => (
+                  <FormItem>
+                    <FormControl>
+                      <div className="relative">
+                        <FloatingLabelInput id="confirmPassword" label="Confirm Password" type={showConfirmPassword ? "text" : "password"} className="w-full pr-10 bg-background" {...field} />
+                        <button type="button" onClick={() => setShowConfirmPassword((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-foreground transition-colors">
+                          {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
+                      </div>
+                    </FormControl>
+                    <FormMessage>{form.formState.errors.confirmPassword?.message}</FormMessage>
+                  </FormItem>
+                )} />
+              </div>
+
+              <div className="flex items-center gap-4 pt-2">
+                <FormResult type="error" message={passwordError} />
+                <FormResult type="success" message={passwordSuccess} />
+                <Button type="submit" className="min-w-[140px]" disabled={hasPassword === null || setPasswordMutation.isPending}>
+                  {setPasswordMutation.isPending ? "Updating..." : hasPassword ? "Update Password" : "Set Password"}
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </div>
+      </section>
+
+      {/* Danger Zone */}
+      <section className="pt-8 mt-8 border-t border-destructive/20">
+        <div className="bg-destructive/10 border border-destructive/20 rounded-xl p-6">
+          <h3 className="text-lg font-medium text-destructive mb-2">Danger Zone</h3>
+          <p className="text-sm text-destructive/80 mb-6">Permanently delete your account and all associated data. This action cannot be undone.</p>
+
+          <div className="flex gap-4 items-end max-w-md">
+            <div className="w-full">
+              <FloatingLabelInput
+                id="permanently delete"
+                label="Type 'permanently delete' to confirm"
+                type="text"
+                className="w-full bg-background border-destructive/30 focus:border-destructive"
+                onChange={(e) => { setDeleteAccountConfirmation(e.target.value) }}
+              />
+            </div>
+            <Button variant="destructive" onClick={handleDeleteAccount} className="shrink-0 my-2">Delete Account</Button>
+          </div>
+          {deleteAccountError && (
+            <div className="mt-2 text-sm text-destructive font-medium">{deleteAccountError}</div>
+          )}
+        </div>
+      </section>
+
     </SettingsHeadar>
   );
 };

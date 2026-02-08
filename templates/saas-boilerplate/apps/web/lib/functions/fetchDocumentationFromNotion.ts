@@ -16,7 +16,7 @@ export async function fetchDocumentation():Promise<DocumentationProps> {
         database_id: process.env.DOCUMENTATION_DATABASE_ID!,
         filters: [{name: "SaaS Landing Page", type: "relation", condition: "contains", value: landingPageData.id}],
         filter_condition: "and",
-        sorts: [],
+        sorts: [{name: "order", type: "number", direction: "ascending" }],
     })
 
     const Documentation:DocumentationProps = {

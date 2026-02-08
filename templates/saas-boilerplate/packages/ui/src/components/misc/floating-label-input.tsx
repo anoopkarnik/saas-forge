@@ -4,7 +4,7 @@ import { cn } from '../../lib/utils';
 import { Input } from '../shadcn/input';
 import { Label } from '../shadcn/label';
 
-export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {}
+export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> { }
 
 const FloatingInput = React.forwardRef<HTMLInputElement, InputProps>(
   ({ className, ...props }, ref) => {
@@ -37,7 +37,7 @@ const FloatingLabelInput = React.forwardRef<
   React.PropsWithoutRef<FloatingLabelInputProps>
 >(({ id, label, ...props }, ref) => {
   return (
-    <div className="relative">
+    <div className="relative py-2">
       <FloatingInput ref={ref} id={id} {...props} />
       <FloatingLabel htmlFor={id}>{label}</FloatingLabel>
     </div>

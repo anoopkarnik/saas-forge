@@ -23,10 +23,13 @@ const RegisterContent = () => {
   }, [searchParams])
 
   const loginWithSocials = async (type: string) => {
-    await authClient.signIn.social({provider: type})
+    await authClient.signIn.social({
+      provider: type as any,
+      callbackURL: "/auth-callback"
+    })
   }
 
-  const register = async (data:  z.infer<typeof RegisterSchema>) => {
+  const register = async (data: z.infer<typeof RegisterSchema>) => {
     const result = await authClient.signUp.email(data)
     return result
   }
@@ -34,26 +37,26 @@ const RegisterContent = () => {
 
 
   return (
-    <div className='grid grid-cols-1 lg:grid-cols-2 '>
-        <div className='flex items-center justify-center bg-gradient-to-br from-primary to-sidebar dark:bg-gradient-to-br'>
-            <RegisterCard showEmail={true} 
-              showGoogleProvider={true} showGithubProvider={true} 
-              showLinkedinProvider={true} onEmailSubmit={register} 
-              onGoogleProviderSubmit={()=>loginWithSocials('google')} 
-              onGithubProviderSubmit={()=>loginWithSocials('github')} 
-              onLinkedinProviderSubmit={()=>loginWithSocials('linkedin')} 
-                errorMessage={urlError}/>
-        </div>
-        <div className='invisible lg:visible '>
-            <Quote/>
-        </div>
+    <div className='grid grid-cols-1 lg:grid-cols-2 min-h-screen'>
+      <div className='flex items-center justify-center bg-gradient-to-br from-primary to-sidebar dark:bg-gradient-to-br p-8'>
+        <RegisterCard showEmail={true}
+          showGoogleProvider={true} showGithubProvider={true}
+          showLinkedinProvider={true} onEmailSubmit={register}
+          onGoogleProviderSubmit={() => loginWithSocials('google')}
+          onGithubProviderSubmit={() => loginWithSocials('github')}
+          onLinkedinProviderSubmit={() => loginWithSocials('linkedin')}
+          errorMessage={urlError} />
+      </div>
+      <div className='hidden lg:block h-full'>
+        <Quote />
+      </div>
     </div>
   )
 }
 
 const Register = () => {
   return (
-    <Suspense fallback={<LoadingCard/>}>
+    <Suspense fallback={<LoadingCard />}>
       <RegisterContent />
     </Suspense>
   )

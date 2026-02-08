@@ -1,6 +1,6 @@
 'use client'
 
-import {  useRouter } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import React, { Suspense, useState } from 'react'
 
 import { authClient } from '@workspace/auth/better-auth/auth-client'
@@ -18,7 +18,14 @@ const LoginContent = () => {
 
 
   const loginWithSocials = async (type: string) => {
-    const {error} = await authClient.signIn.social({provider: type})
+    await authClient.signIn.social({
+      provider: type as any,
+      callbackURL: "/auth-callback"
+    })
+  }
+
+  const loginWithEmail = async (data: z.infer<typeof LoginSchema>) => {
+    const { error } = await authClient.signIn.email({ ...data, callbackUrl: "/", rememberMe: true, })
     if (error) {
       setError(error.message)
     } else {
@@ -26,36 +33,27 @@ const LoginContent = () => {
     }
   }
 
-  const loginWithEmail = async (data:  z.infer<typeof LoginSchema>) => {
-    const {error} = await authClient.signIn.email({...data, callbackUrl: "/", rememberMe: true,})
-    if (error) {
-      setError(error.message)
-    }else {
-      router.push("/")
-    }
-  }
-
   return (
     <div className='min-h-screen grid grid-cols-1 lg:grid-cols-2 '>
-        <div className='flex items-center justify-center bg-gradient-to-br from-primary to-sidebar dark:bg-gradient-to-br'>
-            <LoginCard showEmail={true} showGoogleProvider={true} 
-            showGithubProvider={true}
-              showLinkedinProvider={true} onEmailSubmit={loginWithEmail} 
-              onGoogleProviderSubmit={()=>loginWithSocials('google')} 
-              onGithubProviderSubmit={()=>loginWithSocials('github')} 
-              onLinkedinProviderSubmit={()=>loginWithSocials('linkedin')} 
-              errorMessage={error}/>
-        </div>
-        <div className='hidden lg:block '>
-            <Quote/>
-        </div>
+      <div className='flex items-center justify-center bg-gradient-to-br from-primary to-sidebar dark:bg-gradient-to-br p-8'>
+        <LoginCard showEmail={true} showGoogleProvider={true}
+          showGithubProvider={true}
+          showLinkedinProvider={true} onEmailSubmit={loginWithEmail}
+          onGoogleProviderSubmit={() => loginWithSocials('google')}
+          onGithubProviderSubmit={() => loginWithSocials('github')}
+          onLinkedinProviderSubmit={() => loginWithSocials('linkedin')}
+          errorMessage={error} />
+      </div>
+      <div className='hidden lg:block h-full'>
+        <Quote />
+      </div>
     </div>
   )
 }
 
 const Login = () => {
   return (
-    <Suspense fallback={<LoadingCard/>}>
+    <Suspense fallback={<LoadingCard />}>
       <LoginContent />
     </Suspense>
   )

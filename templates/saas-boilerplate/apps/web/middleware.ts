@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server"
 
-const publicRoutes = ["/landing","/public","/api/payments/dodo/webhook","/api/trpc"]
+const publicRoutes = ["/landing","/public","/api/payments/dodo/webhook","/api/trpc", "/auth-callback"]
 
 const authRoutes =["/sign-in","/sign-up","/error","/forgot-password","/reset-password",'/email-verified',"/api/auth"]
 

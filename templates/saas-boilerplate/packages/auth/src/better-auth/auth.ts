@@ -4,7 +4,8 @@ import db from '@workspace/database/client';
 import { admin,  openAPI, jwt } from "better-auth/plugins";
 import { sendResetEmail, sendVerificationEmail } from "@workspace/email/resend/index"
 
-export const auth:any = betterAuth({
+
+const options = {
     basePath: "/api/auth",
     plugins: [openAPI(),admin({
         impersonationSessionDuration: 3600
@@ -54,6 +55,7 @@ export const auth:any = betterAuth({
         },
         deleteUser: {
             enabled: true,
+            
         }
     },
     account:{
@@ -112,6 +114,18 @@ export const auth:any = betterAuth({
         },
     }
 
-} satisfies BetterAuthOptions);
+
+} satisfies BetterAuthOptions;
+
+import { toNextJsHandler } from "better-auth/next-js";
+
+// Use module-level variable for true singleton behavior
+// This ensures only one instance is created per Node.js process
+const createAuthInstance = () => {
+    return betterAuth(options);
+};
+
+export const auth: any = createAuthInstance();
 
 export type Session = typeof auth.$Infer.Session;
+export const handlers = toNextJsHandler(auth);

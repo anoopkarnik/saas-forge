@@ -30,45 +30,48 @@ const Message = ({ setActivePanel }: { setActivePanel: any }) => {
 
     const isLoading = sendSupportMessage.isPending;
     return (
-        <div className="flex flex-col gap-3 rounded-md bg-popover">
-            <div className="space-y-1">
-                <h3 className="text-sm font-semibold">Send us a message</h3>
-                <p className="text-xs text-muted-foreground">
-                    Have questions or want to collaborate or hire us for work? Send us a message!
+        <div className="flex flex-col gap-4">
+            <div className="space-y-1.5 text-center sm:text-left">
+                <h3 className="text-lg font-semibold tracking-tight">Contact Us</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                    Have questions or want to collaborate? Send us a message and we'll get back to you shortly.
                 </p>
             </div>
-            <Input
-                placeholder="Email"
-                className="w-full bg-background"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                onKeyDown={(e) => e.stopPropagation()}
-                disabled={isLoading}
-            />
-            <Input
-                placeholder="Subject"
-                className="w-full bg-background"
-                value={subject}
-                onChange={(e) => setSubject(e.target.value)}
-                onKeyDown={(e) => e.stopPropagation()}
-                disabled={isLoading}
-            />
-            <Textarea
-                placeholder="Message (Required)"
-                className="w-full h-[160px]"
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                onKeyDown={(e) => e.stopPropagation()}
-                disabled={isLoading}
-            />
-            <div className="flex justify-between items-center gap-2 pt-1">
+            <div className="space-y-3">
+                <Input
+                    placeholder="Email address"
+                    className="h-10 bg-muted/50 border-border/50 focus-visible:bg-background transition-all duration-200"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    onKeyDown={(e) => e.stopPropagation()}
+                    disabled={isLoading}
+                />
+                <Input
+                    placeholder="Subject"
+                    className="h-10 bg-muted/50 border-border/50 focus-visible:bg-background transition-all duration-200"
+                    value={subject}
+                    onChange={(e) => setSubject(e.target.value)}
+                    onKeyDown={(e) => e.stopPropagation()}
+                    disabled={isLoading}
+                />
+                <Textarea
+                    placeholder="How can we help?"
+                    className="min-h-[120px] bg-muted/50 border-border/50 focus-visible:bg-background transition-all duration-200 resize-none"
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    onKeyDown={(e) => e.stopPropagation()}
+                    disabled={isLoading}
+                />
+            </div>
+            <div className="flex items-center justify-between gap-3 pt-2">
                 <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => setActivePanel(null)}
                     disabled={isLoading}
+                    className="text-muted-foreground hover:text-foreground"
                 >
-                    Back
+                    Cancel
                 </Button>
                 <Button
                     size="sm"
@@ -76,6 +79,7 @@ const Message = ({ setActivePanel }: { setActivePanel: any }) => {
                     onPointerDown={(e) => e.preventDefault()}
                     onMouseDown={(e) => e.preventDefault()}
                     disabled={isLoading}
+                    className="px-6 font-medium"
                 >
                     {isLoading ? "Sending..." : "Send Message"}
                 </Button>

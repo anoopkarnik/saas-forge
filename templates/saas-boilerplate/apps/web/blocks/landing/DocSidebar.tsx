@@ -26,20 +26,22 @@ const DocSidebar = () => {
 
     return (
         <Sidebar>
-            <SidebarHeader className='p-6'>
+            <SidebarHeader className='p-4 border-b border-border/50'>
                 <SidebarMenu>
                     <SidebarMenuItem>
                         <a
                             rel="noreferrer noopener"
                             href="/"
-                            className="flex items-center gap-2 font-cyberdyne"
+                            className="flex items-center gap-3 font-cyberdyne px-2 py-2 hover:bg-sidebar-accent rounded-lg transition-colors group"
                         >
-                            {theme === "dark" ?
-                                <Image src={documentation?.darkLogo} alt={documentation?.title} width={30} height={30} /> :
-                                <Image src={documentation?.logo} alt={documentation?.title} width={30} height={30} />}
-                            <div className="hidden lg:flex flex-col items-start text-md leading-none bg-linear-to-r from-white to-white bg-clip-text text-transparent ">
-                                <div>{documentation?.title?.split(' ').slice(0, Math.ceil(documentation?.title?.split(' ').length / 2)).join(" ")}</div>
-                                <div>{documentation?.title?.split(' ').slice(Math.ceil(documentation?.title?.split(' ').length / 2)).join(" ")}</div>
+                            <div className="relative w-8 h-8 flex-shrink-0 transition-transform group-hover:scale-110 duration-300">
+                                {theme === "dark" ?
+                                    <Image src={documentation?.darkLogo} alt={documentation?.title} fill className="object-contain" /> :
+                                    <Image src={documentation?.logo} alt={documentation?.title} fill className="object-contain" />}
+                            </div>
+                            <div className="hidden lg:flex flex-col items-start leading-none gap-0.5">
+                                <span className="font-bold text-foreground text-sm tracking-wide">{documentation?.title}</span>
+                                <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-sans">Documentation</span>
                             </div>
                         </a>
                     </SidebarMenuItem>

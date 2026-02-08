@@ -1,5 +1,5 @@
 import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
-import { auth } from "@workspace/auth/better-auth/auth";
+import { auth } from "@/lib/auth-server";
 import { AddPasswordSchema } from "@workspace/auth/utils/zod";
 import { headers } from "next/headers";
 

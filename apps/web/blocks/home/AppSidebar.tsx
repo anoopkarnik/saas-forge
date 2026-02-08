@@ -18,69 +18,60 @@ import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@workspace/ui/lib/utils";
 import { HomeIcon } from "lucide-react";
 import { CiMoneyBill } from "react-icons/ci";
-import { useSession} from "@workspace/auth/better-auth/auth-client";
+import { useSession } from "@workspace/auth/better-auth/auth-client";
 import ProgressWithCredits from "@/components/home/ProgressWithCredits";
 import SidebarUser from "./SidebarUser";
 
 
 export function AppSidebar() {
-    const {theme} = useTheme();
+    const { theme } = useTheme();
     const trpc = useTRPC();
-    const { data} = useSuspenseQuery(trpc.landing.getLandingInfoFromNotion.queryOptions());
+    const { data } = useSuspenseQuery(trpc.landing.getLandingInfoFromNotion.queryOptions());
     const router = useRouter()
     const pathname = usePathname();
     return (
         <Sidebar>
-            <SidebarHeader>
+            <SidebarHeader className="p-4 pb-0">
                 <SidebarMenu>
                     <SidebarMenuItem>
                         <a
-                        rel="noreferrer noopener"
-                        href="/"
-                        className="flex items-center gap-2 font-cyberdyne "
+                            rel="noreferrer noopener"
+                            href="/"
+                            className="flex items-center gap-3 font-cyberdyne px-2"
                         >
                             {theme === "dark" ?
-                            <Image src={data.navbarSection?.darkLogo} alt={data.navbarSection?.title} width={30} height={30} /> : 
-                            <Image src={data.navbarSection?.logo} alt={data.navbarSection?.title} width={30} height={30} />}
-                            <div className="hidden lg:flex flex-col items-start text-md leading-none bg-linear-to-r from-white to-white bg-clip-text text-transparent ">
+                                <Image src={data.navbarSection?.darkLogo} alt={data.navbarSection?.title} width={32} height={32} className="w-8 h-8" /> :
+                                <Image src={data.navbarSection?.logo} alt={data.navbarSection?.title} width={32} height={32} className="w-8 h-8" />}
+                            <div className="hidden lg:flex flex-col items-start text-lg tracking-tight font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
                                 {data.navbarSection?.title}
                             </div>
                         </a>
                     </SidebarMenuItem>
                 </SidebarMenu>
             </SidebarHeader>
-           <SidebarContent>
+            <SidebarContent className="p-3">
                 <SidebarGroup>
-                    <SidebarGroupLabel>Application</SidebarGroupLabel>
-                    <SidebarMenu>
+                    <SidebarGroupLabel className="px-2 text-xs font-medium text-muted-foreground/70 uppercase tracking-wider mb-2">Application</SidebarGroupLabel>
+                    <SidebarMenu className="gap-1">
                         <SidebarMenuItem>
-                            <SidebarMenuButton asChild tooltip={"Home"} 
-                        className={cn("cursor-pointer",pathname==="/" && "bg-sidebar-accent")}
-                        onClick={() => router.push("/")}>
-                            <div className="flex items-center ">
-                                <HomeIcon className="mr-2 h-4 w-4" />
-                                <span>{"Home"}</span>
-                            </div>
-                            </SidebarMenuButton>
-                        </SidebarMenuItem>
-                        <SidebarMenuItem>
-                            <SidebarMenuButton asChild tooltip={"Billing"} 
-                        className={cn("cursor-pointer",pathname==="/billing" && "bg-sidebar-accent")}
-                        onClick={() => router.push("/billing")}>
-                            <div className="flex items-center ">
-                                <CiMoneyBill className="mr-2 h-4 w-4" />
-                                <span>{"Billing"}</span>
-                            </div>
+                            <SidebarMenuButton asChild tooltip={"Home"}
+                                className={cn("cursor-pointer transition-all duration-200 ease-in-out hover:pl-3 h-10", pathname === "/" && "bg-sidebar-accent text-sidebar-accent-foreground font-medium shadow-sm")}
+                                onClick={() => router.push("/")}>
+                                <div className="flex items-center gap-3">
+                                    <HomeIcon className="h-4 w-4" />
+                                    <span>{"Home"}</span>
+                                </div>
                             </SidebarMenuButton>
                         </SidebarMenuItem>
                     </SidebarMenu>
                 </SidebarGroup>
-           </SidebarContent>
-            <SidebarFooter className="bg-accent rounded-2xl p-4 m-2">
-               <ProgressWithCredits/>
-               <SidebarUser/>
+            </SidebarContent>
+            <SidebarFooter className="p-4 border-t border-sidebar-border/40 bg-sidebar-footer/5">
+                <div className="space-y-4">
+                    <ProgressWithCredits />
+                    <SidebarUser />
+                </div>
             </SidebarFooter>
         </Sidebar>
     );
 }
-  

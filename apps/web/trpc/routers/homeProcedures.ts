@@ -1,5 +1,5 @@
 import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
-import { auth } from "@/lib/auth-server";
+import { auth } from "@workspace/auth/better-auth/auth";
 import { AddPasswordSchema } from "@workspace/auth/utils/zod";
 import { headers } from "next/headers";
 
@@ -13,7 +13,7 @@ export const homeRouter = createTRPCRouter({
             const result = await auth.api.setPassword({
                 body: { newPassword },
                 headers: await headers()
-            });
+            }); 
             
             return { success: true };
         }),

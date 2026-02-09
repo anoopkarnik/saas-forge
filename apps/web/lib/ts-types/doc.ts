@@ -12,4 +12,5 @@ export interface DocProps {
     order: number;
     "Last edited time": string;
     "Created time": string;
+    slug: string;
 }

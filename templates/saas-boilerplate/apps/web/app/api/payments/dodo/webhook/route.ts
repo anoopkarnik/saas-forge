@@ -40,7 +40,7 @@ export const POST = Webhooks({
     });
 
     // Revalidate the billing page cache so updated credits show immediately
-    revalidatePath("/(home)/billing");
+    revalidatePath("/(home)");
     
   },
 });

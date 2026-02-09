@@ -7,6 +7,8 @@
     "lint": "turbo lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "generate": "cd packages/database && pnpm run generate",
+    "migrate": "cd packages/database && pnpm run migrate",
+    "reset": "cd packages/database && pnpm run reset",
     "template:install": "cd templates/saas-boilerplate && pnpm install && pnpm run generate",
     "template:dev": "cd templates/saas-boilerplate && pnpm dev"
   },

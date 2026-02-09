@@ -8,6 +8,7 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Import all theme color variations - select via NEXT_PUBLIC_THEME env var */
 @import "./shadcn-blue.css";
 @import "./shadcn-neutral.css";
 @import "./shadcn-red.css";

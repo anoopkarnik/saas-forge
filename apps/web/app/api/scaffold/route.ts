@@ -2,6 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import archiver from "archiver";
 import path from "path";
 import fs from "fs";
+import { auth } from "@workspace/auth/better-auth/auth";
+import { headers } from "next/headers";
+import db from "@workspace/database/client"
+import { revalidatePath } from "next/cache";
+
+export const CREDITS_COST = 20;
+
 
 export const runtime = "nodejs"; // required (streams)
 
@@ -190,6 +197,16 @@ export async function POST(req: NextRequest) {
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
+    const session = await auth.api.getSession({
+      headers: await headers(), // pass the headers
+    });
+
+    if ((session?.user?.creditsTotal - session?.user?.creditsUsed) < CREDITS_COST) {
+      return NextResponse.json(
+        { error: "Not enough credits" },
+        { status: 403 }
+      );
+    }
     const projectName = sanitizeProjectName(searchParams.get("name") ?? "");
 
     const repoRoot = getRepoRoot();
@@ -218,6 +235,13 @@ export async function GET(req: NextRequest) {
     });
 
     await archive.finalize();
+
+    await db.user.update({
+      where: { id: session.user.id },
+      data: { creditsUsed: session.user.creditsUsed + CREDITS_COST },
+    });
+
+    revalidatePath("/(home)");
 
     return new NextResponse(stream as any, {
       headers: {

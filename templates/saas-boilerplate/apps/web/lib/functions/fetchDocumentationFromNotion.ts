@@ -19,13 +19,16 @@ export async function fetchDocumentation():Promise<DocumentationProps> {
         sorts: [{name: "order", type: "number", direction: "ascending" }],
     })
 
-    const Documentation:DocumentationProps = {
+    const documentation:DocumentationProps = {
         title: landingPageData.title,
         logo: landingPageData.logo[0],
         darkLogo: landingPageData.darkLogo[0],
-        docs: documentationResults.results
+        docs: documentationResults.results.map((doc: any) => ({
+            ...doc,
+            slug: doc.Name.toLowerCase().replace(/ /g, "-")
+        }))
     }
     
 
-    return Documentation;
+    return documentation;
 }

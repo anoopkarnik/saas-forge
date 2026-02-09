@@ -6,7 +6,9 @@
     "dev": "turbo dev",
     "lint": "turbo lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
-    "generate": "cd packages/database && pnpm run generate"
+    "generate": "cd packages/database && pnpm run generate",
+    "migrate": "cd packages/database && pnpm run migrate",
+    "reset": "cd packages/database && pnpm run reset"
   },
   "devDependencies": {
     "@workspace/eslint-config": "workspace:*",

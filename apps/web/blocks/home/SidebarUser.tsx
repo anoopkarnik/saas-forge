@@ -3,11 +3,13 @@
 import {
   BookOpen,
   ChevronsUpDown,
+  Laptop,
   LogOut,
-  MessageCircle,
-  Send,
+  Moon,
   Settings,
+  Sun,
 } from "lucide-react"
+import { useTheme } from "next-themes"
 import React, { useEffect, useState } from "react"
 
 import {
@@ -22,6 +24,9 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@workspace/ui/components/shadcn/dropdown-menu"
 import {
@@ -38,6 +43,7 @@ const SidebarUser = () => {
 
   const { data: session, status } = useSession();
   const { isMobile } = useSidebar()
+  const { setTheme, theme } = useTheme()
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const [isSigningOut, setIsSigningOut] = useState(false)
@@ -134,6 +140,30 @@ const SidebarUser = () => {
                   Settings
                 </DropdownMenuItem>
               </SettingsDialog>
+            </DropdownMenuGroup>
+            <DropdownMenuSeparator />
+            <DropdownMenuGroup>
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger className="flex gap-2 cursor-pointer">
+                  <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+                  <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+                  <span>Theme</span>
+                </DropdownMenuSubTrigger>
+                <DropdownMenuSubContent>
+                  <DropdownMenuItem onClick={() => setTheme("light")} className="cursor-pointer gap-2">
+                    <Sun className="h-4 w-4" />
+                    <span>Light</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setTheme("dark")} className="cursor-pointer gap-2">
+                    <Moon className="h-4 w-4" />
+                    <span>Dark</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setTheme("system")} className="cursor-pointer gap-2">
+                    <Laptop className="h-4 w-4" />
+                    <span>System</span>
+                  </DropdownMenuItem>
+                </DropdownMenuSubContent>
+              </DropdownMenuSub>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem className="flex gap-2 cursor-pointer" onClick={handleSignout}>

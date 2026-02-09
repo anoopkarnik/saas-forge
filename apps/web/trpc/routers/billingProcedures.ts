@@ -2,7 +2,6 @@ import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
 import DodoPayments from 'dodopayments';
 import { z } from "zod";
 import db from "@workspace/database/client";
-import { billingAddressSchema } from "@/lib/zod/billing";
 import { TRPCError } from "@trpc/server";
 
 const client = new DodoPayments({
@@ -13,35 +12,6 @@ const client = new DodoPayments({
 const CREDITS_PER_UNIT = 50; // example: 1 quantity = 50 credits
 
 export const billingRouter = createTRPCRouter({
-    getCountryCodes: protectedProcedure
-    .query(async () => {
-      const response = await client.misc.listSupportedCountries();
-      return response;
-    }),
-    getBillingAddress: protectedProcedure
-    .query(async ({ ctx }) => {
-      const userId = ctx.session.user.id;
-      const address = await db.billingAddress.findUnique({
-        where: {
-          userId: userId,
-        },
-      });
-      return address;
-    }),
-    updateBillingAddress: protectedProcedure
-    .input(billingAddressSchema)
-    .mutation(async ({ input, ctx }) => {
-      const userId = ctx.session.user.id;
-      const updatedAddress = await db.billingAddress.update({
-        where: {
-          userId: userId,
-        },
-        data: {
-          ...input,
-        },
-      });
-      return updatedAddress;
-    }),    
     createNewCustomer: protectedProcedure
     .input( z.object({
       email: z.string().email("Invalid email address"),

@@ -9,7 +9,8 @@ export const formSchema = z.object({
     .regex(/^[a-zA-Z0-9][a-zA-Z0-9._-]*$/, "Use letters, numbers, dot, underscore, or hyphen"),
 
   // Project Settings Variables
-  NEXT_PUBLIC_THEME: z.string().optional(),
+  NEXT_PUBLIC_THEME: z.enum(["blue", "green", "neutral", "orange", "red", "rose", "violet", "yellow"]).optional(),
+  NEXT_PUBLIC_THEME_TYPE: z.enum(["light", "dark", "system"]).optional(),
   NEXT_PUBLIC_SAAS_NAME: z.string().optional(),
   NEXT_PUBLIC_COMPANY_NAME: z.string().optional(),
   NEXT_PUBLIC_URL: z.string().optional(),

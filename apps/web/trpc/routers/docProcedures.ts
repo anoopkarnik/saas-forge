@@ -27,12 +27,32 @@ export const documentationRouter = createTRPCRouter({
       return data;
 
     }),
-    queryDocumentationById: baseProcedure
-    .input(z.object({id: z.string().min(1, "Id is required")}))
+    queryDocumentationBySlug: baseProcedure
+    .input(z.object({slug: z.string().min(1, "Slug is required")}))
     .query(async ({ input }) => {
+      // We need to fetch the documentation list to find the ID corresponding to the slug
+      
+      let documentation: DocumentationProps | null = null;
+      if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
+         documentation = await redis.get<DocumentationProps>(DOCUMENTATION_PAGE_CACHE_KEY);
+      }
+
+      if (!documentation) {
+         documentation = await fetchDocumentation();
+         if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
+            await redis.set(DOCUMENTATION_PAGE_CACHE_KEY, documentation, { ex: DOCUMENTATION_CACHE_TTL_SECONDS });
+         }
+      }
+
+      const doc = documentation.docs.find((d) => d.slug === input.slug);
+
+      if (!doc) {
+        throw new Error("Documentation not found");
+      }
+
       const blocks = await retrieveBlocksTree({
         apiToken: process.env.NOTION_API_TOKEN!,
-        block_id: input.id
+        block_id: doc.id
       });
 
       return blocks;

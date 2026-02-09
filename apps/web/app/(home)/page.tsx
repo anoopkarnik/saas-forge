@@ -6,13 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Download,
   Upload,
-  Package,
-  Lock,
-  CreditCard,
-  Database,
-  LayoutTemplate,
-  Activity,
-  LifeBuoy,
+  ExternalLink,
 } from "lucide-react";
 
 import { Button } from "@workspace/ui/components/shadcn/button";
@@ -28,7 +22,7 @@ import {
   FormControl,
   FormField,
   FormItem,
-  FormLabel,
+
   FormMessage,
   FormDescription,
 } from "@workspace/ui/components/shadcn/form";
@@ -37,149 +31,21 @@ import { formSchema, FormValues } from "@/lib/zod/download";
 import { FloatingLabelInput } from "@workspace/ui/components/misc/floating-label-input";
 
 // Module Configuration
-const MODULE_CONFIG = [
-  {
-    id: "project",
-    title: "Project Settings",
-    icon: Package,
-    color: "text-blue-500",
-    description: "Core settings for your application identity.",
-    fields: [
-      "NEXT_PUBLIC_THEME",
-      "NEXT_PUBLIC_SAAS_NAME",
-      "NEXT_PUBLIC_COMPANY_NAME",
-      "NEXT_PUBLIC_URL",
-    ] as const,
-  },
-  {
-    id: "landing",
-    title: "Landing Module",
-    icon: LayoutTemplate,
-    color: "text-purple-500",
-    description: "Notion-backed CMS content.",
-    fields: [
-      "LANDING_DATABASE_ID",
-      "HERO_DATABASE_ID",
-      "FEATURE_DATABASE_ID",
-      "TESTIMONIAL_DATABASE_ID",
-      "PRICING_DATABASE_ID",
-      "FAQ_DATABASE_ID",
-      "FOOTER_DATABASE_ID",
-      "DOCUMENTATION_DATABASE_ID",
-      "NOTION_API_TOKEN",
-    ] as const,
-  },
-  {
-    id: "auth",
-    title: "Authentication Module",
-    icon: Lock,
-    color: "text-amber-500",
-    description: "BetterAuth & OAuth providers.",
-    fields: [
-      "BETTER_AUTH_SECRET",
-      "AUTH_LINKEDIN_CLIENT_ID",
-      "AUTH_LINKEDIN_CLIENT_SECRET",
-      "AUTH_GITHUB_CLIENT_ID",
-      "AUTH_GITHUB_CLIENT_SECRET",
-      "AUTH_GOOGLE_CLIENT_ID",
-      "AUTH_GOOGLE_CLIENT_SECRET",
-      "RESEND_API_KEY",
-    ] as const,
-  },
-  {
-    id: "support",
-    title: "Support Module",
-    icon: LifeBuoy,
-    color: "text-rose-500",
-    description: "Support email and booking.",
-    fields: [
-      "NEXT_PUBLIC_SUPPORT_MAIL",
-      "NEXT_PUBLIC_CALENDLY_BOOKING_URL",
-    ] as const,
-  },
-  {
-    id: "storage",
-    title: "Storage Module",
-    icon: Database,
-    color: "text-cyan-500",
-    description: "Postgres, Redis, and Blob storage.",
-    fields: [
-      "BLOB_READ_WRITE_TOKEN",
-      "DATABASE_URL",
-      "UPSTASH_REDIS_REST_URL",
-      "UPSTASH_REDIS_REST_TOKEN",
-    ] as const,
-  },
-  {
-    id: "observability",
-    title: "Observability Module",
-    icon: Activity,
-    color: "text-orange-500",
-    description: "Telemetry and analytics.",
-    fields: [
-      "BETTERSTACK_TELEMETRY_SOURCE_TOKEN",
-      "BETTERSTACK_TELEMETRY_INGESTING_HOST",
-      "NEXT_PUBLIC_GOOGLE_ANALYTICS_MEASUREMENT_ID",
-    ] as const,
-  },
-  {
-    id: "payment",
-    title: "Payment Module",
-    icon: CreditCard,
-    color: "text-green-500",
-    description: "Dodo Payments configuration.",
-    fields: [
-      "DODO_PAYMENTS_API_KEY",
-      "DODO_PAYMENTS_WEBHOOK_KEY",
-      "DODO_PAYMENTS_RETURN_URL",
-      "DODO_PAYMENTS_ENVIRONMENT",
-      "DODO_CREDITS_PRODUCT_ID",
-      "NEXT_PUBLIC_DODO_PAYMENTS_URL",
-    ] as const,
-  },
-];
-
-// Helper component for env var fields
-function EnvField({
-  control,
-  name,
-  label,
-}: {
-  control: any;
-  name: keyof FormValues;
-  label?: string;
-}) {
-  return (
-    <FormField
-      control={control}
-      name={name}
-      render={({ field }) => (
-        <FormItem>
-          {label && <FormLabel className="text-xs font-medium text-muted-foreground">{label}</FormLabel>}
-          <FormControl>
-            <FloatingLabelInput
-              id={name}
-              label={name}
-              className="bg-background"
-              {...field}
-            />
-          </FormControl>
-          <FormMessage />
-        </FormItem>
-      )}
-    />
-  );
-}
+import { MODULE_CONFIG } from "@/lib/constants/module";
+import EnvField from "@/components/home/EnvField";
+import { useRouter } from "next/navigation";
 
 export default function Page() {
   const [isDownloading, setIsDownloading] = React.useState(false);
+  const router = useRouter();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
       // Project Settings
-      NEXT_PUBLIC_THEME: "",
+      NEXT_PUBLIC_THEME: "neutral",
+      NEXT_PUBLIC_THEME_TYPE: "system",
       NEXT_PUBLIC_SAAS_NAME: "",
       NEXT_PUBLIC_COMPANY_NAME: "",
       NEXT_PUBLIC_URL: "",
@@ -364,8 +230,22 @@ export default function Page() {
             {MODULE_CONFIG.map((module) => (
               <Card key={module.id} className={`shadow-sm border-border/60 ${module.id === "project" ? "md:col-span-2" : ""}`}>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <module.icon className={`h-5 w-5 ${module.color}`} /> {module.title}
+                  <CardTitle className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <module.icon className={`h-5 w-5 ${module.color}`} /> {module.title}
+                    </div>
+                    {module.documentation && module.documentation.length > 0 && (
+                      <div className="flex items-center gap-2">
+                        {module.documentation.map((doc, idx) => (
+                          <Button key={idx} variant="ghost" size="sm" className="h-8 px-2 text-muted-foreground hover:text-primary" asChild>
+                            <a href={process.env.NEXT_PUBLIC_URL + "/landing/doc/" + doc.slug} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5">
+                              <span className="text-xs">{doc.label}</span>
+                              <ExternalLink className="h-3.5 w-3.5" />
+                            </a>
+                          </Button>
+                        ))}
+                      </div>
+                    )}
                   </CardTitle>
                   <CardDescription>{module.description}</CardDescription>
                 </CardHeader>
@@ -379,14 +259,18 @@ export default function Page() {
                           <FormControl>
                             <FloatingLabelInput id="projectName" label="Project Name (Folder Name)" className="bg-background" {...field} />
                           </FormControl>
-                          <FormDescription>Allowed: letters, numbers, . - _</FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
                   )}
-                  {module.fields.map((fieldName) => (
-                    <EnvField key={fieldName} control={form.control} name={fieldName as keyof FormValues} />
+                  {module.fields.map((field) => (
+                    <EnvField
+                      key={field.name}
+                      control={form.control}
+                      name={field.name as keyof FormValues}
+                      description={field.description}
+                    />
                   ))}
                 </CardContent>
               </Card>

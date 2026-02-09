@@ -60,8 +60,8 @@ const DocSidebar = () => {
 
                                     {categoryDocs.map((doc) => (
                                         <SidebarMenuButton asChild tooltip={doc.Name} key={doc.id}
-                                            className={cn("cursor-pointer text-xs", pathname === doc.id && "bg-sidebar-accent")}
-                                            onClick={() => router.push("/landing/doc/" + doc.id as string)}>
+                                            className={cn("cursor-pointer text-xs", pathname === doc.slug && "bg-sidebar-accent")}
+                                            onClick={() => router.push("/landing/doc/" + doc.slug as string)}>
 
                                             <span>{doc.Name}</span>
 

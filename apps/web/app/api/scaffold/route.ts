@@ -6,8 +6,9 @@ import { auth } from "@workspace/auth/better-auth/auth";
 import { headers } from "next/headers";
 import db from "@workspace/database/client"
 import { revalidatePath } from "next/cache";
+import { ratelimit } from "@/server/ratelimit";
 
-export const CREDITS_COST = 20;
+const CREDITS_COST = 20;
 
 
 export const runtime = "nodejs"; // required (streams)
@@ -143,6 +144,26 @@ function createZipStream(
 // POST handler - accepts JSON body with project name and env vars
 export async function POST(req: NextRequest) {
   try {
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+
+    if (!session?.user) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { success } = await ratelimit.limit(session.user.id);
+    if (!success) {
+        return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 });
+    }
+
+    if ((session.user.creditsTotal - session.user.creditsUsed) < CREDITS_COST) {
+        return NextResponse.json(
+            { error: "Not enough credits" },
+            { status: 403 }
+        );
+    }
+
     const body = await req.json();
     const projectName = sanitizeProjectName(body.name ?? "");
     const envVars: Record<string, string> = body.envVars ?? {};
@@ -177,6 +198,14 @@ export async function POST(req: NextRequest) {
     });
 
     await archive.finalize();
+
+    // Deduct credits
+    await db.user.update({
+        where: { id: session.user.id },
+        data: { creditsUsed: session.user.creditsUsed + CREDITS_COST },
+    });
+
+    revalidatePath("/(home)");
 
     return new NextResponse(stream as any, {
       headers: {

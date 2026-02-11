@@ -1,6 +1,6 @@
 import "@workspace/ui/globals.css"
 import { ThemeProvider } from "@workspace/ui/providers/theme-provider"
-import { geistSans, geistMono, cyberdyne} from "@workspace/ui/typography/font"
+import { geistSans, geistMono, cyberdyne } from "@workspace/ui/typography/font"
 import type { Metadata } from "next";
 import { Toaster } from "@workspace/ui/components/shadcn/sonner";
 import { Analytics } from "@vercel/analytics/react"
@@ -34,7 +34,7 @@ export default function RootLayout({
             <Toaster />
             <Analytics />
             <SpeedInsights />
-            <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_MEASUREMENT_ID as string}/>
+            <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_MEASUREMENT_ID as string} />
           </ThemeProvider>
         </TRPCReactProvider>
       </body>

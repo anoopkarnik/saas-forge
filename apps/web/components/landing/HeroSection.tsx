@@ -112,12 +112,12 @@ const HeroSection = ({ heroSection }: { heroSection: HeroSectionProps }) => {
                     <Image
                       src={image.imageUrl}
                       alt={"alt"}
-                      width={1500}
-                      height={450}
-                      className="rounded-lg mx-auto object-cover h-full"
+                      width={1920}
+                      height={1080}
+                      className="rounded-lg mx-auto object-cover h-full aspect-video"
                     />
                   ) : (
-                    <div className="w-full h-[450px] rounded-lg mx-auto bg-gradient-to-br from-white/5 to-white/0 border border-white/10 backdrop-blur-md flex flex-col items-center justify-center gap-4 group/placeholder">
+                    <div className="w-full aspect-video rounded-lg mx-auto bg-gradient-to-br from-white/5 to-white/0 border border-white/10 backdrop-blur-md flex flex-col items-center justify-center gap-4 group/placeholder">
                       <div className="p-4 rounded-full bg-white/5 group-hover/placeholder:scale-110 transition-transform duration-500">
                         <span className="text-4xl">✨</span>
                       </div>

@@ -10,7 +10,8 @@
     "migrate": "cd packages/database && pnpm run migrate",
     "reset": "cd packages/database && pnpm run reset",
     "template:install": "cd templates/saas-boilerplate && pnpm install && pnpm run generate",
-    "template:dev": "cd templates/saas-boilerplate && pnpm dev"
+    "template:dev": "cd templates/saas-boilerplate && pnpm dev",
+    "template:build": "cd templates/saas-boilerplate && pnpm build"
   },
   "devDependencies": {
     "@workspace/eslint-config": "workspace:*",

@@ -4,21 +4,30 @@ import { z } from "zod";
 import db from "@workspace/database/client";
 import { TRPCError } from "@trpc/server";
 
-const client = new DodoPayments({
-  bearerToken: process.env.DODO_PAYMENTS_API_KEY, // This is the default and can be omitted
-  environment: process.env.DODO_PAYMENTS_ENVIRONMENT! as  'test_mode' | 'live_mode', // defaults to 'live_mode'
-});
+let _client: DodoPayments | null = null;
+function getDodoClient(): DodoPayments {
+  if (!_client) {
+    if (!process.env.DODO_PAYMENTS_API_KEY) {
+      throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Payment gateway is not configured" });
+    }
+    _client = new DodoPayments({
+      bearerToken: process.env.DODO_PAYMENTS_API_KEY,
+      environment: (process.env.DODO_PAYMENTS_ENVIRONMENT || 'live_mode') as 'test_mode' | 'live_mode',
+    });
+  }
+  return _client;
+}
 
 const CREDITS_PER_UNIT = 50; // example: 1 quantity = 50 credits
 
-export const billingRouter = createTRPCRouter({
+export const billingRouter = createTRPCRouter({   
     createNewCustomer: protectedProcedure
     .input( z.object({
       email: z.string().email("Invalid email address"),
       name: z.string().min(1, "Name is required"),
     }))
     .mutation(async ({ input }) => {
-      const response = await client.customers.create({
+      const response = await getDodoClient().customers.create({
         email: input.email,
         name: input.name,
       });
@@ -39,7 +48,7 @@ export const billingRouter = createTRPCRouter({
         throw new TRPCError({ code: "BAD_REQUEST", message: "Quantity out of range" });
       }
 
-      const session = await client.checkoutSessions.create({
+      const session = await getDodoClient().checkoutSessions.create({
         product_cart: [
         { product_id: process.env.DODO_CREDITS_PRODUCT_ID!, quantity }
             ],

@@ -7,6 +7,7 @@ import {
   Download,
   Upload,
   ExternalLink,
+  Rocket,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -35,6 +36,53 @@ import { FloatingLabelInput } from "@workspace/ui/components/misc/floating-label
 import { MODULE_CONFIG } from "@/lib/constants/module";
 import EnvField from "@/components/home/EnvField";
 import { useRouter } from "next/navigation";
+
+const TEMPLATE_REPO_URL = "https://github.com/anoopkarnik/saas-forge";
+
+function buildVercelDeployUrl(values: FormValues): string {
+  const envVars: Record<string, string> = {};
+  const envKeys = Object.keys(values).filter((k) => k !== "name") as (keyof FormValues)[];
+
+  for (const key of envKeys) {
+    if (key === "NEXT_PUBLIC_AUTH_PROVIDERS") continue;
+    const value = values[key];
+    if (Array.isArray(value) && value.length > 0) {
+      envVars[key] = value.join(",");
+    } else if (value && typeof value === "string" && value.trim()) {
+      envVars[key] = value;
+    }
+  }
+
+  // Handle Auth Providers as booleans
+  const selectedProviders = values.NEXT_PUBLIC_AUTH_PROVIDERS || [];
+  envVars["NEXT_PUBLIC_AUTH_EMAIL"] = selectedProviders.includes("email_verification") ? "true" : "false";
+  envVars["NEXT_PUBLIC_AUTH_GOOGLE"] = selectedProviders.includes("google") ? "true" : "false";
+  envVars["NEXT_PUBLIC_AUTH_GITHUB"] = selectedProviders.includes("github") ? "true" : "false";
+  envVars["NEXT_PUBLIC_AUTH_LINKEDIN"] = selectedProviders.includes("linkedin") ? "true" : "false";
+
+  // Split into env keys and defaults (all NEXT_PUBLIC_* vars are non-sensitive)
+  const allKeys = Object.keys(envVars);
+  const defaults: Record<string, string> = {};
+  for (const key of allKeys) {
+    if (key.startsWith("NEXT_PUBLIC_")) {
+      defaults[key] = envVars[key]!;
+    }
+  }
+
+  const params = new URLSearchParams();
+  params.set("repository-url", TEMPLATE_REPO_URL);
+  params.set("framework", "nextjs");
+  params.set("build-command", "pnpm -w run generate && pnpm build");
+  params.set("root-directory", "templates/saas-boilerplate/apps/web");
+  if (values.name) params.set("project-name", values.name);
+  if (allKeys.length > 0) params.set("env", allKeys.join(","));
+  if (Object.keys(defaults).length > 0) {
+    params.set("envDefaults", JSON.stringify(defaults));
+  }
+  params.set("envDescription", "Configure your SaaS boilerplate environment variables. Public/non-sensitive values are pre-filled.");
+
+  return `https://vercel.com/new/clone?${params.toString()}`;
+}
 
 export default function Page() {
   const [isDownloading, setIsDownloading] = React.useState(false);
@@ -249,20 +297,34 @@ export default function Page() {
             Customize your boilerplate settings and download a production-ready monorepo.
           </p>
         </div>
-        <Button
-          onClick={form.handleSubmit(onSubmit)}
-          disabled={!form.formState.isValid || isDownloading}
-          size="lg"
-          className="shadow-lg hover:shadow-xl transition-all"
-        >
-          {isDownloading ? (
-            <>Downloading...</>
-          ) : (
-            <>
-              <Download className="mr-2 h-4 w-4" /> Download Boilerplate
-            </>
-          )}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            onClick={form.handleSubmit(onSubmit)}
+            disabled={!form.formState.isValid || isDownloading}
+            size="lg"
+            className="shadow-lg hover:shadow-xl transition-all"
+          >
+            {isDownloading ? (
+              <>Downloading...</>
+            ) : (
+              <>
+                <Download className="mr-2 h-4 w-4" /> Download Boilerplate
+              </>
+            )}
+          </Button>
+          <Button
+            variant="outline"
+            size="lg"
+            disabled={!form.formState.isValid}
+            className="shadow-lg hover:shadow-xl transition-all"
+            onClick={() => {
+              const url = buildVercelDeployUrl(form.getValues());
+              window.open(url, "_blank", "noopener,noreferrer");
+            }}
+          >
+            <Rocket className="mr-2 h-4 w-4" /> Deploy to Vercel
+          </Button>
+        </div>
       </div>
 
       {/* Upload Zone */}

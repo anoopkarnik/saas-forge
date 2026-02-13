@@ -1,0 +1,47 @@
+# Dependencies
+node_modules/
+
+# Build output
+.next/
+dist/
+build/
+out/
+.turbo/
+.vercel/
+.cache/
+coverage/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Templates (CLI clones from GitHub, not from npm)
+templates/
+
+# Apps and packages source (not needed for CLI)
+apps/
+packages/
+
+# IDE and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Docs
+docs/
+
+# Lock files
+pnpm-lock.yaml
+
+# Git
+.git/
+.gitignore
+
+# Misc
+*.md
+!README.md
+turbo.json
+tsconfig.json
+pnpm-workspace.yaml

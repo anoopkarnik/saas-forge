@@ -8,6 +8,7 @@ import {
   Upload,
   ExternalLink,
 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 import { Button } from "@workspace/ui/components/shadcn/button";
 import {
@@ -50,6 +51,7 @@ export default function Page() {
       NEXT_PUBLIC_COMPANY_NAME: "",
       NEXT_PUBLIC_URL: "",
       // Landing Module
+      NEXT_PUBLIC_CMS: "notion",
       LANDING_DATABASE_ID: "",
       HERO_DATABASE_ID: "",
       FEATURE_DATABASE_ID: "",
@@ -62,25 +64,31 @@ export default function Page() {
       UPSTASH_REDIS_REST_URL: "",
       UPSTASH_REDIS_REST_TOKEN: "",
       // Authentication Module
+      NEXT_PUBLIC_AUTH_FRAMEWORK: "better-auth",
       BETTER_AUTH_SECRET: "",
+      NEXT_PUBLIC_AUTH_PROVIDERS: [] as ("email_verification" | "linkedin" | "google" | "github")[],
       AUTH_LINKEDIN_CLIENT_ID: "",
       AUTH_LINKEDIN_CLIENT_SECRET: "",
       AUTH_GITHUB_CLIENT_ID: "",
       AUTH_GITHUB_CLIENT_SECRET: "",
       AUTH_GOOGLE_CLIENT_ID: "",
       AUTH_GOOGLE_CLIENT_SECRET: "",
+      NEXT_PUBLIC_EMAIL_CLIENT: "none",
       RESEND_API_KEY: "",
       // Support Module
       NEXT_PUBLIC_SUPPORT_MAIL: "",
       NEXT_PUBLIC_CALENDLY_BOOKING_URL: "",
       // Storage Module
+      NEXT_PUBLIC_IMAGE_STORAGE: "vercel_blob",
       BLOB_READ_WRITE_TOKEN: "",
       DATABASE_URL: "",
-      // Observability Module
+      // Observability, Analytics and Security Module
       BETTERSTACK_TELEMETRY_SOURCE_TOKEN: "",
       BETTERSTACK_TELEMETRY_INGESTING_HOST: "",
       NEXT_PUBLIC_GOOGLE_ANALYTICS_MEASUREMENT_ID: "",
+      NEXT_PUBLIC_ALLOW_RATE_LIMIT: "upstash",
       // Payment Module
+      NEXT_PUBLIC_PAYMENT_GATEWAY: "none",
       DODO_PAYMENTS_API_KEY: "",
       DODO_PAYMENTS_WEBHOOK_KEY: "",
       DODO_PAYMENTS_RETURN_URL: "",
@@ -90,6 +98,24 @@ export default function Page() {
     },
     mode: "onChange",
   });
+
+  // Cross-field validation: re-trigger dependent fields when dependencies change
+  const watchedSupportMail = form.watch("NEXT_PUBLIC_SUPPORT_MAIL");
+  const watchedAuthProviders = form.watch("NEXT_PUBLIC_AUTH_PROVIDERS");
+  const watchedEmailClient = form.watch("NEXT_PUBLIC_EMAIL_CLIENT");
+  const watchedPaymentGateway = form.watch("NEXT_PUBLIC_PAYMENT_GATEWAY");
+
+  React.useEffect(() => {
+    form.trigger("NEXT_PUBLIC_EMAIL_CLIENT");
+  }, [watchedSupportMail, watchedAuthProviders]);
+
+  React.useEffect(() => {
+    form.trigger("RESEND_API_KEY");
+  }, [watchedEmailClient]);
+
+  React.useEffect(() => {
+    form.trigger(["DODO_PAYMENTS_API_KEY", "DODO_PAYMENTS_WEBHOOK_KEY", "DODO_PAYMENTS_RETURN_URL", "DODO_PAYMENTS_ENVIRONMENT", "DODO_CREDITS_PRODUCT_ID", "NEXT_PUBLIC_DODO_PAYMENTS_URL"]);
+  }, [watchedPaymentGateway]);
 
   const onSubmit = async (values: FormValues) => {
     setIsDownloading(true);
@@ -105,11 +131,23 @@ export default function Page() {
       const envKeys = Object.keys(values).filter((k) => k !== "name") as (keyof FormValues)[];
 
       for (const key of envKeys) {
+        // Skip NEXT_PUBLIC_AUTH_PROVIDERS as we handle it custom below
+        if (key === "NEXT_PUBLIC_AUTH_PROVIDERS") continue;
+
         const value = values[key];
-        if (value && typeof value === "string" && value.trim()) {
+        if (Array.isArray(value) && value.length > 0) {
+          envVars[key] = value.join(",");
+        } else if (value && typeof value === "string" && value.trim()) {
           envVars[key] = value;
         }
       }
+
+      // Handle Auth Providers as booleans
+      const selectedProviders = values.NEXT_PUBLIC_AUTH_PROVIDERS || [];
+      envVars["NEXT_PUBLIC_AUTH_EMAIL"] = selectedProviders.includes("email_verification") ? "true" : "false";
+      envVars["NEXT_PUBLIC_AUTH_GOOGLE"] = selectedProviders.includes("google") ? "true" : "false";
+      envVars["NEXT_PUBLIC_AUTH_GITHUB"] = selectedProviders.includes("github") ? "true" : "false";
+      envVars["NEXT_PUBLIC_AUTH_LINKEDIN"] = selectedProviders.includes("linkedin") ? "true" : "false";
 
       const response = await fetch("/api/scaffold", {
         method: "POST",
@@ -149,7 +187,9 @@ export default function Page() {
 
       const lines = content.split("\n");
       let count = 0;
+      const parsedEnv: Record<string, string> = {};
 
+      // First pass: parse all env vars
       lines.forEach((line) => {
         if (line.startsWith("#") || !line.trim()) return;
         const match = line.match(/^([A-Z_][A-Z0-9_]*)=(.*)$/);
@@ -162,16 +202,36 @@ export default function Page() {
           if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
             value = value.slice(1, -1);
           }
-
-          if (key in formSchema.shape) {
-            form.setValue(key as keyof FormValues, value, {
-              shouldDirty: true,
-              shouldValidate: true,
-            });
-            count++;
-          }
+          parsedEnv[key] = value;
         }
       });
+
+      // Handle standard fields
+      Object.keys(parsedEnv).forEach((key) => {
+        if (key in formSchema.shape && key !== "NEXT_PUBLIC_AUTH_PROVIDERS") {
+          form.setValue(key as keyof FormValues, parsedEnv[key], {
+            shouldDirty: true,
+            shouldValidate: true,
+          });
+          count++;
+        }
+      });
+
+      // Handle Auth Providers reconstruction from booleans
+      const providers: ("email_verification" | "linkedin" | "google" | "github")[] = [];
+      if (parsedEnv["NEXT_PUBLIC_AUTH_EMAIL"] === "true") providers.push("email_verification");
+      if (parsedEnv["NEXT_PUBLIC_AUTH_GOOGLE"] === "true") providers.push("google");
+      if (parsedEnv["NEXT_PUBLIC_AUTH_GITHUB"] === "true") providers.push("github");
+      if (parsedEnv["NEXT_PUBLIC_AUTH_LINKEDIN"] === "true") providers.push("linkedin");
+
+      if (providers.length > 0) {
+        form.setValue("NEXT_PUBLIC_AUTH_PROVIDERS", providers, {
+          shouldDirty: true,
+          shouldValidate: true,
+        });
+        count += providers.length; // Count each provider as a field
+      }
+
       console.log(`Auto-filled ${count} fields from .env file`);
     };
     reader.readAsText(file);
@@ -228,7 +288,7 @@ export default function Page() {
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
 
             {MODULE_CONFIG.map((module) => (
-              <Card key={module.id} className={`shadow-sm border-border/60 ${module.id === "project" ? "md:col-span-2" : ""}`}>
+              <Card key={module.id} className={`shadow-sm border-border/60 border-l-4 ${module.borderColor} ${module.id === "project" ? "md:col-span-2" : ""}`}>
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
@@ -264,14 +324,37 @@ export default function Page() {
                       )}
                     />
                   )}
-                  {module.fields.map((field) => (
-                    <EnvField
-                      key={field.name}
-                      control={form.control}
-                      name={field.name as keyof FormValues}
-                      description={field.description}
-                    />
-                  ))}
+                  <AnimatePresence mode="popLayout">
+                    {module.fields
+                      .filter((field) => {
+                        if (field.showIf) {
+                          const dependencyValue = form.watch(field.showIf.field as keyof FormValues);
+                          if (dependencyValue !== field.showIf.value) return false;
+                        }
+                        if (field.showIfIncludes) {
+                          const dependencyValue = form.watch(field.showIfIncludes.field as keyof FormValues);
+                          if (!Array.isArray(dependencyValue) || !(dependencyValue as string[]).includes(field.showIfIncludes.value)) return false;
+                        }
+                        return true;
+                      })
+                      .map((field) => (
+                        <motion.div
+                          key={field.name}
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto" }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.2, ease: "easeOut" }}
+                        >
+                          <EnvField
+                            control={form.control}
+                            name={field.name as keyof FormValues}
+                            description={field.description}
+                            required={field.required}
+                            sectionId={module.id}
+                          />
+                        </motion.div>
+                      ))}
+                  </AnimatePresence>
                 </CardContent>
               </Card>
             ))}

@@ -36,9 +36,11 @@ const LoginContent = () => {
   return (
     <div className='min-h-screen grid grid-cols-1 lg:grid-cols-2 '>
       <div className='flex items-center justify-center bg-gradient-to-br from-primary to-sidebar dark:bg-gradient-to-br p-8'>
-        <LoginCard showEmail={true} showGoogleProvider={true}
-          showGithubProvider={true}
-          showLinkedinProvider={true} onEmailSubmit={loginWithEmail}
+        <LoginCard showEmail={process.env.NEXT_PUBLIC_AUTH_EMAIL === 'true'}
+          showGoogleProvider={process.env.NEXT_PUBLIC_AUTH_GOOGLE === 'true'}
+          showGithubProvider={process.env.NEXT_PUBLIC_AUTH_GITHUB === 'true'}
+          showLinkedinProvider={process.env.NEXT_PUBLIC_AUTH_LINKEDIN === 'true'}
+          onEmailSubmit={loginWithEmail}
           onGoogleProviderSubmit={() => loginWithSocials('google')}
           onGithubProviderSubmit={() => loginWithSocials('github')}
           onLinkedinProviderSubmit={() => loginWithSocials('linkedin')}

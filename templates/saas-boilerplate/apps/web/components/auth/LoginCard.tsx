@@ -49,7 +49,7 @@ const LoginCard = ({ showEmail, showGoogleProvider, showGithubProvider, showLink
 
   return (
     <Card className='w-full max-w-md border-border/50 shadow-xl bg-card/50 backdrop-blur-sm'>
-      <CardHeader className="space-y-1 pb-6">
+      <CardHeader className="space-y-1">
         <h2 className='text-3xl font-bold tracking-tight text-center'>Login</h2>
         <p className='text-sm text-muted-foreground text-center'>
           Welcome back! Please enter your details.
@@ -93,7 +93,7 @@ const LoginCard = ({ showEmail, showGoogleProvider, showGithubProvider, showLink
           </Form>
         </CardContent>}
 
-      {(showGoogleProvider || showGithubProvider || showLinkedinProvider) && (
+      {(showGoogleProvider || showGithubProvider || showLinkedinProvider) && (showEmail) && (
         <div className="px-6 relative">
           <div className="absolute inset-0 flex items-center px-6">
             <span className="w-full border-t border-border/60" />
@@ -105,24 +105,21 @@ const LoginCard = ({ showEmail, showGoogleProvider, showGithubProvider, showLink
       )}
 
       <CardFooter className='flex flex-col gap-3 pt-6'>
-        <div className="grid grid-cols-3 gap-3 w-full">
-          {showGoogleProvider && (
-            <Button variant='outline' onClick={onGoogleProviderSubmit} className="w-full h-10 hover:bg-muted/50 transition-colors" title="Sign in with Google">
-              <FcGoogle className="h-5 w-5" />
-            </Button>
-          )}
-          {showGithubProvider && (
-            <Button variant='outline' onClick={onGithubProviderSubmit} className="w-full h-10 hover:bg-muted/50 transition-colors" title="Sign in with GitHub">
-              <FaGithub className="h-5 w-5" />
-            </Button>
-          )}
-          {showLinkedinProvider && (
-            <Button variant='outline' onClick={onLinkedinProviderSubmit} className="w-full h-10 hover:bg-muted/50 transition-colors" title="Sign in with LinkedIn">
-              <FaLinkedin className="h-5 w-5 text-[#0a66c2]" />
-            </Button>
-          )}
-        </div>
-
+        {showGoogleProvider && (
+          <Button variant='outline' onClick={onGoogleProviderSubmit} className="w-full h-10 hover:bg-muted/50 transition-colors" title="Sign in with Google">
+            <FcGoogle className="h-5 w-5" />
+          </Button>
+        )}
+        {showGithubProvider && (
+          <Button variant='outline' onClick={onGithubProviderSubmit} className="w-full h-10 hover:bg-muted/50 transition-colors" title="Sign in with GitHub">
+            <FaGithub className="h-5 w-5" />
+          </Button>
+        )}
+        {showLinkedinProvider && (
+          <Button variant='outline' onClick={onLinkedinProviderSubmit} className="w-full h-10 hover:bg-muted/50 transition-colors" title="Sign in with LinkedIn">
+            <FaLinkedin className="h-5 w-5 text-[#0a66c2]" />
+          </Button>
+        )}
         <div className="mt-4 text-center text-sm text-muted-foreground">
           Don&apos;t have an account?{" "}
           <button onClick={() => router.push('/sign-up')} className='font-medium text-primary hover:underline transition-all cursor-pointer'>

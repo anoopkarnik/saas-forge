@@ -39,9 +39,11 @@ const RegisterContent = () => {
   return (
     <div className='grid grid-cols-1 lg:grid-cols-2 min-h-screen'>
       <div className='flex items-center justify-center bg-gradient-to-br from-primary to-sidebar dark:bg-gradient-to-br p-8'>
-        <RegisterCard showEmail={true}
-          showGoogleProvider={true} showGithubProvider={true}
-          showLinkedinProvider={true} onEmailSubmit={register}
+        <RegisterCard showEmail={process.env.NEXT_PUBLIC_AUTH_EMAIL === 'true'}
+          showGoogleProvider={process.env.NEXT_PUBLIC_AUTH_GOOGLE === 'true'}
+          showGithubProvider={process.env.NEXT_PUBLIC_AUTH_GITHUB === 'true'}
+          showLinkedinProvider={process.env.NEXT_PUBLIC_AUTH_LINKEDIN === 'true'}
+          onEmailSubmit={register}
           onGoogleProviderSubmit={() => loginWithSocials('google')}
           onGithubProviderSubmit={() => loginWithSocials('github')}
           onLinkedinProviderSubmit={() => loginWithSocials('linkedin')}

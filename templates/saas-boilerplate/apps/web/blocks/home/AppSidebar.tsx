@@ -68,7 +68,7 @@ export function AppSidebar() {
             </SidebarContent>
             <SidebarFooter className="p-4 border-t border-sidebar-border/40 bg-sidebar-footer/5">
                 <div className="space-y-4">
-                    <ProgressWithCredits />
+                    {process.env.NEXT_PUBLIC_PAYMENT_GATEWAY !== "none" && <ProgressWithCredits />}
                     <SidebarUser />
                 </div>
             </SidebarFooter>

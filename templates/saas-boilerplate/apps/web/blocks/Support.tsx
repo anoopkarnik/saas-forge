@@ -59,7 +59,7 @@ const Support = () => {
           {/* Tiles – hidden when a panel is active */}
           {!activePanel && (
             <div className="grid grid-cols-2 gap-3">
-              <div
+              {process.env.NEXT_PUBLIC_SUPPORT_MAIL && <div
                 className="group flex flex-col items-center gap-3 p-4 rounded-xl cursor-pointer 
                   bg-muted/50 hover:bg-muted transition-all duration-200 border border-transparent hover:border-border/50"
                 onClick={() => togglePanel("message")}
@@ -68,7 +68,7 @@ const Support = () => {
                   <TiMessage size={24} />
                 </div>
                 <div className="text-center text-xs font-medium">Send Message</div>
-              </div>
+              </div>}
 
               {/* <div
                 className="group flex flex-col items-center gap-3 p-4 rounded-xl cursor-pointer 
@@ -92,7 +92,7 @@ const Support = () => {
                 <div className="text-center text-xs font-medium">Documentation</div>
               </div>
 
-              <a
+              {process.env.NEXT_PUBLIC_CALENDLY_BOOKING_URL && <a
                 href={process.env.NEXT_PUBLIC_CALENDLY_BOOKING_URL}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -103,7 +103,7 @@ const Support = () => {
                   <FaCalendarAlt size={24} />
                 </div>
                 <div className="text-center text-xs font-medium">Book Meeting</div>
-              </a>
+              </a>}
 
               {/* <div
                 className="group flex flex-col items-center gap-3 p-4 rounded-xl cursor-pointer 

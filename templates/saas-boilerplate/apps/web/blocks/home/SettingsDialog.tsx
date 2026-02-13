@@ -123,7 +123,7 @@ export function SettingsDialog({ children, open: controlledOpen, onOpenChange: s
               <MyAccountSettings />}
             {currentOpenedTab === "Sessions" &&
               <SessionSettings />}
-            {currentOpenedTab === "Plans & Billing" &&
+            {currentOpenedTab === "Plans & Billing" && process.env.NEXT_PUBLIC_PAYMENT_GATEWAY !== "none" &&
               <PlansBilling />}
 
           </main>

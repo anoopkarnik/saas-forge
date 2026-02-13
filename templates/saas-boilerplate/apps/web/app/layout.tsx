@@ -11,7 +11,7 @@ import Support from "@/blocks/Support";
 
 const THEME = process.env.NEXT_PUBLIC_THEME ?? "neutral";
 
-const themeClass = `theme-${THEME}-dark`;
+const themeClass = `theme-${THEME}`;
 
 export const metadata: Metadata = {
   title: "SaaS Forge",
@@ -25,8 +25,8 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={`${themeClass} ${geistSans.className} ${geistMono.variable} ${cyberdyne.variable} `}>
+    <html lang="en" suppressHydrationWarning className={themeClass}>
+      <body className={`${geistSans.className} ${geistMono.variable} ${cyberdyne.variable}`}>
         <TRPCReactProvider>
           <ThemeProvider>
             {children}

@@ -1,6 +1,22 @@
 import { createTRPCRouter, baseProcedure } from "@/trpc/init";
 import { sendSupportEmail } from "@workspace/email/resend/index";
 import { z } from "zod";
+import { TRPCError } from "@trpc/server";
+import { auth } from "@workspace/auth/better-auth/auth";
+import { headers } from "next/headers";
+import { ratelimit, chatRateLimit } from "@/server/ratelimit";
+
+async function getRateLimitIdentifier() {
+  const head = await headers();
+  const session = await auth.api.getSession({
+    headers: head,
+  });
+
+  if (session?.user?.id) return session.user.id;
+
+  const ip = head.get("x-forwarded-for")?.split(",")[0] ?? "127.0.0.1";
+  return ip;
+}
 
 export const supportRouter = createTRPCRouter({
     sendSupportMessage: baseProcedure
@@ -12,6 +28,15 @@ export const supportRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ input }) => {
+      const identifier = await getRateLimitIdentifier();
+      const { success } = await ratelimit.limit(identifier);
+      if (!success) {
+        throw new TRPCError({
+          code: "TOO_MANY_REQUESTS",
+          message: "Rate limit exceeded. Please try again later.",
+        });
+      }
+
       const { subject, email, message } = input;
       let newSubject = subject + " from " + email + " for " + process.env.NEXT_PUBLIC_SAAS_NAME ; 
       const res = await sendSupportEmail(newSubject,message)
@@ -31,6 +56,15 @@ export const supportRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ input }) => {
+      const identifier = await getRateLimitIdentifier();
+      const { success } = await ratelimit.limit(identifier);
+      if (!success) {
+        throw new TRPCError({
+          code: "TOO_MANY_REQUESTS",
+          message: "Rate limit exceeded. Please try again later.",
+        });
+      }
+
       const { email } = input;
 
       const webhookUrl = process.env.N8N_SUBSCRIBE_NEWSLETTER_WEBHOOK_URL;
@@ -62,6 +96,16 @@ export const supportRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ input }) => {
+      const identifier = await getRateLimitIdentifier();
+      // Use higher limit for chat
+      const { success } = await chatRateLimit.limit(identifier);
+      if (!success) {
+        throw new TRPCError({
+          code: "TOO_MANY_REQUESTS",
+          message: "You are sending messages too quickly. Please slow down.",
+        });
+      }
+
       const { message } = input;
 
       const webhookUrl = process.env.N8N_SAAS_ASSISTANT_WEBHOOK_URL;

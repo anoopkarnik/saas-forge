@@ -65,21 +65,27 @@ const options = {
         }
     },
     socialProviders: {
-        github: {
-            clientId: process.env.AUTH_GITHUB_CLIENT_ID ?? "",
-            clientSecret: process.env.AUTH_GITHUB_CLIENT_SECRET ?? "",
-        },
-        google: {
-            clientId: process.env.AUTH_GOOGLE_CLIENT_ID ?? "",
-            clientSecret: process.env.AUTH_GOOGLE_CLIENT_SECRET ?? "",
-        },
-        linkedin: {
-            clientId: process.env.AUTH_LINKEDIN_CLIENT_ID ?? "",
-            clientSecret: process.env.AUTH_LINKEDIN_CLIENT_SECRET ?? "",
-        }
+        ...(process.env.NEXT_PUBLIC_AUTH_GITHUB === 'true' ? {
+            github: {
+                clientId: process.env.AUTH_GITHUB_CLIENT_ID ?? "",
+                clientSecret: process.env.AUTH_GITHUB_CLIENT_SECRET ?? "",
+            }
+        } : {}),
+        ...(process.env.NEXT_PUBLIC_AUTH_GOOGLE === 'true' ? {
+            google: {
+                clientId: process.env.AUTH_GOOGLE_CLIENT_ID ?? "",
+                clientSecret: process.env.AUTH_GOOGLE_CLIENT_SECRET ?? "",
+            }
+        } : {}),
+        ...(process.env.NEXT_PUBLIC_AUTH_LINKEDIN === 'true' ? {
+            linkedin: {
+                clientId: process.env.AUTH_LINKEDIN_CLIENT_ID ?? "",
+                clientSecret: process.env.AUTH_LINKEDIN_CLIENT_SECRET ?? "",
+            }
+        } : {})
     },
     emailAndPassword: {
-        enabled: true,
+        enabled: process.env.NEXT_PUBLIC_AUTH_EMAIL === 'true',
         autoSignIn: false,
         requireEmailVerification: true,
         sendResetPassword : async ({user, url}) =>{

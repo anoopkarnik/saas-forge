@@ -315,14 +315,14 @@ export default function Page() {
           <Button
             variant="outline"
             size="lg"
-            disabled={true}
+            disabled={!form.formState.isValid || isDownloading}
             className="shadow-lg hover:shadow-xl transition-all"
             onClick={() => {
               const url = buildVercelDeployUrl(form.getValues());
               window.open(url, "_blank", "noopener,noreferrer");
             }}
           >
-            <Rocket className="mr-2 h-4 w-4" /> Deploy to Vercel (Coming Soon)
+            <Rocket className="mr-2 h-4 w-4" /> Deploy to Vercel
           </Button>
         </div>
       </div>

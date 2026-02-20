@@ -1,4 +1,4 @@
-import {z} from  'zod';
+import { z } from 'zod';
 
 export const formSchema = z.object({
   // Project name (folder name)
@@ -16,7 +16,7 @@ export const formSchema = z.object({
   NEXT_PUBLIC_URL: z.string(),
 
   // Landing Module Variables
-  NEXT_PUBLIC_CMS: z.enum(['notion','strapi']),
+  NEXT_PUBLIC_CMS: z.enum(['notion', 'strapi']),
   LANDING_DATABASE_ID: z.string().optional(),
   HERO_DATABASE_ID: z.string().optional(),
   FEATURE_DATABASE_ID: z.string().optional(),
@@ -39,11 +39,12 @@ export const formSchema = z.object({
   AUTH_GITHUB_CLIENT_SECRET: z.string().optional(),
   AUTH_GOOGLE_CLIENT_ID: z.string().optional(),
   AUTH_GOOGLE_CLIENT_SECRET: z.string().optional(),
-  NEXT_PUBLIC_EMAIL_CLIENT: z.enum(["none","resend"]),
+  NEXT_PUBLIC_EMAIL_CLIENT: z.enum(["none", "resend"]),
   RESEND_API_KEY: z.string().optional(),
 
   // Support Module Variables
-  NEXT_PUBLIC_SUPPORT_MAIL: z.string(),
+  NEXT_PUBLIC_SUPPORT_FEATURES: z.array(z.enum(["support_mail", "calendly"])).optional(),
+  NEXT_PUBLIC_SUPPORT_MAIL: z.string().optional(),
   NEXT_PUBLIC_CALENDLY_BOOKING_URL: z.string().optional(),
 
   // Storage Module Variables
@@ -52,13 +53,14 @@ export const formSchema = z.object({
   DATABASE_URL: z.string(),
 
   // Observability Module Variables
+  NEXT_PUBLIC_OBSERVABILITY_FEATURES: z.array(z.enum(["logging", "google_analytics", "rate_limiting"])).min(1, "Select at least one observability feature"),
   BETTERSTACK_TELEMETRY_SOURCE_TOKEN: z.string().optional(),
   BETTERSTACK_TELEMETRY_INGESTING_HOST: z.string().optional(),
   NEXT_PUBLIC_GOOGLE_ANALYTICS_MEASUREMENT_ID: z.string().optional(),
   NEXT_PUBLIC_ALLOW_RATE_LIMIT: z.enum(["upstash"]),
 
   // Payment Module Variables
-  NEXT_PUBLIC_PAYMENT_GATEWAY: z.enum(['none','dodo', 'stripe']),
+  NEXT_PUBLIC_PAYMENT_GATEWAY: z.enum(['none', 'dodo', 'stripe']),
   DODO_PAYMENTS_API_KEY: z.string().optional(),
   DODO_PAYMENTS_WEBHOOK_KEY: z.string().optional(),
   DODO_PAYMENTS_RETURN_URL: z.string().optional(),
@@ -121,7 +123,7 @@ export const formSchema = z.object({
     });
   }
 
-  if (data.NEXT_PUBLIC_PAYMENT_GATEWAY === "stripe"){
+  if (data.NEXT_PUBLIC_PAYMENT_GATEWAY === "stripe") {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       message: "Stripe support is coming soon. Please select Dodo Payments.",
@@ -145,7 +147,7 @@ export const formSchema = z.object({
     });
   }
 
-  if (data.NEXT_PUBLIC_IMAGE_STORAGE === "cloudflare_r2"){
+  if (data.NEXT_PUBLIC_IMAGE_STORAGE === "cloudflare_r2") {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       message: "Cloudflare R2 support is coming soon. Please select Vercel Blob.",
@@ -171,12 +173,31 @@ export const formSchema = z.object({
   }
 
   // Support mail requires an email client
-  if (data.NEXT_PUBLIC_SUPPORT_MAIL && data.NEXT_PUBLIC_SUPPORT_MAIL.trim() !== "") {
+  const supportFeatures = data.NEXT_PUBLIC_SUPPORT_FEATURES || [];
+
+  if (supportFeatures.includes("support_mail")) {
+    if (!data.NEXT_PUBLIC_SUPPORT_MAIL || data.NEXT_PUBLIC_SUPPORT_MAIL.trim() === "") {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Support email is required when Send Message is enabled.",
+        path: ["NEXT_PUBLIC_SUPPORT_MAIL"],
+      });
+    }
     if (!data.NEXT_PUBLIC_EMAIL_CLIENT || data.NEXT_PUBLIC_EMAIL_CLIENT === "none") {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: "An email client is required when a support email is provided. Please select one.",
         path: ["NEXT_PUBLIC_EMAIL_CLIENT"],
+      });
+    }
+  }
+
+  if (supportFeatures.includes("calendly")) {
+    if (!data.NEXT_PUBLIC_CALENDLY_BOOKING_URL || data.NEXT_PUBLIC_CALENDLY_BOOKING_URL.trim() === "") {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Calendly URL is required when Book Meeting is enabled.",
+        path: ["NEXT_PUBLIC_CALENDLY_BOOKING_URL"],
       });
     }
   }
@@ -253,6 +274,27 @@ export const formSchema = z.object({
         });
       }
     });
+  }
+
+  // Observability validations
+  const observabilityFeatures = data.NEXT_PUBLIC_OBSERVABILITY_FEATURES || [];
+
+  if (observabilityFeatures.includes("logging")) {
+    (["BETTERSTACK_TELEMETRY_SOURCE_TOKEN", "BETTERSTACK_TELEMETRY_INGESTING_HOST"] as const).forEach((field) => {
+      // These are optional in schema but should probably be filled if logging is selected. 
+      // However, user might just want the toggle without values initially. 
+      // Leaving as optional for now to match current behavior where they are optional strings.
+    });
+  }
+
+  if (observabilityFeatures.includes("rate_limiting")) {
+    if (!data.NEXT_PUBLIC_ALLOW_RATE_LIMIT) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Rate limiting provider is required when Rate Limiting is enabled.",
+        path: ["NEXT_PUBLIC_ALLOW_RATE_LIMIT"],
+      });
+    }
   }
 });
 

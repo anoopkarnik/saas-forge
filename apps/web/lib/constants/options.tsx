@@ -3,7 +3,7 @@ import { FaGithub, FaLinkedin, FaStripe } from "react-icons/fa";
 import { FcGoogle } from "react-icons/fc";
 import {
   Mail, Shield, Sun, Moon, Monitor, Database,
-  Cloud, Zap, CreditCard, Ban, CircleDot
+  Cloud, Zap, CreditCard, Ban, CircleDot, Activity, ShieldAlert, BarChart3, MessageCircle, Calendar
 } from "lucide-react";
 import { SiNotion, SiStrapi, SiUpstash, SiVercel, SiCloudflare, SiResend } from "react-icons/si";
 
@@ -85,5 +85,14 @@ export const multiselectOptions: Record<string, MultiselectOption[]> = {
     { value: "linkedin", label: "LinkedIn", icon: <FaLinkedin className="h-5 w-5 text-[#0a66c2]" />, color: "text-[#0a66c2] border-[#0a66c2]/50 bg-[#0a66c2]/10" },
     { value: "google", label: "Google", icon: <FcGoogle className="h-5 w-5" />, color: "text-red-500 border-red-500/50 bg-red-500/10" },
     { value: "github", label: "GitHub", icon: <FaGithub className="h-5 w-5" />, color: "text-foreground border-foreground/50 bg-foreground/10" },
+  ],
+  NEXT_PUBLIC_OBSERVABILITY_FEATURES: [
+    { value: "logging", label: "Logging", icon: <Activity className="h-5 w-5" />, color: "text-orange-500 border-orange-500/50 bg-orange-500/10" },
+    { value: "google_analytics", label: "Google Analytics", icon: <BarChart3 className="h-5 w-5" />, color: "text-yellow-500 border-yellow-500/50 bg-yellow-500/10" },
+    { value: "rate_limiting", label: "Rate Limiting", icon: <ShieldAlert className="h-5 w-5" />, color: "text-blue-500 border-blue-500/50 bg-blue-500/10" },
+  ],
+  NEXT_PUBLIC_SUPPORT_FEATURES: [
+    { value: "support_mail", label: "Send Support Mail", icon: <MessageCircle className="h-5 w-5" />, color: "text-rose-500 border-rose-500/50 bg-rose-500/10" },
+    { value: "calendly", label: "Book Meeting", icon: <Calendar className="h-5 w-5" />, color: "text-cyan-500 border-cyan-500/50 bg-cyan-500/10" },
   ],
 };

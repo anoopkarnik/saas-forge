@@ -12,6 +12,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.995.0",
     "@dodopayments/nextjs": "^0.3.3",
     "@hookform/resolvers": "^5.2.2",
     "@next/third-parties": "^16.0.6",

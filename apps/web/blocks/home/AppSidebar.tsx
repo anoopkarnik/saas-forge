@@ -1,4 +1,5 @@
 "use client";
+import React, { useEffect, useState } from "react";
 import {
     Sidebar,
     SidebarContent,
@@ -24,7 +25,11 @@ import SidebarUser from "./SidebarUser";
 
 
 export function AppSidebar() {
-    const { theme } = useTheme();
+    const { theme, resolvedTheme } = useTheme();
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => {
+        setMounted(true);
+    }, []);
     const trpc = useTRPC();
     const { data } = useSuspenseQuery(trpc.landing.getLandingInfoFromNotion.queryOptions());
     const router = useRouter()
@@ -39,7 +44,7 @@ export function AppSidebar() {
                             href="/"
                             className="flex items-center gap-3 font-cyberdyne px-2"
                         >
-                            {theme === "dark" ?
+                            {mounted && (theme === "dark" || resolvedTheme === "dark") ?
                                 <Image src={data.navbarSection?.darkLogo} alt={data.navbarSection?.title} width={32} height={32} className="w-8 h-8" /> :
                                 <Image src={data.navbarSection?.logo} alt={data.navbarSection?.title} width={32} height={32} className="w-8 h-8" />}
                             <div className="hidden lg:flex flex-col items-start text-lg tracking-tight font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">

@@ -24,8 +24,13 @@ import { useRouter } from "next/navigation";
 const NavbarSection = ({ navbarSection }: { navbarSection: NavbarSectionProps }) => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const { theme } = useTheme();
+  const [mounted, setMounted] = useState(false);
   const [starCount, setStarCount] = useState<number>(0);
   const router = useRouter()
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     const fetchStarCount = async () => {
@@ -56,14 +61,18 @@ const NavbarSection = ({ navbarSection }: { navbarSection: NavbarSectionProps })
               href="/"
               className="ml-2 font-bold text-xl flex items-center gap-2"
             >
-              {theme === "dark" ? (
-                navbarSection.darkLogo ? (
-                  <Image src={navbarSection.darkLogo} alt={navbarSection.title} width={30} height={30} />
-                ) : <span className="text-xl">🚀</span>
+              {mounted ? (
+                theme === "dark" ? (
+                  navbarSection.darkLogo ? (
+                    <Image src={navbarSection.darkLogo} alt={navbarSection.title} width={30} height={30} />
+                  ) : <span className="text-xl">🚀</span>
+                ) : (
+                  navbarSection.logo ? (
+                    <Image src={navbarSection.logo} alt={navbarSection.title} width={30} height={30} />
+                  ) : <span className="text-xl">🚀</span>
+                )
               ) : (
-                navbarSection.logo ? (
-                  <Image src={navbarSection.logo} alt={navbarSection.title} width={30} height={30} />
-                ) : <span className="text-xl">🚀</span>
+                <div className="w-[30px] h-[30px]" />
               )}
               <div className="hidden lg:flex">{navbarSection.title}</div>
             </a>

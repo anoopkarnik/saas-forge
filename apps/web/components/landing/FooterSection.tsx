@@ -8,6 +8,11 @@ import { motion } from "framer-motion";
 const FooterSection = ({ footerSection }: { footerSection: FooterSectionProps }) => {
     const [footerTypes, setFooterTypes] = useState<any>([]);
     const { theme } = useTheme();
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     useEffect(() => {
         const types = footerSection.links?.map((footer: FooterLinkProps) => footer.type);
@@ -31,14 +36,18 @@ const FooterSection = ({ footerSection }: { footerSection: FooterSectionProps })
                         href="/"
                         className="ml-2 font-bold text-xl flex items-center gap-2"
                     >
-                        {theme === "dark" ? (
-                            footerSection.darkLogo ? (
-                                <Image src={footerSection.darkLogo} alt={footerSection.title} width={30} height={30} />
-                            ) : <span className="text-xl">🚀</span>
+                        {mounted ? (
+                            theme === "dark" ? (
+                                footerSection.darkLogo ? (
+                                    <Image src={footerSection.darkLogo} alt={footerSection.title} width={30} height={30} />
+                                ) : <span className="text-xl">🚀</span>
+                            ) : (
+                                footerSection.logo ? (
+                                    <Image src={footerSection.logo} alt={footerSection.title} width={30} height={30} />
+                                ) : <span className="text-xl">🚀</span>
+                            )
                         ) : (
-                            footerSection.logo ? (
-                                <Image src={footerSection.logo} alt={footerSection.title} width={30} height={30} />
-                            ) : <span className="text-xl">🚀</span>
+                            <div className="w-[30px] h-[30px]" />
                         )}
                         <div className="hidden lg:flex">{footerSection.title}</div>
                     </a>

@@ -120,7 +120,7 @@ describe('Billing Router Integration Tests', () => {
       expect(result).toEqual({ checkoutUrl: 'https://checkout.dodo.com/session_123' });
       expect(mockCreateCheckoutSession).toHaveBeenCalledWith({
         product_cart: [{ product_id: 'prod_123', quantity: 2 }],
-        return_url: 'http://localhost:3000/billing',
+        return_url: 'http://localhost:3000',
         customer: { email: 'test@test.com', name: 'Test User' },
         metadata: { userId: 'user_1', credits: '100' },
       });

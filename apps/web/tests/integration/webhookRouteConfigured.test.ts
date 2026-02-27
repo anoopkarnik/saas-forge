@@ -7,6 +7,7 @@ process.env.DODO_PAYMENTS_WEBHOOK_KEY = 'test_webhook_key';
 // Mock DB
 const mockUserUpdate = vi.fn();
 const mockTransactionCreate = vi.fn();
+const mockTransactionFindFirst = vi.fn();
 vi.mock('@workspace/database/client', () => ({
   default: {
     user: {
@@ -14,7 +15,19 @@ vi.mock('@workspace/database/client', () => ({
     },
     transaction: {
       create: (...args: any[]) => mockTransactionCreate(...args),
+      findFirst: (...args: any[]) => mockTransactionFindFirst(...args),
     },
+    $transaction: async (callback: any) => {
+      // Create a mock transaction client that just passes calls to the main mocks
+      const mockTx = {
+        user: { update: (...args: any[]) => mockUserUpdate(...args) },
+        transaction: {
+          create: (...args: any[]) => mockTransactionCreate(...args),
+          findFirst: (...args: any[]) => mockTransactionFindFirst(...args),
+        }
+      };
+      return callback(mockTx);
+    }
   },
 }));
 
@@ -84,13 +97,15 @@ describe('Dodo Webhook Route - Configured', () => {
       data: {
         userId: 'user_1',
         eventId: 'pay_123',
+        checkoutSessionId: 'pay_123',
+        receiptUrl: 'undefined/invoices/payments/pay_123',
         description: 'Credit Purchase',
         amount: 1000,
         currency: 'USD',
       },
     });
 
-    expect(mockRevalidatePath).toHaveBeenCalledWith('/(home)');
+    expect(mockRevalidatePath).toHaveBeenCalledWith('/', 'layout');
   });
 
   it('should throw error for invalid payload in onPaymentSucceeded', async () => {

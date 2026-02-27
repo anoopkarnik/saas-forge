@@ -50,6 +50,7 @@
     "react-icons": "^5.5.0",
     "react-spinners": "^0.17.0",
     "sonner": "^2.0.7",
+    "stripe": "^20.4.0",
     "typewriter-effect": "^2.22.0",
     "vitest": "^4.0.18",
     "zod": "^4.2.1"

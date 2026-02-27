@@ -12,9 +12,9 @@ import { useQuery } from "@tanstack/react-query";
 
 export function TransactionHistoryCard() {
   const trpc = useTRPC();
-  const { data: purchases, isLoading } = useQuery(
-    trpc.billing.getTransactions.queryOptions()
-  );
+  const { data: purchases, isLoading } = useQuery({
+    ...trpc.billing.getTransactions.queryOptions()
+  });
 
   return (
     <Card className='shadow-sm border-border/60'>
@@ -53,7 +53,7 @@ export function TransactionHistoryCard() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {purchases?.map((purchase, index) => (
+                {purchases?.map((purchase: any, index: number) => (
                   <TableRow key={purchase.id}>
                     <TableCell className="font-medium text-muted-foreground">{index + 1}</TableCell>
                     <TableCell>{formatDate(purchase.date)}</TableCell>
@@ -63,7 +63,7 @@ export function TransactionHistoryCard() {
                       <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-200 dark:border-green-800">Paid</Badge>
                     </TableCell>
                     <TableCell className="text-right">
-                      <InvoiceBtn id={purchase.eventId} />
+                      <InvoiceBtn receiptUrl={purchase.receiptUrl} />
                     </TableCell>
                   </TableRow>
                 ))}

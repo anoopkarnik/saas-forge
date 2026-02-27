@@ -100,13 +100,26 @@ describe('Download Form Schema', () => {
     }
   });
 
-  it('should invalidate when cloudflare_r2 is selected', () => {
+  it('should invalidate when cloudflare_r2 is selected and config is missing', () => {
     const invalidData = { ...validBaseData, NEXT_PUBLIC_IMAGE_STORAGE: 'cloudflare_r2' };
     const result = formSchema.safeParse(invalidData);
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.error.issues.some((issue) => issue.message === 'Cloudflare R2 support is coming soon. Please select Vercel Blob.')).toBe(true);
+      expect(result.error.issues.some((issue) => issue.message === 'Required for Cloudflare R2')).toBe(true);
     }
+  });
+
+  it('should validate when cloudflare_r2 is selected and config is present', () => {
+    const validData = { 
+      ...validBaseData, 
+      NEXT_PUBLIC_IMAGE_STORAGE: 'cloudflare_r2',
+      R2_ACCOUNT_ID: 'account_id',
+      R2_ACCESS_KEY_ID: 'access_key',
+      R2_SECRET_ACCESS_KEY: 'secret_key',
+      R2_BUCKET_NAME: 'bucket'
+    };
+    const result = formSchema.safeParse(validData);
+    expect(result.success).toBe(true);
   });
 
   it('should invalidate when upstash is selected for rate limiting without tokens', () => {

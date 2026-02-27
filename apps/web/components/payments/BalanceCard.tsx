@@ -3,17 +3,24 @@
 import { CoinsIcon } from "lucide-react"
 import { useSession } from "@workspace/auth/better-auth/auth-client";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader } from "@workspace/ui/components/shadcn/card"
+import { useTRPC } from "@/trpc/client";
 import { Skeleton } from "@workspace/ui/components/shadcn/skeleton";
+import { useQuery } from "@tanstack/react-query";
 
 export function BalanceCard() {
-  const { data: session, isPending } = useSession();
+  const trpc = useTRPC();
+  const { data: session } = useSession();
+  const { data: creditsData } = useQuery({
+    ...trpc.billing.getCreditsBalance.queryOptions(),
+    enabled: !!session?.user?.id,
+  });
 
-  if (isPending) {
+  if (!session || !session.user || (creditsData?.creditsUsed === undefined && session.user.creditsUsed === undefined) || (creditsData?.creditsTotal === undefined && session.user.creditsTotal === undefined)) {
     return <Skeleton className="h-[200px] w-full rounded-xl" />;
   }
 
-  const creditsTotal = session?.user?.creditsTotal ?? 0;
-  const creditsUsed = session?.user?.creditsUsed ?? 0;
+  const creditsTotal = creditsData?.creditsTotal ?? session?.user?.creditsTotal ?? 0;
+  const creditsUsed = creditsData?.creditsUsed ?? session?.user?.creditsUsed ?? 0;
 
   return (
     <Card className='relative overflow-hidden bg-gradient-to-br from-primary/20 via-primary/5 to-background border-primary/20 shadow-lg'>

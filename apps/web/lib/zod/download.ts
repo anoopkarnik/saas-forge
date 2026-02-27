@@ -50,6 +50,11 @@ export const formSchema = z.object({
   // Storage Module Variables
   NEXT_PUBLIC_IMAGE_STORAGE: z.enum(["vercel_blob", "cloudflare_r2"]),
   BLOB_READ_WRITE_TOKEN: z.string().optional(),
+  R2_ACCOUNT_ID: z.string().optional(),
+  R2_ACCESS_KEY_ID: z.string().optional(),
+  R2_SECRET_ACCESS_KEY: z.string().optional(),
+  R2_BUCKET_NAME: z.string().optional(),
+  NEXT_PUBLIC_R2_PUBLIC_URL: z.string().optional(),
   DATABASE_URL: z.string(),
 
   // Observability Module Variables
@@ -67,6 +72,8 @@ export const formSchema = z.object({
   DODO_PAYMENTS_ENVIRONMENT: z.string().optional(),
   DODO_CREDITS_PRODUCT_ID: z.string().optional(),
   NEXT_PUBLIC_DODO_PAYMENTS_URL: z.string().optional(),
+  STRIPE_SECRET_KEY: z.string().optional(),
+  STRIPE_WEBHOOK_SECRET: z.string().optional(),
 }).superRefine((data, ctx) => {
   if (data.NEXT_PUBLIC_CMS === "notion") {
     const notionFields = [
@@ -124,10 +131,19 @@ export const formSchema = z.object({
   }
 
   if (data.NEXT_PUBLIC_PAYMENT_GATEWAY === "stripe") {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: "Stripe support is coming soon. Please select Dodo Payments.",
-      path: ["NEXT_PUBLIC_PAYMENT_GATEWAY"],
+    const stripeFields = [
+      "STRIPE_SECRET_KEY",
+      "STRIPE_WEBHOOK_SECRET",
+    ] as const;
+
+    stripeFields.forEach((field) => {
+      if (!data[field] || data[field]!.trim() === "") {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Required for Stripe Payments",
+          path: [field],
+        });
+      }
     });
   }
 
@@ -148,10 +164,21 @@ export const formSchema = z.object({
   }
 
   if (data.NEXT_PUBLIC_IMAGE_STORAGE === "cloudflare_r2") {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: "Cloudflare R2 support is coming soon. Please select Vercel Blob.",
-      path: ["NEXT_PUBLIC_IMAGE_STORAGE"],
+    const cloudflareFields = [
+      "R2_ACCOUNT_ID",
+      "R2_ACCESS_KEY_ID",
+      "R2_SECRET_ACCESS_KEY",
+      "R2_BUCKET_NAME",
+    ] as const;
+
+    cloudflareFields.forEach((field) => {
+      if (!data[field] || data[field]!.trim() === "") {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Required for Cloudflare R2",
+          path: [field],
+        });
+      }
     });
   }
 

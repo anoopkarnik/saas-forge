@@ -1,11 +1,13 @@
 model Transaction {
-    id            String          @id @default(cuid())
-    userId        String
-    eventId       String
-    description   String
-    amount        Int
-    currency      String
-    date          DateTime @default(now())
+    id                  String   @id @default(cuid())
+    userId              String
+    eventId             String   
+    checkoutSessionId   String?  @unique  // Stripe session ID or Dodo payment ID — stays the same across retries
+    receiptUrl          String?            // Gateway-specific receipt/invoice URL
+    description         String
+    amount              Int
+    currency            String
+    date                DateTime @default(now())
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt

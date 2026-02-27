@@ -125,6 +125,11 @@ export const MODULE_CONFIG: ModuleSection[] = [
     fields: [
       { name: "NEXT_PUBLIC_IMAGE_STORAGE", description: "Image storage provider.", required: true },
       { name: "BLOB_READ_WRITE_TOKEN", description: "Token for Vercel Blob storage.", showIf: { field: "NEXT_PUBLIC_IMAGE_STORAGE", value: "vercel_blob" }, required: true },
+      { name: "R2_ACCOUNT_ID", description: "Cloudflare Account ID.", showIf: { field: "NEXT_PUBLIC_IMAGE_STORAGE", value: "cloudflare_r2" }, required: true },
+      { name: "R2_ACCESS_KEY_ID", description: "Cloudflare Access Key ID.", showIf: { field: "NEXT_PUBLIC_IMAGE_STORAGE", value: "cloudflare_r2" }, required: true },
+      { name: "R2_SECRET_ACCESS_KEY", description: "Cloudflare Secret Access Key.", showIf: { field: "NEXT_PUBLIC_IMAGE_STORAGE", value: "cloudflare_r2" }, required: true },
+      { name: "R2_BUCKET_NAME", description: "Cloudflare R2 Bucket Name.", showIf: { field: "NEXT_PUBLIC_IMAGE_STORAGE", value: "cloudflare_r2" }, required: true },
+      { name: "NEXT_PUBLIC_R2_PUBLIC_URL", description: "Public URL for Cloudflare R2.", showIf: { field: "NEXT_PUBLIC_IMAGE_STORAGE", value: "cloudflare_r2" }, required: true },
       { name: "DATABASE_URL", description: "Connection string for your PostgreSQL database.", required: true },
     ],
   },
@@ -164,6 +169,8 @@ export const MODULE_CONFIG: ModuleSection[] = [
       { name: "DODO_PAYMENTS_ENVIRONMENT", description: "Environment for Dodo Payments (test/live).", showIf: { field: "NEXT_PUBLIC_PAYMENT_GATEWAY", value: "dodo" }, required: true },
       { name: "DODO_CREDITS_PRODUCT_ID", description: "Product ID for credits in Dodo Payments.", showIf: { field: "NEXT_PUBLIC_PAYMENT_GATEWAY", value: "dodo" }, required: true },
       { name: "NEXT_PUBLIC_DODO_PAYMENTS_URL", description: "Public URL for Dodo Payments.", showIf: { field: "NEXT_PUBLIC_DODO_PAYMENTS_URL", value: "dodo" }, required: true },
+      { name: "STRIPE_SECRET_KEY", description: "Secret Key for Stripe.", showIf: { field: "NEXT_PUBLIC_PAYMENT_GATEWAY", value: "stripe" }, required: true },
+      { name: "STRIPE_WEBHOOK_SECRET", description: "Webhook Secret for Stripe.", showIf: { field: "NEXT_PUBLIC_PAYMENT_GATEWAY", value: "stripe" }, required: true },
     ],
   },
 ];

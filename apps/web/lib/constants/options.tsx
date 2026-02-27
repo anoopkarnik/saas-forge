@@ -53,11 +53,11 @@ export const selectOptions: Record<string, SelectOption[]> = {
   NEXT_PUBLIC_PAYMENT_GATEWAY: [
     { value: "none", label: "None", icon: <Ban className="h-4 w-4 text-muted-foreground" /> },
     { value: "dodo", label: "Dodo Payments", icon: <CreditCard className="h-4 w-4 text-green-500" /> },
-    { value: "stripe", label: "Stripe (Coming Soon)", icon: <FaStripe className="h-4 w-4 text-[#635bff]" /> },
+    { value: "stripe", label: "Stripe", icon: <FaStripe className="h-4 w-4 text-[#635bff]" /> },
   ],
   NEXT_PUBLIC_IMAGE_STORAGE: [
     { value: "vercel_blob", label: "Vercel Blob", icon: <SiVercel className="h-4 w-4" /> },
-    { value: "cloudflare_r2", label: "Cloudflare R2 (Coming Soon)", icon: <SiCloudflare className="h-4 w-4 text-[#f48120]" /> },
+    { value: "cloudflare_r2", label: "Cloudflare R2", icon: <SiCloudflare className="h-4 w-4 text-[#f48120]" /> },
   ],
   NEXT_PUBLIC_ALLOW_RATE_LIMIT: [
     { value: "upstash", label: "Upstash", icon: <SiUpstash className="h-4 w-4 text-[#00e9a3]" /> },

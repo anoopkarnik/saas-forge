@@ -51,10 +51,8 @@ export async function POST(req: Request) {
       },
     });
 
-    const saasName = process.env.NEXT_PUBLIC_SAAS_NAME || "default";
-    const safeSaasName = saasName.replace(/[^a-zA-Z0-9-]/g, '-').toLowerCase();
     const uniqueFilename = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}-${filename}`;
-    const key = `${safeSaasName}/profile-images/${uniqueFilename}`;
+    const key = `profile-images/${uniqueFilename}`;
 
     const buffer = Buffer.from(await file.arrayBuffer());
 
@@ -73,6 +71,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ url: publicUrl });
   }
+
 
   const blob = await put(filename, file, {
     access: "public",

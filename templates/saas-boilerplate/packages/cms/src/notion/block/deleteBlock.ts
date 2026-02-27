@@ -7,11 +7,11 @@ export const deleteBlock = async ({apiToken,block_id}:any) =>{
     return response;
 }
 
-async function deletePageBlocks(page_id:any) {
-    const response = await retrieveBlockChildren({block_id: page_id});
+export async function deletePageBlocks(apiToken: string, page_id: any) {
+    const response = await retrieveBlockChildren({ apiToken, block_id: page_id });
     if (response.results.length > 0) {
         for (const result of response.results) {
-            await deleteBlock(result.id);
+            await deleteBlock({ apiToken, block_id: result.id });
         }
     }
     return { message: 'Deleted the children' };

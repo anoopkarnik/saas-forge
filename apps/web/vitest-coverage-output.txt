@@ -1,0 +1,133 @@
+
+[1m[46m RUN [49m[22m [36mv4.0.18 [39m[90m/home/anoop/Downloads/TechnicalWork/MyProjects/full-stack-2026v2/saas-forge/apps/web[39m
+      [2mCoverage enabled with [22m[33mv8[39m
+
+ [32m✓[39m tests/integration/webhookRouteConfigured.test.ts[2m > [22mDodo Webhook Route - Configured[2m > [22mshould invoke the webhook handler when configured[32m 70[2mms[22m[39m
+ [32m✓[39m tests/integration/webhookRouteConfigured.test.ts[2m > [22mDodo Webhook Route - Configured[2m > [22mshould handle onPaymentSucceeded with valid payload[32m 3[2mms[22m[39m
+ [32m✓[39m tests/integration/webhookRouteConfigured.test.ts[2m > [22mDodo Webhook Route - Configured[2m > [22mshould throw error for invalid payload in onPaymentSucceeded[32m 4[2mms[22m[39m
+ [32m✓[39m lib/utils/formatDate.test.ts[2m > [22mformatDate[2m > [22mformats a string date correctly[32m 25[2mms[22m[39m
+ [32m✓[39m lib/utils/formatDate.test.ts[2m > [22mformatDate[2m > [22mformats a Unix timestamp correctly[32m 0[2mms[22m[39m
+ [32m✓[39m lib/utils/formatDate.test.ts[2m > [22mformatDate[2m > [22mformats a Date object correctly[32m 0[2mms[22m[39m
+ [32m✓[39m lib/utils/formatDate.test.ts[2m > [22mformatDate[2m > [22mreturns valid string for current date[32m 0[2mms[22m[39m
+ [32m✓[39m lib/utils/formatAmount.test.ts[2m > [22mformatAmount[2m > [22mformats an integer amount correctly[32m 21[2mms[22m[39m
+ [32m✓[39m lib/utils/formatAmount.test.ts[2m > [22mformatAmount[2m > [22mformats an amount with cents correctly[32m 0[2mms[22m[39m
+ [32m✓[39m lib/utils/formatAmount.test.ts[2m > [22mformatAmount[2m > [22mformats negative amounts correctly[32m 0[2mms[22m[39m
+ [32m✓[39m lib/utils/formatAmount.test.ts[2m > [22mformatAmount[2m > [22mformats other currencies correctly[32m 0[2mms[22m[39m
+ [32m✓[39m tests/integration/webhookRoute.test.ts[2m > [22mDodo Webhook Route - Unconfigured[2m > [22mshould return 503 when payment gateway is not configured[32m 67[2mms[22m[39m
+ [32m✓[39m lib/zod/download.test.ts[2m > [22mDownload Form Schema[2m > [22mshould validate correctly with valid data[32m 7[2mms[22m[39m
+ [32m✓[39m lib/zod/download.test.ts[2m > [22mDownload Form Schema[2m > [22mshould invalidate when missing required notion fields[32m 2[2mms[22m[39m
+ [32m✓[39m lib/zod/download.test.ts[2m > [22mDownload Form Schema[2m > [22mshould invalidate when strapi is selected as CMS[32m 1[2mms[22m[39m
+ [32m✓[39m lib/zod/download.test.ts[2m > [22mDownload Form Schema[2m > [22mshould invalidate when missing required dodo payment fields[32m 0[2mms[22m[39m
+ [32m✓[39m lib/zod/download.test.ts[2m > [22mDownload Form Schema[2m > [22mshould invalidate when stripe is selected as payment gateway[32m 0[2mms[22m[39m
+ [32m✓[39m lib/zod/download.test.ts[2m > [22mDownload Form Schema[2m > [22mshould invalidate when vercel_blob is selected and token is missing[32m 0[2mms[22m[39m
+ [32m✓[39m lib/zod/download.test.ts[2m > [22mDownload Form Schema[2m > [22mshould invalidate when cloudflare_r2 is selected[32m 0[2mms[22m[39m
+ [32m✓[39m lib/zod/download.test.ts[2m > [22mDownload Form Schema[2m > [22mshould invalidate when upstash is selected for rate limiting without tokens[32m 0[2mms[22m[39m
+ [32m✓[39m lib/zod/download.test.ts[2m > [22mDownload Form Schema[2m > [22mshould invalidate support mail configuration without mail address or client[32m 1[2mms[22m[39m
+ [32m✓[39m lib/zod/download.test.ts[2m > [22mDownload Form Schema[2m > [22mshould invalidate calendly booking without url[32m 0[2mms[22m[39m
+ [32m✓[39m lib/zod/download.test.ts[2m > [22mDownload Form Schema[2m > [22mshould invalidate correct providers but missing configuration[32m 1[2mms[22m[39m
+ [32m✓[39m lib/zod/download.test.ts[2m > [22mDownload Form Schema[2m > [22mshould invalidate when rate_limiting is enabled but provider is missing[32m 0[2mms[22m[39m
+ [32m✓[39m tests/integration/landingProcedures.test.ts[2m > [22mLanding Router Integration Tests[2m > [22mgetLandingInfoFromNotion[2m > [22mshould fetch data directly when Redis is not configured[32m 4[2mms[22m[39m
+ [32m✓[39m tests/integration/landingProcedures.test.ts[2m > [22mLanding Router Integration Tests[2m > [22mgetLandingInfoFromNotion[2m > [22mshould return cached data when Redis cache hit[32m 1[2mms[22m[39m
+ [32m✓[39m tests/integration/landingProcedures.test.ts[2m > [22mLanding Router Integration Tests[2m > [22mgetLandingInfoFromNotion[2m > [22mshould fetch from Notion and cache when Redis cache miss[32m 1[2mms[22m[39m
+ [32m✓[39m tests/integration/landingProcedures.test.ts[2m > [22mLanding Router Integration Tests[2m > [22mgetLandingInfoFromNotion[2m > [22mshould propagate errors from fetchLandingPageData[32m 4[2mms[22m[39m
+[90mstderr[2m | tests/integration/scaffoldRoute.test.ts[2m > [22m[2mScaffold Route Integration Tests[2m > [22m[2mPOST handler[2m > [22m[2mshould return 500 when scaffold root is not found
+[22m[39mScaffold root not found at: /home/anoop/Downloads/TechnicalWork/MyProjects/full-stack-2026v2/saas-forge/apps/web/templates/saas-boilerplate
+
+[90mstderr[2m | tests/integration/scaffoldRoute.test.ts[2m > [22m[2mScaffold Route Integration Tests[2m > [22m[2mGET handler[2m > [22m[2mshould return 500 when scaffold root is not found
+[22m[39mScaffold root not found at: /home/anoop/Downloads/TechnicalWork/MyProjects/full-stack-2026v2/saas-forge/apps/web/templates/saas-boilerplate
+
+[90mstdout[2m | tests/integration/billingProcedures.test.ts[2m > [22m[2mBilling Router Integration Tests[2m > [22m[2mcreateCheckoutSession[2m > [22m[2mshould successfully create a checkout session for valid credits
+[22m[39mCheckout session created: { checkout_url: [32m'https://checkout.dodo.com/session_123'[39m }
+
+ [32m✓[39m tests/integration/scaffoldRoute.test.ts[2m > [22mScaffold Route Integration Tests[2m > [22mPOST handler[2m > [22mshould return 401 when not authenticated[32m 60[2mms[22m[39m
+ [32m✓[39m tests/integration/scaffoldRoute.test.ts[2m > [22mScaffold Route Integration Tests[2m > [22mPOST handler[2m > [22mshould return 429 when rate limit is exceeded[32m 1[2mms[22m[39m
+ [32m✓[39m tests/integration/scaffoldRoute.test.ts[2m > [22mScaffold Route Integration Tests[2m > [22mPOST handler[2m > [22mshould return 403 when user has insufficient credits[32m 0[2mms[22m[39m
+ [32m✓[39m tests/integration/scaffoldRoute.test.ts[2m > [22mScaffold Route Integration Tests[2m > [22mPOST handler[2m > [22mshould return 500 when scaffold root is not found[32m 2[2mms[22m[39m
+ [32m✓[39m tests/integration/scaffoldRoute.test.ts[2m > [22mScaffold Route Integration Tests[2m > [22mPOST handler[2m > [22mshould successfully generate and stream a zip file[32m 3[2mms[22m[39m
+ [32m✓[39m tests/integration/scaffoldRoute.test.ts[2m > [22mScaffold Route Integration Tests[2m > [22mPOST handler[2m > [22mshould sanitize project name with special characters[32m 1[2mms[22m[39m
+ [32m✓[39m tests/integration/scaffoldRoute.test.ts[2m > [22mScaffold Route Integration Tests[2m > [22mPOST handler[2m > [22mshould generate .env content by merging with .env.example[32m 1[2mms[22m[39m
+ [32m✓[39m tests/integration/scaffoldRoute.test.ts[2m > [22mScaffold Route Integration Tests[2m > [22mPOST handler[2m > [22mshould generate .env from vars when no .env.example exists[32m 1[2mms[22m[39m
+ [32m✓[39m tests/integration/scaffoldRoute.test.ts[2m > [22mScaffold Route Integration Tests[2m > [22mPOST handler[2m > [22mshould add DATABASE_URL .env in packages/database/[32m 1[2mms[22m[39m
+ [32m✓[39m tests/integration/scaffoldRoute.test.ts[2m > [22mScaffold Route Integration Tests[2m > [22mGET handler[2m > [22mshould return 403 when user has insufficient credits[32m 1[2mms[22m[39m
+ [32m✓[39m tests/integration/scaffoldRoute.test.ts[2m > [22mScaffold Route Integration Tests[2m > [22mGET handler[2m > [22mshould return 500 when scaffold root is not found[32m 1[2mms[22m[39m
+ [32m✓[39m tests/integration/scaffoldRoute.test.ts[2m > [22mScaffold Route Integration Tests[2m > [22mGET handler[2m > [22mshould successfully generate and stream a zip file via GET[32m 1[2mms[22m[39m
+[90mstderr[2m | tests/integration/supportProcedures.test.ts[2m > [22m[2mSupport Router Integration Tests[2m > [22m[2msubscribeToNewsletter[2m > [22m[2mshould throw when N8N_SUBSCRIBE_NEWSLETTER_WEBHOOK_URL is missing
+[22m[39mMissing N8N_SUBSCRIBE_NEWSLETTER_WEBHOOK_URL
+
+[90mstderr[2m | tests/integration/supportProcedures.test.ts[2m > [22m[2mSupport Router Integration Tests[2m > [22m[2msubscribeToNewsletter[2m > [22m[2mshould throw when n8n returns an error response
+[22m[39mn8n error { error: [32m'Bad request'[39m }
+
+ [32m✓[39m tests/integration/billingProcedures.test.ts[2m > [22mBilling Router Integration Tests[2m > [22mcreateNewCustomer[2m > [22mshould throw an error if Dodo configuration is missing[32m 4[2mms[22m[39m
+ [32m✓[39m tests/integration/billingProcedures.test.ts[2m > [22mBilling Router Integration Tests[2m > [22mcreateNewCustomer[2m > [22mshould successfully create a new customer[32m 2[2mms[22m[39m
+ [32m✓[39m tests/integration/billingProcedures.test.ts[2m > [22mBilling Router Integration Tests[2m > [22mcreateCheckoutSession[2m > [22mshould successfully create a checkout session for valid credits[32m 3[2mms[22m[39m
+ [32m✓[39m tests/integration/billingProcedures.test.ts[2m > [22mBilling Router Integration Tests[2m > [22mcreateCheckoutSession[2m > [22mshould throw an error if credits are not a multiple of 50[32m 0[2mms[22m[39m
+ [32m✓[39m tests/integration/billingProcedures.test.ts[2m > [22mBilling Router Integration Tests[2m > [22mgetTransactions[2m > [22mshould return a list of transactions for the user[32m 0[2mms[22m[39m
+[90mstderr[2m | tests/integration/supportProcedures.test.ts[2m > [22m[2mSupport Router Integration Tests[2m > [22m[2mchatWithSaaSAssistant[2m > [22m[2mshould throw when N8N_SAAS_ASSISTANT_WEBHOOK_URL is missing
+[22m[39mMissing N8N_SAAS_ASSISTANT_WEBHOOK_URL
+
+[90mstderr[2m | tests/integration/supportProcedures.test.ts[2m > [22m[2mSupport Router Integration Tests[2m > [22m[2mchatWithSaaSAssistant[2m > [22m[2mshould throw when n8n chat returns an error response
+[22m[39mn8n error { error: [32m'Internal error'[39m }
+
+ [32m✓[39m tests/integration/supportProcedures.test.ts[2m > [22mSupport Router Integration Tests[2m > [22msendSupportMessage[2m > [22mshould successfully send an email when rate limit allows[32m 4[2mms[22m[39m
+ [32m✓[39m tests/integration/supportProcedures.test.ts[2m > [22mSupport Router Integration Tests[2m > [22msendSupportMessage[2m > [22mshould throw an error when rate limit is exceeded[32m 2[2mms[22m[39m
+ [32m✓[39m tests/integration/supportProcedures.test.ts[2m > [22mSupport Router Integration Tests[2m > [22msendSupportMessage[2m > [22mshould throw an error when sendSupportEmail returns null[32m 4[2mms[22m[39m
+ [32m✓[39m tests/integration/supportProcedures.test.ts[2m > [22mSupport Router Integration Tests[2m > [22msubscribeToNewsletter[2m > [22mshould successfully subscribe when rate limit allows[32m 2[2mms[22m[39m
+ [32m✓[39m tests/integration/supportProcedures.test.ts[2m > [22mSupport Router Integration Tests[2m > [22msubscribeToNewsletter[2m > [22mshould throw an error when rate limit is exceeded[32m 0[2mms[22m[39m
+ [32m✓[39m tests/integration/supportProcedures.test.ts[2m > [22mSupport Router Integration Tests[2m > [22msubscribeToNewsletter[2m > [22mshould throw when N8N_SUBSCRIBE_NEWSLETTER_WEBHOOK_URL is missing[32m 2[2mms[22m[39m
+ [32m✓[39m tests/integration/supportProcedures.test.ts[2m > [22mSupport Router Integration Tests[2m > [22msubscribeToNewsletter[2m > [22mshould throw when n8n returns an error response[32m 3[2mms[22m[39m
+ [32m✓[39m tests/integration/supportProcedures.test.ts[2m > [22mSupport Router Integration Tests[2m > [22mchatWithSaaSAssistant[2m > [22mshould successfully get a chat reply when rate limit allows[32m 1[2mms[22m[39m
+ [32m✓[39m tests/integration/supportProcedures.test.ts[2m > [22mSupport Router Integration Tests[2m > [22mchatWithSaaSAssistant[2m > [22mshould throw an error when chat rate limit is exceeded[32m 1[2mms[22m[39m
+ [32m✓[39m tests/integration/supportProcedures.test.ts[2m > [22mSupport Router Integration Tests[2m > [22mchatWithSaaSAssistant[2m > [22mshould throw when N8N_SAAS_ASSISTANT_WEBHOOK_URL is missing[32m 1[2mms[22m[39m
+ [32m✓[39m tests/integration/supportProcedures.test.ts[2m > [22mSupport Router Integration Tests[2m > [22mchatWithSaaSAssistant[2m > [22mshould throw when n8n chat returns an error response[32m 1[2mms[22m[39m
+ [32m✓[39m tests/integration/supportProcedures.test.ts[2m > [22mSupport Router Integration Tests[2m > [22mchatWithSaaSAssistant[2m > [22mshould return fallback reply when n8n returns unexpected format[32m 0[2mms[22m[39m
+ [32m✓[39m tests/integration/docProcedures.test.ts[2m > [22mDocumentation Router Integration Tests[2m > [22mgetDocumentationInfoFromNotion[2m > [22mshould fetch data directly when Redis is not configured[32m 4[2mms[22m[39m
+ [32m✓[39m tests/integration/docProcedures.test.ts[2m > [22mDocumentation Router Integration Tests[2m > [22mgetDocumentationInfoFromNotion[2m > [22mshould return cached data when Redis cache hit[32m 1[2mms[22m[39m
+ [32m✓[39m tests/integration/docProcedures.test.ts[2m > [22mDocumentation Router Integration Tests[2m > [22mgetDocumentationInfoFromNotion[2m > [22mshould fetch from Notion and cache when Redis cache miss[32m 1[2mms[22m[39m
+ [32m✓[39m tests/integration/docProcedures.test.ts[2m > [22mDocumentation Router Integration Tests[2m > [22mqueryDocumentationBySlug[2m > [22mshould return blocks for a valid slug[32m 2[2mms[22m[39m
+ [32m✓[39m tests/integration/docProcedures.test.ts[2m > [22mDocumentation Router Integration Tests[2m > [22mqueryDocumentationBySlug[2m > [22mshould use cached documentation for slug resolution[32m 1[2mms[22m[39m
+ [32m✓[39m tests/integration/docProcedures.test.ts[2m > [22mDocumentation Router Integration Tests[2m > [22mqueryDocumentationBySlug[2m > [22mshould throw an error when slug is not found[32m 4[2mms[22m[39m
+ [32m✓[39m tests/integration/docProcedures.test.ts[2m > [22mDocumentation Router Integration Tests[2m > [22mqueryDocumentationBySlug[2m > [22mshould fetch and cache documentation when Redis is configured but cache misses[32m 1[2mms[22m[39m
+ [32m✓[39m tests/integration/docProcedures.test.ts[2m > [22mDocumentation Router Integration Tests[2m > [22mqueryDocumentationBySlug[2m > [22mshould reject empty slug via zod validation[32m 1[2mms[22m[39m
+ [32m✓[39m tests/integration/homeProcedures.test.ts[2m > [22mHome Router Integration Tests[2m > [22msetPassword[2m > [22mshould successfully set a password when valid input is provided[32m 8[2mms[22m[39m
+ [32m✓[39m tests/integration/homeProcedures.test.ts[2m > [22mHome Router Integration Tests[2m > [22msetPassword[2m > [22mshould reject when passwords do not match[32m 3[2mms[22m[39m
+ [32m✓[39m tests/integration/homeProcedures.test.ts[2m > [22mHome Router Integration Tests[2m > [22msetPassword[2m > [22mshould reject passwords shorter than 8 characters[32m 1[2mms[22m[39m
+ [32m✓[39m tests/integration/homeProcedures.test.ts[2m > [22mHome Router Integration Tests[2m > [22msetPassword[2m > [22mshould propagate errors from auth.api.setPassword[32m 4[2mms[22m[39m
+ [32m✓[39m tests/integration/homeProcedures.test.ts[2m > [22mHome Router Integration Tests[2m > [22msetPassword[2m > [22mshould require authentication (protectedProcedure)[32m 0[2mms[22m[39m
+ [32m✓[39m tests/integration/modifyAvatarRoute.test.ts[2m > [22mModifyAvatar Route Integration Tests[2m > [22mPOST handler[2m > [22mshould return 401 when not authenticated[32m 58[2mms[22m[39m
+ [32m✓[39m tests/integration/modifyAvatarRoute.test.ts[2m > [22mModifyAvatar Route Integration Tests[2m > [22mPOST handler[2m > [22mshould return 429 when rate limit is exceeded[32m 1[2mms[22m[39m
+ [32m✓[39m tests/integration/modifyAvatarRoute.test.ts[2m > [22mModifyAvatar Route Integration Tests[2m > [22mPOST handler[2m > [22mshould return 400 when no file is provided[32m 1[2mms[22m[39m
+ [32m✓[39m tests/integration/modifyAvatarRoute.test.ts[2m > [22mModifyAvatar Route Integration Tests[2m > [22mPOST handler[2m > [22mshould return 400 when file is not an image[32m 1[2mms[22m[39m
+ [32m✓[39m tests/integration/modifyAvatarRoute.test.ts[2m > [22mModifyAvatar Route Integration Tests[2m > [22mPOST handler[2m > [22mshould return 400 when file exceeds 5MB[33m 574[2mms[22m[39m
+ [32m✓[39m tests/integration/modifyAvatarRoute.test.ts[2m > [22mModifyAvatar Route Integration Tests[2m > [22mPOST handler[2m > [22mshould upload to Vercel Blob by default[32m 3[2mms[22m[39m
+ [32m✓[39m tests/integration/modifyAvatarRoute.test.ts[2m > [22mModifyAvatar Route Integration Tests[2m > [22mPOST handler[2m > [22mshould upload to Cloudflare R2 when configured[32m 3[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m12 passed[39m[22m[90m (12)[39m
+[2m      Tests [22m [1m[32m77 passed[39m[22m[90m (77)[39m
+[2m   Start at [22m 11:54:04
+[2m   Duration [22m 1.50s[2m (transform 1.06s, setup 1.10s, import 1.70s, tests 1.02s, environment 4.02s)[22m
+
+[34m % [39m[2mCoverage report from [22m[33mv8[39m
+-------------------|---------|----------|---------|---------|-------------------
+File               | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
+-------------------|---------|----------|---------|---------|-------------------
+All files          |   91.16 |    87.08 |   77.77 |   94.64 |                   
+ ...s/dodo/webhook |   91.66 |       90 |      75 |   95.65 |                   
+  route.ts         |   91.66 |       90 |      75 |   95.65 | 18                
+ app/api/scaffold  |   75.72 |    63.46 |   54.54 |   83.69 |                   
+  route.ts         |   75.72 |    63.46 |   54.54 |   83.69 | ...96,218,262,283 
+ ...s/modifyAvatar |     100 |    79.16 |     100 |     100 |                   
+  route.ts         |     100 |    79.16 |     100 |     100 | 41,49-70          
+ lib/utils         |     100 |      100 |     100 |     100 |                   
+  formatAmount.ts  |     100 |      100 |     100 |     100 |                   
+  formatDate.ts    |     100 |      100 |     100 |     100 |                   
+ lib/zod           |     100 |      100 |     100 |     100 |                   
+  download.ts      |     100 |      100 |     100 |     100 |                   
+ trpc              |    90.9 |      100 |      50 |    90.9 |                   
+  init.ts          |    90.9 |      100 |      50 |    90.9 | 10                
+ trpc/routers      |   97.43 |     90.9 |     100 |   99.12 |                   
+  ...Procedures.ts |   91.66 |       75 |     100 |   95.65 | 48                
+  docProcedures.ts |     100 |      100 |     100 |     100 |                   
+  ...Procedures.ts |     100 |      100 |     100 |     100 |                   
+  ...Procedures.ts |     100 |      100 |     100 |     100 |                   
+  ...Procedures.ts |   98.07 |     92.3 |     100 |     100 | 15-17             
+-------------------|---------|----------|---------|---------|-------------------

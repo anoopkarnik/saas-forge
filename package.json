@@ -6,19 +6,30 @@
     "dev": "turbo dev",
     "lint": "turbo lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
+    "test": "turbo test",
+    "test:coverage": "turbo test:coverage",
     "generate": "cd packages/database && pnpm run generate",
     "migrate": "cd packages/database && pnpm run migrate",
     "reset": "cd packages/database && pnpm run reset",
     "template:install": "cd templates/saas-boilerplate && pnpm install && pnpm run generate",
     "template:dev": "cd templates/saas-boilerplate && pnpm dev",
-    "template:build": "cd templates/saas-boilerplate && pnpm build"
+    "template:build": "cd templates/saas-boilerplate && pnpm build",
+    "template:test": "cd templates/saas-boilerplate && pnpm test",
+    "template:test:coverage": "cd templates/saas-boilerplate && pnpm test:coverage"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@vitejs/plugin-react": "^5.1.4",
+    "@vitest/coverage-v8": "^4.0.18",
     "@workspace/eslint-config": "workspace:*",
     "@workspace/typescript-config": "workspace:*",
+    "happy-dom": "^20.7.0",
+    "jsdom": "^28.1.0",
     "prettier": "^3.6.2",
     "turbo": "^2.5.5",
-    "typescript": "5.7.3"
+    "typescript": "5.7.3",
+    "vitest": "^4.0.18"
   },
   "bin": {
     "saas-forge": "scripts/cli.js"
@@ -42,6 +53,12 @@
     "node": ">=20"
   },
   "dependencies": {
-    "archiver": "^7.0.1"
+    "archiver": "^7.0.1",
+    "tsconfig-paths": "^4.2.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "@types/node": "^20.19.25"
+    }
   }
 }

@@ -57,7 +57,7 @@ export const formSchema = z.object({
   BETTERSTACK_TELEMETRY_SOURCE_TOKEN: z.string().optional(),
   BETTERSTACK_TELEMETRY_INGESTING_HOST: z.string().optional(),
   NEXT_PUBLIC_GOOGLE_ANALYTICS_MEASUREMENT_ID: z.string().optional(),
-  NEXT_PUBLIC_ALLOW_RATE_LIMIT: z.enum(["upstash"]),
+  NEXT_PUBLIC_ALLOW_RATE_LIMIT: z.enum(["upstash"]).optional(),
 
   // Payment Module Variables
   NEXT_PUBLIC_PAYMENT_GATEWAY: z.enum(['none', 'dodo', 'stripe']),
@@ -84,7 +84,7 @@ export const formSchema = z.object({
     ] as const;
 
     notionFields.forEach((field) => {
-      if (!data[field] || data[field]?.trim() === "") {
+      if (!data[field] || data[field]!.trim() === "") {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: "Required for Notion CMS",
@@ -113,7 +113,7 @@ export const formSchema = z.object({
     ] as const;
 
     dodoFields.forEach((field) => {
-      if (!data[field] || data[field]?.trim() === "") {
+      if (!data[field] || data[field]!.trim() === "") {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: "Required for Dodo Payments",
@@ -137,7 +137,7 @@ export const formSchema = z.object({
     ] as const;
 
     cloudflareFields.forEach((field) => {
-      if (!data[field] || data[field]?.trim() === "") {
+      if (!data[field] || data[field]!.trim() === "") {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: "Required for Vercel Blob",
@@ -162,7 +162,7 @@ export const formSchema = z.object({
     ] as const;
 
     upstashFields.forEach((field) => {
-      if (!data[field] || data[field]?.trim() === "") {
+      if (!data[field] || data[field]!.trim() === "") {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: "Required for Upstash",
@@ -173,10 +173,10 @@ export const formSchema = z.object({
   }
 
   // Support mail requires an email client
-  const supportFeatures = data.NEXT_PUBLIC_SUPPORT_FEATURES || [];
+  const supportFeatures = data.NEXT_PUBLIC_SUPPORT_FEATURES;
 
-  if (supportFeatures.includes("support_mail")) {
-    if (!data.NEXT_PUBLIC_SUPPORT_MAIL || data.NEXT_PUBLIC_SUPPORT_MAIL.trim() === "") {
+  if (supportFeatures?.includes("support_mail")) {
+    if (!data.NEXT_PUBLIC_SUPPORT_MAIL || data.NEXT_PUBLIC_SUPPORT_MAIL!.trim() === "") {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: "Support email is required when Send Message is enabled.",
@@ -192,8 +192,8 @@ export const formSchema = z.object({
     }
   }
 
-  if (supportFeatures.includes("calendly")) {
-    if (!data.NEXT_PUBLIC_CALENDLY_BOOKING_URL || data.NEXT_PUBLIC_CALENDLY_BOOKING_URL.trim() === "") {
+  if (supportFeatures?.includes("calendly")) {
+    if (!data.NEXT_PUBLIC_CALENDLY_BOOKING_URL || data.NEXT_PUBLIC_CALENDLY_BOOKING_URL!.trim() === "") {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: "Calendly URL is required when Book Meeting is enabled.",
@@ -203,7 +203,7 @@ export const formSchema = z.object({
   }
 
   // Auth provider-specific validations
-  const providers = data.NEXT_PUBLIC_AUTH_PROVIDERS || [];
+  const providers = data.NEXT_PUBLIC_AUTH_PROVIDERS;
 
   if (providers.includes("email_verification")) {
     if (!data.NEXT_PUBLIC_EMAIL_CLIENT || data.NEXT_PUBLIC_EMAIL_CLIENT === "none") {
@@ -214,7 +214,7 @@ export const formSchema = z.object({
       });
     }
     if (data.NEXT_PUBLIC_EMAIL_CLIENT === "resend") {
-      if (!data.RESEND_API_KEY || data.RESEND_API_KEY.trim() === "") {
+      if (!data.RESEND_API_KEY || data.RESEND_API_KEY!.trim() === "") {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: "Required for Resend",
@@ -226,7 +226,7 @@ export const formSchema = z.object({
 
   if (providers.includes("linkedin")) {
     (["AUTH_LINKEDIN_CLIENT_ID", "AUTH_LINKEDIN_CLIENT_SECRET"] as const).forEach((field) => {
-      if (!data[field] || data[field]?.trim() === "") {
+      if (!data[field] || data[field]!.trim() === "") {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: "Required for LinkedIn OAuth",
@@ -238,7 +238,7 @@ export const formSchema = z.object({
 
   if (providers.includes("google")) {
     (["AUTH_GOOGLE_CLIENT_ID", "AUTH_GOOGLE_CLIENT_SECRET"] as const).forEach((field) => {
-      if (!data[field] || data[field]?.trim() === "") {
+      if (!data[field] || data[field]!.trim() === "") {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: "Required for Google OAuth",
@@ -250,7 +250,7 @@ export const formSchema = z.object({
 
   if (providers.includes("github")) {
     (["AUTH_GITHUB_CLIENT_ID", "AUTH_GITHUB_CLIENT_SECRET"] as const).forEach((field) => {
-      if (!data[field] || data[field]?.trim() === "") {
+      if (!data[field] || data[field]!.trim() === "") {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: "Required for GitHub OAuth",
@@ -260,24 +260,22 @@ export const formSchema = z.object({
     });
   }
 
-  if (data.NEXT_PUBLIC_AUTH_FRAMEWORK === "better-auth") {
-    const betterAuthFields = [
-      "BETTER_AUTH_SECRET",
-    ] as const;
+  const betterAuthFields = [
+    "BETTER_AUTH_SECRET",
+  ] as const;
 
-    betterAuthFields.forEach((field) => {
-      if (!data[field] || data[field]?.trim() === "") {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Required for Better Auth",
-          path: [field],
-        });
-      }
-    });
-  }
+  betterAuthFields.forEach((field) => {
+    if (!data[field] || data[field]!.trim() === "") {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Required for Better Auth",
+        path: [field],
+      });
+    }
+  });
 
   // Observability validations
-  const observabilityFeatures = data.NEXT_PUBLIC_OBSERVABILITY_FEATURES || [];
+  const observabilityFeatures = data.NEXT_PUBLIC_OBSERVABILITY_FEATURES;
 
   if (observabilityFeatures.includes("logging")) {
     (["BETTERSTACK_TELEMETRY_SOURCE_TOKEN", "BETTERSTACK_TELEMETRY_INGESTING_HOST"] as const).forEach((field) => {

@@ -8,9 +8,9 @@ export const appendBlockChildren = async ({apiToken,block_id,children}:any) =>{
 }
 
 
-async function addChildrenToPage(page_id:any, children:any) {
+export async function addChildrenToPage(apiToken: string, page_id: any, children: any) {
     const body = constructChildrenBody(children);
-    const response = await appendBlockChildren({page_id, body});
+    const response = await appendBlockChildren({ apiToken, block_id: page_id, children: body.children });
     return { message: 'Added the children' };
 }
 

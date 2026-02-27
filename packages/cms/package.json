@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "vitest"
+    "test": "vitest run --passWithNoTests",
+    "test:coverage": "vitest run --coverage --passWithNoTests"
   },
   "exports": {
     "./*": "./src/*.ts"
@@ -17,12 +18,12 @@
     "@workspace/observability": "workspace:*",
     "express": "^5.2.1",
     "moment-timezone": "^0.6.0",
+    "vitest": "^4.0.18",
     "winston": "^3.19.0",
     "zod": "^3.25.76"
   },
   "devDependencies": {
     "@jest/globals": "^30.2.0",
-    "ts-jest": "^29.4.6",
-    "vitest": "^4.0.15"
+    "ts-jest": "^29.4.6"
   }
 }

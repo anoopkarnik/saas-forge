@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage"
   },
   "keywords": [],
   "author": "",
@@ -19,5 +20,8 @@
     "fs": "0.0.1-security",
     "pino-loki": "^2.6.0",
     "winston": "^3.19.0"
+  },
+  "devDependencies": {
+    "vitest": "^4.0.18"
   }
 }

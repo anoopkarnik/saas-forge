@@ -9,7 +9,9 @@
     "start": "next start",
     "lint": "next lint",
     "lint:fix": "next lint --fix",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests",
+    "test:coverage": "vitest run --coverage --passWithNoTests"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.995.0",
@@ -49,6 +51,7 @@
     "react-spinners": "^0.17.0",
     "sonner": "^2.0.7",
     "typewriter-effect": "^2.22.0",
+    "vitest": "^4.0.18",
     "zod": "^4.2.1"
   },
   "devDependencies": {
@@ -59,11 +62,15 @@
     "@types/react": "^19.1.9",
     "@types/react-dom": "^19.1.7",
     "@vercel/blob": "^2.0.0",
+    "@vitest/ui": "4.0.18",
     "@workspace/eslint-config": "workspace:^",
     "@workspace/typescript-config": "workspace:*",
     "dayjs": "^1.11.19",
     "eslint": "^9.32.0",
     "prisma": "6.19.1",
-    "typescript": "^5.9.2"
+    "tsconfig-paths": "^4.2.0",
+    "typescript": "^5.9.2",
+    "vite-tsconfig-paths": "^6.1.1",
+    "vitest-tsconfig-paths": "^3.4.1"
   }
 }

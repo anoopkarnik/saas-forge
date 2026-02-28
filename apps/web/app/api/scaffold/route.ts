@@ -53,24 +53,26 @@ function shouldIgnore(relPath: string) {
   return false;
 }
 
-function getRepoRoot(): string {
+function getScaffoldRoot(): string {
   // In a typical turborepo dev setup, process.cwd() is repo root when running `pnpm dev` from root.
   // If you run Next dev from apps/web, then cwd becomes apps/web.
-  // So we detect root by looking for pnpm-workspace.yaml / turbo.json.
+  // In Vercel, the cwd is usually the app folder (/var/task/apps/web) but the repo root is available.
   const cwd = process.cwd();
-  const repoRootCandidates = [
-    cwd,
-    path.resolve(cwd, "../.."), // if route runs with cwd=apps/web, go up to repo root
-    path.resolve(cwd, ".."),
+  
+  const scaffoldCandidates = [
+    path.join(cwd, "templates/saas-boilerplate"), // Running from repo root
+    path.join(cwd, "../../templates/saas-boilerplate"), // Running from apps/web
+    path.join(cwd, "../templates/saas-boilerplate"), // Alternative nested path
   ];
 
-  return (
-    repoRootCandidates.find(
-      (p) =>
-        fs.existsSync(path.join(p, "pnpm-workspace.yaml")) ||
-        fs.existsSync(path.join(p, "turbo.json"))
-    ) ?? cwd
-  );
+  const found = scaffoldCandidates.find((p) => fs.existsSync(p));
+  
+  if (found) {
+    return found;
+  }
+  
+  // Fallback to expecting it relative to cwd
+  return path.join(cwd, "../../templates/saas-boilerplate");
 }
 
 function generateEnvContent(
@@ -167,9 +169,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const projectName = sanitizeProjectName(body.name ?? "");
     const envVars: Record<string, string> = body.envVars ?? {};
-
-    const repoRoot = getRepoRoot();
-    const scaffoldRoot = path.join(repoRoot, "templates/saas-boilerplate");
+    const scaffoldRoot = getScaffoldRoot();
 
     if (!fs.existsSync(scaffoldRoot)) {
       console.error(`Scaffold root not found at: ${scaffoldRoot}`);
@@ -238,8 +238,7 @@ export async function GET(req: NextRequest) {
     }
     const projectName = sanitizeProjectName(searchParams.get("name") ?? "");
 
-    const repoRoot = getRepoRoot();
-    const scaffoldRoot = path.join(repoRoot, "templates/saas-boilerplate");
+    const scaffoldRoot = getScaffoldRoot();
 
     if (!fs.existsSync(scaffoldRoot)) {
       console.error(`Scaffold root not found at: ${scaffoldRoot}`);

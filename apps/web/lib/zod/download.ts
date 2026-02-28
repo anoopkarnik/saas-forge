@@ -14,6 +14,7 @@ export const formSchema = z.object({
   NEXT_PUBLIC_SAAS_NAME: z.string(),
   NEXT_PUBLIC_COMPANY_NAME: z.string(),
   NEXT_PUBLIC_URL: z.string(),
+  NEXT_PUBLIC_PLATFORM: z.array(z.enum(["web", "mobile", "desktop"])).min(1, "Select at least one platform"),
 
   // Landing Module Variables
   NEXT_PUBLIC_CMS: z.enum(['notion', 'strapi']),
@@ -39,7 +40,7 @@ export const formSchema = z.object({
   AUTH_GITHUB_CLIENT_SECRET: z.string().optional(),
   AUTH_GOOGLE_CLIENT_ID: z.string().optional(),
   AUTH_GOOGLE_CLIENT_SECRET: z.string().optional(),
-  NEXT_PUBLIC_EMAIL_CLIENT: z.enum(["none", "resend"]),
+  NEXT_PUBLIC_EMAIL_CLIENT: z.enum(["none", "resend", "gmail_smtp"]),
   RESEND_API_KEY: z.string().optional(),
 
   // Support Module Variables
@@ -108,6 +109,15 @@ export const formSchema = z.object({
       path: ["NEXT_PUBLIC_CMS"],
     });
   }
+
+  if (data.NEXT_PUBLIC_EMAIL_CLIENT === "gmail_smtp") {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Gmail SMTP support is coming soon.",
+      path: ["NEXT_PUBLIC_EMAIL_CLIENT"],
+    });
+  }
+  
 
   if (data.NEXT_PUBLIC_PAYMENT_GATEWAY === "dodo") {
     const dodoFields = [

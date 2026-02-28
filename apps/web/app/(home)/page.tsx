@@ -127,6 +127,7 @@ export default function Page() {
       NEXT_PUBLIC_SAAS_NAME: "",
       NEXT_PUBLIC_COMPANY_NAME: "",
       NEXT_PUBLIC_URL: "",
+      NEXT_PUBLIC_PLATFORM: ["web"],
       // Landing Module
       NEXT_PUBLIC_CMS: "notion",
       LANDING_DATABASE_ID: "",
@@ -370,14 +371,14 @@ export default function Page() {
           <Button
             variant="outline"
             size="lg"
-            disabled={!form.formState.isValid || isDownloading}
+            disabled={true}
             className="shadow-lg hover:shadow-xl transition-all"
             onClick={() => {
               const url = buildVercelDeployUrl(form.getValues());
               window.open(url, "_blank", "noopener,noreferrer");
             }}
           >
-            <Rocket className="mr-2 h-4 w-4" /> Deploy to Vercel
+            <Rocket className="mr-2 h-4 w-4" /> Deploy to Vercel (Coming Soon)
           </Button>
         </div>
       </div>
@@ -468,6 +469,7 @@ export default function Page() {
                             description={field.description}
                             required={field.required}
                             sectionId={module.id}
+                            providerHints={field.providerHints}
                           />
                         </motion.div>
                       ))}

@@ -21,7 +21,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@workspace/ui/components/shadcn/tooltip";
-import { Check, Info } from "lucide-react";
+import { Check, Info, ExternalLink } from "lucide-react";
 import { FormValues } from "@/lib/zod/download";
 import { FloatingLabelInput } from "@workspace/ui/components/misc/floating-label-input";
 import { cn } from "@workspace/ui/lib/utils";
@@ -37,6 +37,7 @@ export default function EnvField({
   description,
   required,
   sectionId,
+  providerHints,
 }: {
   control: any;
   name: keyof FormValues;
@@ -44,6 +45,7 @@ export default function EnvField({
   description?: string;
   required?: boolean;
   sectionId?: string;
+  providerHints?: { name: string; url: string; color: string; icon: any; tier: string; info: string }[];
 }) {
   const htmlId = sectionId ? `${sectionId}-${name}` : name;
 
@@ -96,7 +98,9 @@ export default function EnvField({
                     <button
                       key={option.value}
                       type="button"
+                      disabled={option.disabled}
                       onClick={() => {
+                        if (option.disabled) return;
                         if (isChecked) {
                           field.onChange(values.filter((v: string) => v !== option.value));
                         } else {
@@ -107,7 +111,8 @@ export default function EnvField({
                         "relative flex flex-col items-center justify-center gap-1.5 rounded-lg border-2 p-3 transition-all duration-200 cursor-pointer",
                         isChecked
                           ? `${option.color || "border-primary bg-primary/10"} shadow-sm`
-                          : "border-border/50 bg-muted/30 hover:border-border hover:bg-muted/50 opacity-60 hover:opacity-80"
+                          : "border-border/50 bg-muted/30 hover:border-border hover:bg-muted/50 opacity-60 hover:opacity-80",
+                        option.disabled && "cursor-not-allowed opacity-40 hover:opacity-40 hover:border-border/50 hover:bg-muted/30"
                       )}
                     >
                       {/* Checkmark badge */}
@@ -216,7 +221,48 @@ export default function EnvField({
                 )}
               </div>
             )}
+
           </FormControl>
+
+          {/* ── Provider Hints ─────────────────────────────────────── */}
+          {providerHints && providerHints.length > 0 && (
+            <div className="mt-3">
+              <div className="flex flex-wrap gap-2">
+                {providerHints.map((provider) => (
+                  <TooltipProvider key={provider.name}>
+                    <Tooltip delayDuration={200}>
+                      <TooltipTrigger asChild>
+                        <a
+                          href={provider.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-border/50 bg-muted/30 hover:bg-muted/80 hover:border-primary/30 transition-all text-xs group decoration-transparent"
+                        >
+                          <provider.icon className={`h-3.5 w-3.5 ${provider.color}`} />
+                          <span className="font-medium text-muted-foreground group-hover:text-foreground transition-colors">
+                            {provider.name}
+                          </span>
+                          <span className={cn(
+                            "px-1.5 py-0.5 rounded text-[10px] font-semibold leading-none",
+                            provider.tier === "Free"
+                              ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+                              : "bg-amber-500/15 text-amber-600 dark:text-amber-400"
+                          )}>
+                            {provider.tier}
+                          </span>
+                          <ExternalLink className="h-2.5 w-2.5 text-muted-foreground/50 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </a>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom" className="max-w-[250px] text-xs">
+                        <p>{provider.info}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                ))}
+              </div>
+            </div>
+          )}
+
           <FormMessage />
         </FormItem>
       )}

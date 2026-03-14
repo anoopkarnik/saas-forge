@@ -28,8 +28,9 @@ export interface HeroSectionProps {
     appointmentLink?: string;
     tagline?: string;
     description?: string;
-    codeSnippet: string;
-    heroImages: HeroImageProps[];
+    codeSnippet?: string;
+    heroImages?: HeroImageProps[];
+    videoLink?: string;
 }
 
 export interface HeroImageProps {

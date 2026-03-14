@@ -338,10 +338,10 @@ export default function DashboardPage({ onSubmitConfiguration, docsBaseUrl = "" 
 
             <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
 
                         {MODULE_CONFIG.map((module) => (
-                            <Card key={module.id} className={`shadow-sm border-border/60 border-l-4 ${module.borderColor} ${module.id === "project" ? "md:col-span-2" : ""}`}>
+                            <Card key={module.id} className={`shadow-sm border-border/60 border-l-4 ${module.borderColor} ${module.id === "project" ? "xl:col-span-2" : ""}`}>
                                 <CardHeader>
                                     <CardTitle className="flex items-center justify-between gap-2">
                                         <div className="flex items-center gap-2">

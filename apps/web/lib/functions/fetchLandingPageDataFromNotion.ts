@@ -82,7 +82,8 @@ export async function fetchLandingPageData():Promise<LandingPageProps> {
         heroImages: heroSectionResults.results.map((item:any) => ({
             title: item.title,
             imageUrl: item.image[0],
-        }))
+        })),
+        videoLink: landingPageData.videoLink
     }
 
     const featureSection: FeatureSectionProps = {

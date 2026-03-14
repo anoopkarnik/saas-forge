@@ -21,6 +21,27 @@ const HeroSection = ({ heroSection }: { heroSection: HeroSectionProps }): ReactE
       setTaglineArray(heroSection.tagline.split(" "))
     }
   }, [heroSection.tagline])
+
+  // Simple string replacer for basic youtube links to convert them to embed format
+  const getYoutubeEmbedUrl = (url?: string) => {
+    if (!url) return null;
+    try {
+      if (url.includes('youtube.com/watch')) {
+        const urlObj = new URL(url);
+        const videoId = urlObj.searchParams.get('v');
+        return videoId ? `https://www.youtube.com/embed/${videoId}` : url;
+      }
+      if (url.includes('youtu.be/')) {
+        const videoId = url.split('youtu.be/')[1]?.split('?')[0];
+        return videoId ? `https://www.youtube.com/embed/${videoId}` : url;
+      }
+    } catch (e) {
+      // Just fallback to the raw url
+    }
+    return url;
+  };
+  const embedUrl = getYoutubeEmbedUrl(heroSection.videoLink);
+
   return (
     <section className="container flex flex-col justify-center items-center py-20 md:py-32  gap-10 relative ">
 
@@ -106,6 +127,19 @@ const HeroSection = ({ heroSection }: { heroSection: HeroSectionProps }): ReactE
         <Carousel className="w-full z-10   ">
           <ContainerScroll titleComponent={<></>}>
             <CarouselContent className="">
+              {embedUrl && (
+                <CarouselItem className="flex items-center justify-center relative w-full aspect-video">
+                  <iframe
+                    src={embedUrl}
+                    title="Product Video"
+                    width="100%"
+                    height="100%"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    className="rounded-lg mx-auto w-full h-full aspect-video border-none"
+                  />
+                </CarouselItem>
+              )}
 
               {heroSection.heroImages?.map((image, index) => (
                 <CarouselItem key={index} className="flex items-center justify-center relative ">

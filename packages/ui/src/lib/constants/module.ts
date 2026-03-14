@@ -154,7 +154,7 @@ export const MODULE_CONFIG: ModuleSection[] = [
     description: "Support email and booking.",
     documentation: [{ label: "Support", slug: "support" }],
     fields: [
-      { name: "NEXT_PUBLIC_SUPPORT_FEATURES", description: "Select the support features to enable.", required: true },
+      { name: "NEXT_PUBLIC_SUPPORT_FEATURES", description: "Select the support features to enable." },
       { name: "NEXT_PUBLIC_SUPPORT_MAIL", description: "Email address for support inquiries.", showIfIncludes: { field: "NEXT_PUBLIC_SUPPORT_FEATURES", value: "support_mail" } },
       { 
         name: "NEXT_PUBLIC_CALENDLY_BOOKING_URL", 
@@ -232,7 +232,7 @@ export const MODULE_CONFIG: ModuleSection[] = [
     description: "Telemetry, analytics, and security.",
     documentation: [{ label: "Observability", slug: "observability" }],
     fields: [
-      { name: "NEXT_PUBLIC_OBSERVABILITY_FEATURES", description: "Select the observability features to enable.", required: true },
+      { name: "NEXT_PUBLIC_OBSERVABILITY_FEATURES", description: "Select the observability features to enable." },
       { name: "BETTERSTACK_TELEMETRY_SOURCE_TOKEN", description: "Source token for BetterStack telemetry.", showIfIncludes: { field: "NEXT_PUBLIC_OBSERVABILITY_FEATURES", value: "logging" } },
       { 
         name: "BETTERSTACK_TELEMETRY_INGESTING_HOST", 

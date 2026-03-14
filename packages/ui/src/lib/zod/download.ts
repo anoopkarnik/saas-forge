@@ -59,7 +59,7 @@ export const formSchema = z.object({
   DATABASE_URL: z.string(),
 
   // Observability Module Variables
-  NEXT_PUBLIC_OBSERVABILITY_FEATURES: z.array(z.enum(["logging", "google_analytics", "rate_limiting"])).min(1, "Select at least one observability feature"),
+  NEXT_PUBLIC_OBSERVABILITY_FEATURES: z.array(z.enum(["logging", "google_analytics", "rate_limiting"])).optional(),
   BETTERSTACK_TELEMETRY_SOURCE_TOKEN: z.string().optional(),
   BETTERSTACK_TELEMETRY_INGESTING_HOST: z.string().optional(),
   NEXT_PUBLIC_GOOGLE_ANALYTICS_MEASUREMENT_ID: z.string().optional(),
@@ -312,7 +312,7 @@ export const formSchema = z.object({
   });
 
   // Observability validations
-  const observabilityFeatures = data.NEXT_PUBLIC_OBSERVABILITY_FEATURES;
+  const observabilityFeatures = data.NEXT_PUBLIC_OBSERVABILITY_FEATURES || [];
 
   if (observabilityFeatures.includes("logging")) {
     (["BETTERSTACK_TELEMETRY_SOURCE_TOKEN", "BETTERSTACK_TELEMETRY_INGESTING_HOST"] as const).forEach((field) => {

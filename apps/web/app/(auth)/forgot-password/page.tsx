@@ -2,10 +2,11 @@
 
 import React, { useState } from 'react'
 import { authClient } from '@workspace/auth/better-auth/auth-client'
-import ForgotPasswordCard from '@/components/auth/ForgotPasswordCard'
-import Quote from '@/components/auth/Quote'
+import ForgotPasswordPage from '@workspace/ui/blocks/auth/ForgotPasswordPage'
+import { useRouter } from 'next/navigation'
 
 const ForgotPasswordClient = () => {
+    const router = useRouter()
 
 
     const [error, setError] = useState<string | undefined>()
@@ -27,14 +28,12 @@ const ForgotPasswordClient = () => {
 
 
     return (
-        <div className='min-h-screen grid grid-cols-1 lg:grid-cols-2 '>
-            <div className='flex items-center justify-center bg-gradient-to-br from-primary to-sidebar dark:bg-gradient-to-br'>
-                <ForgotPasswordCard resetFunction={ResetPasswordFunction} errorMessage={error} successMessage={success} />
-            </div>
-            <div className='hidden lg:block '>
-                <Quote />
-            </div>
-        </div>
+        <ForgotPasswordPage
+            resetFunction={ResetPasswordFunction}
+            errorMessage={error}
+            successMessage={success}
+            onBackToLoginClick={() => router.push('/sign-in')}
+        />
     )
 }
 

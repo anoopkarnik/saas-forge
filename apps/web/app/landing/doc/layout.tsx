@@ -9,7 +9,7 @@ import { SidebarProvider } from "@workspace/ui/components/shadcn/sidebar";
 
 // export const revalidate = 600;
 export const dynamic = "force-dynamic";
-const DocumentationPage = async ({ children }: { children: React.ReactNode }) => {
+const DocumentationPage = async ({ children }: { children: React.ReactNode }): Promise<React.ReactElement> => {
   const queryClient = getQueryClient();
   await Promise.all([
     // queryClient.ensureQueryData(trpc.portfolio.getPortfolioDataFromStrapi.queryOptions()),
@@ -19,12 +19,12 @@ const DocumentationPage = async ({ children }: { children: React.ReactNode }) =>
     <HydrationBoundary state={dehydrate(queryClient)}>
       <Suspense fallback={<LoadingState title='Retrieving' description='Please wait while we retrieve the documentation page data' />}>
         <ErrorBoundary fallback={<ErrorState title='Error Retrieving Data' description='There was an error while retrieving the data.' />}>
-           <SidebarProvider>
+          <SidebarProvider>
             <div className="flex gap-4">
-             <DocSidebar/>
-             {children}
+              <DocSidebar />
+              {children}
             </div>
-           </SidebarProvider>
+          </SidebarProvider>
         </ErrorBoundary>
       </Suspense>
     </HydrationBoundary>

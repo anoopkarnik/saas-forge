@@ -7,12 +7,14 @@ import { sendResetEmail, sendVerificationEmail } from "@workspace/email/resend/i
 
 const options = {
     basePath: "/api/auth",
+    baseURL: process.env.NEXT_PUBLIC_URL,
     plugins: [openAPI(),admin({
         impersonationSessionDuration: 3600
     })],
     trustedOrigins: [
         "myapp://", 
         "myapp://*",
+        "http://localhost:5173",
         process.env.NEXT_PUBLIC_URL || ""
     ].filter(Boolean),
     database: prismaAdapter(db, {
@@ -65,27 +67,21 @@ const options = {
         }
     },
     socialProviders: {
-        ...(process.env.NEXT_PUBLIC_AUTH_GITHUB === 'true' ? {
-            github: {
-                clientId: process.env.AUTH_GITHUB_CLIENT_ID ?? "",
-                clientSecret: process.env.AUTH_GITHUB_CLIENT_SECRET ?? "",
-            }
-        } : {}),
-        ...(process.env.NEXT_PUBLIC_AUTH_GOOGLE === 'true' ? {
-            google: {
-                clientId: process.env.AUTH_GOOGLE_CLIENT_ID ?? "",
-                clientSecret: process.env.AUTH_GOOGLE_CLIENT_SECRET ?? "",
-            }
-        } : {}),
-        ...(process.env.NEXT_PUBLIC_AUTH_LINKEDIN === 'true' ? {
-            linkedin: {
-                clientId: process.env.AUTH_LINKEDIN_CLIENT_ID ?? "",
-                clientSecret: process.env.AUTH_LINKEDIN_CLIENT_SECRET ?? "",
-            }
-        } : {})
+        github: {
+            clientId: process.env.AUTH_GITHUB_CLIENT_ID ?? "",
+            clientSecret: process.env.AUTH_GITHUB_CLIENT_SECRET ?? "",
+        },
+        google: {
+            clientId: process.env.AUTH_GOOGLE_CLIENT_ID ?? "",
+            clientSecret: process.env.AUTH_GOOGLE_CLIENT_SECRET ?? "",
+        },
+        linkedin: {
+            clientId: process.env.AUTH_LINKEDIN_CLIENT_ID ?? "",
+            clientSecret: process.env.AUTH_LINKEDIN_CLIENT_SECRET ?? "",
+        }
     },
     emailAndPassword: {
-        enabled: process.env.NEXT_PUBLIC_AUTH_EMAIL === 'true',
+        enabled: true,
         autoSignIn: false,
         requireEmailVerification: true,
         sendResetPassword : async ({user, url}) =>{
@@ -118,8 +114,16 @@ const options = {
             &callbackURL=${process.env.NEXT_PUBLIC_URL}/email-verified`;
             await sendVerificationEmail(user.email,verificationUrl)
         },
+    },
+    advanced: {
+        crossSubDomainCookies: {
+            enabled: true
+        },
+        defaultCookieAttributes: {
+            sameSite: "none",
+            secure: true,
+        }
     }
-
 
 } satisfies BetterAuthOptions;
 

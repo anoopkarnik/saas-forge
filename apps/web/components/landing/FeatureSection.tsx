@@ -12,8 +12,9 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@w
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { Layers } from "lucide-react";
+import { ReactElement } from "react";
 
-const FeatureSection = ({ featureSection }: { featureSection: FeatureSectionProps }) => {
+const FeatureSection = ({ featureSection }: { featureSection: FeatureSectionProps }): ReactElement => {
 
   const [headingArray, setHeadingArray] = useState<string[]>([])
   const [featureImage, setFeatureImage] = useState<number>(0);

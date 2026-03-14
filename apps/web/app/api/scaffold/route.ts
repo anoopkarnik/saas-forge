@@ -13,6 +13,16 @@ const CREDITS_COST = 20;
 
 export const runtime = "nodejs"; // required (streams)
 
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*", // Allow Electron app to fetch from local API
+  "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+};
+
+export async function OPTIONS() {
+  return NextResponse.json({}, { headers: corsHeaders });
+}
+
 function sanitizeProjectName(name: string) {
   return (name || "turborepo-app")
     .trim()
@@ -151,18 +161,18 @@ export async function POST(req: NextRequest) {
     });
 
     if (!session?.user) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401, headers: corsHeaders });
     }
 
     const { success } = await ratelimit.limit(session.user.id);
     if (!success) {
-        return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 });
+        return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429, headers: corsHeaders });
     }
 
     if ((session.user.creditsTotal - session.user.creditsUsed) < CREDITS_COST) {
         return NextResponse.json(
             { error: "Not enough credits" },
-            { status: 403 }
+            { status: 403, headers: corsHeaders }
         );
     }
 
@@ -175,7 +185,7 @@ export async function POST(req: NextRequest) {
       console.error(`Scaffold root not found at: ${scaffoldRoot}`);
       return NextResponse.json(
         { error: "Scaffold root not found" },
-        { status: 500 }
+        { status: 500, headers: corsHeaders }
       );
     }
 
@@ -209,6 +219,7 @@ export async function POST(req: NextRequest) {
 
     return new NextResponse(stream as any, {
       headers: {
+        ...corsHeaders,
         "Content-Type": "application/zip",
         "Content-Disposition": `attachment; filename="${projectName}.zip"`,
         "Cache-Control": "no-store",
@@ -217,7 +228,7 @@ export async function POST(req: NextRequest) {
   } catch (err: any) {
     return NextResponse.json(
       { error: err?.message ?? "Failed to generate zip" },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     );
   }
 }
@@ -233,7 +244,7 @@ export async function GET(req: NextRequest) {
     if ((session?.user?.creditsTotal - session?.user?.creditsUsed) < CREDITS_COST) {
       return NextResponse.json(
         { error: "Not enough credits" },
-        { status: 403 }
+        { status: 403, headers: corsHeaders }
       );
     }
     const projectName = sanitizeProjectName(searchParams.get("name") ?? "");
@@ -244,7 +255,7 @@ export async function GET(req: NextRequest) {
       console.error(`Scaffold root not found at: ${scaffoldRoot}`);
       return NextResponse.json(
         { error: "Scaffold root not found" },
-        { status: 500 }
+        { status: 500, headers: corsHeaders }
       );
     }
 
@@ -273,6 +284,7 @@ export async function GET(req: NextRequest) {
 
     return new NextResponse(stream as any, {
       headers: {
+        ...corsHeaders,
         "Content-Type": "application/zip",
         "Content-Disposition": `attachment; filename="${projectName}.zip"`,
         "Cache-Control": "no-store",
@@ -281,7 +293,7 @@ export async function GET(req: NextRequest) {
   } catch (err: any) {
     return NextResponse.json(
       { error: err?.message ?? "Failed to generate zip" },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     );
   }
 }

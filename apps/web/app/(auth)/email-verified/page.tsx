@@ -1,24 +1,22 @@
 'use client'
 
-import React from 'react'
-import VerificationCard from '@/components/auth/VerificationCard'
-import Quote from '@/components/auth/Quote'
+import VerificationPage from '@workspace/ui/blocks/auth/VerificationPage'
+import { useRouter } from 'next/navigation'
 
+import type { ReactElement } from 'react'
 
-const Verification = () => {
+const VerificationTemp = (): ReactElement => {
+  const router = useRouter()
 
 
   return (
-    <div className='min-h-screen grid grid-cols-1 lg:grid-cols-2 '>
-        <div className='flex items-center justify-center bg-gradient-to-br from-primary to-black dark:bg-gradient-to-br'>
-            <VerificationCard errorMessage={"Email Not Verified"} successMessage={"Email Verified"}/>
-        </div>
-        <div className='hidden lg:block bg-white'>
-            <Quote/>
-        </div>
-    </div>
+    <VerificationPage
+      errorMessage={"Email Not Verified"}
+      successMessage={"Email Verified"}
+      onBackToLoginClick={() => router.push('/sign-in')}
+    />
   )
 }
 
 
-export default Verification
+export default VerificationTemp

@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react"
 import { authClient } from "@workspace/auth/better-auth/auth-client"
 import { useRouter } from "next/navigation"
-import LoadingCard from "@/components/auth/LoadingCard" // Using existing loading component
+import LoadingCard from "@workspace/ui/components/auth/LoadingCard"
 
 export default function AuthCallbackPage() {
     const router = useRouter()

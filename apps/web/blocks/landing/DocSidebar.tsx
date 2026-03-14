@@ -5,12 +5,12 @@ import Image from 'next/image';
 import { Separator } from '@workspace/ui/components/shadcn/separator';
 import { DocumentationProps } from '@/lib/ts-types/doc';
 import { useTheme } from 'next-themes';
-import { useEffect, useState } from 'react';
+import { ReactElement, useEffect, useState } from 'react';
 import { cn } from '@workspace/ui/lib/utils';
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { useTRPC } from '@/trpc/client'
 
-const DocSidebar = () => {
+const DocSidebar = (): ReactElement => {
     const router = useRouter()
     const pathname = usePathname();
     const { theme } = useTheme();

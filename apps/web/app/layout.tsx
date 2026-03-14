@@ -19,7 +19,7 @@ export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
-}>) {
+}>): React.ReactElement {
   const themeColor = process.env.NEXT_PUBLIC_THEME || "green";
 
   return (

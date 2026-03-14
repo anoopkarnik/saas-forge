@@ -10,8 +10,9 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@workspace/ui/components/shadcn/avatar";
 import { TestimonialSectionProps } from "@/lib/ts-types/landing";
 import { motion } from "framer-motion";
+import { ReactElement } from "react";
 
-const TestimonialSection = ({ testimonialSection }: { testimonialSection: TestimonialSectionProps }) => {
+const TestimonialSection = ({ testimonialSection }: { testimonialSection: TestimonialSectionProps }): ReactElement => {
   const [api, setApi] = useState<CarouselApi>();
   const [current, setCurrent] = useState(0);
 

@@ -1,9 +1,10 @@
 "use client"
+import type { ReactElement } from "react"
 import NavbarSection from "@/components/landing/NavbarSection"
 import { useTRPC } from "@/trpc/client"
 import { useSuspenseQuery } from "@tanstack/react-query"
 
-const ContactUs = () => {
+const ContactUs = (): ReactElement => {
     const trpc = useTRPC()
     const { data } = useSuspenseQuery(trpc.landing.getLandingInfoFromNotion.queryOptions())
 

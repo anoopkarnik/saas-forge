@@ -34,6 +34,8 @@ export interface LoginCardProps {
     onGithubProviderSubmit?: any;
     onLinkedinProviderSubmit?: any;
     errorMessage?:string;
+    onSignUpClick?: () => void;
+    onForgotPasswordClick?: () => void;
   }
   
 
@@ -47,6 +49,9 @@ export interface RegisterCardProps {
     onGithubProviderSubmit?: any;
     onLinkedinProviderSubmit?: any;
     errorMessage?:string;
+    onSignInClick?: () => void;
+    onTermsOfServiceClick?: () => void;
+    onPrivacyPolicyClick?: () => void;
   }
 
 export interface VerificationCardProps {
@@ -54,6 +59,7 @@ export interface VerificationCardProps {
     successMessage?:string;
     token?: string;
     resetFunction?:any;
+    onBackToLoginClick?: () => void;
 }
 
 export interface ResetPasswordCardProps {
@@ -61,6 +67,7 @@ export interface ResetPasswordCardProps {
     successMessage?:string;
     token?: string;
     resetFunction?:any;
+    onBackToLoginClick?: () => void;
 }
 
 
@@ -69,8 +76,10 @@ export interface ForgotPasswordCardProps {
     errorMessage?:string;  
     successMessage?:string;
     resetFunction?:any; 
+    onBackToLoginClick?: () => void;
   }
 
  export interface ErrorCardProps {
     errorMessage?:string;
+    onBackToLoginClick?: () => void;
   }

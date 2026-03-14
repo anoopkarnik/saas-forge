@@ -11,8 +11,9 @@ import Image from "next/image";
 import { ContainerScroll } from "@workspace/ui/components/aceternity/container-scroll-animation";
 import { HeroCodeBlock } from "@workspace/ui/components/misc/HeroCodeBlock";
 import { motion } from "framer-motion";
+import { ReactElement } from "react";
 
-const HeroSection = ({ heroSection }: { heroSection: HeroSectionProps }) => {
+const HeroSection = ({ heroSection }: { heroSection: HeroSectionProps }): ReactElement => {
   const [taglineArray, setTaglineArray] = useState<string[]>([])
   const router = useRouter()
   useEffect(() => {

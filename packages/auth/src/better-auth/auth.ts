@@ -7,12 +7,14 @@ import { sendResetEmail, sendVerificationEmail } from "@workspace/email/resend/i
 
 const options = {
     basePath: "/api/auth",
+    baseURL: process.env.NEXT_PUBLIC_URL,
     plugins: [openAPI(),admin({
         impersonationSessionDuration: 3600
     })],
     trustedOrigins: [
         "myapp://", 
         "myapp://*",
+        "http://localhost:5173",
         process.env.NEXT_PUBLIC_URL || ""
     ].filter(Boolean),
     database: prismaAdapter(db, {
@@ -112,8 +114,16 @@ const options = {
             &callbackURL=${process.env.NEXT_PUBLIC_URL}/email-verified`;
             await sendVerificationEmail(user.email,verificationUrl)
         },
+    },
+    advanced: {
+        crossSubDomainCookies: {
+            enabled: true
+        },
+        defaultCookieAttributes: {
+            sameSite: "none",
+            secure: true,
+        }
     }
-
 
 } satisfies BetterAuthOptions;
 

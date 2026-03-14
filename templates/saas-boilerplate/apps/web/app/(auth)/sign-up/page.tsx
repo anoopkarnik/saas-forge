@@ -6,11 +6,12 @@ import React, { Suspense, useEffect, useState } from 'react'
 import { authClient } from '@workspace/auth/better-auth/auth-client'
 import { z } from 'zod'
 import { RegisterSchema } from '@workspace/auth/utils/zod'
-import RegisterCard from '@/components/auth/RegisterCard'
-import Quote from '@/components/auth/Quote'
-import LoadingCard from '@/components/auth/LoadingCard'
+import RegisterPage from '@workspace/ui/blocks/auth/RegisterPage'
+import LoadingCard from '@workspace/ui/components/auth/LoadingCard'
+import { useRouter } from 'next/navigation'
 
 const RegisterContent = () => {
+  const router = useRouter()
   const searchParams = useSearchParams()
 
   const [urlError, setUrlError] = useState('')
@@ -34,25 +35,21 @@ const RegisterContent = () => {
     return result
   }
 
-
-
   return (
-    <div className='grid grid-cols-1 lg:grid-cols-2 min-h-screen'>
-      <div className='flex items-center justify-center bg-gradient-to-br from-primary to-sidebar dark:bg-gradient-to-br p-8'>
-        <RegisterCard showEmail={process.env.NEXT_PUBLIC_AUTH_EMAIL === 'true'}
-          showGoogleProvider={process.env.NEXT_PUBLIC_AUTH_GOOGLE === 'true'}
-          showGithubProvider={process.env.NEXT_PUBLIC_AUTH_GITHUB === 'true'}
-          showLinkedinProvider={process.env.NEXT_PUBLIC_AUTH_LINKEDIN === 'true'}
-          onEmailSubmit={register}
-          onGoogleProviderSubmit={() => loginWithSocials('google')}
-          onGithubProviderSubmit={() => loginWithSocials('github')}
-          onLinkedinProviderSubmit={() => loginWithSocials('linkedin')}
-          errorMessage={urlError} />
-      </div>
-      <div className='hidden lg:block h-full'>
-        <Quote />
-      </div>
-    </div>
+    <RegisterPage
+      showEmail={process.env.NEXT_PUBLIC_AUTH_EMAIL === 'true'}
+      showGoogleProvider={process.env.NEXT_PUBLIC_AUTH_GOOGLE === 'true'}
+      showGithubProvider={process.env.NEXT_PUBLIC_AUTH_GITHUB === 'true'}
+      showLinkedinProvider={process.env.NEXT_PUBLIC_AUTH_LINKEDIN === 'true'}
+      onEmailSubmit={register}
+      onGoogleProviderSubmit={() => loginWithSocials('google')}
+      onGithubProviderSubmit={() => loginWithSocials('github')}
+      onLinkedinProviderSubmit={() => loginWithSocials('linkedin')}
+      onSignInClick={() => router.push('/sign-in')}
+      onTermsOfServiceClick={() => router.push('/terms')}
+      onPrivacyPolicyClick={() => router.push('/privacy')}
+      errorMessage={urlError}
+    />
   )
 }
 

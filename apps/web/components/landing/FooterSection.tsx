@@ -4,8 +4,9 @@ import { useTheme } from "next-themes";
 import { FooterSectionProps } from "@/lib/ts-types/landing";
 import { FooterLinkProps } from "@/lib/ts-types/landing";
 import { motion } from "framer-motion";
+import { ReactElement } from "react";
 
-const FooterSection = ({ footerSection }: { footerSection: FooterSectionProps }) => {
+const FooterSection = ({ footerSection }: { footerSection: FooterSectionProps }): ReactElement => {
     const [footerTypes, setFooterTypes] = useState<any>([]);
     const { theme } = useTheme();
     const [mounted, setMounted] = useState(false);

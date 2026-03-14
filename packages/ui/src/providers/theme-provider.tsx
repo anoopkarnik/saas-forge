@@ -7,7 +7,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   return (
     <NextThemesProvider
       attribute="class"
-      defaultTheme={process.env.NEXT_PUBLIC_THEME_TYPE || "system"}
+      defaultTheme={typeof process !== 'undefined' ? process.env?.NEXT_PUBLIC_THEME_TYPE || "system" : "system"}
       enableSystem
       disableTransitionOnChange
       enableColorScheme

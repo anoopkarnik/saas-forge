@@ -6,11 +6,8 @@ import React, { Suspense, useState } from 'react'
 import { authClient } from '@workspace/auth/better-auth/auth-client'
 import { z } from 'zod'
 import { LoginSchema } from '@workspace/auth/utils/zod'
-import LoginCard from '@/components/auth/LoginCard'
-import Quote from '@/components/auth/Quote'
-import LoadingCard from '@/components/auth/LoadingCard'
-import { waitFor } from '@/lib/helper/waitFor'
-
+import LoginPage from '@workspace/ui/blocks/auth/LoginPage'
+import LoadingCard from '@workspace/ui/components/auth/LoadingCard'
 
 const LoginContent = () => {
   const router = useRouter()
@@ -34,22 +31,19 @@ const LoginContent = () => {
   }
 
   return (
-    <div className='min-h-screen grid grid-cols-1 lg:grid-cols-2 '>
-      <div className='flex items-center justify-center bg-gradient-to-br from-primary to-sidebar dark:bg-gradient-to-br p-8'>
-        <LoginCard showEmail={process.env.NEXT_PUBLIC_AUTH_EMAIL === 'true'}
-          showGoogleProvider={process.env.NEXT_PUBLIC_AUTH_GOOGLE === 'true'}
-          showGithubProvider={process.env.NEXT_PUBLIC_AUTH_GITHUB === 'true'}
-          showLinkedinProvider={process.env.NEXT_PUBLIC_AUTH_LINKEDIN === 'true'}
-          onEmailSubmit={loginWithEmail}
-          onGoogleProviderSubmit={() => loginWithSocials('google')}
-          onGithubProviderSubmit={() => loginWithSocials('github')}
-          onLinkedinProviderSubmit={() => loginWithSocials('linkedin')}
-          errorMessage={error} />
-      </div>
-      <div className='hidden lg:block h-full'>
-        <Quote />
-      </div>
-    </div>
+    <LoginPage
+      showEmail={process.env.NEXT_PUBLIC_AUTH_EMAIL === 'true'}
+      showGoogleProvider={process.env.NEXT_PUBLIC_AUTH_GOOGLE === 'true'}
+      showGithubProvider={process.env.NEXT_PUBLIC_AUTH_GITHUB === 'true'}
+      showLinkedinProvider={process.env.NEXT_PUBLIC_AUTH_LINKEDIN === 'true'}
+      onEmailSubmit={loginWithEmail}
+      onGoogleProviderSubmit={() => loginWithSocials('google')}
+      onGithubProviderSubmit={() => loginWithSocials('github')}
+      onLinkedinProviderSubmit={() => loginWithSocials('linkedin')}
+      onSignUpClick={() => router.push('/sign-up')}
+      onForgotPasswordClick={() => router.push('/forgot-password')}
+      errorMessage={error}
+    />
   )
 }
 

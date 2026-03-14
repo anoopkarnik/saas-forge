@@ -1,12 +1,12 @@
 import { NextResponse, type NextRequest } from "next/server"
 
-const publicRoutes = ["/landing","/public","/api/payments/dodo/webhook","/api/payments/stripe/webhook","/api/trpc", "/auth-callback"]
+const publicRoutes = ["/landing","/public","/api/payments/dodo/webhook","/api/payments/stripe/webhook","/api/trpc", "/auth-callback", "/api/scaffold"]
 
 const authRoutes =["/sign-in","/sign-up","/error","/forgot-password","/reset-password",'/email-verified',"/api/auth"]
 
 const apiAuthPrefix = "/api/auth"
 
-const allowedOrigins = ['http://localhost:3000', process.env.NEXT_PUBLIC_URL].filter(Boolean) as string[]
+const allowedOrigins = ['http://localhost:3000', 'http://localhost:5173', process.env.NEXT_PUBLIC_URL].filter(Boolean) as string[]
 
 const corsOptions = {
     'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
@@ -27,6 +27,29 @@ export default async function middleware(req:NextRequest){
   
     const response = NextResponse.next()
 
+    // Handle preflighted requests
+    const isPreflight = req.method === 'OPTIONS'
+    
+    if (isPreflight) {
+        const preflightHeaders = {
+        ...(isAllowedOrigin && { 
+            'Access-Control-Allow-Origin': origin,
+            'Access-Control-Allow-Credentials': 'true'
+        }),
+        ...corsOptions,
+        }
+        return NextResponse.json({}, { headers: preflightHeaders })
+    }
+
+    // Set CORS headers on all responses for allowed origins
+    if (isAllowedOrigin) {
+        response.headers.set('Access-Control-Allow-Origin', origin)
+        response.headers.set('Access-Control-Allow-Credentials', 'true')
+    }
+     
+    Object.entries(corsOptions).forEach(([key, value]) => {
+        response.headers.set(key, value)
+    })
 
     // Avoid infinite recursion: don't fetch session for /api/auth routes
     if (isApiAuthRoute || isPublicRoute) {
@@ -39,26 +62,6 @@ export default async function middleware(req:NextRequest){
     
     const isLoggedIn = !!sessionToken;
 
-
-    // Handle preflighted requests
-    const isPreflight = req.method === 'OPTIONS'
-    
-    if (isPreflight) {
-        const preflightHeaders = {
-        ...(isAllowedOrigin && { 'Access-Control-Allow-Origin': origin }),
-        ...corsOptions,
-        }
-        return NextResponse.json({}, { headers: preflightHeaders })
-    }
-
-
-    if (isAllowedOrigin) {
-        response.headers.set('Access-Control-Allow-Origin', origin)
-      }
-     
-      Object.entries(corsOptions).forEach(([key, value]) => {
-        response.headers.set(key, value)
-      })
 
     if (isAuthRoute){
         if (isLoggedIn){

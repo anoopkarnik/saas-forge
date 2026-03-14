@@ -1,0 +1,42 @@
+{
+  "name": "desktop",
+  "version": "1.0.0",
+  "description": "",
+  "main": "out/main/index.js",
+  "scripts": {
+    "dev": "env -u ELECTRON_RUN_AS_NODE electron-vite dev -- --disable-dev-shm-usage",
+    "build": "electron-vite build",
+    "package": "electron-builder"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "^5.90.16",
+    "@trpc/client": "^11.11.0",
+    "@trpc/server": "^11.11.0",
+    "@trpc/tanstack-react-query": "^11.11.0",
+    "@workspace/auth": "workspace:*",
+    "@workspace/database": "workspace:*",
+    "@workspace/ui": "workspace:*",
+    "electron-store": "^10.x",
+    "express": "^5.x",
+    "react": "^19.x",
+    "react-dom": "^19.x",
+    "react-router-dom": "^7.x",
+    "sonner": "^2.0.7",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.2.1",
+    "@types/express": "^5.x",
+    "@types/react": "^19.2.8",
+    "@types/react-dom": "^19.1.7",
+    "@vitejs/plugin-react": "^5.x",
+    "@workspace/typescript-config": "workspace:*",
+    "cross-env": "^10.1.0",
+    "electron": "^36.x",
+    "electron-builder": "^25.x",
+    "electron-vite": "^5.0.0",
+    "tailwindcss": "^4.1.11",
+    "typescript": "5.7.3",
+    "vite": "^7.3.1"
+  }
+}

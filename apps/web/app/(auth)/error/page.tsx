@@ -1,21 +1,19 @@
 "use client"
 
 
-import React from 'react'
-import ErrorCard from '@/components/auth/ErrorCard'
-import Quote from '@/components/auth/Quote'
+import ErrorPage from '@workspace/ui/blocks/auth/ErrorPage'
+import { useRouter } from 'next/navigation'
 
-const ErrorTemp = () => {
+import type { ReactElement } from 'react'
+
+const ErrorTemp = (): ReactElement => {
+  const router = useRouter()
 
   return (
-    <div className='grid grid-cols-1 lg:grid-cols-2 '>
-          <div className='flex items-center justify-center bg-gradient-to-br from-violet-400/30 to-black/90 dark:bg-gradient-to-br'>
-              <ErrorCard errorMessage={"Oops! Something went wrong!"}/>
-          </div>
-          <div className='invisible lg:visible bg-white'>
-              <Quote  />
-          </div>
-    </div>
+    <ErrorPage
+      errorMessage={"Oops! Something went wrong!"}
+      onBackToLoginClick={() => router.push('/sign-in')}
+    />
   )
 }
 

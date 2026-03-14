@@ -3,14 +3,14 @@ import { getQueryClient, trpc } from "@/trpc/server";
 import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
 import ErrorState from "@workspace/ui/components/misc/ErrorState";
 import LoadingState from "@workspace/ui/components/misc/LoadingState";
-import { Suspense } from "react";
+import { ReactElement, Suspense } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 
 interface Props {
   params: Promise<{ slug: string }>
 }
 
-const DocIdPage = async ({ params }: Props) => {
+const DocIdPage = async ({ params }: Props): Promise<ReactElement> => {
   const { slug } = await params;
 
   const queryClient = getQueryClient();

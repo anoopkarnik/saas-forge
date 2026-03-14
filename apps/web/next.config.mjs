@@ -9,11 +9,25 @@ const nextConfig = {
     ],
     unoptimized: true,
   },
-  experimental: {
-    outputFileTracingIncludes: {
-      "/api/scaffold": ["../../templates/saas-boilerplate/**/*"],
-    },
-  }
+  outputFileTracingIncludes: {
+    "/api/scaffold": ["../../templates/saas-boilerplate/**/*"],
+  },
+  outputFileTracingExcludes: {
+    "/api/scaffold": [
+      "../../templates/saas-boilerplate/**/node_modules/**",
+    ],
+  },
+  async headers() {
+    return [
+      {
+        source: "/_next/:path*",
+        headers: [
+          { key: "Access-Control-Allow-Origin", value: "http://localhost:5173" },
+          { key: "Access-Control-Allow-Methods", value: "GET, OPTIONS" },
+        ],
+      },
+    ]
+  },
 }
 
 export default nextConfig

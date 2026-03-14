@@ -56,10 +56,9 @@ export default async function middleware(req:NextRequest){
         return response;
     }
 
-    // Check for session by looking at the session token cookie directly
-    // getCookieCache wasn't working on Vercel Edge - the cookies exist but decryption fails
-    const sessionToken = req.cookies.get('better-auth.session_token')?.value;
-    
+    // Check for both the local and Secure (production HTTPS) cookie prefixes.
+    // Better Auth uses __Secure- prefix in production.
+    const sessionToken = req.cookies.get('better-auth.session_token')?.value || req.cookies.get('__Secure-better-auth.session_token')?.value;
     const isLoggedIn = !!sessionToken;
 
 

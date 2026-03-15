@@ -10,8 +10,9 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@workspace/ui/components/shadcn/avatar";
 import { TestimonialSectionProps } from "@/lib/ts-types/landing";
 import { motion } from "framer-motion";
+import { ReactElement } from "react";
 
-const TestimonialSection = ({ testimonialSection }: { testimonialSection: TestimonialSectionProps }) => {
+const TestimonialSection = ({ testimonialSection }: { testimonialSection: TestimonialSectionProps }): ReactElement => {
   const [api, setApi] = useState<CarouselApi>();
   const [current, setCurrent] = useState(0);
 
@@ -85,7 +86,7 @@ const TestimonialSection = ({ testimonialSection }: { testimonialSection: Testim
                         </Avatar>
                         <div className="flex flex-col items-start text-">
                           <div className="text-sm font-semibold text-zinc-200">{testimonial.name}</div>
-                          <div className="text-xs text-zinc-400">{testimonial.title}</div>
+                          <div className="text-xs text-zinc-400">{testimonial.position}</div>
                         </div>
 
                       </div>

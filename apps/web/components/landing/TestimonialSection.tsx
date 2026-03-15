@@ -86,7 +86,7 @@ const TestimonialSection = ({ testimonialSection }: { testimonialSection: Testim
                         </Avatar>
                         <div className="flex flex-col items-start text-">
                           <div className="text-sm font-semibold text-zinc-200">{testimonial.name}</div>
-                          <div className="text-xs text-zinc-400">{testimonial.title}</div>
+                          <div className="text-xs text-zinc-400">{testimonial.position}</div>
                         </div>
 
                       </div>

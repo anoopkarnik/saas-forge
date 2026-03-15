@@ -5,9 +5,9 @@ import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
 import { Suspense } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { SidebarProvider, SidebarTrigger } from "@workspace/ui/components/shadcn/sidebar";
-import { ClientSidebarWrapper } from "./ClientSidebarWrapper";
 import { Separator } from "@workspace/ui/components/shadcn/separator";
 import { BreadcrumbsHeader } from "@/components/home/BreadcrumbsHeader"
+import AppSidebar from "@/components/home/AppSidebar";
 
 export const dynamic = "force-dynamic";
 
@@ -23,7 +23,7 @@ export default async function Layout({ children }: { children: React.ReactNode }
       <Suspense fallback={<LoadingState title='Retrieving' description='Please wait while we retrieve the landing page data' />}>
         <ErrorBoundary fallback={<ErrorState title='Error Retrieving Data' description='There was an error while retrieving the data.' />}>
           <SidebarProvider>
-            <ClientSidebarWrapper />
+            <AppSidebar />
             <div className="flex flex-col flex-1 max-h-screen">
               <div className="flex items-center gap-4 py-2">
                 <SidebarTrigger />

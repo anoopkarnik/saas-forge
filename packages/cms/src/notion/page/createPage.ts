@@ -26,7 +26,10 @@ export const createNotionPage = async({apiToken,database_id, properties}:any) =>
 async function constructCreateBody(database_id:any, properties:any) {
     const propertiesBody:any = {};
     for (let property of properties){
-        propertiesBody[property.name] = await modifyProperty(property);
+        const modified = await modifyProperty(property);
+        if (modified !== null) {
+            propertiesBody[property.name] = modified;
+        }
     }
     return {
         parent: {

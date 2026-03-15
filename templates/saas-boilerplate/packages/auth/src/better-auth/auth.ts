@@ -115,6 +115,21 @@ const options = {
             await sendVerificationEmail(user.email,verificationUrl)
         },
     },
+    databaseHooks: {
+        user: {
+            create: {
+                after: async (user) => {
+                    const userCount = await db.user.count();
+                    if (userCount === 1) {
+                        await db.user.update({
+                            where: { id: user.id },
+                            data: { role: "admin" },
+                        });
+                    }
+                },
+            },
+        },
+    },
     advanced: {
         crossSubDomainCookies: {
             enabled: true

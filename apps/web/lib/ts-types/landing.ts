@@ -34,6 +34,7 @@ export interface HeroSectionProps {
 }
 
 export interface HeroImageProps {
+    id: string;
     title: string;
     imageUrl: string;
 }
@@ -45,6 +46,7 @@ export interface FeatureSectionProps {
 }
 
 export interface FeatureProps {
+    id: string;
     title: string;
     description: string;
     category?: string;
@@ -58,8 +60,9 @@ export interface TestimonialSectionProps {
 }
 
 export interface TestimonialProps {
+    id: string;
     name: string;
-    title: string;
+    position: string;
     company?: string;
     comment: string;
     imageUrl: string;
@@ -72,6 +75,7 @@ export interface PricingSectionProps {
 }
 
 export interface PricingPlanProps {
+    id: string;
     title: string;
     popular: boolean;
     price: string;
@@ -87,6 +91,7 @@ export interface FAQSectionProps {
 }
 
 export interface FAQProps {
+    id: string;
     question: string;
     answer: string;
 }
@@ -101,6 +106,7 @@ export interface FooterSectionProps {
 }
 
 export interface FooterLinkProps {
+    id: string;
     label: string;
     href: string;
     type: string;

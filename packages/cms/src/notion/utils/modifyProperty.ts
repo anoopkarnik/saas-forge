@@ -1,27 +1,31 @@
 export async function modifyProperty(property:any) {
+    const value = typeof property.value === 'string' ? property.value.trim() : property.value;
     switch (property.type) {
         case 'text':
-            return { rich_text: [{ text: { content: property.value } }] };
+            return { rich_text: [{ text: { content: value } }] };
         case 'title':
-
-            return { title: [{ text: { content: property.value } }] };
+            return { title: [{ text: { content: value } }] };
         case 'date':
-            return { date: { start: property.value || '1900-01-01' } };
+            return { date: { start: value || '1900-01-01' } };
         case 'number':
-            return { number: property.value };
+            return { number: value };
         case 'file_url':
-            return { files: [{ type: 'external', name: 'Cover', external: { url: property.value } }] };
+            // Notion-hosted file URLs cannot be set via the API as external — skip them
+            if (value && (value.includes('secure.notion-static.com') || value.includes('prod-files-secure.s3'))) {
+                return null;
+            }
+            return { files: [{ type: 'external', name: 'Cover', external: { url: value } }] };
         case 'url':
-            return { url: property.value };
+            return { url: value || null };
         case 'checkbox':
-            return { checkbox: property.value };
+            return { checkbox: value };
         case 'select':
-            return { select: { name: property.value } };
+            return { select: { name: value } };
         case 'multi_select':
-            return { multi_select: property.value.map((value:any) => ({ name: value })) };
+            return { multi_select: value.map((v:any) => ({ name: typeof v === 'string' ? v.trim() : v })) };
         case 'relation':
-            return { relation: property.value.map((value:any) => ({ id: value })) };
+            return { relation: value.map((v:any) => ({ id: typeof v === 'string' ? v.trim() : v })) };
         case 'status':
-            return { status: { name: property.value } };
+            return { status: { name: value } };
     }
 }

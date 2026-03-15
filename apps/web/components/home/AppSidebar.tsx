@@ -13,23 +13,23 @@ import {
 } from "@workspace/ui/components/shadcn/sidebar";
 import { useTheme } from "next-themes";
 import { cn } from "@workspace/ui/lib/utils";
-import { HomeIcon, Users, Shield, Settings } from "lucide-react";
+import { HomeIcon, Users, Shield, Settings, Database } from "lucide-react";
 import { MdSaveAs } from "react-icons/md";
+import { usePathname, useRouter } from "next/navigation";
+import { useTRPC } from "@/trpc/client";
+import { useQuery } from "@tanstack/react-query";
+import { useSession } from "@workspace/auth/better-auth/auth-client";
+import ProgressWithCredits from "@workspace/ui/components/home/ProgressWithCredits";
+import SidebarUser from "@/blocks/home/SidebarUser";
 
-export interface AppSidebarProps {
-    navbarConfig: {
-        title: string;
-        logo: string;
-        darkLogo: string;
-    } | null;
-    pathname: string;
-    onNavigateHome: () => void;
-    slotUser?: React.ReactNode;
-    slotProgress?: React.ReactNode;
-    isAdmin?: boolean;
-}
+export function AppSidebar() {
+    const router = useRouter();
+    const pathname = usePathname();
+    const trpc = useTRPC();
+    const { data: landingInfo, isLoading } = useQuery(trpc.landing.getLandingInfoFromNotion.queryOptions());
+    const { data: session } = useSession();
+    const isAdmin = session?.user?.role === "admin";
 
-export function AppSidebar({ navbarConfig, pathname, onNavigateHome, slotUser, slotProgress, isAdmin }: AppSidebarProps) {
     const { theme, resolvedTheme } = useTheme();
     const [mounted, setMounted] = useState(false);
 
@@ -46,18 +46,18 @@ export function AppSidebar({ navbarConfig, pathname, onNavigateHome, slotUser, s
                     <SidebarMenuItem>
                         <a
                             role="button"
-                            onClick={onNavigateHome}
+                            onClick={() => router.push("/")}
                             className="flex items-center gap-3 font-cyberdyne px-2 cursor-pointer"
                         >
                             <img
-                                src={isDark ? navbarConfig?.darkLogo : navbarConfig?.logo}
-                                alt={navbarConfig?.title}
+                                src={isDark ? landingInfo?.navbarSection.darkLogo : landingInfo?.navbarSection.logo}
+                                alt={landingInfo?.navbarSection.title}
                                 width={32}
                                 height={32}
                                 className="w-8 h-8 object-contain"
                             />
                             <div className="hidden lg:flex flex-col items-start text-lg tracking-tight font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
-                                {navbarConfig?.title}
+                                {landingInfo?.navbarSection.title}
                             </div>
                         </a>
                     </SidebarMenuItem>
@@ -70,7 +70,7 @@ export function AppSidebar({ navbarConfig, pathname, onNavigateHome, slotUser, s
                         <SidebarMenuItem>
                             <SidebarMenuButton asChild tooltip={"Download SaaS Boilerplate"}
                                 className={cn("cursor-pointer transition-all duration-200 ease-in-out hover:pl-3 h-10", pathname === "/" && "bg-sidebar-accent text-sidebar-accent-foreground font-medium shadow-sm")}
-                                onClick={onNavigateHome}>
+                                onClick={() => router.push("/")}>
                                 <div className="flex items-center gap-3">
                                     <MdSaveAs className="w-5 h-5 text-violet-500" />
                                     <div className="text-xs">{"Download SaaS Boilerplate"}</div>
@@ -80,7 +80,7 @@ export function AppSidebar({ navbarConfig, pathname, onNavigateHome, slotUser, s
                         <SidebarMenuItem>
                             <SidebarMenuButton asChild tooltip={"Download Portfolio Boilerplate"}
                                 className={cn("cursor-pointer transition-all duration-200 ease-in-out hover:pl-3 h-10", pathname === "/portfolio" && "bg-sidebar-accent text-sidebar-accent-foreground font-medium shadow-sm")}
-                                onClick={onNavigateHome}>
+                                onClick={() => router.push("/")}>
                                 <div className="flex items-center gap-3">
                                     <MdSaveAs className="w-5 h-5 text-orange-500" />
                                     <div className="text-xs">{"Download Portfolio Boilerplate (Coming Soon)"}</div>
@@ -90,7 +90,7 @@ export function AppSidebar({ navbarConfig, pathname, onNavigateHome, slotUser, s
                         <SidebarMenuItem>
                             <SidebarMenuButton asChild tooltip={"Download SaaS Company Landing Page"}
                                 className={cn("cursor-pointer transition-all duration-200 ease-in-out hover:pl-3 h-10", pathname === "/saas-company-landing-page" && "bg-sidebar-accent text-sidebar-accent-foreground font-medium shadow-sm")}
-                                onClick={onNavigateHome}>
+                                onClick={() => router.push("/")}>
                                 <div className="flex items-center gap-3">
                                     <MdSaveAs className="w-5 h-5 text-green-500" />
                                     <div className="text-xs">{"Download SaaS Company Landing Page (Coming Soon)"}</div>
@@ -100,7 +100,7 @@ export function AppSidebar({ navbarConfig, pathname, onNavigateHome, slotUser, s
                         <SidebarMenuItem>
                             <SidebarMenuButton asChild tooltip={"Download Hiking Company Landing Page"}
                                 className={cn("cursor-pointer transition-all duration-200 ease-in-out hover:pl-3 h-10", pathname === "/hiking-company-landing-page" && "bg-sidebar-accent text-sidebar-accent-foreground font-medium shadow-sm")}
-                                onClick={onNavigateHome}>
+                                onClick={() => router.push("/")}>
                                 <div className="flex items-center gap-3">
                                     <MdSaveAs className="w-5 h-5 text-blue-500" />
                                     <div className="text-xs">{"Download Hiking Company Landing Page (Coming Soon)"}</div>
@@ -115,9 +115,9 @@ export function AppSidebar({ navbarConfig, pathname, onNavigateHome, slotUser, s
                         <SidebarGroupLabel className="px-2 text-xs font-medium text-muted-foreground/70 uppercase tracking-wider mb-2">Admin</SidebarGroupLabel>
                         <SidebarMenu className="gap-1">
                             <SidebarMenuItem>
-                                <SidebarMenuButton asChild tooltip={"Manage Users"}
+                                <SidebarMenuButton tooltip={"Manage Users"}
                                     className={cn("cursor-pointer transition-all duration-200 ease-in-out hover:pl-3 h-10", pathname === "/admin/users" && "bg-sidebar-accent text-sidebar-accent-foreground font-medium shadow-sm")}
-                                >
+                                    onClick={() => router.push("/admin/users")}>
                                     <div className="flex items-center gap-3">
                                         <Users className="w-5 h-5 text-blue-500" />
                                         <div className="text-xs">User Management</div>
@@ -125,22 +125,12 @@ export function AppSidebar({ navbarConfig, pathname, onNavigateHome, slotUser, s
                                 </SidebarMenuButton>
                             </SidebarMenuItem>
                             <SidebarMenuItem>
-                                <SidebarMenuButton asChild tooltip={"Manage Roles"}
-                                    className={cn("cursor-pointer transition-all duration-200 ease-in-out hover:pl-3 h-10", pathname === "/admin/roles" && "bg-sidebar-accent text-sidebar-accent-foreground font-medium shadow-sm")}
-                                >
+                                <SidebarMenuButton tooltip={"CMS"}
+                                    className={cn("cursor-pointer transition-all duration-200 ease-in-out hover:pl-3 h-10", pathname === "/admin/cms" && "bg-sidebar-accent text-sidebar-accent-foreground font-medium shadow-sm")}
+                                    onClick={() => router.push("/admin/cms")}>
                                     <div className="flex items-center gap-3">
-                                        <Shield className="w-5 h-5 text-red-500" />
-                                        <div className="text-xs">Role Management</div>
-                                    </div>
-                                </SidebarMenuButton>
-                            </SidebarMenuItem>
-                            <SidebarMenuItem>
-                                <SidebarMenuButton asChild tooltip={"Admin Settings"}
-                                    className={cn("cursor-pointer transition-all duration-200 ease-in-out hover:pl-3 h-10", pathname === "/admin/settings" && "bg-sidebar-accent text-sidebar-accent-foreground font-medium shadow-sm")}
-                                >
-                                    <div className="flex items-center gap-3">
-                                        <Settings className="w-5 h-5 text-zinc-500" />
-                                        <div className="text-xs">Admin Settings</div>
+                                        <Database className="w-5 h-5 text-red-500" />
+                                        <div className="text-xs">CMS</div>
                                     </div>
                                 </SidebarMenuButton>
                             </SidebarMenuItem>
@@ -150,8 +140,8 @@ export function AppSidebar({ navbarConfig, pathname, onNavigateHome, slotUser, s
             </SidebarContent>
             <SidebarFooter className="p-4 border-t border-sidebar-border/40 bg-sidebar-footer/5">
                 <div className="space-y-4">
-                    {slotProgress}
-                    {slotUser}
+                    {process.env.NEXT_PUBLIC_PAYMENT_GATEWAY !== 'none' ? <ProgressWithCredits /> : null}
+                    <SidebarUser />
                 </div>
             </SidebarFooter>
         </Sidebar>

@@ -6,7 +6,7 @@ import SidebarUser from "./SidebarUser"
 import { SidebarProvider, SidebarTrigger } from "@workspace/ui/components/shadcn/sidebar";
 import { Separator } from "@workspace/ui/components/shadcn/separator";
 import DashboardPage from "@workspace/ui/blocks/dashboard/DashboardPage";
-import ProgressWithCredits from "@workspace/ui/components/home/ProgressWithCredits";
+import Support from "../support/Support";
 import { useTRPC } from "../../lib/trpc";
 import { useQuery } from "@tanstack/react-query";
 
@@ -39,6 +39,7 @@ export default function DashboardRoute() {
             const response = await fetch(`${apiUrl}/api/scaffold`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
+                credentials: "include",
                 body: JSON.stringify({ name: safeName, envVars }),
             });
 
@@ -46,15 +47,11 @@ export default function DashboardRoute() {
                 throw new Error("Failed to download");
             }
 
-            const blob = await response.blob();
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = `${safeName}.zip`;
-            document.body.appendChild(a);
-            a.click();
-            window.URL.revokeObjectURL(url);
-            document.body.removeChild(a);
+            const arrayBuffer = await response.arrayBuffer();
+            const saved = await window.api.saveFile(`${safeName}.zip`, arrayBuffer);
+            if (!saved) {
+                throw new Error("Download cancelled");
+            }
         } catch (error) {
             console.error("Download failed:", error);
             throw error;
@@ -75,8 +72,10 @@ export default function DashboardRoute() {
                 navbarConfig={landingInfo ? { title: (landingInfo as any).navbarSection.title, logo: (landingInfo as any).navbarSection.logo, darkLogo: (landingInfo as any).navbarSection.darkLogo } : null}
                 pathname={location.pathname}
                 onNavigateHome={() => navigate('/')}
+                onNavigate={(path) => navigate(path)}
+                isAdmin={session?.user?.role === "admin"}
                 slotUser={<SidebarUser />}
-                slotProgress={import.meta.env.VITE_PAYMENT_GATEWAY !== "none" ? <ProgressWithCredits /> : null}
+                slotProgress={null}
             />
             <div className="flex flex-col flex-1 max-h-screen">
                 <div className="flex items-center gap-4 py-2 px-4">
@@ -84,8 +83,9 @@ export default function DashboardRoute() {
                     <div className="font-semibold tracking-tight">Dashboard</div>
                 </div>
                 <Separator />
-                <DashboardPage onSubmitConfiguration={handleSubmitConfiguration} />
+                <DashboardPage onSubmitConfiguration={handleSubmitConfiguration} onNavigateDoc={(slug) => navigate(`/doc/${slug}`)} />
             </div>
+            <Support />
         </SidebarProvider>
     )
 }

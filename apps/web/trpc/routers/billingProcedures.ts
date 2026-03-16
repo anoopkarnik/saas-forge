@@ -90,7 +90,7 @@ export const billingRouter = createTRPCRouter({
             }
           ],
           mode: 'payment',
-          success_url: `${process.env.NEXT_PUBLIC_URL}`,
+          success_url: `${process.env.NEXT_PUBLIC_URL}?payment=success`,
           cancel_url: `${process.env.NEXT_PUBLIC_URL}`,
           client_reference_id: userId,
           customer_email: ctx.session.user.email ?? undefined,
@@ -104,7 +104,7 @@ export const billingRouter = createTRPCRouter({
         product_cart: [
         { product_id: process.env.DODO_CREDITS_PRODUCT_ID!, quantity }
             ],
-            return_url: `${process.env.NEXT_PUBLIC_URL}`,
+            return_url: `${process.env.NEXT_PUBLIC_URL}?payment=success`,
             customer: {
               email: ctx.session.user.email ?? undefined,
               name: ctx.session.user.name ?? undefined,

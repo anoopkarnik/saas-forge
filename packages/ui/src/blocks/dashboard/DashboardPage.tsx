@@ -82,9 +82,10 @@ function buildVercelDeployUrl(values: FormValues): string {
 interface DashboardPageProps {
     onSubmitConfiguration: (safeName: string, envVars: Record<string, string>) => Promise<void>;
     docsBaseUrl?: string; // e.g. process.env.NEXT_PUBLIC_URL
+    onNavigateDoc?: (slug: string) => void; // in-app doc navigation (desktop)
 }
 
-export default function DashboardPage({ onSubmitConfiguration, docsBaseUrl = "" }: DashboardPageProps) {
+export default function DashboardPage({ onSubmitConfiguration, docsBaseUrl = "", onNavigateDoc }: DashboardPageProps) {
     const [isDownloading, setIsDownloading] = React.useState(false);
 
     const form = useForm<FormValues>({
@@ -350,12 +351,19 @@ export default function DashboardPage({ onSubmitConfiguration, docsBaseUrl = "" 
                                         {module.documentation && module.documentation.length > 0 && (
                                             <div className="flex items-center gap-2">
                                                 {module.documentation.map((doc, idx) => (
-                                                    <Button key={idx} variant="ghost" size="sm" className="h-8 px-2 text-muted-foreground hover:text-primary" asChild>
-                                                        <a href={(docsBaseUrl || "") + "/landing/doc/" + doc.slug} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5">
+                                                    onNavigateDoc ? (
+                                                        <Button key={idx} variant="ghost" size="sm" className="h-8 px-2 text-muted-foreground hover:text-primary" onClick={() => onNavigateDoc(doc.slug)}>
                                                             <span className="text-xs">{doc.label}</span>
-                                                            <ExternalLink className="h-3.5 w-3.5" />
-                                                        </a>
-                                                    </Button>
+                                                            <ExternalLink className="h-3.5 w-3.5 ml-1.5" />
+                                                        </Button>
+                                                    ) : (
+                                                        <Button key={idx} variant="ghost" size="sm" className="h-8 px-2 text-muted-foreground hover:text-primary" asChild>
+                                                            <a href={(docsBaseUrl || "") + "/landing/doc/" + doc.slug} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5">
+                                                                <span className="text-xs">{doc.label}</span>
+                                                                <ExternalLink className="h-3.5 w-3.5" />
+                                                            </a>
+                                                        </Button>
+                                                    )
                                                 ))}
                                             </div>
                                         )}

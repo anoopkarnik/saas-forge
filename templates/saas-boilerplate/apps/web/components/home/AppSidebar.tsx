@@ -13,12 +13,12 @@ import {
 } from "@workspace/ui/components/shadcn/sidebar";
 import { useTheme } from "next-themes";
 import { cn } from "@workspace/ui/lib/utils";
-import { HomeIcon, Users, Database } from "lucide-react";
+import { HomeIcon, Users, Shield, Settings, Database, Home } from "lucide-react";
+import { MdSaveAs } from "react-icons/md";
 import { usePathname, useRouter } from "next/navigation";
 import { useTRPC } from "@/trpc/client";
 import { useQuery } from "@tanstack/react-query";
 import { useSession } from "@workspace/auth/better-auth/auth-client";
-import ProgressWithCredits from "@workspace/ui/components/home/ProgressWithCredits";
 import SidebarUser from "@/blocks/home/SidebarUser";
 
 export function AppSidebar() {
@@ -71,8 +71,8 @@ export function AppSidebar() {
                                 className={cn("cursor-pointer transition-all duration-200 ease-in-out hover:pl-3 h-10", pathname === "/" && "bg-sidebar-accent text-sidebar-accent-foreground font-medium shadow-sm")}
                                 onClick={() => router.push("/")}>
                                 <div className="flex items-center gap-3">
-                                    <HomeIcon className="h-4 w-4" />
-                                    <span>{"Home"}</span>
+                                    <Home className="w-5 h-5 text-violet-500" />
+                                    <div className="text-xs">{"Home"}</div>
                                 </div>
                             </SidebarMenuButton>
                         </SidebarMenuItem>
@@ -109,7 +109,6 @@ export function AppSidebar() {
             </SidebarContent>
             <SidebarFooter className="p-4 border-t border-sidebar-border/40 bg-sidebar-footer/5">
                 <div className="space-y-4">
-                    {process.env.NEXT_PUBLIC_PAYMENT_GATEWAY !== 'none' ? <ProgressWithCredits /> : null}
                     <SidebarUser />
                 </div>
             </SidebarFooter>

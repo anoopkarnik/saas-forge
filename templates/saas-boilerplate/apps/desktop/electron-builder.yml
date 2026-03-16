@@ -1,0 +1,21 @@
+appId: com.saasforge.desktop
+productName: SaaS Forge
+
+protocols:
+  - name: myapp
+    schemes:
+      - myapp
+
+linux:
+  target:
+    - AppImage
+    - deb
+  category: Development
+  # Protocol handler is added to the .desktop file automatically via `protocols` above
+  # After install run: xdg-mime default saas-forge.desktop x-scheme-handler/myapp
+
+mac:
+  target: dmg
+
+win:
+  target: nsis

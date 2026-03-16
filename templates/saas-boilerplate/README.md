@@ -4,7 +4,7 @@
 
 ### The Ultimate Production-Ready SaaS Boilerplate
 
-[![Version](https://img.shields.io/badge/version-0.3.0-blue.svg)](https://github.com/anoopkarnik/saas-forge)
+[![Version](https://img.shields.io/badge/version-0.4.0-blue.svg)](https://github.com/anoopkarnik/saas-forge)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
 [![Node Version](https://img.shields.io/badge/node-%3E%3D20-brightgreen)](https://nodejs.org)
@@ -30,7 +30,8 @@
 - 🏗️ **Production Ready** - Battle-tested architecture used in real products
 - 🎨 **Beautiful UI** - Pre-built components with shadcn/ui and Tailwind CSS
 - 🔐 **Enterprise Auth** - Complete authentication with social logins and email verification
-- 💳 **Payment Integration** - Built-in payment handling with webhooks
+- 💳 **Payment Integration** - Stripe and Dodo Payments with webhooks
+- 📱 **Multi-Platform** - Web, Desktop (Electron), and Mobile (Expo/React Native)
 - 📱 **Responsive Design** - Mobile-first approach with modern aesthetics
 - 🚀 **Optimized Performance** - Redis caching, React Query, and Next.js 15 optimizations
 - 🧪 **Type Safe** - End-to-end type safety with TypeScript and tRPC
@@ -55,6 +56,7 @@
 - User impersonation (admin)
 
 ### 💰 Payments & Billing
+- Stripe integration
 - Dodo Payments integration
 - Webhook handling
 - Subscription management
@@ -87,17 +89,29 @@
 
 ### 📄 Content Management
 - **Notion CMS Integration** - Manage content directly from Notion
+- Per-section Notion databases (hero, features, testimonials, pricing, FAQ, footer)
 - Dynamic landing pages
 - Documentation system
 - Legal pages (Terms, Privacy, Refund Policy)
+- Admin CMS management
 - Newsletter & support forms
-- n8n webhook automation
 
 ### 📊 Observability & Monitoring
 - Centralized logging with Winston
 - Logtail integration for log aggregation
-- Request/response logging for Notion API
+- Google Analytics integration
+- Rate limiting via Upstash Redis
 - Performance monitoring hooks
+
+### 💾 Storage
+- Vercel Blob storage
+- Cloudflare R2 storage
+- Configurable storage backend
+
+### 🖥️ Multi-Platform Support
+- **Web** — Next.js 15 with Turbopack
+- **Desktop** — Electron + React 19 + React Router v7
+- **Mobile** — Expo + React Native with NativeWind
 
 ---
 
@@ -143,45 +157,66 @@ Visit [http://localhost:3000](http://localhost:3000) to see your app! 🎉
 Create a [apps/web/.env](apps/web/.env) file with the following variables:
 
 ```env
-# Database
-DATABASE_URL="postgresql://..."
+# Project Settings
+NEXT_PUBLIC_THEME=
+NEXT_PUBLIC_SAAS_NAME=
+NEXT_PUBLIC_COMPANY_NAME=
+NEXT_PUBLIC_URL=
+NEXT_PUBLIC_THEME_TYPE="dark"
 
-# Redis (Upstash)
-UPSTASH_REDIS_REST_URL="https://..."
-UPSTASH_REDIS_REST_TOKEN="..."
+# CMS (Notion)
+NEXT_PUBLIC_CMS="notion"
+NOTION_API_TOKEN=
+LANDING_DATABASE_ID=
+HERO_DATABASE_ID=
+FEATURE_DATABASE_ID=
+TESTIMONIAL_DATABASE_ID=
+PRICING_DATABASE_ID=
+FAQ_DATABASE_ID=
+FOOTER_DATABASE_ID=
+DOCUMENTATION_DATABASE_ID=
 
-# Better Auth
-BETTER_AUTH_SECRET="..."
-BETTER_AUTH_URL="http://localhost:3000"
+# Authentication (Better Auth)
+BETTER_AUTH_SECRET=
+NEXT_PUBLIC_AUTH_FRAMEWORK="better-auth"
+NEXT_PUBLIC_AUTH_EMAIL=true
+NEXT_PUBLIC_AUTH_GOOGLE=false
+NEXT_PUBLIC_AUTH_GITHUB=false
+NEXT_PUBLIC_AUTH_LINKEDIN=false
+AUTH_GITHUB_CLIENT_ID=
+AUTH_GITHUB_CLIENT_SECRET=
+AUTH_GOOGLE_CLIENT_ID=
+AUTH_GOOGLE_CLIENT_SECRET=
+AUTH_LINKEDIN_CLIENT_ID=
+AUTH_LINKEDIN_CLIENT_SECRET=
+RESEND_API_KEY=
 
-# OAuth Providers
-AUTH_GITHUB_ID="..."
-AUTH_GITHUB_SECRET="..."
-AUTH_GOOGLE_ID="..."
-AUTH_GOOGLE_SECRET="..."
-AUTH_LINKEDIN_ID="..."
-AUTH_LINKEDIN_SECRET="..."
+# Database & Caching
+DATABASE_URL=
+UPSTASH_REDIS_REST_URL=
+UPSTASH_REDIS_REST_TOKEN=
 
-# Email (Resend)
-RESEND_API_KEY="..."
+# Storage
+NEXT_PUBLIC_IMAGE_STORAGE="vercel_blob"
+BLOB_READ_WRITE_TOKEN=
+R2_ACCOUNT_ID=
+R2_ACCESS_KEY_ID=
+R2_SECRET_ACCESS_KEY=
+R2_BUCKET_NAME=
+NEXT_PUBLIC_R2_PUBLIC_URL=
 
-# Notion CMS
-NOTION_API_KEY="..."
-LANDING_DATABASE_ID="..."
-DOCUMENTATION_DATABASE_ID="..."
-
-# Payments (Dodo)
-DODO_API_KEY="..."
-DODO_WEBHOOK_SECRET="..."
+# Payments (Stripe or Dodo)
+NEXT_PUBLIC_PAYMENT_GATEWAY=
+STRIPE_SECRET_KEY=
+STRIPE_WEBHOOK_SECRET=
+DODO_PAYMENTS_API_KEY=
+DODO_PAYMENTS_WEBHOOK_KEY=
 
 # Observability
-BETTERSTACK_TELEMETRY_SOURCE_TOKEN="..."
-BETTERSTACK_TELEMETRY_INGESTING_HOST="..."
-
-# Webhooks (n8n)
-N8N_SUPPORT_WEBHOOK="..."
-N8N_NEWSLETTER_WEBHOOK="..."
-N8N_CHATBOT_WEBHOOK="..."
+BETTERSTACK_TELEMETRY_SOURCE_TOKEN=
+BETTERSTACK_TELEMETRY_INGESTING_HOST=
+NEXT_PUBLIC_GOOGLE_ANALYTICS_MEASUREMENT_ID=
+NEXT_PUBLIC_ALLOW_RATE_LIMIT="upstash"
 ```
 
 See [apps/web/.env.example](apps/web/.env.example) for a complete list.
@@ -213,17 +248,23 @@ See [apps/web/.env.example](apps/web/.env.example) for a complete list.
 - **Caching**: Redis (Upstash)
 - **Auth**: Better Auth
 - **Email**: Resend + React Email
-- **Payments**: Dodo Payments
+- **Payments**: Stripe + Dodo Payments
 - **CMS**: Notion API
+- **Storage**: Vercel Blob + Cloudflare R2
 - **Logging**: Winston + Logtail
+- **Analytics**: Google Analytics
 
 </td>
 </tr>
 </table>
 
+### Desktop & Mobile
+- **Desktop**: Electron + electron-vite
+- **Mobile**: Expo 55 + React Native + NativeWind
+
 ### Tooling & DevOps
 - **Monorepo**: Turborepo + pnpm workspaces
-- **Testing**: Vitest
+- **Testing**: Vitest 4.x
 - **Linting**: ESLint 9 + Prettier
 - **CI/CD**: GitHub Actions
 - **Deployment**: Vercel (recommended)
@@ -235,17 +276,19 @@ See [apps/web/.env.example](apps/web/.env.example) for a complete list.
 ```
 saas-forge/
 ├── apps/
-│   └── web/                    # Main Next.js application
-│       ├── app/                # App router pages
-│       │   ├── (auth)/        # Authentication pages
-│       │   ├── (home)/        # Protected home pages
-│       │   ├── landing/       # Public landing pages
-│       │   └── api/           # API routes
-│       ├── blocks/            # Page-level components
-│       ├── components/        # Feature components
-│       ├── lib/               # Utility functions
-│       ├── server/            # Server-side utilities
-│       └── trpc/              # tRPC configuration
+│   ├── web/                    # Main Next.js 15 application
+│   │   ├── app/                # App router pages
+│   │   │   ├── (auth)/        # Authentication pages
+│   │   │   ├── (home)/        # Protected home pages
+│   │   │   ├── landing/       # Public landing pages
+│   │   │   └── api/           # API routes
+│   │   ├── blocks/            # Page-level components
+│   │   ├── components/        # Feature components
+│   │   ├── lib/               # Utility functions
+│   │   ├── server/            # Server-side utilities
+│   │   └── trpc/              # tRPC configuration
+│   ├── desktop/                # Electron + React 19 desktop app
+│   └── mobile/                 # Expo + React Native mobile app
 │
 ├── packages/
 │   ├── ui/                    # Shared UI components
@@ -261,7 +304,9 @@ saas-forge/
 │   └── cli.js                 # CLI for project scaffolding
 │
 └── templates/
-    └── saas-boilerplate/      # Template for new projects
+    ├── saas-boilerplate/           # SaaS starter template
+    ├── portfolio-boilerplate/      # Portfolio site template
+    └── tech-company-landing-page/  # Landing page template
 ```
 
 ---
@@ -461,11 +506,18 @@ Built with amazing open-source projects:
 
 ## 🗺️ Roadmap
 
-### Current Focus
+### Completed
 - ✅ Core authentication flows
-- ✅ Payment integration
+- ✅ Stripe + Dodo payment integration
 - ✅ Notion CMS integration
 - ✅ Monorepo architecture
+- ✅ Desktop app (Electron)
+- ✅ Mobile app (Expo/React Native)
+- ✅ Multiple scaffold templates (SaaS, Portfolio, Landing Page)
+- ✅ Vercel Blob + Cloudflare R2 storage
+- ✅ Google Analytics integration
+- ✅ Admin CMS management
+- ✅ Landing page performance optimizations
 
 ### Upcoming Features
 - 🔄 Multi-tenancy support
@@ -474,7 +526,6 @@ Built with amazing open-source projects:
 - 🔄 API key management
 - 🔄 Advanced analytics dashboard
 - 🔄 Email templates library
-- 🔄 Mobile app support (React Native)
 - 🔄 GraphQL support
 - 🔄 i18n (Internationalization)
 - 🔄 A/B testing framework

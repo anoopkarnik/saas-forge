@@ -31,16 +31,13 @@ pnpm reset                      # Reset database (destructive)
 pnpm --filter web typecheck     # Type-check web app
 ```
 
-## Architecture Overview
-
-This is a **pnpm + Turborepo monorepo** containing a full-stack SaaS boilerplate.
-
-### Monorepo Layout
+## Monorepo Layout
 
 ```
 apps/
   web/          → Next.js 15 (Turbopack) — primary application
   desktop/      → Electron + React 19 + React Router v7
+  mobile/       → Expo 55 + React Native + NativeWind
 packages/
   auth/         → Better Auth config (email + GitHub/Google/LinkedIn OAuth)
   database/     → Prisma ORM with PostgreSQL
@@ -53,70 +50,175 @@ packages/
 templates/      → Scaffoldable project templates (saas-boilerplate, portfolio, landing)
 ```
 
-### Web App Route Groups
+## Import Conventions
 
-The Next.js app uses route groups:
-- `(auth)/` — Sign-in, sign-up, forgot-password, reset-password, email-verified, auth-callback, error
-- `(home)/` — Protected dashboard pages (redirect to `/landing` if unauthenticated)
-- `landing/` — Public marketing pages (Notion CMS-driven: `doc/`, `legal/`)
+Cross-package imports use the `@workspace/` prefix:
+```typescript
+import { Button } from "@workspace/ui/components/shadcn/button";
+import { auth } from "@workspace/auth/better-auth/auth";
+import { db } from "@workspace/database";
+import { sendSupportEmail } from "@workspace/email/resend/index";
+```
 
-### Authentication (`packages/auth`)
+App-local imports in `apps/web` use `@/`:
+```typescript
+import { TRPCReactProvider } from "@/trpc/client";
+```
 
-Uses **Better Auth** (`/api/auth` base path). The auth config in `packages/auth/src/better-auth/auth.ts` defines:
-- Email/password with required email verification (via Resend)
-- OAuth: GitHub, Google, LinkedIn (toggled by `NEXT_PUBLIC_AUTH_*` env vars)
-- Rate limiting: 100 req/60s, 3 sign-ins/60s
-- Admin plugin with impersonation
-- User fields: `creditsUsed`, `creditsTotal`, `accessLevel` (TRIAL/PRO/ENTERPRISE/UNLIMITED)
+The UI package exposes subpaths: `@workspace/ui/components/*`, `@workspace/ui/blocks/*`, `@workspace/ui/providers/*`, `@workspace/ui/typography/*`.
 
-### Database (`packages/database`)
+## File Naming
 
-PostgreSQL with Prisma. Two schemas:
-- `user_schema`: User, Account, Session, Verification, JWKS
-- `billing_schema`: Transaction (unified Stripe + Dodo Payments tracking)
+- **Components**: PascalCase (`LoginCard.tsx`, `DashboardPage.tsx`)
+- **Utilities**: camelCase (`formatDate.ts`, `formatAmount.ts`)
+- **Tests**: collocated with source, suffix `*.test.ts` or `*.test.tsx`
 
-### API Layer
+## blocks/ vs components/
 
-**tRPC** (`apps/web/trpc/`) for type-safe API:
-- `trpc/init.ts` — base and `protectedProcedure` (throws UNAUTHORIZED if no session)
-- `trpc/_app.ts` — root router combining: `support`, `landing`, `documentation`, `home`, `billing`
-- Client uses React Query via `trpc/client.tsx`
+- `packages/ui/src/blocks/` — Page-level, feature-complete sections (e.g., `DashboardPage`, `LandingPage`)
+- `packages/ui/src/components/` — Reusable UI primitives organized by category: `shadcn/`, `auth/`, `home/`, `payments/`, `sidebar/`, `aceternity/`, `notion/`, `mdx/`
 
-**REST API routes** (`apps/web/app/api/`):
-- `auth/[...all]` — Better Auth handler
-- `payments/stripe/webhook`, `payments/dodo/webhook` — payment webhooks
-- `scaffold/` — project scaffolding endpoint
-- `healthcheck/` — health check
+## Adding a tRPC Route
 
-### Middleware
+1. Create a router file in `apps/web/trpc/routers/`
+2. Use `baseProcedure` for public endpoints, `protectedProcedure` for authenticated ones
+3. Register the router in `apps/web/trpc/routers/_app.ts`
 
-`apps/web/middleware.ts` handles:
-- CORS (allows `localhost:3000`, `localhost:5173`, `NEXT_PUBLIC_URL`)
-- Session detection via `better-auth.session_token` cookie
-- Public routes: `/landing`, `/public`, `/api/payments/*`, `/api/trpc`, `/api/scaffold`, `/auth-callback`
-- Auth routes (redirect away if logged in): `/sign-in`, `/sign-up`, etc.
+```typescript
+// Example router
+export const myRouter = createTRPCRouter({
+  publicEndpoint: baseProcedure.input(z.object({...})).query(async ({ input }) => {...}),
+  protectedEndpoint: protectedProcedure.input(z.object({...})).mutation(async ({ input, ctx }) => {...}),
+});
+```
 
-### UI Package (`packages/ui`)
+## Adding a Page
 
-Shared component library using shadcn/ui + Radix UI + Tailwind CSS 4.x. Components are organized in `packages/ui/src/components/` by category: `auth/`, `home/`, `pages/`, `payments/`, `sidebar/`, `shadcn/`, `aceternity/`, `notion/`, `mdx/`.
+Route groups in `apps/web/app/`:
+- `(auth)/` — Auth pages (sign-in, sign-up, etc.)
+- `(home)/` — Protected dashboard pages (redirects to `/landing` if unauthenticated)
+- `landing/` — Public marketing pages
 
-### Payment Gateways
+Server-side data fetching pattern:
+```typescript
+export const dynamic = "force-dynamic";
+export default async function Page() {
+  const queryClient = getQueryClient();
+  await queryClient.ensureQueryData(trpc.myRouter.myQuery.queryOptions());
+  return (
+    <HydrationBoundary state={dehydrate(queryClient)}>
+      <MyComponent />
+    </HydrationBoundary>
+  );
+}
+```
 
-Configured via `NEXT_PUBLIC_PAYMENT_GATEWAY`. Supports **Stripe** and **Dodo Payments**. Both write to the `billing_schema.Transaction` table on webhook events.
+## Testing
 
-### CMS
+- **Vitest globals enabled** — no need to import `describe`, `it`, `expect`
+- **Environment**: `happy-dom`
+- **Path alias**: `@` resolves to app root
 
-Landing page content is Notion-driven. Each section (hero, features, testimonials, pricing, FAQ, footer) maps to a separate Notion database ID configured via env vars. Toggle with `NEXT_PUBLIC_CMS`.
+Mock workspace packages:
+```typescript
+vi.mock('@workspace/email/resend/index', () => ({
+  sendSupportEmail: vi.fn(),
+}));
+```
 
-### Key Environment Variables
+Test tRPC procedures directly:
+```typescript
+const caller = myRouter.createCaller({});
+const result = await caller.myEndpoint({ ... });
+```
 
-See `apps/web/.env.example` for full list. Critical ones:
-- `DATABASE_URL` — PostgreSQL connection string
-- `BETTER_AUTH_SECRET` — Auth signing secret
-- `NEXT_PUBLIC_URL` — Public app URL (used for CORS and redirects)
-- `RESEND_API_KEY` — For transactional emails
-- `NEXT_PUBLIC_PAYMENT_GATEWAY` — `stripe` or `dodo`
+## Gotchas
 
-### Testing
+- **Session cookies**: Check both `better-auth.session_token` (dev) and `__Secure-better-auth.session_token` (prod)
+- **Two Prisma schemas**: `user_schema` + `billing_schema` — migrations must account for both
+- **Env vars**: Direct `process.env` access throughout, no centralized validation layer. See `apps/web/.env.example` for all variables
+- **Turbo cache**: `.env*` files are build inputs — env changes invalidate the cache
+- **Payment gateway**: Controlled by `NEXT_PUBLIC_PAYMENT_GATEWAY` (`stripe` or `dodo`)
+- **CMS toggle**: Controlled by `NEXT_PUBLIC_CMS` (`notion`)
+- **Auth provider toggles**: `NEXT_PUBLIC_AUTH_GOOGLE`, `NEXT_PUBLIC_AUTH_GITHUB`, `NEXT_PUBLIC_AUTH_LINKEDIN` (boolean flags)
 
-Vitest 4.x with `happy-dom` environment. Global APIs enabled (no imports needed for `describe`, `it`, `expect`). Test files: `**/*.test.{ts,tsx}`. Path alias `@` resolves to app root.
+## Adding shadcn UI Components
+
+```bash
+pnpm dlx shadcn@latest add [component-name] -c packages/ui
+```
+
+- shadcn components go to `packages/ui/src/components/shadcn/`
+- Custom components go to `packages/ui/src/components/[category]/` (e.g., `auth/`, `home/`, `payments/`)
+- New categories need a subpath export in `packages/ui/package.json`
+
+## Database Schema Changes
+
+1. Edit the relevant schema file in `packages/database/prisma/`:
+   - `user.prisma` — auth-related models (User, Account, Session, Verification, JWKS)
+   - `billing.prisma` — payment models (Transaction)
+2. Run `pnpm generate` to regenerate the Prisma client
+3. Run `pnpm migrate` to create and apply migration
+4. **Never** run `pnpm reset` in production (destroys all data)
+
+Enum changes (e.g., `ACCCOUNT_ACCESS`) require a full migration, not just `generate`.
+
+## Adding REST API Routes
+
+Create route handler at `apps/web/app/api/[domain]/route.ts`:
+```typescript
+export async function POST(req: NextRequest) {
+  const body = await req.json();
+  // validate, process, return
+  return NextResponse.json({ success: true }, { status: 200 });
+}
+```
+
+### Webhook Idempotency (critical for payment webhooks)
+
+All payment webhooks must follow this pattern to prevent duplicate processing:
+1. Extract unique identifier (e.g., `checkoutSessionId`)
+2. Check if already processed (fast path)
+3. Re-check inside a `db.$transaction()` before writing (race condition guard)
+4. Catch Prisma error `P2002` (unique constraint) as final fallback, return 200
+
+Reference: `apps/web/app/api/payments/stripe/webhook/route.ts`
+
+## Middleware Route Management
+
+Edit arrays in `apps/web/middleware.ts`:
+
+- **Public route** (no auth needed): Add path to `publicRoutes` array
+- **Auth route** (redirect away if logged in): Add path to `authRoutes` array
+- **Protected route** (requires auth): Default behavior — don't add to any array. Unauthenticated users redirect to `/landing`
+
+## Adding Email Templates
+
+1. Create template in `packages/email/src/templates/MyTemplate.tsx` using `@react-email/components`
+2. Add send function in `packages/email/src/resend/index.ts`:
+```typescript
+export const sendMyEmail = async (to: string, props: MyTemplateProps) => {
+  const html = await render(MyTemplate(props));
+  return resend.emails.send({ from: "...", to, subject: "...", html });
+};
+```
+
+## Environment Variable Conventions
+
+- `NEXT_PUBLIC_*` prefix = accessible in browser code
+- Server-only vars = no prefix (API keys, secrets)
+- Feature toggles: `NEXT_PUBLIC_CMS`, `NEXT_PUBLIC_PAYMENT_GATEWAY`, `NEXT_PUBLIC_AUTH_*`
+- Always add new vars to `apps/web/.env.example` with a comment
+
+## Error Handling
+
+tRPC procedures:
+```typescript
+throw new TRPCError({ code: "UNAUTHORIZED", message: "Not logged in" });
+// Codes: UNAUTHORIZED, FORBIDDEN, NOT_FOUND, CONFLICT, TOO_MANY_REQUESTS, INTERNAL_SERVER_ERROR
+```
+
+REST API routes:
+```typescript
+return NextResponse.json({ error: "Bad request" }, { status: 400 });
+```

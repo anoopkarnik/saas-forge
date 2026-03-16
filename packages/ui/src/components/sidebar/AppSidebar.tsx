@@ -13,7 +13,7 @@ import {
 } from "@workspace/ui/components/shadcn/sidebar";
 import { useTheme } from "next-themes";
 import { cn } from "@workspace/ui/lib/utils";
-import { HomeIcon, Users, Shield, Settings } from "lucide-react";
+import { HomeIcon, Users, Database } from "lucide-react";
 import { MdSaveAs } from "react-icons/md";
 
 export interface AppSidebarProps {
@@ -24,12 +24,13 @@ export interface AppSidebarProps {
     } | null;
     pathname: string;
     onNavigateHome: () => void;
+    onNavigate?: (path: string) => void;
     slotUser?: React.ReactNode;
     slotProgress?: React.ReactNode;
     isAdmin?: boolean;
 }
 
-export function AppSidebar({ navbarConfig, pathname, onNavigateHome, slotUser, slotProgress, isAdmin }: AppSidebarProps) {
+export function AppSidebar({ navbarConfig, pathname, onNavigateHome, onNavigate, slotUser, slotProgress, isAdmin }: AppSidebarProps) {
     const { theme, resolvedTheme } = useTheme();
     const [mounted, setMounted] = useState(false);
 
@@ -117,6 +118,7 @@ export function AppSidebar({ navbarConfig, pathname, onNavigateHome, slotUser, s
                             <SidebarMenuItem>
                                 <SidebarMenuButton asChild tooltip={"Manage Users"}
                                     className={cn("cursor-pointer transition-all duration-200 ease-in-out hover:pl-3 h-10", pathname === "/admin/users" && "bg-sidebar-accent text-sidebar-accent-foreground font-medium shadow-sm")}
+                                    onClick={() => onNavigate?.("/admin/users")}
                                 >
                                     <div className="flex items-center gap-3">
                                         <Users className="w-5 h-5 text-blue-500" />
@@ -125,22 +127,13 @@ export function AppSidebar({ navbarConfig, pathname, onNavigateHome, slotUser, s
                                 </SidebarMenuButton>
                             </SidebarMenuItem>
                             <SidebarMenuItem>
-                                <SidebarMenuButton asChild tooltip={"Manage Roles"}
-                                    className={cn("cursor-pointer transition-all duration-200 ease-in-out hover:pl-3 h-10", pathname === "/admin/roles" && "bg-sidebar-accent text-sidebar-accent-foreground font-medium shadow-sm")}
+                                <SidebarMenuButton asChild tooltip={"CMS"}
+                                    className={cn("cursor-pointer transition-all duration-200 ease-in-out hover:pl-3 h-10", pathname === "/admin/cms" && "bg-sidebar-accent text-sidebar-accent-foreground font-medium shadow-sm")}
+                                    onClick={() => onNavigate?.("/admin/cms")}
                                 >
                                     <div className="flex items-center gap-3">
-                                        <Shield className="w-5 h-5 text-red-500" />
-                                        <div className="text-xs">Role Management</div>
-                                    </div>
-                                </SidebarMenuButton>
-                            </SidebarMenuItem>
-                            <SidebarMenuItem>
-                                <SidebarMenuButton asChild tooltip={"Admin Settings"}
-                                    className={cn("cursor-pointer transition-all duration-200 ease-in-out hover:pl-3 h-10", pathname === "/admin/settings" && "bg-sidebar-accent text-sidebar-accent-foreground font-medium shadow-sm")}
-                                >
-                                    <div className="flex items-center gap-3">
-                                        <Settings className="w-5 h-5 text-zinc-500" />
-                                        <div className="text-xs">Admin Settings</div>
+                                        <Database className="w-5 h-5 text-red-500" />
+                                        <div className="text-xs">CMS</div>
                                     </div>
                                 </SidebarMenuButton>
                             </SidebarMenuItem>

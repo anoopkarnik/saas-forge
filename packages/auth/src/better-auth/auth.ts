@@ -4,6 +4,25 @@ import db from '@workspace/database/client';
 import { admin,  openAPI, jwt } from "better-auth/plugins";
 import { sendResetEmail, sendVerificationEmail } from "@workspace/email/resend/index"
 
+// Better Auth's account linking flow calls db.delete() on records that may not
+// exist (e.g. removing an old provider account before re-linking). Prisma throws
+// P2025 on delete-of-nonexistent. We extend the client passed to the adapter so
+// that P2025 on delete is silently ignored — only affects Better Auth, not the
+// rest of the app.
+const authDb = db.$extends({
+    query: {
+        $allModels: {
+            async delete({ args, query }) {
+                try {
+                    return await query(args);
+                } catch (error: any) {
+                    if (error?.code === "P2025") return null as any;
+                    throw error;
+                }
+            },
+        },
+    },
+});
 
 const options = {
     basePath: "/api/auth",
@@ -12,13 +31,13 @@ const options = {
         impersonationSessionDuration: 3600
     })],
     trustedOrigins: [
-        "myapp://", 
+        "myapp://",
         "myapp://*",
         "http://localhost:5173",
         process.env.NEXT_PUBLIC_URL || ""
     ].filter(Boolean),
-    database: prismaAdapter(db, {
-        provider: "postgresql", // or "mysql", "postgresql", ...etc
+    database: prismaAdapter(authDb, {
+        provider: "postgresql",
     }),
     rateLimit:{
         window: 60,
@@ -131,8 +150,10 @@ const options = {
         },
     },
     advanced: {
+        // crossSubDomainCookies fails on localhost (no valid TLD for domain extraction)
+        // Only enable in production where the real domain is used
         crossSubDomainCookies: {
-            enabled: true
+            enabled: process.env.NODE_ENV === "production"
         },
         defaultCookieAttributes: {
             sameSite: "none",

@@ -28,11 +28,17 @@
     "test": {
       "dependsOn": [
         "^test"
+      ],
+      "outputs": [
+        "coverage/**"
       ]
     },
     "test:coverage": {
       "dependsOn": [
         "^test:coverage"
+      ],
+      "outputs": [
+        "coverage/**"
       ]
     },
     "dev": {

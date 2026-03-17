@@ -33,6 +33,8 @@ const options = {
     trustedOrigins: [
         "myapp://",
         "myapp://*",
+        "file://",
+        "null",
         "http://localhost:5173",
         process.env.NEXT_PUBLIC_URL || ""
     ].filter(Boolean),

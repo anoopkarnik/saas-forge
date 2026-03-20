@@ -6,7 +6,7 @@ const authRoutes =["/sign-in","/sign-up","/error","/forgot-password","/reset-pas
 
 const apiAuthPrefix = "/api/auth"
 
-const allowedOrigins = ['http://localhost:3000', 'http://localhost:5173', process.env.NEXT_PUBLIC_URL].filter(Boolean) as string[]
+const allowedOrigins = ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:8081', process.env.NEXT_PUBLIC_URL].filter(Boolean) as string[]
 
 const corsOptions = {
     'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
@@ -56,10 +56,9 @@ export default async function middleware(req:NextRequest){
         return response;
     }
 
-    // Check for session by looking at the session token cookie directly
-    // getCookieCache wasn't working on Vercel Edge - the cookies exist but decryption fails
-    const sessionToken = req.cookies.get('better-auth.session_token')?.value;
-    
+    // Check for both the local and Secure (production HTTPS) cookie prefixes.
+    // Better Auth uses __Secure- prefix in production.
+    const sessionToken = req.cookies.get('better-auth.session_token')?.value || req.cookies.get('__Secure-better-auth.session_token')?.value;
     const isLoggedIn = !!sessionToken;
 
 

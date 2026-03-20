@@ -10,8 +10,10 @@ export async function modifyProperty(property:any) {
         case 'number':
             return { number: value };
         case 'file_url':
+            // Skip empty file URLs — Notion rejects external files with blank URLs
+            if (!value) return null;
             // Notion-hosted file URLs cannot be set via the API as external — skip them
-            if (value && (value.includes('secure.notion-static.com') || value.includes('prod-files-secure.s3'))) {
+            if (value.includes('secure.notion-static.com') || value.includes('prod-files-secure.s3')) {
                 return null;
             }
             return { files: [{ type: 'external', name: 'Cover', external: { url: value } }] };
@@ -20,6 +22,7 @@ export async function modifyProperty(property:any) {
         case 'checkbox':
             return { checkbox: value };
         case 'select':
+            if (!value) return null;
             return { select: { name: value } };
         case 'multi_select':
             return { multi_select: value.map((v:any) => ({ name: typeof v === 'string' ? v.trim() : v })) };

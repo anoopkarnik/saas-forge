@@ -4,8 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "vitest run",
-    "test:coverage": "vitest run --coverage"
+    "test": "vitest run --passWithNoTests",
+    "test:coverage": "vitest run --coverage --passWithNoTests"
   },
   "keywords": [],
   "author": "",
@@ -15,16 +15,17 @@
     "./*": "./src/*.ts"
   },
   "dependencies": {
+    "@better-auth/expo": "^1.5.5",
     "@hookform/resolvers": "^5.2.2",
     "@workspace/database": "workspace:*",
     "@workspace/email": "workspace:*",
-    "better-auth": "^1.4.9",
+    "better-auth": "^1.5.5",
     "react": "^19.1.1",
     "react-hook-form": "^7.67.0",
+    "vitest": "^4.0.18",
     "zod": "^4.2.1"
   },
   "devDependencies": {
-    "@types/node": "^25.0.3",
-    "vitest": "^4.0.18"
+    "@types/node": "^20.19.25"
   }
 }

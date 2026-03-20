@@ -29,7 +29,7 @@ export async function POST(req: Request) {
   }
 
   // File type validation
-  if (!file.type.startsWith("image/")) {
+  if (!file.type || !file.type.startsWith("image/")) {
     return NextResponse.json({ error: "Invalid file type. Only images are allowed." }, { status: 400 });
   }
 

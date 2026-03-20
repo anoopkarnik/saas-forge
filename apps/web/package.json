@@ -35,7 +35,7 @@
     "@workspace/observability": "workspace:*",
     "@workspace/ui": "workspace:*",
     "archiver": "^7.0.1",
-    "better-auth": "^1.4.9",
+    "better-auth": "^1.5.5",
     "date-fns": "^4.1.0",
     "dodopayments": "^2.17.1",
     "framer-motion": "^12.23.25",

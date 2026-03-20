@@ -10,7 +10,8 @@
     "build:prod": "electron-vite build --mode production",
     "package:snap": "electron-builder --linux snap",
     "install:locally": "sudo snap install dist/saas-forge_2.0.0_amd64.snap --dangerous",
-    "publish:snapstore:edge": "snapcraft upload dist/saas-forge_2.0.0_amd64.snap --release=edge"
+    "publish:snapstore:edge": "snapcraft upload dist/saas-forge_2.0.0_amd64.snap --release=edge",
+    "publish:snapstore:stable": "snapcraft upload dist/saas-forge_2.0.0_amd64.snap --release=stable"
   },
   "dependencies": {
     "@radix-ui/react-icons": "^1.3.2",

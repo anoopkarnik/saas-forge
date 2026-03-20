@@ -692,9 +692,9 @@ The desktop app already has auth + basic dashboard (sidebar, profile, avatar, cr
 | **Transaction history** | Yes | Yes | **No** |
 | **Checkout / payments** | Yes | Yes | **No** |
 | **Scaffold download** | Yes | Yes | **No** |
-| **Admin: user mgmt** | Yes | **No** | **No** |
-| **Admin: CMS editor** | Yes | **No** | **No** |
-| **Support widget** | Yes | **No** | **No** |
+| **Admin: user mgmt** | Yes | Yes | **No** |
+| **Admin: CMS editor** | Yes | Yes | **No** |
+| **Support widget** | Yes | Yes | **No** |
 | **Documentation viewer** | Yes | **No** | **No** |
 | **Toast notifications** | Yes | Yes (sonner) | **No** |
 | **Dark/light theme** | Yes | Yes | Yes (CSS) |

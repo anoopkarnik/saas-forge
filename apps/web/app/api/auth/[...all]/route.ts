@@ -6,7 +6,9 @@ const { POST: authPOST, GET: authGET } = handlers;
 const desktopOrigins = ["null", "file://", ""];
 const allowedOrigins = [
     "http://localhost:5173",
-    "myapp://",
+    "http://localhost:8081",
+    "saas-forge://",
+    "exp://",
     "null",
     "file://",
     process.env.NEXT_PUBLIC_URL,

@@ -6,7 +6,7 @@ const authRoutes =["/sign-in","/sign-up","/error","/forgot-password","/reset-pas
 
 const apiAuthPrefix = "/api/auth"
 
-const allowedOrigins = ['http://localhost:3000', 'http://localhost:5173', process.env.NEXT_PUBLIC_URL].filter(Boolean) as string[]
+const allowedOrigins = ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:8081', process.env.NEXT_PUBLIC_URL].filter(Boolean) as string[]
 
 const corsOptions = {
     'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',

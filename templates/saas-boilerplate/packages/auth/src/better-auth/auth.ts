@@ -2,6 +2,7 @@ import { betterAuth, BetterAuthOptions } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import db from '@workspace/database/client';
 import { admin,  openAPI, jwt } from "better-auth/plugins";
+import { expo } from "@better-auth/expo";
 import { sendResetEmail, sendVerificationEmail } from "@workspace/email/resend/index"
 
 // Better Auth's account linking flow calls db.delete() on records that may not
@@ -27,15 +28,18 @@ const authDb = db.$extends({
 const options = {
     basePath: "/api/auth",
     baseURL: process.env.NEXT_PUBLIC_URL,
-    plugins: [openAPI(),admin({
+    plugins: [openAPI(), admin({
         impersonationSessionDuration: 3600
-    })],
+    }), expo()],
     trustedOrigins: [
         "myapp://",
         "myapp://*",
+        "exp://",
+        "exp://*",
         "file://",
         "null",
         "http://localhost:5173",
+        "http://localhost:8081",
         process.env.NEXT_PUBLIC_URL || ""
     ].filter(Boolean),
     database: prismaAdapter(authDb, {
@@ -72,7 +76,7 @@ const options = {
         },
         changeEmail: {
             enabled: true,
-            sendChangeEmailVerification: async ({user, newEmail, url, token}, request) => {
+            sendChangeEmailConfirmation: async ({user, newEmail, url, token}, request) => {
                 await sendVerificationEmail(newEmail,url)
             }
         },

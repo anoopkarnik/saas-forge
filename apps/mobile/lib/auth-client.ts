@@ -1,20 +1,27 @@
 import { createAuthClient } from "better-auth/react";
+import { expoClient } from "@better-auth/expo/client";
 import { adminClient } from "better-auth/client/plugins";
+import * as SecureStore from "expo-secure-store";
+import { Platform } from "react-native";
 
-const _baseURL = (() => {
-    // Expo environment
-    if (typeof process !== "undefined" && process.env?.EXPO_PUBLIC_API_URL) {
-        return process.env.EXPO_PUBLIC_API_URL;
-    }
-    return undefined; // let better-auth use same domain
-})();
+const baseURL = process.env.EXPO_PUBLIC_API_URL;
 
 export const authClient: any = createAuthClient({
-    baseURL: _baseURL,
-    fetchOptions: {
-        credentials: "include",
-    },
-    plugins: [adminClient()],
+    baseURL,
+    plugins:
+        Platform.OS !== "web"
+            ? [
+                  expoClient({
+                      scheme: "saas-forge",
+                      storagePrefix: "saas-forge",
+                      storage: SecureStore,
+                  }),
+                  adminClient(),
+              ]
+            : [adminClient()],
+    ...(Platform.OS === "web" && {
+        fetchOptions: { credentials: "include" as const },
+    }),
 });
 
 export const { signIn, signOut, useSession } = authClient;

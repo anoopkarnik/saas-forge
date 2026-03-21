@@ -124,7 +124,8 @@ function createZipStream(
   repoRoot: string,
   projectName: string,
   envContent: string | null,
-  envVars: Record<string, string>
+  envVars: Record<string, string>,
+  platforms: string[] = ["web"]
 ) {
   const archive = archiver("zip", { zlib: { level: 9 } });
 
@@ -136,6 +137,11 @@ function createZipStream(
     const relInsideProject = insideZip.replace(`${projectName}/`, "");
 
     if (shouldIgnore(relInsideProject)) return false;
+
+    // Exclude unselected platform apps
+    if (!platforms.includes("mobile") && relInsideProject.startsWith("apps/mobile/")) return false;
+    if (!platforms.includes("desktop") && relInsideProject.startsWith("apps/desktop/")) return false;
+
     return entry;
   });
 
@@ -193,7 +199,12 @@ export async function POST(req: NextRequest) {
     const envExamplePath = path.join(scaffoldRoot, "apps/web/.env.example");
     const envContent = generateEnvContent(envExamplePath, envVars);
 
-    const archive = createZipStream(scaffoldRoot, projectName, envContent, envVars);
+    // Parse selected platforms from env vars (default to web-only)
+    const platforms = envVars.NEXT_PUBLIC_PLATFORM
+      ? envVars.NEXT_PUBLIC_PLATFORM.split(",").map((s) => s.trim())
+      : ["web"];
+
+    const archive = createZipStream(scaffoldRoot, projectName, envContent, envVars, platforms);
 
     // Convert Node archiver stream -> Web ReadableStream for NextResponse
     const stream = new ReadableStream({

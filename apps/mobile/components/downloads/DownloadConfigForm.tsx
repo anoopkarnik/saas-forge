@@ -42,8 +42,8 @@ const THEME_TYPE_OPTIONS = [
 // ─── Platform options ──────────────────────────────────────────────────
 const PLATFORM_OPTIONS = [
     { value: "web", label: "Web App", disabled: false },
-    { value: "mobile", label: "Mobile App (Coming Soon)", disabled: true },
-    { value: "desktop", label: "Desktop App (Coming Soon)", disabled: true },
+    { value: "mobile", label: "Mobile App", disabled: false },
+    { value: "desktop", label: "Desktop App", disabled: false },
 ];
 
 // ─── CMS options ───────────────────────────────────────────────────────

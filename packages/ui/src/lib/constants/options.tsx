@@ -3,7 +3,8 @@ import { FaGithub, FaLinkedin, FaStripe } from "react-icons/fa";
 import { FcGoogle } from "react-icons/fc";
 import {
   Mail, Shield, Sun, Moon, Monitor, Database, LayoutTemplate,
-  Cloud, Zap, CreditCard, Ban, CircleDot, Activity, ShieldAlert, BarChart3, MessageCircle, Calendar
+  Cloud, Zap, CreditCard, Ban, CircleDot, Activity, ShieldAlert, BarChart3, MessageCircle, Calendar,
+  Smartphone
 } from "lucide-react";
 import { SiNotion, SiStrapi, SiUpstash, SiVercel, SiCloudflare, SiResend, SiGmail } from "react-icons/si";
 
@@ -96,8 +97,8 @@ export const multiselectOptions: Record<string, MultiselectOption[]> = {
   ],
   NEXT_PUBLIC_PLATFORM: [
     { value: "web", label: "Web App", icon: <Monitor className="h-5 w-5" />, color: "text-blue-500 border-blue-500/50 bg-blue-500/10" },
-    { value: "mobile", label: "Mobile App (Coming Soon)", icon: <Database className="h-5 w-5" />, color: "text-muted-foreground border-muted-foreground/50 bg-muted-foreground/10", disabled: true },
-    { value: "desktop", label: "Desktop App (Coming Soon)", icon: <LayoutTemplate className="h-5 w-5" />, color: "text-muted-foreground border-muted-foreground/50 bg-muted-foreground/10", disabled: true },
+    { value: "mobile", label: "Mobile App", icon: <Smartphone className="h-5 w-5" />, color: "text-green-500 border-green-500/50 bg-green-500/10" },
+    { value: "desktop", label: "Desktop App", icon: <Monitor className="h-5 w-5" />, color: "text-purple-500 border-purple-500/50 bg-purple-500/10" },
   ],
   NEXT_PUBLIC_SUPPORT_FEATURES: [
     { value: "support_mail", label: "Send Support Mail", icon: <MessageCircle className="h-5 w-5" />, color: "text-rose-500 border-rose-500/50 bg-rose-500/10" },

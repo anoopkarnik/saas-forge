@@ -96,7 +96,7 @@ export const multiselectOptions: Record<string, MultiselectOption[]> = {
     { value: "rate_limiting", label: "Rate Limiting", icon: <ShieldAlert className="h-5 w-5" />, color: "text-blue-500 border-blue-500/50 bg-blue-500/10" },
   ],
   NEXT_PUBLIC_PLATFORM: [
-    { value: "web", label: "Web App", icon: <Monitor className="h-5 w-5" />, color: "text-blue-500 border-blue-500/50 bg-blue-500/10" },
+    { value: "web", label: "Web App (Compulsory, powers the backend)", icon: <Monitor className="h-5 w-5" />, color: "text-blue-500 border-blue-500/50 bg-blue-500/10", disabled: true },
     { value: "mobile", label: "Mobile App", icon: <Smartphone className="h-5 w-5" />, color: "text-green-500 border-green-500/50 bg-green-500/10" },
     { value: "desktop", label: "Desktop App", icon: <Monitor className="h-5 w-5" />, color: "text-purple-500 border-purple-500/50 bg-purple-500/10" },
   ],

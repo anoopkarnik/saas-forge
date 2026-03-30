@@ -11,7 +11,7 @@ export default function TRPCProvider() {
         createTRPCClient<any>({
             links: [
                 httpBatchLink({
-                    url: import.meta.env.VITE_API_URL || 'http://localhost:3000/api/trpc',
+                    url: import.meta.env.VITE_API_URL + "/api/trpc" || 'http://localhost:3000/api/trpc',
                     async fetch(url, options) {
                         return fetch(url, {
                             ...options,

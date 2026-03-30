@@ -10,7 +10,7 @@ export default function LoginRoute() {
     const [error, setError] = React.useState<string | undefined>(undefined);
 
     const loginWithSocials = async (type: string) => {
-        const apiBaseUrl = import.meta.env.VITE_API_URL?.replace('/api/trpc', '') || 'http://localhost:3000';
+        const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
         await authClient.signIn.social({
             provider: type as any,
             callbackURL: `${apiBaseUrl}/api/auth/desktop-callback`

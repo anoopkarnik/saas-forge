@@ -15,7 +15,7 @@ import { authClient } from "@/lib/auth-client";
 
 type Props = {
     templateTitle: string;
-    onBack: () => void;
+    onBack?: () => void;
 };
 
 type SectionState = Record<string, boolean>;
@@ -41,9 +41,9 @@ const THEME_TYPE_OPTIONS = [
 
 // ─── Platform options ──────────────────────────────────────────────────
 const PLATFORM_OPTIONS = [
-    { value: "web", label: "Web App", disabled: false },
-    { value: "mobile", label: "Mobile App (Coming Soon)", disabled: true },
-    { value: "desktop", label: "Desktop App (Coming Soon)", disabled: true },
+    { value: "web", label: "Web App (Compulsory)", disabled: true },
+    { value: "mobile", label: "Mobile App", disabled: false },
+    { value: "desktop", label: "Desktop App", disabled: false },
 ];
 
 // ─── CMS options ───────────────────────────────────────────────────────
@@ -421,10 +421,11 @@ export default function DownloadConfigForm({ templateTitle, onBack }: Props) {
             }
 
             if (Platform.OS === "web") {
-                // Web: use native browser download
-                const response = await authClient.$fetch(`${apiUrl}/api/scaffold`, {
+                // Web: use native browser download (credentials needed for auth cookies)
+                const response = await fetch(`${apiUrl}/api/scaffold`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
+                    credentials: "include",
                     body: JSON.stringify({ name: safeName, envVars }),
                 });
 
@@ -441,7 +442,7 @@ export default function DownloadConfigForm({ templateTitle, onBack }: Props) {
                 Alert.alert("Success", "Your boilerplate has been downloaded!");
             } else {
                 // Native: fetch zip bytes, write to cache, then share
-                const response = await authClient.$fetch(`${apiUrl}/api/scaffold`, {
+                const response = await fetch(`${apiUrl}/api/scaffold`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ name: safeName, envVars }),
@@ -529,8 +530,8 @@ export default function DownloadConfigForm({ templateTitle, onBack }: Props) {
                     <TouchableOpacity
                         key={opt.value}
                         className={`px-3 py-2 rounded-lg border ${formValues[key] === opt.value
-                                ? "border-primary bg-primary/10"
-                                : "border-border/30 bg-card"
+                            ? "border-primary bg-primary/10"
+                            : "border-border/30 bg-card"
                             } ${opt.disabled ? "opacity-40" : ""}`}
                         activeOpacity={0.7}
                         disabled={opt.disabled}
@@ -581,9 +582,11 @@ export default function DownloadConfigForm({ templateTitle, onBack }: Props) {
         <ScrollView className="flex-1 bg-background" contentContainerClassName="p-5 pb-24">
             {/* Header */}
             <View className="flex-row items-center gap-3 mb-1">
-                <TouchableOpacity onPress={onBack} activeOpacity={0.7}>
-                    <MutedText className="text-2xl">‹</MutedText>
-                </TouchableOpacity>
+                {onBack && (
+                    <TouchableOpacity onPress={onBack} activeOpacity={0.7}>
+                        <MutedText className="text-2xl">‹</MutedText>
+                    </TouchableOpacity>
+                )}
                 <Heading className="text-left text-2xl">Configure</Heading>
             </View>
             <Subtitle className="text-left mb-4">{templateTitle}</Subtitle>
@@ -616,8 +619,8 @@ export default function DownloadConfigForm({ templateTitle, onBack }: Props) {
                             <TouchableOpacity
                                 key={theme.value}
                                 className={`w-9 h-9 rounded-lg items-center justify-center border-2 ${formValues.NEXT_PUBLIC_THEME === theme.value
-                                        ? "border-primary"
-                                        : "border-transparent"
+                                    ? "border-primary"
+                                    : "border-transparent"
                                     }`}
                                 style={{ backgroundColor: theme.color }}
                                 activeOpacity={0.7}

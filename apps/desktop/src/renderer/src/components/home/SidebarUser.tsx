@@ -13,7 +13,7 @@ const SidebarUser = () => {
 
     const { data: session, status, refetch: refetchSession } = useSession({
         fetchOptions: {
-            baseURL: import.meta.env.VITE_API_URL?.replace('/api/trpc', '') || 'http://localhost:3000',
+            baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000',
             credentials: "include"
         }
     });
@@ -54,7 +54,7 @@ const SidebarUser = () => {
         const formData = new FormData();
         formData.append("file", file);
         try {
-            const apiUrl = import.meta.env.VITE_API_URL?.replace('/api/trpc', '') || 'http://localhost:3000'
+            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000'
             const response = await fetch(`${apiUrl}/api/settings/modifyAvatar`, {
                 method: "POST",
                 body: formData,

@@ -76,6 +76,14 @@ export const formSchema = z.object({
   STRIPE_SECRET_KEY: z.string().optional(),
   STRIPE_WEBHOOK_SECRET: z.string().optional(),
 }).superRefine((data, ctx) => {
+  if (!data.NEXT_PUBLIC_PLATFORM.includes("web")) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Web App must be selected as it powers the backend.",
+      path: ["NEXT_PUBLIC_PLATFORM"],
+    });
+  }
+
   if (data.NEXT_PUBLIC_CMS === "notion") {
     const notionFields = [
       "LANDING_DATABASE_ID",

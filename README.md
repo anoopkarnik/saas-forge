@@ -18,6 +18,43 @@
 
 </div>
 
+### Manual Installation
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/anoopkarnik/saas-forge.git
+cd saas-forge
+
+# 2. Install dependencies
+pnpm install
+
+# 3. Fix Electron binary (Linux only — pnpm sometimes skips the post-install download)
+#    Find the exact version with: ls node_modules/.pnpm/ | grep "^electron@"
+node node_modules/.pnpm/electron@<version>/node_modules/electron/install.js
+
+# 4. Copy environment variables
+cp apps/web/.env.example apps/web/.env
+
+# 5. Generate Prisma client (both schemas)
+pnpm run generate
+
+# 6. Run database migrations (first time or after schema changes)
+pnpm run migrate
+
+# 7. Start all apps
+pnpm dev
+```
+
+| App     | URL                    | Notes                          |
+|---------|------------------------|--------------------------------|
+| web     | http://localhost:3000  | Next.js 15 + Turbopack         |
+| mobile  | http://localhost:8081  | Expo 55 + Metro bundler        |
+| desktop | http://localhost:5173  | Electron + electron-vite       |
+
+> **Linux users**: Step 3 is required once after `pnpm install` if the desktop app fails to start with an Electron binary error. It is not needed on subsequent runs.
+
+Visit [http://localhost:3000](http://localhost:3000) to see your app! 🎉
+
 ---
 
 ## 📖 Overview

@@ -52,7 +52,7 @@ export default function AdminCmsRoute() {
         updateLandingInfoMutation.mutate(values as any);
     };
 
-    const apiUrl = import.meta.env.VITE_API_URL?.replace('/api/trpc', '') || 'http://localhost:3000';
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
     const uploadUrl = `${apiUrl}/api/cms/upload`;
 
     if (isPending) {

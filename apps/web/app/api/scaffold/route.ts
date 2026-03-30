@@ -13,14 +13,18 @@ const CREDITS_COST = 20;
 
 export const runtime = "nodejs"; // required (streams)
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*", // Allow Electron app to fetch from local API
-  "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization",
-};
+function getCorsHeaders(req?: NextRequest) {
+  const origin = req?.headers.get("origin") ?? "*";
+  return {
+    "Access-Control-Allow-Origin": origin,
+    "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    "Access-Control-Allow-Credentials": "true",
+  };
+}
 
-export async function OPTIONS() {
-  return NextResponse.json({}, { headers: corsHeaders });
+export async function OPTIONS(req: NextRequest) {
+  return NextResponse.json({}, { headers: getCorsHeaders(req) });
 }
 
 function sanitizeProjectName(name: string) {
@@ -124,6 +128,8 @@ function createZipStream(
   repoRoot: string,
   projectName: string,
   envContent: string | null,
+  mobileEnvContent: string | null,
+  desktopEnvContent: string | null,
   envVars: Record<string, string>,
   platforms: string[] = ["web"]
 ) {
@@ -150,6 +156,16 @@ function createZipStream(
     archive.append(envContent, { name: `${projectName}/apps/web/.env` });
   }
 
+  // Add .env file for apps/mobile/
+  if (platforms.includes("mobile") && mobileEnvContent) {
+    archive.append(mobileEnvContent, { name: `${projectName}/apps/mobile/.env` });
+  }
+
+  // Add .env file for apps/desktop/
+  if (platforms.includes("desktop") && desktopEnvContent) {
+    archive.append(desktopEnvContent, { name: `${projectName}/apps/desktop/.env` });
+  }
+
   // Add .env file for packages/database/ with DATABASE_URL
   if (envVars.DATABASE_URL) {
     const databaseEnvContent = `DATABASE_URL="${envVars.DATABASE_URL}"`;
@@ -167,18 +183,18 @@ export async function POST(req: NextRequest) {
     });
 
     if (!session?.user) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401, headers: corsHeaders });
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401, headers: getCorsHeaders(req) });
     }
 
     const { success } = await ratelimit.limit(session.user.id);
     if (!success) {
-        return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429, headers: corsHeaders });
+        return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429, headers: getCorsHeaders(req) });
     }
 
     if ((session.user.creditsTotal - session.user.creditsUsed) < CREDITS_COST) {
         return NextResponse.json(
             { error: "Not enough credits" },
-            { status: 403, headers: corsHeaders }
+            { status: 403, headers: getCorsHeaders(req) }
         );
     }
 
@@ -191,20 +207,61 @@ export async function POST(req: NextRequest) {
       console.error(`Scaffold root not found at: ${scaffoldRoot}`);
       return NextResponse.json(
         { error: "Scaffold root not found" },
-        { status: 500, headers: corsHeaders }
+        { status: 500, headers: getCorsHeaders(req) }
       );
     }
-
-    // Generate .env content from .env.example with user-provided values
-    const envExamplePath = path.join(scaffoldRoot, "apps/web/.env.example");
-    const envContent = generateEnvContent(envExamplePath, envVars);
 
     // Parse selected platforms from env vars (default to web-only)
     const platforms = envVars.NEXT_PUBLIC_PLATFORM
       ? envVars.NEXT_PUBLIC_PLATFORM.split(",").map((s) => s.trim())
       : ["web"];
 
-    const archive = createZipStream(scaffoldRoot, projectName, envContent, envVars, platforms);
+    // Generate .env content from .env.example with user-provided values
+    const envExamplePath = path.join(scaffoldRoot, "apps/web/.env.example");
+    const envContent = generateEnvContent(envExamplePath, envVars);
+
+    // Helpers to map web env vars to mobile/desktop
+    const support = envVars.NEXT_PUBLIC_SUPPORT_FEATURES ? envVars.NEXT_PUBLIC_SUPPORT_FEATURES.split(",").map(s => s.trim()) : [];
+    
+    // Generate .env content for mobile and desktop
+    const mobileEnvExamplePath = path.join(scaffoldRoot, "apps/mobile/.env.example");
+    const desktopEnvExamplePath = path.join(scaffoldRoot, "apps/desktop/.env.example");
+
+    const mobileEnvVars: Record<string, string> = {
+      EXPO_PUBLIC_API_URL: envVars.NEXT_PUBLIC_URL || "http://localhost:3000",
+      EXPO_PUBLIC_APP_URL: "http://localhost:8081",
+      EXPO_PUBLIC_AUTH_EMAIL: envVars.NEXT_PUBLIC_AUTH_EMAIL === "true" ? "true" : "false",
+      EXPO_PUBLIC_AUTH_GOOGLE: envVars.NEXT_PUBLIC_AUTH_GOOGLE === "true" ? "true" : "false",
+      EXPO_PUBLIC_AUTH_GITHUB: envVars.NEXT_PUBLIC_AUTH_GITHUB === "true" ? "true" : "false",
+      EXPO_PUBLIC_AUTH_LINKEDIN: envVars.NEXT_PUBLIC_AUTH_LINKEDIN === "true" ? "true" : "false",
+      EXPO_PUBLIC_SUPPORT_MAIL: support.includes("support_mail") ? "true" : "false",
+      EXPO_PUBLIC_THEME: envVars.NEXT_PUBLIC_THEME || "green",
+      EXPO_PUBLIC_THEME_TYPE: envVars.NEXT_PUBLIC_THEME_TYPE || "light",
+      EXPO_PUBLIC_PAYMENT_GATEWAY: envVars.NEXT_PUBLIC_PAYMENT_GATEWAY || "dodo",
+      EXPO_PUBLIC_CALENDLY_BOOKING_URL: envVars.NEXT_PUBLIC_CALENDLY_BOOKING_URL || '""',
+    };
+
+    const desktopEnvVars: Record<string, string> = {
+      VITE_API_URL: envVars.NEXT_PUBLIC_URL ? `"${envVars.NEXT_PUBLIC_URL}"` : '"http://localhost:3000"',
+      NEXT_PUBLIC_AUTH_FRAMEWORK: envVars.NEXT_PUBLIC_AUTH_FRAMEWORK ? `"${envVars.NEXT_PUBLIC_AUTH_FRAMEWORK}"` : '"better-auth"',
+      VITE_AUTH_EMAIL: envVars.NEXT_PUBLIC_AUTH_EMAIL === "true" ? "true" : "false",
+      VITE_AUTH_GOOGLE: envVars.NEXT_PUBLIC_AUTH_GOOGLE === "true" ? "true" : "false",
+      VITE_AUTH_GITHUB: envVars.NEXT_PUBLIC_AUTH_GITHUB === "true" ? "true" : "false",
+      VITE_AUTH_LINKEDIN: envVars.NEXT_PUBLIC_AUTH_LINKEDIN === "true" ? "true" : "false",
+      VITE_PAYMENT_GATEWAY: envVars.NEXT_PUBLIC_PAYMENT_GATEWAY ? `"${envVars.NEXT_PUBLIC_PAYMENT_GATEWAY}"` : '"dodo"',
+      VITE_SUPPORT_MAIL: support.includes("support_mail") && envVars.NEXT_PUBLIC_SUPPORT_MAIL ? `"${envVars.NEXT_PUBLIC_SUPPORT_MAIL}"` : '""',
+      VITE_CALENDLY_BOOKING_URL: support.includes("calendly") && envVars.NEXT_PUBLIC_CALENDLY_BOOKING_URL ? `"${envVars.NEXT_PUBLIC_CALENDLY_BOOKING_URL}"` : '""',
+    };
+
+    const mobileEnvContent = fs.existsSync(mobileEnvExamplePath)
+      ? generateEnvContent(mobileEnvExamplePath, mobileEnvVars)
+      : null;
+
+    const desktopEnvContent = fs.existsSync(desktopEnvExamplePath)
+      ? generateEnvContent(desktopEnvExamplePath, desktopEnvVars)
+      : null;
+
+    const archive = createZipStream(scaffoldRoot, projectName, envContent, mobileEnvContent, desktopEnvContent, envVars, platforms);
 
     // Convert Node archiver stream -> Web ReadableStream for NextResponse
     const stream = new ReadableStream({
@@ -230,7 +287,7 @@ export async function POST(req: NextRequest) {
 
     return new NextResponse(stream as any, {
       headers: {
-        ...corsHeaders,
+        ...getCorsHeaders(req),
         "Content-Type": "application/zip",
         "Content-Disposition": `attachment; filename="${projectName}.zip"`,
         "Cache-Control": "no-store",
@@ -239,7 +296,7 @@ export async function POST(req: NextRequest) {
   } catch (err: any) {
     return NextResponse.json(
       { error: err?.message ?? "Failed to generate zip" },
-      { status: 500, headers: corsHeaders }
+      { status: 500, headers: getCorsHeaders(req) }
     );
   }
 }
@@ -255,7 +312,7 @@ export async function GET(req: NextRequest) {
     if ((session?.user?.creditsTotal - session?.user?.creditsUsed) < CREDITS_COST) {
       return NextResponse.json(
         { error: "Not enough credits" },
-        { status: 403, headers: corsHeaders }
+        { status: 403, headers: getCorsHeaders(req) }
       );
     }
     const projectName = sanitizeProjectName(searchParams.get("name") ?? "");
@@ -266,11 +323,11 @@ export async function GET(req: NextRequest) {
       console.error(`Scaffold root not found at: ${scaffoldRoot}`);
       return NextResponse.json(
         { error: "Scaffold root not found" },
-        { status: 500, headers: corsHeaders }
+        { status: 500, headers: getCorsHeaders(req) }
       );
     }
 
-    const archive = createZipStream(scaffoldRoot, projectName, null, {});
+    const archive = createZipStream(scaffoldRoot, projectName, null, null, null, {});
 
     // Convert Node archiver stream -> Web ReadableStream for NextResponse
     const stream = new ReadableStream({
@@ -295,7 +352,7 @@ export async function GET(req: NextRequest) {
 
     return new NextResponse(stream as any, {
       headers: {
-        ...corsHeaders,
+        ...getCorsHeaders(req),
         "Content-Type": "application/zip",
         "Content-Disposition": `attachment; filename="${projectName}.zip"`,
         "Cache-Control": "no-store",
@@ -304,7 +361,7 @@ export async function GET(req: NextRequest) {
   } catch (err: any) {
     return NextResponse.json(
       { error: err?.message ?? "Failed to generate zip" },
-      { status: 500, headers: corsHeaders }
+      { status: 500, headers: getCorsHeaders(req) }
     );
   }
 }

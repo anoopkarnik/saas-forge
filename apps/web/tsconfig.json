@@ -2,6 +2,11 @@
   "extends": "@workspace/typescript-config/nextjs.json",
   "compilerOptions": {
     "baseUrl": ".",
+    "types": [
+      "node",
+      "react",
+      "react-dom"
+    ],
     "paths": {
       "@/*": [
         "./*"
@@ -18,8 +23,9 @@
     "next.config.ts",
     "**/*.ts",
     "**/*.tsx",
-    ".next/types/**/*.ts"
-, "../../packages/ui/src/components/home/EnvField.tsx"  ],
+    ".next/types/**/*.ts",
+    "../../packages/ui/src/components/home/EnvField.tsx"
+  ],
   "exclude": [
     "node_modules"
   ]

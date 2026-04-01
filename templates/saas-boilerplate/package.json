@@ -1,6 +1,6 @@
 {
-  "name": "saas-boilerplate",
-  "version": "0.4.0",
+  "name": "saas-forge",
+  "version": "1.0.0",
   "scripts": {
     "build": "turbo build",
     "dev": "turbo dev",
@@ -10,11 +10,18 @@
     "test:coverage": "turbo test:coverage",
     "generate": "cd packages/database && pnpm run generate",
     "migrate": "cd packages/database && pnpm run migrate",
-    "reset": "cd packages/database && pnpm run reset"
+    "seed": "cd packages/database && pnpm run seed",
+    "reset": "cd packages/database && pnpm run reset",
+    "template:install": "cd templates/saas-boilerplate && pnpm install && pnpm run generate",
+    "template:dev": "cd templates/saas-boilerplate && pnpm dev",
+    "template:build": "cd templates/saas-boilerplate && pnpm build",
+    "template:test": "cd templates/saas-boilerplate && pnpm test",
+    "template:test:coverage": "cd templates/saas-boilerplate && pnpm test:coverage"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
+    "@types/node": "^20.19.25",
     "@vitejs/plugin-react": "^5.1.4",
     "@vitest/coverage-v8": "^4.0.18",
     "@workspace/eslint-config": "workspace:*",
@@ -25,6 +32,13 @@
     "turbo": "^2.5.5",
     "typescript": "5.7.3",
     "vitest": "^4.0.18"
+  },
+  "bin": {
+    "saas-forge": "scripts/cli.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/anoopkarnik/saas-forge.git"
   },
   "keywords": [
     "developer",
@@ -41,6 +55,22 @@
     "node": ">=20"
   },
   "dependencies": {
-    "archiver": "^7.0.1"
+    "archiver": "^7.0.1",
+    "tsconfig-paths": "^4.2.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "@types/node": "^20.19.25",
+      "lightningcss": "^1.31.1",
+      "react": "19.2.4",
+      "react-dom": "19.2.4",
+      "@types/react": "^19.2.8",
+      "@types/react-dom": "^19.2.3"
+    },
+    "onlyBuiltDependencies": [
+      "electron",
+      "esbuild",
+      "sharp"
+    ]
   }
 }

@@ -1,4 +1,4 @@
-import { fetchLandingPageData } from "@/lib/functions/fetchLandingPageDataFromNotion";
+import { fetchLandingPageData } from "@/lib/functions/fetchLandingPageData";
 import { LandingPageProps } from "@/lib/ts-types/landing";
 import { redis } from "@/server/redis";
 import { createTRPCRouter, baseProcedure } from "@/trpc/init";
@@ -7,7 +7,7 @@ import { updateNotionPage } from "@workspace/cms/notion/page/updatePage";
 import { createNotionPage } from "@workspace/cms/notion/page/createPage";
 import { trashPage } from "@workspace/cms/notion/page/trashPage";
 import { queryAllNotionDatabase } from "@workspace/cms/notion/database/queryDatabase";
-import { getDatabaseProperties } from "@workspace/cms/notion/database/retrieveDatabase";
+import prisma from "@workspace/database/client";
 
 const LANDING_PAGE_CACHE_KEY = "landing-page:notion:v3";
 const LANDING_CACHE_TTL_SECONDS = 3600; // 10 minutes
@@ -15,9 +15,13 @@ const LANDING_CACHE_TTL_SECONDS = 3600; // 10 minutes
 export const landingRouter = createTRPCRouter({
     getLandingInfoFromNotion: baseProcedure
     .query(async () => {
-      if (!process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN) {
-      const data = await fetchLandingPageData()
-       return data;
+      if (
+        !process.env.UPSTASH_REDIS_REST_URL || 
+        !process.env.UPSTASH_REDIS_REST_TOKEN || 
+        process.env.NEXT_PUBLIC_CMS === "constant"
+      ) {
+        const data = await fetchLandingPageData();
+        return data;
       }
 
       const cached = await redis.get<LandingPageProps>(LANDING_PAGE_CACHE_KEY);
@@ -41,7 +45,7 @@ export const landingRouter = createTRPCRouter({
             githubUsername: z.string().optional(),
             githubRepositoryName: z.string().optional(),
             donateNowLink: z.string().optional(),
-
+            
             // Hero
             tagline: z.string().optional(),
             description: z.string().optional(),
@@ -110,10 +114,123 @@ export const landingRouter = createTRPCRouter({
             })).optional(),
         }))
         .mutation(async ({ input }) => {
+            const cmsType = process.env.NEXT_PUBLIC_CMS;
+            const saasName = process.env.NEXT_PUBLIC_SAAS_NAME || "";
+
+            if (cmsType === "constant") {
+                throw new Error("Cannot update landing page data when CMS is set to 'constant'");
+            }
+
+            if (cmsType === "postgres") {
+                const existingPage = await prisma.landingPage.findUnique({
+                    where: { title: saasName }
+                });
+
+                const pageData: any = {};
+                if (input.title !== undefined) pageData.title = input.title;
+                if (input.logo !== undefined) pageData.logo = input.logo;
+                if (input.darkLogo !== undefined) pageData.darkLogo = input.darkLogo;
+                if (input.githubLink !== undefined) pageData.githubLink = input.githubLink;
+                if (input.githubUsername !== undefined) pageData.githubUsername = input.githubUsername;
+                if (input.githubRepositoryName !== undefined) pageData.githubRepositoryName = input.githubRepositoryName;
+                if (input.donateNowLink !== undefined) pageData.donateNowLink = input.donateNowLink;
+
+                if (input.tagline !== undefined) pageData.tagline = input.tagline;
+                if (input.description !== undefined) pageData.description = input.description;
+                if (input.appointmentLink !== undefined) pageData.appointmentLink = input.appointmentLink;
+                if (input.codeSnippet !== undefined) pageData.codeSnippet = input.codeSnippet;
+                if (input.videoLink !== undefined) pageData.videoLink = input.videoLink;
+
+                if (input.featureHeading !== undefined) pageData.featureHeading = input.featureHeading;
+                if (input.featureDescription !== undefined) pageData.featureDescription = input.featureDescription;
+                if (input.testimonialHeading !== undefined) pageData.testimonialHeading = input.testimonialHeading;
+                if (input.testimonialDescription !== undefined) pageData.testimonialDescription = input.testimonialDescription;
+                if (input.pricingHeading !== undefined) pageData.pricingHeading = input.pricingHeading;
+                if (input.pricingDescription !== undefined) pageData.pricingDescription = input.pricingDescription;
+                if (input.faqHeading !== undefined) pageData.faqHeading = input.faqHeading;
+                if (input.faqDescription !== undefined) pageData.faqDescription = input.faqDescription;
+
+                if (input.creator !== undefined) pageData.creator = input.creator;
+                if (input.creatorLink !== undefined) pageData.creatorLink = input.creatorLink;
+                if (input.supportEmailAddress !== undefined) pageData.supportEmailAddress = input.supportEmailAddress;
+                if (input.companyLegalName !== undefined) pageData.companyLegalName = input.companyLegalName;
+                if (input.websiteUrl !== undefined) pageData.websiteUrl = input.websiteUrl;
+                if (input.country !== undefined) pageData.country = input.country;
+                if (input.contactNumber !== undefined) pageData.contactNumber = input.contactNumber;
+                if (input.address !== undefined) pageData.address = input.address;
+                if (input.version !== undefined) pageData.version = input.version;
+                if (input.lastUpdated !== undefined) pageData.lastUpdated = input.lastUpdated;
+
+                let pageId = "";
+                if (existingPage) {
+                    await prisma.landingPage.update({ where: { title: saasName }, data: pageData });
+                    pageId = existingPage.id;
+                } else {
+                    pageData.title = pageData.title || saasName;
+                    const newPage = await prisma.landingPage.create({ data: pageData });
+                    pageId = newPage.id;
+                }
+
+                if (input.heroImages !== undefined) {
+                    await prisma.heroImage.deleteMany({ where: { landingPageId: pageId } });
+                    if (input.heroImages.length > 0) {
+                        await prisma.heroImage.createMany({
+                            data: input.heroImages.map(img => ({ landingPageId: pageId, title: img.title, imageUrl: img.imageUrl }))
+                        });
+                    }
+                }
+                if (input.features !== undefined) {
+                    await prisma.feature.deleteMany({ where: { landingPageId: pageId } });
+                    if (input.features.length > 0) {
+                        await prisma.feature.createMany({
+                            data: input.features.map(f => ({ landingPageId: pageId, title: f.title, description: f.description, imageUrl: f.imageUrl, category: f.category }))
+                        });
+                    }
+                }
+                if (input.testimonials !== undefined) {
+                    await prisma.testimonial.deleteMany({ where: { landingPageId: pageId } });
+                    if (input.testimonials.length > 0) {
+                        await prisma.testimonial.createMany({
+                            data: input.testimonials.map(t => ({ landingPageId: pageId, name: t.name, position: t.position, comment: t.comment, imageUrl: t.imageUrl, category: t.category }))
+                        });
+                    }
+                }
+                if (input.plans !== undefined) {
+                    await prisma.pricingPlan.deleteMany({ where: { landingPageId: pageId } });
+                    if (input.plans.length > 0) {
+                        await prisma.pricingPlan.createMany({
+                            data: input.plans.map(p => ({
+                                landingPageId: pageId,
+                                title: p.title,
+                                price: p.price,
+                                popular: p.popular,
+                                description: p.description,
+                                priceType: p.priceType,
+                                benefitList: p.benefitList.join(",")
+                            }))
+                        });
+                    }
+                }
+                if (input.faqs !== undefined) {
+                    await prisma.fAQ.deleteMany({ where: { landingPageId: pageId } });
+                    if (input.faqs.length > 0) {
+                        await prisma.fAQ.createMany({
+                            data: input.faqs.map(f => ({ landingPageId: pageId, question: f.question, answer: f.answer }))
+                        });
+                    }
+                }
+
+                if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
+                    await redis.del(LANDING_PAGE_CACHE_KEY);
+                }
+
+                return { success: true };
+            }
+
             if (!process.env.NOTION_API_TOKEN || !process.env.LANDING_DATABASE_ID) {
                 throw new Error("Missing Notion API config");
             }
-
+            
             // 1. Fetch the exact ID of the Landing Page being used.
             const landingPageResults = await queryAllNotionDatabase({
                 apiToken: process.env.NOTION_API_TOKEN,

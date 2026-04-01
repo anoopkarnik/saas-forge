@@ -48,6 +48,8 @@ const PLATFORM_OPTIONS = [
 
 // ─── CMS options ───────────────────────────────────────────────────────
 const CMS_OPTIONS = [
+    { value: "constant", label: "Constant" },
+    { value: "postgres", label: "Postgres" },
     { value: "notion", label: "Notion" },
     { value: "strapi", label: "Strapi (Coming Soon)", disabled: true },
 ];
@@ -651,6 +653,8 @@ export default function DownloadConfigForm({ templateTitle, onBack }: Props) {
                     {renderField("Footer Database ID *", "FOOTER_DATABASE_ID", "Notion database ID")}
                     {renderField("Documentation Database ID *", "DOCUMENTATION_DATABASE_ID", "Notion database ID")}
                     {renderField("Notion API Token *", "NOTION_API_TOKEN", "secret_...", true)}
+                </>}
+                {(formValues.NEXT_PUBLIC_CMS === "notion" || formValues.NEXT_PUBLIC_CMS === "postgres") && <>
                     {renderField("Upstash Redis REST URL *", "UPSTASH_REDIS_REST_URL", "https://...")}
                     {renderField("Upstash Redis REST Token *", "UPSTASH_REDIS_REST_TOKEN", "AX...", true)}
                 </>}

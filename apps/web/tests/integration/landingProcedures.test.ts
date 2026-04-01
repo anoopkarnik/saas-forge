@@ -3,7 +3,7 @@ import { landingRouter } from '../../trpc/routers/landingProcedures.js';
 
 // Mock fetchLandingPageData
 const mockFetchLandingPageData = vi.fn();
-vi.mock('@/lib/functions/fetchLandingPageDataFromNotion', () => ({
+vi.mock('@/lib/functions/fetchLandingPageData', () => ({
   fetchLandingPageData: (...args: any[]) => mockFetchLandingPageData(...args),
 }));
 

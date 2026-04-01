@@ -1,32 +1,39 @@
 {
   "expo": {
-    "name": "mobile",
-    "slug": "mobile",
+    "name": "SaaS Forge",
+    "slug": "saas-forge",
     "version": "1.0.0",
     "scheme": "saas-forge",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "dark",
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#0F172A"
     },
     "ios": {
       "supportsTablet": true
     },
     "android": {
+      "package": "com.bayesianlabs.saasforge",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#0F172A",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": true
     },
     "web": {
-      "favicon": "./assets/favicon.png",
+      "favicon": "./assets/icon.png",
       "bundler": "metro"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "3fea1835-a28c-4f91-be8d-fd85b7f800cf"
+      }
+    },
+    "owner": "danoopkarnik"
   }
 }

@@ -21,7 +21,7 @@ export interface ModuleField {
   description: string;
   showIf?: {
     field: string;
-    value: string;
+    value: string | string[];
   };
   showIfIncludes?: {
     field: string;
@@ -95,11 +95,11 @@ export const MODULE_CONFIG: ModuleSection[] = [
           { name: "Notion", url: "https://notion.so/my-integrations", color: "text-foreground", icon: SiNotion, tier: "Free", info: "Notion provides a free API for building integrations and CMS." },
         ]
       },
-      { name: "UPSTASH_REDIS_REST_URL", description: "REST URL for Upstash Redis.", showIf: { field: "NEXT_PUBLIC_CMS", value: "notion" }, required: true },
+      { name: "UPSTASH_REDIS_REST_URL", description: "REST URL for Upstash Redis.", showIf: { field: "NEXT_PUBLIC_CMS", value: ["notion", "postgres"] }, required: true },
       { 
         name: "UPSTASH_REDIS_REST_TOKEN", 
         description: "REST Token for Upstash Redis.", 
-        showIf: { field: "NEXT_PUBLIC_CMS", value: "notion" }, 
+        showIf: { field: "NEXT_PUBLIC_CMS", value: ["notion", "postgres"] }, 
         required: true,
         providerHints: [
           { name: "Upstash", url: "https://upstash.com", color: "text-[#00e9a3]", icon: SiUpstash, tier: "Free", info: "Serverless Redis with 10k requests/day free tier." },

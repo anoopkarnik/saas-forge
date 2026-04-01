@@ -3,13 +3,15 @@
     "outDir": "dist",
     "rootDir": "src",
     "target": "ES2022",
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
     "declaration": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "strict": true,
-    "noEmit": false    // <--- Make sure this is here!
+    "noEmit": false // <--- Make sure this is here!
   },
-  "include": ["src"]
+  "include": [
+    "src"
+  ]
 }

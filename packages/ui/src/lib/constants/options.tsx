@@ -49,7 +49,9 @@ export const selectOptions: Record<string, SelectOption[]> = {
     { value: "live_mode", label: "Live Mode", icon: <Zap className="h-4 w-4 text-green-500" /> },
   ],
   NEXT_PUBLIC_CMS: [
-    { value: "notion", label: "Notion ", icon: <SiNotion className="h-4 w-4" /> },
+    { value: "constant", label: "Constant (No external dependencies)", icon: <Database className="h-4 w-4 text-gray-500" /> },
+    { value: "postgres", label: "Postgres", icon: <Database className="h-4 w-4 text-blue-500" /> },
+    { value: "notion", label: "Notion", icon: <SiNotion className="h-4 w-4" /> },
     { value: "strapi", label: "Strapi (Coming Soon)", icon: <SiStrapi className="h-4 w-4 text-muted-foreground" /> },
   ],
   NEXT_PUBLIC_PAYMENT_GATEWAY: [

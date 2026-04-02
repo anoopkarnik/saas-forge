@@ -22,6 +22,7 @@
     "apps/web/tests/integration/scaffoldRoute.test.ts"
   ],
   "templateOverrides": [
+    "README.md",
     "apps/desktop/src/renderer/src/components/admin/AdminCmsRoute.tsx",
     "apps/desktop/src/renderer/src/components/admin/AdminUsersRoute.tsx",
     "apps/desktop/src/renderer/src/components/home/TemplateAppSidebar.tsx",

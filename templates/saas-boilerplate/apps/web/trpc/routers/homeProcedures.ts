@@ -13,7 +13,7 @@ export const homeRouter = createTRPCRouter({
             const result = await auth.api.setPassword({
                 body: { newPassword },
                 headers: await headers()
-            });
+            }); 
             
             return { success: true };
         }),

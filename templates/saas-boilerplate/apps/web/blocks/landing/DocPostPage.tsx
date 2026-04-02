@@ -5,12 +5,13 @@ import { useTRPC } from '@/trpc/client'
 import { Blocks } from '@workspace/ui/components/notion/block';
 import { motion } from 'framer-motion';
 import { formatDistanceToNow } from 'date-fns';
+import { ReactElement } from 'react';
 
 interface Props {
   slug: string;
 }
 
-const DocPostPage = ({ slug }: Props) => {
+const DocPostPage = ({ slug }: Props): ReactElement => {
   const trpc = useTRPC();
   const { data: blocks } = useSuspenseQuery(trpc.documentation.queryDocumentationBySlug.queryOptions({ slug: slug }))
   const { data: documentation } = useSuspenseQuery(trpc.documentation.getDocumentationInfoFromNotion.queryOptions())

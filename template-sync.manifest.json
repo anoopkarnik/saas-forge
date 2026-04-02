@@ -1,0 +1,31 @@
+{
+  "templateRoot": "templates/saas-boilerplate",
+  "overrideRoot": "template-overrides/saas-boilerplate",
+  "include": [
+    ".eslintrc.js",
+    "apps/web",
+    "apps/mobile",
+    "apps/desktop",
+    "package.json",
+    "packages",
+    "pnpm-lock.yaml",
+    "pnpm-workspace.yaml",
+    "tsconfig.json",
+    "turbo.json",
+    "vitest.workspace.ts"
+  ],
+  "exclude": [
+    "apps/mobile/components/downloads",
+    "apps/web/vitest-coverage-output.txt",
+    "apps/web/app/api/scaffold",
+    "apps/web/tests/integration/scaffoldRoute.test.ts"
+  ],
+  "templateOverrides": [
+    "apps/desktop/src/renderer/src/components/home/DashboardRoute.tsx",
+    "apps/mobile/app/(home)/index.tsx",
+    "apps/web/app/(home)/page.tsx",
+    "apps/web/middleware.ts",
+    "apps/web/next.config.mjs",
+    "package.json"
+  ]
+}

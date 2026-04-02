@@ -407,6 +407,24 @@ pnpm --filter @workspace/cms test -- testing/index.test.ts
 
 ---
 
+## 🔄 Template Sync
+
+`templates/saas-boilerplate` is kept as a lockstep starter for the shared SaaS stack. The root repo is the source of truth for common auth, billing, CMS, admin, desktop, mobile, and shared package logic.
+
+Only the scaffold/download workflow is intentionally root-only. That includes the boilerplate download API and the download-focused UI flows.
+
+```bash
+# Sync the starter template from the root repo
+pnpm template:sync
+
+# Verify the template is still in sync
+pnpm template:check-sync
+```
+
+Shared feature work should be implemented in the root repo first, then propagated with `pnpm template:sync`. Template-only differences live in `template-overrides/saas-boilerplate`, and the sync rules are defined in `template-sync.manifest.json`.
+
+---
+
 ## 🎨 Adding UI Components
 
 SaaS Forge uses shadcn/ui for components. To add a new component:

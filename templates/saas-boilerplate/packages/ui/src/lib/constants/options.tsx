@@ -1,0 +1,109 @@
+import { ReactNode } from "react";
+import { FaGithub, FaLinkedin, FaStripe } from "react-icons/fa";
+import { FcGoogle } from "react-icons/fc";
+import {
+  Mail, Shield, Sun, Moon, Monitor, Database, LayoutTemplate,
+  Cloud, Zap, CreditCard, Ban, CircleDot, Activity, ShieldAlert, BarChart3, MessageCircle, Calendar,
+  Smartphone
+} from "lucide-react";
+import { SiNotion, SiStrapi, SiUpstash, SiVercel, SiCloudflare, SiResend, SiGmail } from "react-icons/si";
+
+// ─── Theme color map for color swatches ────────────────────────────────
+export const themeColors: Record<string, string> = {
+  blue: "#3b82f6",
+  green: "#22c55e",
+  neutral: "#737373",
+  orange: "#f97316",
+  red: "#ef4444",
+  rose: "#f43f5e",
+  violet: "#8b5cf6",
+  yellow: "#eab308",
+};
+
+// ─── Select options ────────────────────────────────────────────────────
+export type SelectOption = {
+  value: string;
+  label: string;
+  icon?: ReactNode;
+};
+
+export const selectOptions: Record<string, SelectOption[]> = {
+  NEXT_PUBLIC_THEME: [
+    { value: "blue", label: "Blue" },
+    { value: "green", label: "Green" },
+    { value: "neutral", label: "Neutral" },
+    { value: "orange", label: "Orange" },
+    { value: "red", label: "Red" },
+    { value: "rose", label: "Rose" },
+    { value: "violet", label: "Violet" },
+    { value: "yellow", label: "Yellow" },
+  ],
+  NEXT_PUBLIC_THEME_TYPE: [
+    { value: "light", label: "Light", icon: <Sun className="h-4 w-4" /> },
+    { value: "dark", label: "Dark", icon: <Moon className="h-4 w-4" /> },
+    { value: "system", label: "System", icon: <Monitor className="h-4 w-4" /> },
+  ],
+
+  DODO_PAYMENTS_ENVIRONMENT: [
+    { value: "test_mode", label: "Test Mode", icon: <Zap className="h-4 w-4" /> },
+    { value: "live_mode", label: "Live Mode", icon: <Zap className="h-4 w-4 text-green-500" /> },
+  ],
+  NEXT_PUBLIC_CMS: [
+    { value: "constant", label: "Constant (No external dependencies)", icon: <Database className="h-4 w-4 text-gray-500" /> },
+    { value: "postgres", label: "Postgres", icon: <Database className="h-4 w-4 text-blue-500" /> },
+    { value: "notion", label: "Notion", icon: <SiNotion className="h-4 w-4" /> },
+    { value: "strapi", label: "Strapi (Coming Soon)", icon: <SiStrapi className="h-4 w-4 text-muted-foreground" /> },
+  ],
+  NEXT_PUBLIC_PAYMENT_GATEWAY: [
+    { value: "none", label: "None", icon: <Ban className="h-4 w-4 text-muted-foreground" /> },
+    { value: "dodo", label: "Dodo Payments (If Your Country Doesn't Support Stripe)", icon: <CreditCard className="h-4 w-4 text-green-500" /> },
+    { value: "stripe", label: "Stripe", icon: <FaStripe className="h-4 w-4 text-[#635bff]" /> },
+  ],
+  NEXT_PUBLIC_IMAGE_STORAGE: [
+    { value: "vercel_blob", label: "Vercel Blob (Easy to use, free for 1 GB limit)", icon: <SiVercel className="h-4 w-4" /> },
+    { value: "cloudflare_r2", label: "Cloudflare R2 (For Large Scale Projects, Free tier for 100GB)", icon: <SiCloudflare className="h-4 w-4 text-[#f48120]" /> },
+  ],
+  NEXT_PUBLIC_ALLOW_RATE_LIMIT: [
+    { value: "upstash", label: "Upstash", icon: <SiUpstash className="h-4 w-4 text-[#00e9a3]" /> },
+  ],
+  NEXT_PUBLIC_EMAIL_CLIENT: [
+    { value: "none", label: "None", icon: <Ban className="h-4 w-4 text-muted-foreground" /> },
+    { value: "resend", label: "Resend (Free tier for 100 emails/day & 3000 emails/month)", icon: <SiResend className="h-4 w-4" /> },
+    { value: "gmail_smtp", label: "Gmail SMTP (Coming Soon) (Free tier for 2000 emails/day if google workspace account, 500 emails if gmail account)", icon: <SiGmail className="h-4 w-4" /> },
+  ],
+  NEXT_PUBLIC_AUTH_FRAMEWORK: [
+    { value: "better-auth", label: "Better Auth", icon: <Shield className="h-4 w-4 text-amber-500" /> },
+  ],
+};
+
+// ─── Multiselect options ───────────────────────────────────────────────
+export type MultiselectOption = {
+  value: string;
+  label: string;
+  icon?: ReactNode;
+  color?: string;
+  disabled?: boolean;
+};
+
+export const multiselectOptions: Record<string, MultiselectOption[]> = {
+  NEXT_PUBLIC_AUTH_PROVIDERS: [
+    { value: "email_verification", label: "Email Verification", icon: <Mail className="h-5 w-5" />, color: "text-blue-500 border-blue-500/50 bg-blue-500/10" },
+    { value: "linkedin", label: "LinkedIn", icon: <FaLinkedin className="h-5 w-5 text-[#0a66c2]" />, color: "text-[#0a66c2] border-[#0a66c2]/50 bg-[#0a66c2]/10" },
+    { value: "google", label: "Google", icon: <FcGoogle className="h-5 w-5" />, color: "text-red-500 border-red-500/50 bg-red-500/10" },
+    { value: "github", label: "GitHub", icon: <FaGithub className="h-5 w-5" />, color: "text-foreground border-foreground/50 bg-foreground/10" },
+  ],
+  NEXT_PUBLIC_OBSERVABILITY_FEATURES: [
+    { value: "logging", label: "Logging", icon: <Activity className="h-5 w-5" />, color: "text-orange-500 border-orange-500/50 bg-orange-500/10" },
+    { value: "google_analytics", label: "Google Analytics", icon: <BarChart3 className="h-5 w-5" />, color: "text-yellow-500 border-yellow-500/50 bg-yellow-500/10" },
+    { value: "rate_limiting", label: "Rate Limiting", icon: <ShieldAlert className="h-5 w-5" />, color: "text-blue-500 border-blue-500/50 bg-blue-500/10" },
+  ],
+  NEXT_PUBLIC_PLATFORM: [
+    { value: "web", label: "Web App (Compulsory, powers the backend)", icon: <Monitor className="h-5 w-5" />, color: "text-blue-500 border-blue-500/50 bg-blue-500/10", disabled: true },
+    { value: "mobile", label: "Mobile App", icon: <Smartphone className="h-5 w-5" />, color: "text-green-500 border-green-500/50 bg-green-500/10" },
+    { value: "desktop", label: "Desktop App", icon: <Monitor className="h-5 w-5" />, color: "text-purple-500 border-purple-500/50 bg-purple-500/10" },
+  ],
+  NEXT_PUBLIC_SUPPORT_FEATURES: [
+    { value: "support_mail", label: "Send Support Mail", icon: <MessageCircle className="h-5 w-5" />, color: "text-rose-500 border-rose-500/50 bg-rose-500/10" },
+    { value: "calendly", label: "Book Meeting", icon: <Calendar className="h-5 w-5" />, color: "text-cyan-500 border-cyan-500/50 bg-cyan-500/10" },
+  ],
+};

@@ -12,11 +12,13 @@
     "migrate": "cd packages/database && pnpm run migrate",
     "seed": "cd packages/database && pnpm run seed",
     "reset": "cd packages/database && pnpm run reset",
-    "template:install": "cd templates/saas-boilerplate && pnpm install && pnpm run generate",
-    "template:dev": "cd templates/saas-boilerplate && pnpm dev",
-    "template:build": "cd templates/saas-boilerplate && pnpm build",
-    "template:test": "cd templates/saas-boilerplate && pnpm test",
-    "template:test:coverage": "cd templates/saas-boilerplate && pnpm test:coverage"
+    "template:sync": "node scripts/sync-template.mjs",
+    "template:check-sync": "node scripts/sync-template.mjs --check",
+    "template:install": "pnpm template:sync && cd templates/saas-boilerplate && pnpm install && pnpm run generate",
+    "template:dev": "pnpm template:sync && cd templates/saas-boilerplate && pnpm dev",
+    "template:build": "pnpm template:check-sync && cd templates/saas-boilerplate && pnpm build",
+    "template:test": "pnpm template:check-sync && cd templates/saas-boilerplate && pnpm test",
+    "template:test:coverage": "pnpm template:check-sync && cd templates/saas-boilerplate && pnpm test:coverage"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.9.1",

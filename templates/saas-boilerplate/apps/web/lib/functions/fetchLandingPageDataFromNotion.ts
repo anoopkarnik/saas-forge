@@ -14,11 +14,11 @@ export async function fetchLandingPageData():Promise<LandingPageProps> {
 
     const navbarSection: NavbarSectionProps = {
         title: landingPageData.title,
-        logo: landingPageData.logo[0],
-        darkLogo: landingPageData.darkLogo[0],
+        logo: landingPageData.logo?.[0],
+        darkLogo: landingPageData.darkLogo?.[0],
         githubLink: landingPageData.githubLink,
-        githubUsername: landingPageData.githubUsername,
-        githubRepositoryName: landingPageData.githubRepositoryName,
+        githubUsername: landingPageData.githubUsername?.[0]?.trim(),
+        githubRepositoryName: landingPageData.githubRepositoryName?.[0]?.trim(),
         donateNowLink: landingPageData.donateNowLink,
     } 
     
@@ -75,108 +75,115 @@ export async function fetchLandingPageData():Promise<LandingPageProps> {
     ]);
 
     const heroSection: HeroSectionProps = {
-        tagline: landingPageData.tagline[0],
-        description: landingPageData.description[0],
+        tagline: landingPageData.tagline?.[0],
+        description: landingPageData.description?.[0],
         appointmentLink: landingPageData.appointmentLink,
-        codeSnippet: landingPageData.codeSnippet[0],
+        codeSnippet: landingPageData.codeSnippet?.[0],
         heroImages: heroSectionResults.results.map((item:any) => ({
+            id: item.id,
             title: item.title,
             imageUrl: item.image[0],
-        }))
+        })),
+        videoLink: landingPageData.videoLink
     }
 
     const featureSection: FeatureSectionProps = {
-        heading: landingPageData.featureHeading[0],
-        description: landingPageData.featureDescription[0],
+        heading: landingPageData.featureHeading?.[0],
+        description: landingPageData.featureDescription?.[0],
         features: featureSectionResults.results.map((item:any) => ({
+            id: item.id,
             title: item.title,
-            description: item.description[0],
-            imageUrl: item.image[0],
+            description: item.description?.[0],
+            imageUrl: item.image?.[0],
             category: item.category,
         }))
     }
 
     const testimonialSection: TestimonialSectionProps = {
-        heading: landingPageData.testimonialHeading[0],
-        description: landingPageData.testimonialDescription[0],
+        heading: landingPageData.testimonialHeading?.[0],
+        description: landingPageData.testimonialDescription?.[0],
         testimonials: testimonialSectionResults.results.map((item:any) => ({
+            id: item.id,
             name: item.name,
-            title: item.title[0],
-            comment: item.comment[0],
-            imageUrl: item.image[0],
+            position: item.position?.[0],
+            comment: item.comment?.[0],
+            imageUrl: item.image?.[0],
             category: item.category,
         }))
     }
 
     const pricingSection: PricingSectionProps = {
-        heading: landingPageData.pricingHeading[0],
-        description: landingPageData.pricingDescription[0],
+        heading: landingPageData.pricingHeading?.[0],
+        description: landingPageData.pricingDescription?.[0],
         plans: pricingSectionResults.results.map((item:any) => ({
+            id: item.id,
             title: item.title,
-            price: item.price[0],
+            price: item.price?.[0],
             popular: item.popular,
-            description: item.description[0],
+            description: item.description?.[0],
             priceType: item.priceType,
-            benefitList: item.benefitList[0].split(",")
+            benefitList: item.benefitList?.[0]?.split(",") || []
         }))
     }
 
     const faqSection: FAQSectionProps = {
-        heading: landingPageData.faqHeading[0],
-        description: landingPageData.faqDescription[0],
-        faqs: faqSectionResults.results.map((item:FAQProps) => ({
+        heading: landingPageData.faqHeading?.[0],
+        description: landingPageData.faqDescription?.[0],
+        faqs: faqSectionResults.results.map((item:any) => ({
+            id: item.id,
             question: item.question,
-            answer: item.answer[0],
+            answer: item.answer?.[0],
         }))
     }
 
     const footerSection: FooterSectionProps = {
         title: landingPageData.title,
-        logo: landingPageData.logo[0],
-        darkLogo: landingPageData.darkLogo[0],
-        creator: landingPageData.creator[0],
+        logo: landingPageData.logo?.[0],
+        darkLogo: landingPageData.darkLogo?.[0],
+        creator: landingPageData.creator?.[0],
         creatorLink: landingPageData.creatorLink,
-        links: footerSectionResults.results.map((item:FooterLinkProps) => ({
+        links: footerSectionResults.results.map((item:any) => ({
+            id: item.id,
             label: item.label,
-            href: item.href[0],
+            href: item.href?.[0],
             type: item.type,
         }))
     }
 
     const cancellationRefundPolicies:CancellationRefundPoliciesProps = {
-        supportEmailAddress: landingPageData.supportEmailAddress[0],
+        supportEmailAddress: landingPageData.supportEmailAddress?.[0],
         siteName: landingPageData.title,
-        companyLegalName: landingPageData.companyLegalName[0],
-        websiteUrl: landingPageData.websiteUrl[0],
-        lastUpdated: landingPageData.lastUpdated[0],
+        companyLegalName: landingPageData.companyLegalName?.[0],
+        websiteUrl: landingPageData.websiteUrl?.[0],
+        lastUpdated: landingPageData.lastUpdated?.[0],
     }
 
     const privacyPolicy:PrivacyPolicyProps = {
-        supportEmailAddress: landingPageData.supportEmailAddress[0],
+        supportEmailAddress: landingPageData.supportEmailAddress?.[0],
         siteName: landingPageData.title,
-        companyLegalName: landingPageData.companyLegalName[0],
-        country: landingPageData.country[0],
-        websiteUrl: landingPageData.websiteUrl[0],
-        lastUpdated: landingPageData.lastUpdated[0],
+        companyLegalName: landingPageData.companyLegalName?.[0],
+        country: landingPageData.country?.[0],
+        websiteUrl: landingPageData.websiteUrl?.[0],
+        lastUpdated: landingPageData.lastUpdated?.[0],
     }
 
     const contactUs: ContactUsProps = {
-        supportEmailAddress: landingPageData.supportEmailAddress[0],
-        companyLegalName: landingPageData.companyLegalName[0],
-        lastUpdated: landingPageData.lastUpdated[0],
-        contactNumber: landingPageData.contactNumber[0],
-        address: landingPageData.address[0],
+        supportEmailAddress: landingPageData.supportEmailAddress?.[0],
+        companyLegalName: landingPageData.companyLegalName?.[0],
+        lastUpdated: landingPageData.lastUpdated?.[0],
+        contactNumber: landingPageData.contactNumber?.[0],
+        address: landingPageData.address?.[0],
     }
 
     const termsOfService:TermsOfServiceProps = {
-        supportEmailAddress: landingPageData.supportEmailAddress[0],
+        supportEmailAddress: landingPageData.supportEmailAddress?.[0],
         siteName: landingPageData.title,
-        companyLegalName: landingPageData.companyLegalName[0],
-        country: landingPageData.country[0],
-        websiteUrl: landingPageData.websiteUrl[0],
-        lastUpdated: landingPageData.lastUpdated[0],
-        version: landingPageData.version[0],
-        address: landingPageData.address[0],
+        companyLegalName: landingPageData.companyLegalName?.[0],
+        country: landingPageData.country?.[0],
+        websiteUrl: landingPageData.websiteUrl?.[0],
+        lastUpdated: landingPageData.lastUpdated?.[0],
+        version: landingPageData.version?.[0],
+        address: landingPageData.address?.[0],
     }
 
     return {

@@ -4,8 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "vitest run",
-    "test:coverage": "vitest run --coverage"
+    "test": "vitest run --passWithNoTests",
+    "test:coverage": "vitest run --coverage --passWithNoTests"
   },
   "keywords": [],
   "author": "",
@@ -22,6 +22,7 @@
     "winston": "^3.19.0"
   },
   "devDependencies": {
+    "@vitejs/plugin-react": "^5.1.4",
     "vitest": "^4.0.18"
   }
 }

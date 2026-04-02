@@ -3,7 +3,9 @@
 import VerificationPage from '@workspace/ui/blocks/auth/VerificationPage'
 import { useRouter } from 'next/navigation'
 
-const Verification = () => {
+import type { ReactElement } from 'react'
+
+const VerificationTemp = (): ReactElement => {
   const router = useRouter()
 
 
@@ -17,4 +19,4 @@ const Verification = () => {
 }
 
 
-export default Verification
+export default VerificationTemp

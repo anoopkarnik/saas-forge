@@ -20,8 +20,9 @@ import { useTheme } from 'next-themes';
 import Image from 'next/image';
 import { NavbarSectionProps } from "@/lib/ts-types/landing";
 import { useRouter } from "next/navigation";
+import { ReactElement } from "react";
 
-const NavbarSection = ({ navbarSection }: { navbarSection: NavbarSectionProps }) => {
+const NavbarSection = ({ navbarSection }: { navbarSection: NavbarSectionProps }): ReactElement => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const { theme } = useTheme();
   const [mounted, setMounted] = useState(false);

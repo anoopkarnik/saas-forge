@@ -9,10 +9,6 @@ import { SpeedInsights } from "@vercel/speed-insights/next"
 import { TRPCReactProvider } from "@/trpc/client";
 import Support from "@/blocks/Support";
 
-const THEME = process.env.NEXT_PUBLIC_THEME ?? "neutral";
-
-const themeClass = `theme-${THEME}`;
-
 export const metadata: Metadata = {
   title: "SaaS Forge",
   description: "Boilerplate to build and deploy SaaS products quickly.",
@@ -23,10 +19,12 @@ export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
-}>) {
+}>): React.ReactElement {
+  const themeColor = process.env.NEXT_PUBLIC_THEME || "green";
+
   return (
-    <html lang="en" suppressHydrationWarning className={themeClass}>
-      <body className={`${geistSans.className} ${geistMono.variable} ${cyberdyne.variable}`}>
+    <html lang="en" suppressHydrationWarning className={`theme-${themeColor}`}>
+      <body className={`${geistSans.className} ${geistMono.variable} ${cyberdyne.variable} `}>
         <TRPCReactProvider>
           <ThemeProvider>
             {children}

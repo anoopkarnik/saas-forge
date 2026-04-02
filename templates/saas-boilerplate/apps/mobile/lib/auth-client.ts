@@ -12,8 +12,8 @@ export const authClient: any = createAuthClient({
         Platform.OS !== "web"
             ? [
                   expoClient({
-                      scheme: "myapp",
-                      storagePrefix: "myapp",
+                      scheme: "saas-forge",
+                      storagePrefix: "saas-forge",
                       storage: SecureStore,
                   }),
                   adminClient(),

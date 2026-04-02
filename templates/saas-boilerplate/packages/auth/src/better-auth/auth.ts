@@ -32,8 +32,8 @@ const options = {
         impersonationSessionDuration: 3600
     }), expo()],
     trustedOrigins: [
-        "myapp://",
-        "myapp://*",
+        "saas-forge://",
+        "saas-forge://*",
         "exp://",
         "exp://*",
         "file://",

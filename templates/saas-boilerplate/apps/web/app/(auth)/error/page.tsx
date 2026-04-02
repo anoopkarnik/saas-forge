@@ -4,7 +4,9 @@
 import ErrorPage from '@workspace/ui/blocks/auth/ErrorPage'
 import { useRouter } from 'next/navigation'
 
-const ErrorTemp = () => {
+import type { ReactElement } from 'react'
+
+const ErrorTemp = (): ReactElement => {
   const router = useRouter()
 
   return (

@@ -2,13 +2,13 @@ import ErrorState from "@workspace/ui/components/misc/ErrorState";
 import LoadingState from "@workspace/ui/components/misc/LoadingState";
 import { getQueryClient, trpc } from "@/trpc/server"
 import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
-import { Suspense } from "react";
+import { ReactElement, Suspense } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import CancellationRefundPolicies from "@/blocks/landing/CancellationRefundPolicies";
 
 // export const revalidate = 600;
 export const dynamic = "force-dynamic";
-const Page = async () => {
+const Page = async (): Promise<ReactElement> => {
   const queryClient = getQueryClient();
   await Promise.all([
     // queryClient.ensureQueryData(trpc.portfolio.getPortfolioDataFromStrapi.queryOptions()),
@@ -18,7 +18,7 @@ const Page = async () => {
     <HydrationBoundary state={dehydrate(queryClient)}>
       <Suspense fallback={<LoadingState title='Retrieving' description='Please wait while we retrieve the page data' />}>
         <ErrorBoundary fallback={<ErrorState title='Error Retrieving Data' description='There was an error while retrieving the data.' />}>
-           <CancellationRefundPolicies />
+          <CancellationRefundPolicies />
         </ErrorBoundary>
       </Suspense>
     </HydrationBoundary>

@@ -12,8 +12,9 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@w
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { Layers } from "lucide-react";
+import { ReactElement } from "react";
 
-const FeatureSection = ({ featureSection }: { featureSection: FeatureSectionProps }) => {
+const FeatureSection = ({ featureSection }: { featureSection: FeatureSectionProps }): ReactElement => {
 
   const [headingArray, setHeadingArray] = useState<string[]>([])
   const [featureImage, setFeatureImage] = useState<number>(0);
@@ -73,19 +74,30 @@ const FeatureSection = ({ featureSection }: { featureSection: FeatureSectionProp
           transition={{ duration: 0.5, delay: 0.4 }}
           className="relative h-[400px] w-full rounded-2xl overflow-hidden border border-white/10 shadow-2xl bg-zinc-900/50"
         >
-          {featureSection.features?.[featureImage]?.imageUrl ? (
-            <Image
-              src={featureSection.features[featureImage].imageUrl!}
-              alt={featureSection.features[featureImage].title || "Feature Image"}
-              fill
-              className="object-cover transition-opacity duration-500"
-            />
-          ) : (
-            <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-primary/5 via-transparent to-primary/5">
-              <Layers className="w-20 h-20 text-primary/20 mb-4 animate-pulse" />
-              <p className="text-zinc-500 font-medium">Visual Preview</p>
-            </div>
-          )}
+          {featureSection.features?.map((feature, index) => {
+            const isActive = index === featureImage;
+            return (
+              <div
+                key={`feature-img-${index}`}
+                className={`absolute inset-0 transition-opacity duration-500 ${isActive ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}
+              >
+                {feature.imageUrl ? (
+                  <Image
+                    src={feature.imageUrl}
+                    alt={feature.title || "Feature Image"}
+                    fill
+                    sizes="(max-width: 768px) 100vw, 50vw"
+                    className="object-cover"
+                  />
+                ) : (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-primary/5 via-transparent to-primary/5 border border-white/10">
+                    <Layers className="w-20 h-20 text-primary/20 mb-4 animate-pulse" />
+                    <p className="text-zinc-500 font-medium">Visual Preview</p>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </motion.div>
       </div>
     </section>

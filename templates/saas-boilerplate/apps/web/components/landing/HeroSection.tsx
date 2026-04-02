@@ -11,8 +11,9 @@ import Image from "next/image";
 import { ContainerScroll } from "@workspace/ui/components/aceternity/container-scroll-animation";
 import { HeroCodeBlock } from "@workspace/ui/components/misc/HeroCodeBlock";
 import { motion } from "framer-motion";
+import { ReactElement } from "react";
 
-const HeroSection = ({ heroSection }: { heroSection: HeroSectionProps }) => {
+const HeroSection = ({ heroSection }: { heroSection: HeroSectionProps }): ReactElement => {
   const [taglineArray, setTaglineArray] = useState<string[]>([])
   const router = useRouter()
   useEffect(() => {
@@ -20,6 +21,27 @@ const HeroSection = ({ heroSection }: { heroSection: HeroSectionProps }) => {
       setTaglineArray(heroSection.tagline.split(" "))
     }
   }, [heroSection.tagline])
+
+  // Simple string replacer for basic youtube links to convert them to embed format
+  const getYoutubeEmbedUrl = (url?: string) => {
+    if (!url) return null;
+    try {
+      if (url.includes('youtube.com/watch')) {
+        const urlObj = new URL(url);
+        const videoId = urlObj.searchParams.get('v');
+        return videoId ? `https://www.youtube.com/embed/${videoId}` : url;
+      }
+      if (url.includes('youtu.be/')) {
+        const videoId = url.split('youtu.be/')[1]?.split('?')[0];
+        return videoId ? `https://www.youtube.com/embed/${videoId}` : url;
+      }
+    } catch (e) {
+      // Just fallback to the raw url
+    }
+    return url;
+  };
+  const embedUrl = getYoutubeEmbedUrl(heroSection.videoLink);
+
   return (
     <section className="container flex flex-col justify-center items-center py-20 md:py-32  gap-10 relative ">
 
@@ -105,16 +127,31 @@ const HeroSection = ({ heroSection }: { heroSection: HeroSectionProps }) => {
         <Carousel className="w-full z-10   ">
           <ContainerScroll titleComponent={<></>}>
             <CarouselContent className="">
+              {embedUrl && (
+                <CarouselItem className="flex items-center justify-center relative w-full aspect-video">
+                  <iframe
+                    src={embedUrl}
+                    title="Product Video"
+                    width="100%"
+                    height="100%"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    className="rounded-lg mx-auto w-full h-full aspect-video border-none"
+                  />
+                </CarouselItem>
+              )}
 
               {heroSection.heroImages?.map((image, index) => (
                 <CarouselItem key={index} className="flex items-center justify-center relative ">
                   {image.imageUrl ? (
                     <Image
                       src={image.imageUrl}
-                      alt={"alt"}
+                      alt={image.title || "Hero Slide"}
                       width={1920}
                       height={1080}
                       className="rounded-lg mx-auto object-cover h-full aspect-video"
+                      priority={index === 0}
+                      quality={90}
                     />
                   ) : (
                     <div className="w-full aspect-video rounded-lg mx-auto bg-gradient-to-br from-white/5 to-white/0 border border-white/10 backdrop-blur-md flex flex-col items-center justify-center gap-4 group/placeholder">

@@ -7,7 +7,7 @@ const desktopOrigins = ["null", "file://", ""];
 const allowedOrigins = [
     "http://localhost:5173",
     "http://localhost:8081",
-    "myapp://",
+    "saas-forge://",
     "exp://",
     "null",
     "file://",

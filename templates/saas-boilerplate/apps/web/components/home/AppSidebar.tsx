@@ -13,7 +13,7 @@ import {
 } from "@workspace/ui/components/shadcn/sidebar";
 import { useTheme } from "next-themes";
 import { cn } from "@workspace/ui/lib/utils";
-import { HomeIcon, Users, Shield, Settings, Database, Home } from "lucide-react";
+import { HomeIcon, Users, Shield, Settings, Database } from "lucide-react";
 import { MdSaveAs } from "react-icons/md";
 import { usePathname, useRouter } from "next/navigation";
 import { useTRPC } from "@/trpc/client";
@@ -67,12 +67,42 @@ export function AppSidebar() {
                     <SidebarGroupLabel className="px-2 text-xs font-medium text-muted-foreground/70 uppercase tracking-wider mb-2">Application</SidebarGroupLabel>
                     <SidebarMenu className="gap-1">
                         <SidebarMenuItem>
-                            <SidebarMenuButton asChild tooltip={"Home"}
+                            <SidebarMenuButton asChild tooltip={"Download SaaS Boilerplate"}
                                 className={cn("cursor-pointer transition-all duration-200 ease-in-out hover:pl-3 h-10", pathname === "/" && "bg-sidebar-accent text-sidebar-accent-foreground font-medium shadow-sm")}
                                 onClick={() => router.push("/")}>
                                 <div className="flex items-center gap-3">
-                                    <Home className="w-5 h-5 text-violet-500" />
-                                    <div className="text-xs">{"Home"}</div>
+                                    <MdSaveAs className="w-5 h-5 text-violet-500" />
+                                    <div className="text-xs">{"Download SaaS Boilerplate"}</div>
+                                </div>
+                            </SidebarMenuButton>
+                        </SidebarMenuItem>
+                        <SidebarMenuItem>
+                            <SidebarMenuButton asChild tooltip={"Download Portfolio Boilerplate"}
+                                className={cn("cursor-pointer transition-all duration-200 ease-in-out hover:pl-3 h-10", pathname === "/portfolio" && "bg-sidebar-accent text-sidebar-accent-foreground font-medium shadow-sm")}
+                                onClick={() => router.push("/")}>
+                                <div className="flex items-center gap-3">
+                                    <MdSaveAs className="w-5 h-5 text-orange-500" />
+                                    <div className="text-xs">{"Download Portfolio Boilerplate (Coming Soon)"}</div>
+                                </div>
+                            </SidebarMenuButton>
+                        </SidebarMenuItem>
+                        <SidebarMenuItem>
+                            <SidebarMenuButton asChild tooltip={"Download SaaS Company Landing Page"}
+                                className={cn("cursor-pointer transition-all duration-200 ease-in-out hover:pl-3 h-10", pathname === "/saas-company-landing-page" && "bg-sidebar-accent text-sidebar-accent-foreground font-medium shadow-sm")}
+                                onClick={() => router.push("/")}>
+                                <div className="flex items-center gap-3">
+                                    <MdSaveAs className="w-5 h-5 text-green-500" />
+                                    <div className="text-xs">{"Download SaaS Company Landing Page (Coming Soon)"}</div>
+                                </div>
+                            </SidebarMenuButton>
+                        </SidebarMenuItem>
+                        <SidebarMenuItem>
+                            <SidebarMenuButton asChild tooltip={"Download Hiking Company Landing Page"}
+                                className={cn("cursor-pointer transition-all duration-200 ease-in-out hover:pl-3 h-10", pathname === "/hiking-company-landing-page" && "bg-sidebar-accent text-sidebar-accent-foreground font-medium shadow-sm")}
+                                onClick={() => router.push("/")}>
+                                <div className="flex items-center gap-3">
+                                    <MdSaveAs className="w-5 h-5 text-blue-500" />
+                                    <div className="text-xs">{"Download Hiking Company Landing Page (Coming Soon)"}</div>
                                 </div>
                             </SidebarMenuButton>
                         </SidebarMenuItem>

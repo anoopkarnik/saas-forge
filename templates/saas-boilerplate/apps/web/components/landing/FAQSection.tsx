@@ -7,9 +7,10 @@ import {
 } from "@workspace/ui/components/shadcn/accordion";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import { ReactElement } from "react";
 
 
-const FAQ = ({ FAQSection }: { FAQSection: FAQSectionProps }) => {
+const FAQ = ({ FAQSection }: { FAQSection: FAQSectionProps }): ReactElement => {
 
   const [headingArray, setHeadingArray] = useState<string[]>([])
   useEffect(() => {

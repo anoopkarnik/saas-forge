@@ -1,3 +1,33 @@
+const scaffoldTraceRoot = "../../.generated/saas-boilerplate"
+const scaffoldTraceIncludes = [
+  `${scaffoldTraceRoot}/.eslintrc.js`,
+  `${scaffoldTraceRoot}/.github/**/*`,
+  `${scaffoldTraceRoot}/apps/**/*`,
+  `${scaffoldTraceRoot}/CLAUDE.md`,
+  `${scaffoldTraceRoot}/docs/**/*`,
+  `${scaffoldTraceRoot}/LICENSE`,
+  `${scaffoldTraceRoot}/package.json`,
+  `${scaffoldTraceRoot}/packages/**/*`,
+  `${scaffoldTraceRoot}/pnpm-lock.yaml`,
+  `${scaffoldTraceRoot}/pnpm-workspace.yaml`,
+  `${scaffoldTraceRoot}/README.md`,
+  `${scaffoldTraceRoot}/tsconfig.json`,
+  `${scaffoldTraceRoot}/turbo.json`,
+  `${scaffoldTraceRoot}/vitest.workspace.ts`,
+]
+
+const scaffoldTraceExcludes = [
+  `${scaffoldTraceRoot}/**/.cache/**`,
+  `${scaffoldTraceRoot}/**/.next/**`,
+  `${scaffoldTraceRoot}/**/.turbo/**`,
+  `${scaffoldTraceRoot}/**/.vercel/**`,
+  `${scaffoldTraceRoot}/**/build/**`,
+  `${scaffoldTraceRoot}/**/coverage/**`,
+  `${scaffoldTraceRoot}/**/dist/**`,
+  `${scaffoldTraceRoot}/**/node_modules/**`,
+  `${scaffoldTraceRoot}/**/out/**`,
+]
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   transpilePackages: ["@workspace/ui", "@workspace/auth", "@workspace/database"],
@@ -10,12 +40,10 @@ const nextConfig = {
     unoptimized: true,
   },
   outputFileTracingIncludes: {
-    "/api/scaffold": ["../../templates/saas-boilerplate/**/*"],
+    "/api/scaffold": scaffoldTraceIncludes,
   },
   outputFileTracingExcludes: {
-    "/api/scaffold": [
-      "../../templates/saas-boilerplate/**/node_modules/**",
-    ],
+    "/api/scaffold": scaffoldTraceExcludes,
   },
   async headers() {
     return [

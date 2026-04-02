@@ -12,10 +12,12 @@ if (!fs.existsSync(manifestPath)) {
 const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
 const templateRoot = path.join(repoRoot, manifest.templateRoot);
 const overrideRoot = path.join(repoRoot, manifest.overrideRoot);
+const stageRoot = path.join(repoRoot, manifest.stageRoot ?? ".generated/saas-boilerplate");
 const includePaths = manifest.include;
 const excludePaths = manifest.exclude;
 const overridePaths = manifest.templateOverrides;
 const checkMode = process.argv.includes("--check");
+const stageMode = process.argv.includes("--stage");
 
 const generatedSegments = new Set([
   ".cache",
@@ -29,13 +31,25 @@ const generatedSegments = new Set([
   "out"
 ]);
 
+const rmOptions = {
+  recursive: true,
+  force: true,
+  maxRetries: 5,
+  retryDelay: 100,
+};
+
 function normalize(relPath) {
   return relPath.split(path.sep).join("/");
+}
+
+function joinRelative(...parts) {
+  return normalize(path.join(...parts));
 }
 
 function shouldIgnoreGenerated(relPath) {
   return normalize(relPath)
     .split("/")
+    .filter(Boolean)
     .some((segment) => generatedSegments.has(segment));
 }
 
@@ -46,12 +60,16 @@ function isExcluded(relPath) {
   );
 }
 
+function isForbidden(relPath) {
+  return shouldIgnoreGenerated(relPath) || isExcluded(relPath);
+}
+
 function ensureParent(filePath) {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
 }
 
 function copyFiltered(srcPath, destPath, relPath) {
-  if (shouldIgnoreGenerated(relPath) || isExcluded(relPath)) {
+  if (relPath && isForbidden(relPath)) {
     return { copied: 0, skipped: 1 };
   }
 
@@ -82,14 +100,40 @@ function copyFiltered(srcPath, destPath, relPath) {
 
 function removeIncludeTargets(destRoot) {
   for (const includePath of includePaths) {
-    fs.rmSync(path.join(destRoot, includePath), { recursive: true, force: true });
+    fs.rmSync(path.join(destRoot, includePath), rmOptions);
   }
 }
 
 function removeExcludedTargets(destRoot) {
   for (const excludePath of excludePaths) {
-    fs.rmSync(path.join(destRoot, excludePath), { recursive: true, force: true });
+    fs.rmSync(path.join(destRoot, excludePath), rmOptions);
   }
+}
+
+function removeForbiddenTargets(destRoot) {
+  function walk(currentPath, relPath) {
+    if (!fs.existsSync(currentPath)) {
+      return;
+    }
+
+    const stat = fs.statSync(currentPath);
+
+    if (relPath && isForbidden(relPath)) {
+      fs.rmSync(currentPath, rmOptions);
+      return;
+    }
+
+    if (!stat.isDirectory()) {
+      return;
+    }
+
+    for (const entry of fs.readdirSync(currentPath, { withFileTypes: true })) {
+      const childRelPath = relPath ? joinRelative(relPath, entry.name) : entry.name;
+      walk(path.join(currentPath, entry.name), childRelPath);
+    }
+  }
+
+  walk(destRoot, "");
 }
 
 function applySync(destRoot) {
@@ -113,6 +157,7 @@ function applySync(destRoot) {
   }
 
   removeExcludedTargets(destRoot);
+  removeForbiddenTargets(destRoot);
 
   for (const overridePath of overridePaths) {
     const srcPath = path.join(overrideRoot, overridePath);
@@ -127,6 +172,13 @@ function applySync(destRoot) {
   }
 
   return { copied, skipped, overridden };
+}
+
+function stageTemplate(destRoot) {
+  fs.rmSync(destRoot, rmOptions);
+  const result = copyFiltered(templateRoot, destRoot, "");
+  removeForbiddenTargets(destRoot);
+  return result;
 }
 
 function listManagedFiles(rootDir) {
@@ -158,6 +210,34 @@ function listManagedFiles(rootDir) {
   }
 
   return files;
+}
+
+function listForbiddenPaths(rootDir) {
+  const forbidden = [];
+
+  function walk(currentPath, relPath) {
+    if (!fs.existsSync(currentPath)) {
+      return;
+    }
+
+    if (relPath && isForbidden(relPath)) {
+      forbidden.push(normalize(relPath));
+      return;
+    }
+
+    const stat = fs.statSync(currentPath);
+    if (!stat.isDirectory()) {
+      return;
+    }
+
+    for (const entry of fs.readdirSync(currentPath, { withFileTypes: true })) {
+      const childRelPath = relPath ? joinRelative(relPath, entry.name) : entry.name;
+      walk(path.join(currentPath, entry.name), childRelPath);
+    }
+  }
+
+  walk(rootDir, "");
+  return forbidden.sort();
 }
 
 function compareManagedTrees(expectedRoot, actualRoot) {
@@ -197,6 +277,11 @@ if (checkMode) {
   try {
     applySync(expectedRoot);
     const errors = compareManagedTrees(expectedRoot, templateRoot);
+    const forbiddenPaths = listForbiddenPaths(templateRoot);
+
+    for (const forbiddenPath of forbiddenPaths) {
+      errors.push(`Forbidden generated or excluded path present: ${forbiddenPath}`);
+    }
 
     if (errors.length > 0) {
       console.error("Template sync check failed:");
@@ -208,8 +293,18 @@ if (checkMode) {
       console.log(`Template is in sync with ${manifest.templateRoot}.`);
     }
   } finally {
-    fs.rmSync(expectedRoot, { recursive: true, force: true });
+    fs.rmSync(expectedRoot, rmOptions);
   }
+} else if (stageMode) {
+  const syncResult = applySync(templateRoot);
+  const stageResult = stageTemplate(stageRoot);
+  console.log(`Template synced to ${manifest.templateRoot}.`);
+  console.log(`Copied files: ${syncResult.copied}`);
+  console.log(`Skipped entries: ${syncResult.skipped}`);
+  console.log(`Applied overrides: ${syncResult.overridden}`);
+  console.log(`Staged clean template at ${normalize(path.relative(repoRoot, stageRoot))}.`);
+  console.log(`Staged files: ${stageResult.copied}`);
+  console.log(`Staged skipped entries: ${stageResult.skipped}`);
 } else {
   const result = applySync(templateRoot);
   console.log(`Template synced to ${manifest.templateRoot}.`);

@@ -419,9 +419,19 @@ pnpm template:sync
 
 # Verify the template is still in sync
 pnpm template:check-sync
+
+# Build the clean staged copy used by root builds and template validation
+pnpm template:stage
+
+# Stage, install dependencies, and generate Prisma for the clean template workspace
+pnpm template:prepare
 ```
 
 Shared feature work should be implemented in the root repo first, then propagated with `pnpm template:sync`. Template-only differences live in `template-overrides/saas-boilerplate`, and the sync rules are defined in `template-sync.manifest.json`.
+
+Root web builds now package `/api/scaffold` from `.generated/saas-boilerplate`, which is a sanitized copy of the template with generated artifacts removed. Template validation should run against that staged directory, not by installing dependencies inside `templates/saas-boilerplate`.
+
+`pnpm template:check-sync` will fail if forbidden generated paths such as `templates/saas-boilerplate/node_modules`, `.next`, `.turbo`, `coverage`, `dist`, or `build` are present in the managed template tree.
 
 ---
 

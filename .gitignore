@@ -18,6 +18,7 @@ coverage
 
 # Turbo
 .turbo
+.generated/
 
 # Vercel
 .vercel

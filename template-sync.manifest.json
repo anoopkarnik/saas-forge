@@ -1,5 +1,6 @@
 {
   "templateRoot": "templates/saas-boilerplate",
+  "stageRoot": ".generated/saas-boilerplate",
   "overrideRoot": "template-overrides/saas-boilerplate",
   "include": [
     ".eslintrc.js",
@@ -21,9 +22,13 @@
     "apps/web/tests/integration/scaffoldRoute.test.ts"
   ],
   "templateOverrides": [
+    "apps/desktop/src/renderer/src/components/admin/AdminCmsRoute.tsx",
+    "apps/desktop/src/renderer/src/components/admin/AdminUsersRoute.tsx",
+    "apps/desktop/src/renderer/src/components/home/TemplateAppSidebar.tsx",
     "apps/desktop/src/renderer/src/components/home/DashboardRoute.tsx",
     "apps/mobile/app/(home)/index.tsx",
     "apps/web/app/(home)/page.tsx",
+    "apps/web/components/home/AppSidebar.tsx",
     "apps/web/middleware.ts",
     "apps/web/next.config.mjs",
     "package.json"

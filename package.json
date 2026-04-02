@@ -2,7 +2,7 @@
   "name": "saas-forge",
   "version": "1.0.0",
   "scripts": {
-    "build": "turbo build",
+    "build": "pnpm template:stage && turbo build",
     "dev": "turbo dev",
     "lint": "turbo lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
@@ -14,11 +14,13 @@
     "reset": "cd packages/database && pnpm run reset",
     "template:sync": "node scripts/sync-template.mjs",
     "template:check-sync": "node scripts/sync-template.mjs --check",
-    "template:install": "pnpm template:sync && cd templates/saas-boilerplate && pnpm install && pnpm run generate",
-    "template:dev": "pnpm template:sync && cd templates/saas-boilerplate && pnpm dev",
-    "template:build": "pnpm template:check-sync && cd templates/saas-boilerplate && pnpm build",
-    "template:test": "pnpm template:check-sync && cd templates/saas-boilerplate && pnpm test",
-    "template:test:coverage": "pnpm template:check-sync && cd templates/saas-boilerplate && pnpm test:coverage"
+    "template:stage": "node scripts/sync-template.mjs --stage",
+    "template:prepare": "pnpm template:stage && pnpm --dir .generated/saas-boilerplate install --frozen-lockfile && pnpm --dir .generated/saas-boilerplate generate",
+    "template:install": "pnpm template:prepare",
+    "template:dev": "pnpm template:prepare && pnpm --dir .generated/saas-boilerplate dev",
+    "template:build": "pnpm template:check-sync && pnpm template:prepare && pnpm --dir .generated/saas-boilerplate build",
+    "template:test": "pnpm template:check-sync && pnpm template:prepare && pnpm --dir .generated/saas-boilerplate test",
+    "template:test:coverage": "pnpm template:check-sync && pnpm template:prepare && pnpm --dir .generated/saas-boilerplate test:coverage"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.9.1",

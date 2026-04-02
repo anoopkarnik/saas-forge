@@ -5,6 +5,11 @@ import { admin,  openAPI, jwt } from "better-auth/plugins";
 import { expo } from "@better-auth/expo";
 import { sendResetEmail, sendVerificationEmail } from "@workspace/email/resend/index"
 
+type DeleteQueryCallbackArgs = {
+    args: any;
+    query: (args: any) => Promise<any>;
+};
+
 // Better Auth's account linking flow calls db.delete() on records that may not
 // exist (e.g. removing an old provider account before re-linking). Prisma throws
 // P2025 on delete-of-nonexistent. We extend the client passed to the adapter so
@@ -13,7 +18,7 @@ import { sendResetEmail, sendVerificationEmail } from "@workspace/email/resend/i
 const authDb = db.$extends({
     query: {
         $allModels: {
-            async delete({ args, query }) {
+            async delete({ args, query }: DeleteQueryCallbackArgs) {
                 try {
                     return await query(args);
                 } catch (error: any) {

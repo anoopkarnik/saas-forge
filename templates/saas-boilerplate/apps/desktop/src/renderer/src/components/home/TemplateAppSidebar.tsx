@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useEffect, useState } from "react";
 import {
   Sidebar,
@@ -15,20 +13,28 @@ import {
 import { useTheme } from "next-themes";
 import { cn } from "@workspace/ui/lib/utils";
 import { Database, HomeIcon, Users } from "lucide-react";
-import { usePathname, useRouter } from "next/navigation";
-import { useTRPC } from "@/trpc/client";
-import { useQuery } from "@tanstack/react-query";
-import { useSession } from "@workspace/auth/better-auth/auth-client";
-import SidebarUser from "@/blocks/home/SidebarUser";
 
-export function AppSidebar() {
-  const router = useRouter();
-  const pathname = usePathname();
-  const trpc = useTRPC();
-  const { data: landingInfo } = useQuery(trpc.landing.getLandingInfoFromNotion.queryOptions());
-  const { data: session } = useSession();
-  const isAdmin = session?.user?.role === "admin";
+type TemplateAppSidebarProps = {
+  isAdmin?: boolean;
+  navbarConfig: {
+    title: string;
+    logo: string;
+    darkLogo: string;
+  } | null;
+  onNavigate: (path: string) => void;
+  pathname: string;
+  slotUser?: React.ReactNode;
+};
 
+export type TemplateNavbarConfig = TemplateAppSidebarProps["navbarConfig"];
+
+export default function TemplateAppSidebar({
+  isAdmin,
+  navbarConfig,
+  onNavigate,
+  pathname,
+  slotUser,
+}: TemplateAppSidebarProps) {
   const { theme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
@@ -45,18 +51,18 @@ export function AppSidebar() {
           <SidebarMenuItem>
             <a
               role="button"
-              onClick={() => router.push("/")}
+              onClick={() => onNavigate("/")}
               className="flex cursor-pointer items-center gap-3 px-2 font-cyberdyne"
             >
               <img
-                src={isDark ? landingInfo?.navbarSection.darkLogo : landingInfo?.navbarSection.logo}
-                alt={landingInfo?.navbarSection.title}
+                src={isDark ? navbarConfig?.darkLogo : navbarConfig?.logo}
+                alt={navbarConfig?.title}
                 width={32}
                 height={32}
                 className="h-8 w-8 object-contain"
               />
               <div className="hidden bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-lg font-bold tracking-tight text-transparent lg:flex lg:flex-col lg:items-start">
-                {landingInfo?.navbarSection.title}
+                {navbarConfig?.title}
               </div>
             </a>
           </SidebarMenuItem>
@@ -75,7 +81,7 @@ export function AppSidebar() {
                   "h-10 cursor-pointer transition-all duration-200 ease-in-out hover:pl-3",
                   pathname === "/" && "bg-sidebar-accent font-medium text-sidebar-accent-foreground shadow-sm"
                 )}
-                onClick={() => router.push("/")}
+                onClick={() => onNavigate("/")}
               >
                 <div className="flex items-center gap-3">
                   <HomeIcon className="h-5 w-5 text-emerald-500" />
@@ -99,7 +105,7 @@ export function AppSidebar() {
                     "h-10 cursor-pointer transition-all duration-200 ease-in-out hover:pl-3",
                     pathname === "/admin/users" && "bg-sidebar-accent font-medium text-sidebar-accent-foreground shadow-sm"
                   )}
-                  onClick={() => router.push("/admin/users")}
+                  onClick={() => onNavigate("/admin/users")}
                 >
                   <div className="flex items-center gap-3">
                     <Users className="h-5 w-5 text-blue-500" />
@@ -114,7 +120,7 @@ export function AppSidebar() {
                     "h-10 cursor-pointer transition-all duration-200 ease-in-out hover:pl-3",
                     pathname === "/admin/cms" && "bg-sidebar-accent font-medium text-sidebar-accent-foreground shadow-sm"
                   )}
-                  onClick={() => router.push("/admin/cms")}
+                  onClick={() => onNavigate("/admin/cms")}
                 >
                   <div className="flex items-center gap-3">
                     <Database className="h-5 w-5 text-red-500" />
@@ -127,12 +133,8 @@ export function AppSidebar() {
         )}
       </SidebarContent>
       <SidebarFooter className="border-t border-sidebar-border/40 bg-sidebar-footer/5 p-4">
-        <div className="space-y-4">
-          <SidebarUser />
-        </div>
+        <div className="space-y-4">{slotUser}</div>
       </SidebarFooter>
     </Sidebar>
   );
 }
-
-export default AppSidebar;

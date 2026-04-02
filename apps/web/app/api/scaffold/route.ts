@@ -9,6 +9,10 @@ import { revalidatePath } from "next/cache";
 import { ratelimit } from "@/server/ratelimit";
 
 const CREDITS_COST = 20;
+const scaffoldRoots = [
+  ".generated/saas-boilerplate",
+  "templates/saas-boilerplate",
+];
 
 
 export const runtime = "nodejs"; // required (streams)
@@ -68,25 +72,20 @@ function shouldIgnore(relPath: string) {
 }
 
 function getScaffoldRoot(): string {
-  // In a typical turborepo dev setup, process.cwd() is repo root when running `pnpm dev` from root.
-  // If you run Next dev from apps/web, then cwd becomes apps/web.
-  // In Vercel, the cwd is usually the app folder (/var/task/apps/web) but the repo root is available.
   const cwd = process.cwd();
-  
-  const scaffoldCandidates = [
-    path.join(cwd, "templates/saas-boilerplate"), // Running from repo root
-    path.join(cwd, "../../templates/saas-boilerplate"), // Running from apps/web
-    path.join(cwd, "../templates/saas-boilerplate"), // Alternative nested path
-  ];
+  const scaffoldCandidates = scaffoldRoots.flatMap((root) => [
+    path.join(cwd, root),
+    path.join(cwd, "../../", root),
+    path.join(cwd, "../", root),
+  ]);
 
   const found = scaffoldCandidates.find((p) => fs.existsSync(p));
-  
+
   if (found) {
     return found;
   }
-  
-  // Fallback to expecting it relative to cwd
-  return path.join(cwd, "../../templates/saas-boilerplate");
+
+  return path.join(cwd, "../../.generated/saas-boilerplate");
 }
 
 function generateEnvContent(

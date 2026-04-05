@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
-import { Webhooks } from "@dodopayments/nextjs";
 import db  from "@workspace/database/client";
 
 export async function POST(req: NextRequest) {
@@ -10,6 +9,7 @@ export async function POST(req: NextRequest) {
 
 
   if (process.env.DODO_PAYMENTS_WEBHOOK_KEY) {
+    const { Webhooks } = await import("@dodopayments/nextjs");
     webhookHandler = Webhooks({
       webhookKey: process.env.DODO_PAYMENTS_WEBHOOK_KEY,
       onSubscriptionActive: async (payload: any) => {

@@ -1,4 +1,5 @@
 {
+  "templateVersion": "1.0.0",
   "templateRoot": "templates/saas-boilerplate",
   "stageRoot": ".generated/saas-boilerplate",
   "overrideRoot": "template-overrides/saas-boilerplate",
@@ -22,6 +23,8 @@
     "apps/web/tests/integration/scaffoldRoute.test.ts"
   ],
   "templateOverrides": [
+    "CLAUDE.md",
+    "UPGRADING.md",
     "README.md",
     "apps/desktop/src/renderer/src/components/admin/AdminCmsRoute.tsx",
     "apps/desktop/src/renderer/src/components/admin/AdminUsersRoute.tsx",

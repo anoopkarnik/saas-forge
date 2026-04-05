@@ -46,6 +46,13 @@ vi.mock('next/headers', () => ({
   })),
 }));
 
+function createCallerContext(session: any) {
+  return {
+    session,
+    headers: new Headers(),
+  };
+}
+
 describe('Billing Router Integration Tests', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -69,27 +76,29 @@ describe('Billing Router Integration Tests', () => {
       // Unset API key to trigger error
       vi.unstubAllEnvs();
 
-      const caller = billingRouter.createCaller({
-        session: { user: { id: 'user_1', email: 'test@test.com', name: 'Test User' } } as any,
-        headers: new Headers(),
-      });
+      const caller = billingRouter.createCaller(
+        createCallerContext({
+          user: { id: 'user_1', email: 'test@test.com', name: 'Test User' },
+        } as any),
+      );
 
       await expect(
         caller.createNewCustomer({
           email: 'test@test.com',
           name: 'Test User',
         })
-      ).rejects.toThrow('Payment gateway is not configured');
+      ).rejects.toThrow('Dodo payment gateway is not configured');
     });
 
     it('should successfully create a new customer', async () => {
       mockCreateCustomer.mockResolvedValue({ customer_id: 'cust_123', email: 'test@test.com' });
 
       // createNewCustomer is a protected procedure, we pass session in ctx
-      const caller = billingRouter.createCaller({
-        session: { user: { id: 'user_1', email: 'test@test.com', name: 'Test User' } } as any,
-        headers: new Headers(),
-      });
+      const caller = billingRouter.createCaller(
+        createCallerContext({
+          user: { id: 'user_1', email: 'test@test.com', name: 'Test User' },
+        } as any),
+      );
 
       const result = await caller.createNewCustomer({
         email: 'test@test.com',
@@ -108,10 +117,11 @@ describe('Billing Router Integration Tests', () => {
     it('should successfully create a checkout session for valid credits', async () => {
       mockCreateCheckoutSession.mockResolvedValue({ checkout_url: 'https://checkout.dodo.com/session_123' });
 
-      const caller = billingRouter.createCaller({
-        session: { user: { id: 'user_1', email: 'test@test.com', name: 'Test User' } } as any,
-        headers: new Headers(),
-      });
+      const caller = billingRouter.createCaller(
+        createCallerContext({
+          user: { id: 'user_1', email: 'test@test.com', name: 'Test User' },
+        } as any),
+      );
 
       const result = await caller.createCheckoutSession({
         credits: 100, // Valid multiple of 50
@@ -120,17 +130,18 @@ describe('Billing Router Integration Tests', () => {
       expect(result).toEqual({ checkoutUrl: 'https://checkout.dodo.com/session_123' });
       expect(mockCreateCheckoutSession).toHaveBeenCalledWith({
         product_cart: [{ product_id: 'prod_123', quantity: 2 }],
-        return_url: 'http://localhost:3000',
+        return_url: 'http://localhost:3000?payment=success',
         customer: { email: 'test@test.com', name: 'Test User' },
         metadata: { userId: 'user_1', credits: '100' },
       });
     });
 
     it('should throw an error if credits are not a multiple of 50', async () => {
-      const caller = billingRouter.createCaller({
-        session: { user: { id: 'user_1', email: 'test@test.com', name: 'Test User' } } as any,
-        headers: new Headers(),
-      });
+      const caller = billingRouter.createCaller(
+        createCallerContext({
+          user: { id: 'user_1', email: 'test@test.com', name: 'Test User' },
+        } as any),
+      );
 
       await expect(
         caller.createCheckoutSession({
@@ -147,10 +158,11 @@ describe('Billing Router Integration Tests', () => {
       ];
       vi.mocked(db.transaction.findMany).mockResolvedValue(mockTransactions as any);
 
-      const caller = billingRouter.createCaller({
-        session: { user: { id: 'user_1', email: 'test@test.com', name: 'Test User' } } as any,
-        headers: new Headers(),
-      });
+      const caller = billingRouter.createCaller(
+        createCallerContext({
+          user: { id: 'user_1', email: 'test@test.com', name: 'Test User' },
+        } as any),
+      );
 
       const result = await caller.getTransactions();
 

@@ -36,6 +36,11 @@ vi.mock('next/headers', () => ({
   })),
 }));
 
+const createCallerContext = () => ({
+  session: null,
+  headers: new Headers(),
+});
+
 describe('Support Router Integration Tests', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -56,7 +61,7 @@ describe('Support Router Integration Tests', () => {
     it('should successfully send an email when rate limit allows', async () => {
       vi.mocked(sendSupportEmail).mockResolvedValue({ id: 'mock-id' } as any);
 
-      const caller = supportRouter.createCaller({});
+      const caller = supportRouter.createCaller(createCallerContext());
       
       const result = await caller.sendSupportMessage({
         subject: 'Test Subject',
@@ -74,7 +79,7 @@ describe('Support Router Integration Tests', () => {
     it('should throw an error when rate limit is exceeded', async () => {
       vi.mocked(ratelimit.limit).mockResolvedValue({ success: false } as any);
 
-      const caller = supportRouter.createCaller({});
+      const caller = supportRouter.createCaller(createCallerContext());
       
       await expect(
         caller.sendSupportMessage({
@@ -88,7 +93,7 @@ describe('Support Router Integration Tests', () => {
     it('should throw an error when sendSupportEmail returns null', async () => {
       vi.mocked(sendSupportEmail).mockResolvedValue(null as any);
 
-      const caller = supportRouter.createCaller({});
+      const caller = supportRouter.createCaller(createCallerContext());
       
       await expect(
         caller.sendSupportMessage({
@@ -110,7 +115,7 @@ describe('Support Router Integration Tests', () => {
       
       vi.stubEnv('N8N_SUBSCRIBE_NEWSLETTER_WEBHOOK_URL', 'http://mock-webhook.com');
 
-      const caller = supportRouter.createCaller({});
+      const caller = supportRouter.createCaller(createCallerContext());
       
       const result = await caller.subscribeToNewsletter({
         email: 'test@example.com',
@@ -123,7 +128,7 @@ describe('Support Router Integration Tests', () => {
     it('should throw an error when rate limit is exceeded', async () => {
       vi.mocked(ratelimit.limit).mockResolvedValue({ success: false } as any);
 
-      const caller = supportRouter.createCaller({});
+      const caller = supportRouter.createCaller(createCallerContext());
       
       await expect(
         caller.subscribeToNewsletter({
@@ -135,7 +140,7 @@ describe('Support Router Integration Tests', () => {
     it('should throw when N8N_SUBSCRIBE_NEWSLETTER_WEBHOOK_URL is missing', async () => {
       delete process.env.N8N_SUBSCRIBE_NEWSLETTER_WEBHOOK_URL;
 
-      const caller = supportRouter.createCaller({});
+      const caller = supportRouter.createCaller(createCallerContext());
 
       await expect(
         caller.subscribeToNewsletter({ email: 'test@example.com' })
@@ -150,7 +155,7 @@ describe('Support Router Integration Tests', () => {
         json: () => Promise.resolve({ error: 'Bad request' }),
       });
 
-      const caller = supportRouter.createCaller({});
+      const caller = supportRouter.createCaller(createCallerContext());
 
       await expect(
         caller.subscribeToNewsletter({ email: 'test@example.com' })
@@ -168,7 +173,7 @@ describe('Support Router Integration Tests', () => {
       
       vi.stubEnv('N8N_SAAS_ASSISTANT_WEBHOOK_URL', 'http://mock-webhook.com');
 
-      const caller = supportRouter.createCaller({});
+      const caller = supportRouter.createCaller(createCallerContext());
       
       const result = await caller.chatWithSaaSAssistant({
         message: 'Hello!',
@@ -181,7 +186,7 @@ describe('Support Router Integration Tests', () => {
     it('should throw an error when chat rate limit is exceeded', async () => {
       vi.mocked(chatRateLimit.limit).mockResolvedValue({ success: false } as any);
 
-      const caller = supportRouter.createCaller({});
+      const caller = supportRouter.createCaller(createCallerContext());
       
       await expect(
         caller.chatWithSaaSAssistant({
@@ -193,7 +198,7 @@ describe('Support Router Integration Tests', () => {
     it('should throw when N8N_SAAS_ASSISTANT_WEBHOOK_URL is missing', async () => {
       delete process.env.N8N_SAAS_ASSISTANT_WEBHOOK_URL;
 
-      const caller = supportRouter.createCaller({});
+      const caller = supportRouter.createCaller(createCallerContext());
 
       await expect(
         caller.chatWithSaaSAssistant({ message: 'Hello!' })
@@ -208,7 +213,7 @@ describe('Support Router Integration Tests', () => {
         json: () => Promise.resolve({ error: 'Internal error' }),
       });
 
-      const caller = supportRouter.createCaller({});
+      const caller = supportRouter.createCaller(createCallerContext());
 
       await expect(
         caller.chatWithSaaSAssistant({ message: 'Hello!' })
@@ -224,7 +229,7 @@ describe('Support Router Integration Tests', () => {
         json: () => Promise.resolve({ someOther: 'data' }),
       });
 
-      const caller = supportRouter.createCaller({});
+      const caller = supportRouter.createCaller(createCallerContext());
 
       const result = await caller.chatWithSaaSAssistant({ message: 'Hello!' });
       expect(result).toEqual({ reply: "Sorry, I didn't get a response from the assistant." });

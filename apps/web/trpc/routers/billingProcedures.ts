@@ -41,9 +41,9 @@ export const billingRouter = createTRPCRouter({
       name: z.string().min(1, "Name is required"),
     }))
     .mutation(async ({ input }) => {
-      const gateway = process.env.NEXT_PUBLIC_PAYMENT_GATEWAY;
+      const paymentGateway = process.env.NEXT_PUBLIC_PAYMENT_GATEWAY || "dodo";
       
-      if (gateway === 'stripe') {
+      if (paymentGateway === 'stripe') {
         const response = await getStripeClient().customers.create({
           email: input.email,
           name: input.name,
@@ -72,9 +72,10 @@ export const billingRouter = createTRPCRouter({
         throw new TRPCError({ code: "BAD_REQUEST", message: "Quantity out of range" });
       }
 
-      const gateway = process.env.NEXT_PUBLIC_PAYMENT_GATEWAY;
+      const appUrl = process.env.NEXT_PUBLIC_URL || "http://localhost:3000";
+      const paymentGateway = process.env.NEXT_PUBLIC_PAYMENT_GATEWAY || "dodo";
 
-      if (gateway === 'stripe') {
+      if (paymentGateway === 'stripe') {
         const session = await getStripeClient().checkout.sessions.create({
           payment_method_types: ['card'],
           line_items: [
@@ -90,8 +91,8 @@ export const billingRouter = createTRPCRouter({
             }
           ],
           mode: 'payment',
-          success_url: `${process.env.NEXT_PUBLIC_URL}?payment=success`,
-          cancel_url: `${process.env.NEXT_PUBLIC_URL}`,
+          success_url: `${appUrl}?payment=success`,
+          cancel_url: `${appUrl}`,
           client_reference_id: userId,
           customer_email: ctx.session.user.email ?? undefined,
           metadata: { userId: String(userId), credits: String(input.credits) }
@@ -104,7 +105,7 @@ export const billingRouter = createTRPCRouter({
         product_cart: [
         { product_id: process.env.DODO_CREDITS_PRODUCT_ID!, quantity }
             ],
-            return_url: `${process.env.NEXT_PUBLIC_URL}?payment=success`,
+            return_url: `${appUrl}?payment=success`,
             customer: {
               email: ctx.session.user.email ?? undefined,
               name: ctx.session.user.name ?? undefined,

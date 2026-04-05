@@ -20,14 +20,14 @@ pnpm --filter saas-forge dev
 
 Create a `.env` file based on the existing `.env` defaults. Key variables:
 
-| Variable | Description |
-|----------|-------------|
-| `VITE_API_URL` | Backend API base URL (default `http://localhost:3000`) |
-| `VITE_AUTH_EMAIL` | Enable email/password auth |
-| `VITE_AUTH_GOOGLE` | Enable Google OAuth |
-| `VITE_AUTH_GITHUB` | Enable GitHub OAuth |
-| `VITE_AUTH_LINKEDIN` | Enable LinkedIn OAuth |
-| `VITE_SUPPORT_MAIL` | Support email address |
+| Variable             | Description                                                                    |
+| -------------------- | ------------------------------------------------------------------------------ |
+| `VITE_API_URL`       | Backend API base origin, without `/api/trpc` (default `http://localhost:3000`) |
+| `VITE_AUTH_EMAIL`    | Enable email/password auth                                                     |
+| `VITE_AUTH_GOOGLE`   | Enable Google OAuth                                                            |
+| `VITE_AUTH_GITHUB`   | Enable GitHub OAuth                                                            |
+| `VITE_AUTH_LINKEDIN` | Enable LinkedIn OAuth                                                          |
+| `VITE_SUPPORT_MAIL`  | Support email address                                                          |
 
 ## Building for Production
 
@@ -111,6 +111,7 @@ pnpm --filter saas-forge publish:snapstore:stable
 > **Note:** Update the version in the `install:locally` and `publish:snapstore:*` scripts in `package.json` when you bump the app version.
 
 **Snap configuration** (in `electron-builder.yml`):
+
 - Confinement: `strict` (sandboxed)
 - Grade: `stable`
 - Plugs: `default`, `network-bind` (required for API calls and OAuth)
@@ -250,7 +251,7 @@ Configure a publish target in `electron-builder.yml`:
 
 ```yaml
 publish:
-  provider: github   # or s3, generic, etc.
+  provider: github # or s3, generic, etc.
   owner: your-org
   repo: saas-forge
 ```
@@ -356,13 +357,13 @@ jobs:
 
 ### Required GitHub Secrets
 
-| Secret | Description |
-|--------|-------------|
-| `MAC_CERT_P12` | Base64-encoded macOS Developer ID certificate |
-| `MAC_CERT_PASSWORD` | Certificate password |
-| `WIN_CERT_P12` | Base64-encoded Windows EV certificate |
-| `WIN_CERT_PASSWORD` | Certificate password |
-| `SNAPCRAFT_TOKEN` | Snap Store credentials (`snapcraft export-login`) |
+| Secret              | Description                                       |
+| ------------------- | ------------------------------------------------- |
+| `MAC_CERT_P12`      | Base64-encoded macOS Developer ID certificate     |
+| `MAC_CERT_PASSWORD` | Certificate password                              |
+| `WIN_CERT_P12`      | Base64-encoded Windows EV certificate             |
+| `WIN_CERT_PASSWORD` | Certificate password                              |
+| `SNAPCRAFT_TOKEN`   | Snap Store credentials (`snapcraft export-login`) |
 
 ---
 

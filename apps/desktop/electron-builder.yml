@@ -3,9 +3,9 @@ productName: SaaS Forge
 npmRebuild: false
 
 protocols:
-  - name: myapp
+  - name: saas-forge
     schemes:
-      - myapp
+      - saas-forge
 
 linux:
   target:
@@ -14,7 +14,7 @@ linux:
     - snap
   category: Development
   # Protocol handler is added to the .desktop file automatically via `protocols` above
-  # After install run: xdg-mime default saas-forge.desktop x-scheme-handler/myapp
+  # After install run: xdg-mime default saas-forge.desktop x-scheme-handler/saas-forge
 
 snap:
   confinement: strict

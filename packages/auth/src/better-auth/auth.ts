@@ -30,9 +30,11 @@ const authDb = db.$extends({
     },
 });
 
+const appUrl = process.env.NEXT_PUBLIC_URL || "http://localhost:3000";
+
 const options = {
     basePath: "/api/auth",
-    baseURL: process.env.NEXT_PUBLIC_URL,
+    baseURL: appUrl,
     plugins: [openAPI(), admin({
         impersonationSessionDuration: 3600
     }), expo()],
@@ -45,7 +47,7 @@ const options = {
         "null",
         "http://localhost:5173",
         "http://localhost:8081",
-        process.env.NEXT_PUBLIC_URL || ""
+        appUrl
     ].filter(Boolean),
     database: prismaAdapter(authDb, {
         provider: "postgresql",
@@ -140,8 +142,8 @@ const options = {
                 return;
               }
             
-            const verificationUrl = `${process.env.NEXT_PUBLIC_URL}/api/auth/verify-email?token=${token}
-            &callbackURL=${process.env.NEXT_PUBLIC_URL}/email-verified`;
+            const verificationUrl = `${appUrl}/api/auth/verify-email?token=${token}
+            &callbackURL=${appUrl}/email-verified`;
             await sendVerificationEmail(user.email,verificationUrl)
         },
     },

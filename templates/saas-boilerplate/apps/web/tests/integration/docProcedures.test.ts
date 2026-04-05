@@ -39,6 +39,11 @@ vi.mock('@workspace/auth/better-auth/auth', () => ({
   },
 }));
 
+const createCallerContext = () => ({
+  session: null,
+  headers: new Headers(),
+});
+
 const mockDocumentation = {
   title: 'Test Docs',
   logo: '/logo.png',
@@ -71,7 +76,7 @@ describe('Documentation Router Integration Tests', () => {
 
       mockFetchDocumentation.mockResolvedValue(mockDocumentation);
 
-      const caller = documentationRouter.createCaller({});
+      const caller = documentationRouter.createCaller(createCallerContext());
       const result = await caller.getDocumentationInfoFromNotion();
 
       expect(result).toEqual(mockDocumentation);
@@ -85,7 +90,7 @@ describe('Documentation Router Integration Tests', () => {
 
       mockRedisGet.mockResolvedValue(mockDocumentation);
 
-      const caller = documentationRouter.createCaller({});
+      const caller = documentationRouter.createCaller(createCallerContext());
       const result = await caller.getDocumentationInfoFromNotion();
 
       expect(result).toEqual(mockDocumentation);
@@ -101,7 +106,7 @@ describe('Documentation Router Integration Tests', () => {
       mockFetchDocumentation.mockResolvedValue(mockDocumentation);
       mockRedisSet.mockResolvedValue('OK');
 
-      const caller = documentationRouter.createCaller({});
+      const caller = documentationRouter.createCaller(createCallerContext());
       const result = await caller.getDocumentationInfoFromNotion();
 
       expect(result).toEqual(mockDocumentation);
@@ -123,7 +128,7 @@ describe('Documentation Router Integration Tests', () => {
       mockFetchDocumentation.mockResolvedValue(mockDocumentation);
       mockRetrieveBlocksTree.mockResolvedValue(mockBlocks);
 
-      const caller = documentationRouter.createCaller({});
+      const caller = documentationRouter.createCaller(createCallerContext());
       const result = await caller.queryDocumentationBySlug({ slug: 'getting-started' });
 
       expect(result).toEqual(mockBlocks);
@@ -140,7 +145,7 @@ describe('Documentation Router Integration Tests', () => {
       mockRedisGet.mockResolvedValue(mockDocumentation);
       mockRetrieveBlocksTree.mockResolvedValue(mockBlocks);
 
-      const caller = documentationRouter.createCaller({});
+      const caller = documentationRouter.createCaller(createCallerContext());
       const result = await caller.queryDocumentationBySlug({ slug: 'api-reference' });
 
       expect(result).toEqual(mockBlocks);
@@ -158,7 +163,7 @@ describe('Documentation Router Integration Tests', () => {
 
       mockFetchDocumentation.mockResolvedValue(mockDocumentation);
 
-      const caller = documentationRouter.createCaller({});
+      const caller = documentationRouter.createCaller(createCallerContext());
 
       await expect(
         caller.queryDocumentationBySlug({ slug: 'nonexistent-slug' })
@@ -174,7 +179,7 @@ describe('Documentation Router Integration Tests', () => {
       mockRedisSet.mockResolvedValue('OK');
       mockRetrieveBlocksTree.mockResolvedValue(mockBlocks);
 
-      const caller = documentationRouter.createCaller({});
+      const caller = documentationRouter.createCaller(createCallerContext());
       const result = await caller.queryDocumentationBySlug({ slug: 'getting-started' });
 
       expect(result).toEqual(mockBlocks);
@@ -188,7 +193,7 @@ describe('Documentation Router Integration Tests', () => {
     });
 
     it('should reject empty slug via zod validation', async () => {
-      const caller = documentationRouter.createCaller({});
+      const caller = documentationRouter.createCaller(createCallerContext());
 
       await expect(
         caller.queryDocumentationBySlug({ slug: '' })

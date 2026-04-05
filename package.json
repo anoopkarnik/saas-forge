@@ -20,7 +20,8 @@
     "template:dev": "pnpm template:prepare && pnpm --dir .generated/saas-boilerplate dev",
     "template:build": "pnpm template:check-sync && pnpm template:prepare && pnpm --dir .generated/saas-boilerplate build",
     "template:test": "pnpm template:check-sync && pnpm template:prepare && pnpm --dir .generated/saas-boilerplate test",
-    "template:test:coverage": "pnpm template:check-sync && pnpm template:prepare && pnpm --dir .generated/saas-boilerplate test:coverage"
+    "template:test:coverage": "pnpm template:check-sync && pnpm template:prepare && pnpm --dir .generated/saas-boilerplate test:coverage",
+    "template:publish": "pnpm template:stage && node scripts/publish-template-branch.mjs"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.9.1",

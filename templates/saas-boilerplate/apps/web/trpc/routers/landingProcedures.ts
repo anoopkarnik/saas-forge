@@ -1,7 +1,7 @@
 import { fetchLandingPageData } from "@/lib/functions/fetchLandingPageData";
 import { LandingPageProps } from "@/lib/ts-types/landing";
 import { redis } from "@/server/redis";
-import { createTRPCRouter, baseProcedure } from "@/trpc/init";
+import { adminProcedure, createTRPCRouter, baseProcedure } from "@/trpc/init";
 import { z } from "zod";
 import { updateNotionPage } from "@workspace/cms/notion/page/updatePage";
 import { createNotionPage } from "@workspace/cms/notion/page/createPage";
@@ -15,10 +15,12 @@ const LANDING_CACHE_TTL_SECONDS = 3600; // 10 minutes
 export const landingRouter = createTRPCRouter({
     getLandingInfoFromNotion: baseProcedure
     .query(async () => {
+      const cmsProvider = process.env.NEXT_PUBLIC_CMS || "notion";
+
       if (
         !process.env.UPSTASH_REDIS_REST_URL || 
         !process.env.UPSTASH_REDIS_REST_TOKEN || 
-        process.env.NEXT_PUBLIC_CMS === "constant"
+        cmsProvider === "constant"
       ) {
         const data = await fetchLandingPageData();
         return data;
@@ -35,7 +37,7 @@ export const landingRouter = createTRPCRouter({
       return data;
 
     }),
-    updateLandingInfo: baseProcedure
+    updateLandingInfo: adminProcedure
         .input(z.object({
             // Navbar & Brand
             title: z.string().optional(),
@@ -114,14 +116,14 @@ export const landingRouter = createTRPCRouter({
             })).optional(),
         }))
         .mutation(async ({ input }) => {
-            const cmsType = process.env.NEXT_PUBLIC_CMS;
+            const cmsProvider = process.env.NEXT_PUBLIC_CMS || "notion";
             const saasName = process.env.NEXT_PUBLIC_SAAS_NAME || "";
 
-            if (cmsType === "constant") {
+            if (cmsProvider === "constant") {
                 throw new Error("Cannot update landing page data when CMS is set to 'constant'");
             }
 
-            if (cmsType === "postgres") {
+            if (cmsProvider === "postgres") {
                 const existingPage = await prisma.landingPage.findUnique({
                     where: { title: saasName }
                 });

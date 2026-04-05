@@ -65,6 +65,13 @@ function tagExists(tag) {
   }
 }
 
+// Files that must never be published to the template branch (contain secrets)
+const SECRET_FILES = new Set([".env", ".env.local", ".env.production"]);
+
+function isSecretFile(filePath) {
+  return SECRET_FILES.has(path.basename(filePath));
+}
+
 function copyRecursive(src, dest) {
   const stat = fs.statSync(src);
   if (stat.isDirectory()) {
@@ -73,6 +80,7 @@ function copyRecursive(src, dest) {
       copyRecursive(path.join(src, entry), path.join(dest, entry));
     }
   } else {
+    if (isSecretFile(src)) return; // skip secret files
     fs.mkdirSync(path.dirname(dest), { recursive: true });
     fs.copyFileSync(src, dest);
   }

@@ -1,0 +1,31 @@
+appId: com.saasforge.desktop
+productName: SaaS Forge
+npmRebuild: false
+
+protocols:
+  - name: saas-forge
+    schemes:
+      - saas-forge
+
+linux:
+  target:
+    - AppImage
+    - deb
+    - snap
+  category: Development
+  # Protocol handler is added to the .desktop file automatically via `protocols` above
+  # After install run: xdg-mime default saas-forge.desktop x-scheme-handler/saas-forge
+
+snap:
+  confinement: strict
+  grade: stable
+  summary: "SaaS Forge Desktop App"
+  plugs:
+    - default
+    - network-bind
+
+mac:
+  target: dmg
+
+win:
+  target: nsis

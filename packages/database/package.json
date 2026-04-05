@@ -1,0 +1,37 @@
+{
+  "name": "@workspace/database",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "vitest run --passWithNoTests",
+    "generate": "npx prisma generate --schema prisma",
+    "migrate": "npx prisma migrate dev --schema prisma",
+    "reset": "npx prisma migrate reset --force --schema prisma",
+    "seed": "npx prisma db seed",
+    "test:coverage": "vitest run --coverage --passWithNoTests"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.4.1",
+  "devDependencies": {
+    "@types/node": "^20.19.25",
+    "prisma": "^6.0.1",
+    "tsx": "^4.21.0"
+  },
+  "exports": {
+    "./client": "./src/client.ts",
+    "./constants": "./src/constants/index.ts"
+  },
+  "dependencies": {
+    "@prisma/adapter-pg": "^6.0.1",
+    "@prisma/client": "^6.0.1",
+    "dotenv": "^17.2.3",
+    "vitest": "^4.0.18"
+  },
+  "prisma": {
+    "seed": "tsx src/seed.ts"
+  }
+}

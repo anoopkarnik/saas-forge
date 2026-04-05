@@ -1,0 +1,121 @@
+model LandingPage {
+  id                    String   @id @default(cuid())
+  title                 String   @unique // We'll search by this (SaaS Name)
+  logo                  String?
+  darkLogo              String?
+  githubLink            String?
+  githubUsername        String?
+  githubRepositoryName  String?
+  donateNowLink         String?
+
+  // Hero section base
+  tagline               String?
+  description           String?
+  appointmentLink       String?
+  codeSnippet           String?
+  videoLink             String?
+
+  // Section headings
+  featureHeading        String?
+  featureDescription    String?
+  testimonialHeading    String?
+  testimonialDescription String?
+  pricingHeading        String?
+  pricingDescription    String?
+  faqHeading            String?
+  faqDescription        String?
+
+  // Footer base
+  creator               String?
+  creatorLink           String?
+
+  // Legal / Contact
+  supportEmailAddress   String?
+  companyLegalName      String?
+  websiteUrl            String?
+  lastUpdated           String?
+  country               String?
+  contactNumber         String?
+  address               String?
+  version               String?
+
+  // Relations
+  heroImages   HeroImage[]
+  features     Feature[]
+  testimonials Testimonial[]
+  pricingPlans PricingPlan[]
+  faqs         FAQ[]
+  footerLinks  FooterLink[]
+
+  @@schema("cms_schema")
+}
+
+model HeroImage {
+  id            String      @id @default(cuid())
+  landingPageId String
+  landingPage   LandingPage @relation(fields: [landingPageId], references: [id], onDelete: Cascade)
+  title         String?
+  imageUrl      String?
+
+  @@schema("cms_schema")
+}
+
+model Feature {
+  id            String      @id @default(cuid())
+  landingPageId String
+  landingPage   LandingPage @relation(fields: [landingPageId], references: [id], onDelete: Cascade)
+  title         String
+  description   String?
+  imageUrl      String?
+  category      String?
+
+  @@schema("cms_schema")
+}
+
+model Testimonial {
+  id            String      @id @default(cuid())
+  landingPageId String
+  landingPage   LandingPage @relation(fields: [landingPageId], references: [id], onDelete: Cascade)
+  name          String
+  position      String?
+  comment       String?
+  imageUrl      String?
+  category      String?
+
+  @@schema("cms_schema")
+}
+
+model PricingPlan {
+  id            String      @id @default(cuid())
+  landingPageId String
+  landingPage   LandingPage @relation(fields: [landingPageId], references: [id], onDelete: Cascade)
+  title         String
+  price         String?
+  popular       Boolean     @default(false)
+  description   String?
+  priceType     String?
+  benefitList   String?     // Comma separated string natively returned by Postgres to mimic the Notion join map
+
+  @@schema("cms_schema")
+}
+
+model FAQ {
+  id            String      @id @default(cuid())
+  landingPageId String
+  landingPage   LandingPage @relation(fields: [landingPageId], references: [id], onDelete: Cascade)
+  question      String
+  answer        String?
+
+  @@schema("cms_schema")
+}
+
+model FooterLink {
+  id            String      @id @default(cuid())
+  landingPageId String
+  landingPage   LandingPage @relation(fields: [landingPageId], references: [id], onDelete: Cascade)
+  label         String
+  href          String?
+  type          String?
+
+  @@schema("cms_schema")
+}

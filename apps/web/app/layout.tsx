@@ -10,7 +10,7 @@ import { TRPCReactProvider } from "@/trpc/client";
 import Support from "@/blocks/Support";
 
 export const metadata: Metadata = {
-  title: "SaaS Forge",
+  title: process.env.NEXT_PUBLIC_SAAS_NAME!,
   description: "Boilerplate to build and deploy SaaS products quickly.",
 };
 

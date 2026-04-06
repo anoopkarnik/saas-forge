@@ -1,36 +1,51 @@
-const scaffoldTraceRoot = "../../.generated/saas-boilerplate"
+import path from "path"
+import { fileURLToPath } from "url"
+
+const appRoot = path.dirname(fileURLToPath(import.meta.url))
+const monorepoRoot = path.join(appRoot, "../..")
+const scaffoldTraceRoots = [
+  "../../.generated/saas-boilerplate",
+  "../../templates/saas-boilerplate",
+]
+const scaffoldTraceEntries = [
+  ".eslintrc.js",
+  ".github/**/*",
+  "apps/**/*",
+  "CLAUDE.md",
+  "docs/**/*",
+  "LICENSE",
+  "package.json",
+  "packages/**/*",
+  "pnpm-lock.yaml",
+  "pnpm-workspace.yaml",
+  "README.md",
+  "tsconfig.json",
+  "turbo.json",
+  "vitest.workspace.ts",
+]
 const scaffoldTraceIncludes = [
-  `${scaffoldTraceRoot}/.eslintrc.js`,
-  `${scaffoldTraceRoot}/.github/**/*`,
-  `${scaffoldTraceRoot}/apps/**/*`,
-  `${scaffoldTraceRoot}/CLAUDE.md`,
-  `${scaffoldTraceRoot}/docs/**/*`,
-  `${scaffoldTraceRoot}/LICENSE`,
-  `${scaffoldTraceRoot}/package.json`,
-  `${scaffoldTraceRoot}/packages/**/*`,
-  `${scaffoldTraceRoot}/pnpm-lock.yaml`,
-  `${scaffoldTraceRoot}/pnpm-workspace.yaml`,
-  `${scaffoldTraceRoot}/README.md`,
-  `${scaffoldTraceRoot}/tsconfig.json`,
-  `${scaffoldTraceRoot}/turbo.json`,
-  `${scaffoldTraceRoot}/vitest.workspace.ts`,
+  ...scaffoldTraceRoots.flatMap((root) =>
+    scaffoldTraceEntries.map((entry) => `${root}/${entry}`),
+  ),
+  "../../template-sync.manifest.json",
 ]
 
-const scaffoldTraceExcludes = [
-  `${scaffoldTraceRoot}/**/.cache/**`,
-  `${scaffoldTraceRoot}/**/.next/**`,
-  `${scaffoldTraceRoot}/**/.turbo/**`,
-  `${scaffoldTraceRoot}/**/.vercel/**`,
-  `${scaffoldTraceRoot}/**/build/**`,
-  `${scaffoldTraceRoot}/**/coverage/**`,
-  `${scaffoldTraceRoot}/**/dist/**`,
-  `${scaffoldTraceRoot}/**/node_modules/**`,
-  `${scaffoldTraceRoot}/**/out/**`,
-]
+const scaffoldTraceExcludes = scaffoldTraceRoots.flatMap((root) => [
+  `${root}/**/.cache/**`,
+  `${root}/**/.next/**`,
+  `${root}/**/.turbo/**`,
+  `${root}/**/.vercel/**`,
+  `${root}/**/build/**`,
+  `${root}/**/coverage/**`,
+  `${root}/**/dist/**`,
+  `${root}/**/node_modules/**`,
+  `${root}/**/out/**`,
+])
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   transpilePackages: ["@workspace/ui", "@workspace/auth", "@workspace/database"],
+  outputFileTracingRoot: monorepoRoot,
   images: {
     remotePatterns: [
       { hostname: 'strapi.bayesian-labs.com', protocol: 'https' },

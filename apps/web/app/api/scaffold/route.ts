@@ -9,10 +9,9 @@ import { revalidatePath } from "next/cache";
 import { ratelimit } from "@/server/ratelimit";
 
 const CREDITS_COST = 20;
-const scaffoldRoots = [
-  ".generated/saas-boilerplate",
-  "templates/saas-boilerplate",
-];
+const scaffoldRoots = process.env.VERCEL
+  ? ["templates/saas-boilerplate", ".generated/saas-boilerplate"]
+  : [".generated/saas-boilerplate", "templates/saas-boilerplate"];
 const scaffoldAllowedOrigins = [
   "http://localhost:3000",
   "http://localhost:5173",
@@ -142,7 +141,7 @@ function getScaffoldRoot(): string {
     return found;
   }
 
-  return path.join(cwd, "../../.generated/saas-boilerplate");
+  return path.join(cwd, "../../", scaffoldRoots[0]!);
 }
 
 function generateEnvContent(

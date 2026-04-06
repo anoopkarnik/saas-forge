@@ -1,6 +1,6 @@
 {
   "name": "saas-forge",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "scripts": {
     "build": "pnpm template:stage && turbo build",
     "dev": "turbo dev",
@@ -15,6 +15,7 @@
     "template:sync": "node scripts/sync-template.mjs",
     "template:check-sync": "node scripts/sync-template.mjs --check",
     "template:stage": "node scripts/sync-template.mjs --stage",
+    "template:version": "node scripts/bump-template-version.mjs",
     "template:prepare": "pnpm template:stage && pnpm --dir .generated/saas-boilerplate install --frozen-lockfile && pnpm --dir .generated/saas-boilerplate generate",
     "template:install": "pnpm template:prepare",
     "template:dev": "pnpm template:prepare && pnpm --dir .generated/saas-boilerplate dev",

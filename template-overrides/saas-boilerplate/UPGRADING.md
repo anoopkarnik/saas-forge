@@ -22,7 +22,7 @@ Add the boilerplate as a git remote and do the initial merge:
 git remote add boilerplate https://github.com/anoopkarnik/saas-forge.git
 
 # Fetch the template branch
-git fetch boilerplate template/saas-boilerplate
+git fetch boilerplate --tags
 
 # Create an upgrade branch
 git checkout -b upgrade/boilerplate-initial

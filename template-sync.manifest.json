@@ -1,10 +1,11 @@
 {
-  "templateVersion": "1.0.0",
+  "templateVersion": "1.0.1",
   "templateRoot": "templates/saas-boilerplate",
   "stageRoot": ".generated/saas-boilerplate",
   "overrideRoot": "template-overrides/saas-boilerplate",
   "include": [
     ".eslintrc.js",
+    ".gitignore",
     "apps/web",
     "apps/mobile",
     "apps/desktop",

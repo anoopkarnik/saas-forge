@@ -9,6 +9,7 @@ const scaffoldTraceRoots = [
 ]
 const scaffoldTraceEntries = [
   ".eslintrc.js",
+  ".gitignore",
   ".github/**/*",
   "apps/**/*",
   "CLAUDE.md",

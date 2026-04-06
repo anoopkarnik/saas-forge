@@ -1,6 +1,6 @@
 {
   "name": "saas-forge",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "scripts": {
     "build": "pnpm template:stage && turbo build",
     "dev": "turbo dev",

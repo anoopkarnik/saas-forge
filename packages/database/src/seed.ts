@@ -1,11 +1,29 @@
-import prisma from "./client";
-import { landingPageData } from "./constants";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import * as dotenv from "dotenv";
+import prisma from "./client";
 
-dotenv.config();
+function loadSeedEnv() {
+  const currentFilePath = fileURLToPath(import.meta.url);
+  const currentDirPath = path.dirname(currentFilePath);
+  const repoRootPath = path.resolve(currentDirPath, "../../..");
+
+  dotenv.config({ path: path.join(repoRootPath, "packages/database/.env") });
+  dotenv.config({ path: path.join(repoRootPath, "apps/web/.env") });
+}
 
 async function main() {
-  const saasName = process.env.NEXT_PUBLIC_SAAS_NAME || "SaaS Forge";
+  loadSeedEnv();
+
+  const saasName = process.env.NEXT_PUBLIC_SAAS_NAME;
+  if (!saasName) {
+    throw new Error(
+      "NEXT_PUBLIC_SAAS_NAME is not set. Add it to apps/web/.env before running `pnpm seed`."
+    );
+  }
+
+  const { landingPageData } = await import("./constants");
+
   console.log(`Seeding database for SaaS Name: ${saasName}`);
 
   // We are upserting the base LandingPage row based on title

@@ -50,6 +50,7 @@ cd my-saas-app
 # review and fill in apps/web/.env
 pnpm generate
 pnpm migrate
+pnpm seed
 pnpm dev
 ```
 
@@ -68,6 +69,7 @@ node node_modules/.pnpm/electron@<version>/node_modules/electron/install.js
 cp apps/web/.env.example apps/web/.env
 pnpm generate
 pnpm migrate
+pnpm seed
 pnpm dev
 ```
 
@@ -202,6 +204,10 @@ saas-forge/
 │   └── ui/                   # Shared UI components, blocks, and helpers
 ├── scripts/
 │   ├── cli.js                # Repo bootstrap CLI
+│   ├── bump-template-version.mjs
+│   │                         # Boilerplate version bump + template restage
+│   ├── publish-template-branch.mjs
+│   │                         # Publish template branch and version tag
 │   └── sync-template.mjs     # Root-to-template sync tool
 ├── templates/
 │   └── saas-boilerplate/     # Shipped SaaS starter source
@@ -253,10 +259,12 @@ Only `templates/saas-boilerplate` is part of the released template workflow toda
 | Sync template from root | `pnpm template:sync` |
 | Check template drift | `pnpm template:check-sync` |
 | Stage clean starter copy | `pnpm template:stage` |
+| Bump boilerplate version + restage | `pnpm template:version <semver>` |
 | Stage + install + Prisma generate | `pnpm template:prepare` |
 | Build staged starter | `pnpm template:build` |
 | Test staged starter | `pnpm template:test` |
 | Starter coverage | `pnpm template:test:coverage` |
+| Publish template branch + tag | `pnpm template:publish --version <semver>` |
 
 ### Notes on template sync
 
@@ -264,6 +272,68 @@ Only `templates/saas-boilerplate` is part of the released template workflow toda
 - `.generated/saas-boilerplate` is the clean staged copy used for template validation and root build tracing.
 - `pnpm build` stages the starter first because `/api/scaffold` packages the clean staged copy.
 - `pnpm template:check-sync` fails if generated artifacts such as `node_modules`, `.next`, `.turbo`, `coverage`, `dist`, or `build` are present inside the managed template tree.
+
+### Push a new boilerplate version to GitHub
+
+When you want to release a new starter version such as `1.0.1`, use this flow:
+
+1. Bump the boilerplate version metadata and restage the managed template:
+
+```bash
+pnpm template:version 1.0.1
+```
+
+2. Verify the template is synced cleanly before pushing:
+
+```bash
+pnpm template:check-sync
+```
+
+If you changed template-managed files manually and did not use `pnpm template:version`, run:
+
+```bash
+pnpm template:stage
+pnpm template:check-sync
+```
+
+3. Review the changed files:
+
+```bash
+git status
+git diff
+```
+
+4. Commit the version bump on `main` and push it:
+
+```bash
+git add package.json template-sync.manifest.json template-overrides/saas-boilerplate/package.json templates/saas-boilerplate .generated/saas-boilerplate scripts/bump-template-version.mjs README.md
+git commit -m "chore: release boilerplate v1.0.1"
+git push origin main
+```
+
+5. Publish the template branch and tag:
+
+```bash
+pnpm template:publish --version 1.0.1
+```
+
+This publishes:
+
+- Branch: `template/saas-boilerplate`
+- Tag: `template/v1.0.1`
+- Version file inside the starter: `.boilerplate-version`
+
+Use this to preview the version bump without editing files:
+
+```bash
+pnpm template:version --dry-run 1.0.1
+```
+
+Use this to publish the template branch locally without pushing:
+
+```bash
+pnpm template:publish --version 1.0.1 --no-push
+```
 
 ## 🤝 Contributing and Docs
 

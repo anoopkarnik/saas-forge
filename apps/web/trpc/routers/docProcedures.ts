@@ -5,7 +5,7 @@ import { createTRPCRouter, baseProcedure } from "@/trpc/init";
 import { retrieveBlocksTree } from "@workspace/cms/notion/block/retrieveBlockChildren";
 import { z } from "zod";
 
-const DOCUMENTATION_PAGE_CACHE_KEY = "documentation-page:notion:v1";
+const DOCUMENTATION_PAGE_CACHE_KEY = process.env.NEXT_PUBLIC_SAAS_NAME?.toLowerCase().replace(" ", "-")+"-documentation:v1";
 const DOCUMENTATION_CACHE_TTL_SECONDS = 3600; // 10 minutes
 
 export const documentationRouter = createTRPCRouter({

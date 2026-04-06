@@ -2,7 +2,7 @@
 
 # SaaS Forge
 
-### Shipped full-stack SaaS starter template
+### Source repo and shipped starter for a full-stack SaaS boilerplate
 
 [![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/anoopkarnik/saas-forge)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -10,28 +10,57 @@
 [![pnpm](https://img.shields.io/badge/pnpm-10.4.1-orange.svg)](https://pnpm.io)
 
 [What Ships Today](#-what-ships-today) •
+[Choose Your Path](#-choose-your-path) •
 [Quick Start](#-quick-start) •
 [Environment](#-environment) •
 [Commands](#-commands)
 
 </div>
 
-This repository is the shipped SaaS starter template from SaaS Forge. It includes the web app, desktop app, mobile app, and shared auth/database/UI packages, without the root repo's scaffold download workflow or template management tooling.
+SaaS Forge is a `pnpm` + `Turborepo` monorepo. This repository is the source of truth for the web app, desktop app, mobile app, shared auth/database/UI packages, and the scaffold/download flow. The shipped starter lives at `templates/saas-boilerplate` and is kept in lockstep with the shared SaaS code.
 
-If you want the source repo that powers the starter and the template packaging flow, see the main project at [github.com/anoopkarnik/saas-forge](https://github.com/anoopkarnik/saas-forge).
+This README documents what is shipped today. It intentionally focuses on the live source repo and the released SaaS starter template. Other directories inside `templates/` are not documented here because they are not part of the released template workflow yet.
 
 ## ✨ What Ships Today
 
-- **Web app**: Next.js 15 app with auth flows, landing pages, Notion-backed documentation, legal pages, admin CMS, user management, uploads, and payment webhooks.
+- **Web app**: Next.js 15 app with auth flows, landing pages, Notion-backed documentation, legal pages, admin CMS, user management, uploads, payment webhooks, and the SaaS scaffold/download API.
 - **Desktop app**: Electron app with auth, documentation viewer, support surfaces, admin user management, and CMS screens.
 - **Mobile app**: Expo app with auth, documentation viewer, settings, support flows, and admin screens.
 - **Shared platform modules**: Better Auth, tRPC, Prisma/Postgres, Notion CMS utilities, React Email/Resend, shared UI components, Blob/R2 storage, BetterStack logging, Google Analytics, and Upstash rate limiting.
+- **Starter template workflow**: `templates/saas-boilerplate`, `template-overrides/saas-boilerplate`, and the clean staged copy at `.generated/saas-boilerplate`.
+
+## 🧭 Choose Your Path
+
+### Use the full source repo
+
+Choose this if you want the scaffold/download system, all three apps, and the shared packages.
+
+### Use the shipped SaaS starter
+
+Choose this if you want to validate or inspect the clean SaaS starter that the scaffold flow packages from `templates/saas-boilerplate`.
 
 ## 🚀 Quick Start
 
-### Run the starter locally
+### Bootstrap the full repo with the CLI
 
 ```bash
+npx saas-forge my-saas-app
+cd my-saas-app
+
+# review and fill in apps/web/.env
+pnpm generate
+pnpm migrate
+pnpm seed
+pnpm dev
+```
+
+The CLI clones this repository, copies `apps/web/.env.example` to `apps/web/.env`, and installs dependencies for you.
+
+### Clone and run the full repo manually
+
+```bash
+git clone https://github.com/anoopkarnik/saas-forge.git
+cd saas-forge
 pnpm install
 
 # Linux only: if Electron fails to start because the binary was skipped
@@ -40,10 +69,21 @@ node node_modules/.pnpm/electron@<version>/node_modules/electron/install.js
 cp apps/web/.env.example apps/web/.env
 pnpm generate
 pnpm migrate
+pnpm seed
 pnpm dev
 ```
 
 If you plan to run the native clients too, review `apps/desktop/.env.example` and `apps/mobile/.env.example` after the web env is set up.
+
+### Validate the shipped SaaS starter locally
+
+```bash
+pnpm template:check-sync
+pnpm template:prepare
+pnpm template:build
+```
+
+`template:prepare` stages a clean copy of the starter into `.generated/saas-boilerplate`, installs its dependencies, and runs Prisma generate before building or testing it.
 
 Default local URLs:
 
@@ -55,7 +95,7 @@ Default local URLs:
 
 ## ⚙️ Environment
 
-The canonical config surface is [`apps/web/.env.example`](apps/web/.env.example). Review the native env examples too if you plan to run the desktop or mobile clients.
+The canonical config surface for the root repo is [`apps/web/.env.example`](apps/web/.env.example). The scaffold/download flow uses the same model to populate the starter template and the mobile/desktop env files.
 
 Start by copying:
 
@@ -152,7 +192,7 @@ Also see:
 ```text
 saas-forge/
 ├── apps/
-│   ├── web/                  # Next.js app
+│   ├── web/                  # Next.js app + scaffold/download API
 │   ├── desktop/              # Electron app
 │   └── mobile/               # Expo app
 ├── packages/
@@ -162,12 +202,26 @@ saas-forge/
 │   ├── email/                # Resend + React Email integration
 │   ├── observability/        # Logging utilities
 │   └── ui/                   # Shared UI components, blocks, and helpers
-└── docs/                     # Project docs and policies
+├── scripts/
+│   ├── cli.js                # Repo bootstrap CLI
+│   ├── bump-template-version.mjs
+│   │                         # Boilerplate version bump + template restage
+│   ├── publish-template-branch.mjs
+│   │                         # Publish template branch and version tag
+│   └── sync-template.mjs     # Root-to-template sync tool
+├── templates/
+│   └── saas-boilerplate/     # Shipped SaaS starter source
+├── template-overrides/
+│   └── saas-boilerplate/     # Intentional starter-only differences
+└── .generated/
+    └── saas-boilerplate/     # Clean staged starter used for validation/builds
 ```
+
+Only `templates/saas-boilerplate` is part of the released template workflow today. Other directories inside `templates/` are not documented here because they are not user-ready.
 
 ## 🧪 Commands
 
-### Workspace
+### Root workspace
 
 | Task | Command |
 |---|---|
@@ -198,20 +252,103 @@ saas-forge/
 | Seed database | `pnpm seed` |
 | Reset database | `pnpm reset` |
 
+### Starter template workflow
+
+| Task | Command |
+|---|---|
+| Sync template from root | `pnpm template:sync` |
+| Check template drift | `pnpm template:check-sync` |
+| Stage clean starter copy | `pnpm template:stage` |
+| Bump boilerplate version + restage | `pnpm template:version <semver>` |
+| Stage + install + Prisma generate | `pnpm template:prepare` |
+| Build staged starter | `pnpm template:build` |
+| Test staged starter | `pnpm template:test` |
+| Starter coverage | `pnpm template:test:coverage` |
+| Publish template branch + tag | `pnpm template:publish --version <semver>` |
+
+### Notes on template sync
+
+- `templates/saas-boilerplate` is the managed starter source.
+- `.generated/saas-boilerplate` is the clean staged copy used for template validation and root build tracing.
+- `pnpm build` stages the starter first because `/api/scaffold` packages the clean staged copy.
+- `pnpm template:check-sync` fails if generated artifacts such as `node_modules`, `.next`, `.turbo`, `coverage`, `dist`, or `build` are present inside the managed template tree.
+
+### Push a new boilerplate version to GitHub
+
+When you want to release a new starter version such as `1.0.1`, use this flow:
+
+1. Bump the boilerplate version metadata and restage the managed template:
+
+```bash
+pnpm template:version 1.0.1
+```
+
+2. Verify the template is synced cleanly before pushing:
+
+```bash
+pnpm template:check-sync
+```
+
+If you changed template-managed files manually and did not use `pnpm template:version`, run:
+
+```bash
+pnpm template:stage
+pnpm template:check-sync
+```
+
+3. Review the changed files:
+
+```bash
+git status
+git diff
+```
+
+4. Commit the version bump on `main` and push it:
+
+```bash
+git add package.json template-sync.manifest.json template-overrides/saas-boilerplate/package.json templates/saas-boilerplate .generated/saas-boilerplate scripts/bump-template-version.mjs README.md
+git commit -m "chore: release boilerplate v1.0.1"
+git push origin main
+```
+
+5. Publish the template branch and tag:
+
+```bash
+pnpm template:publish --version 1.0.1
+```
+
+This publishes:
+
+- Branch: `template/saas-boilerplate`
+- Tag: `template/v1.0.1`
+- Version file inside the starter: `.boilerplate-version`
+
+Use this to preview the version bump without editing files:
+
+```bash
+pnpm template:version --dry-run 1.0.1
+```
+
+Use this to publish the template branch locally without pushing:
+
+```bash
+pnpm template:publish --version 1.0.1 --no-push
+```
+
 ## 🤝 Contributing and Docs
 
 - [Contributing guide](docs/CONTRIBUTING.md)
 - [Security policy](docs/SECURITY.md)
 - [Changelog](docs/CHANGELOG.md)
 
-For starter-specific customization, edit the app and package code directly in this workspace.
+If you change shared SaaS behavior, make the change in the root repo first and then propagate it with `pnpm template:sync`.
 
 ## 💬 Support
 
 - Email: [support@saasforge.dev](mailto:support@saasforge.dev)
 - Issues: [GitHub Issues](https://github.com/anoopkarnik/saas-forge/issues)
 - Discussions: [GitHub Discussions](https://github.com/anoopkarnik/saas-forge/discussions)
-- Source repo: [github.com/anoopkarnik/saas-forge](https://github.com/anoopkarnik/saas-forge)
+- Repository: [github.com/anoopkarnik/saas-forge](https://github.com/anoopkarnik/saas-forge)
 
 ## 📝 License
 

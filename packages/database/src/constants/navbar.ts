@@ -1,6 +1,6 @@
 
 export const navbarSectionData = {
-  "title": "SaaS Forge",
+  "title": process.env.NEXT_PUBLIC_SAAS_NAME,
   "logo": "/cms/logo.png",
   "darkLogo": "/cms/darkLogo.png",
   "githubLink": "https://github.com/anoopkarnik/saas-forge",

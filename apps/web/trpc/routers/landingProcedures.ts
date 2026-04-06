@@ -9,7 +9,7 @@ import { trashPage } from "@workspace/cms/notion/page/trashPage";
 import { queryAllNotionDatabase } from "@workspace/cms/notion/database/queryDatabase";
 import prisma from "@workspace/database/client";
 
-const LANDING_PAGE_CACHE_KEY = "landing-page:notion:v3";
+const LANDING_PAGE_CACHE_KEY = process.env.NEXT_PUBLIC_SAAS_NAME?.toLowerCase().replace(" ", "-")+"-landing-page:cms:v1";
 const LANDING_CACHE_TTL_SECONDS = 3600; // 10 minutes
 
 export const landingRouter = createTRPCRouter({

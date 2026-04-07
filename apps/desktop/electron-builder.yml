@@ -22,7 +22,16 @@ snap:
   summary: "SaaS Forge Desktop App"
   plugs:
     - default
+    - network
     - network-bind
+    - browser-support
+    - desktop
+    - desktop-legacy
+    - home
+    - gsettings
+    - opengl
+    - x11
+    - wayland
 
 mac:
   target: dmg

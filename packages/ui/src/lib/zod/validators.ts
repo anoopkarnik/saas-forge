@@ -1,5 +1,8 @@
 import { z } from "zod";
 
+const hasSelectedModule = (data: any, moduleId: string) =>
+  Array.isArray(data.SELECTED_MODULES) && data.SELECTED_MODULES.includes(moduleId);
+
 export const validatePlatform = (data: any, ctx: z.RefinementCtx) => {
   if (!data.NEXT_PUBLIC_PLATFORM.includes("web")) {
     ctx.addIssue({
@@ -246,6 +249,10 @@ export const validateObservability = (data: any, ctx: z.RefinementCtx) => {
 };
 
 export const validatePayment = (data: any, ctx: z.RefinementCtx) => {
+  if (!hasSelectedModule(data, "billing")) {
+    return;
+  }
+
   if (data.NEXT_PUBLIC_PAYMENT_GATEWAY === "dodo") {
     const dodoFields = [
       "DODO_PAYMENTS_API_KEY",

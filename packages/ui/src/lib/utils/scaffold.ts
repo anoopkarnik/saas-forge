@@ -1,4 +1,17 @@
 import { formSchema, FormValues } from "../zod/download";
+import { type ScaffoldModuleId } from "../constants/scaffold-modules";
+
+const PAYMENT_ENV_FIELDS = new Set([
+    "NEXT_PUBLIC_PAYMENT_GATEWAY",
+    "DODO_PAYMENTS_API_KEY",
+    "DODO_PAYMENTS_WEBHOOK_KEY",
+    "DODO_PAYMENTS_RETURN_URL",
+    "DODO_PAYMENTS_ENVIRONMENT",
+    "DODO_CREDITS_PRODUCT_ID",
+    "NEXT_PUBLIC_DODO_PAYMENTS_URL",
+    "STRIPE_SECRET_KEY",
+    "STRIPE_WEBHOOK_SECRET",
+]);
 
 const TEMPLATE_REPO_URL = "https://github.com/anoopkarnik/saas-forge";
 
@@ -72,6 +85,19 @@ export function parseEnvFile(content: string, setValue: any) {
         }
     }
 
+    const selectedModules = new Set<ScaffoldModuleId>();
+    if (
+        parsedEnv["NEXT_PUBLIC_PAYMENT_GATEWAY"] &&
+        parsedEnv["NEXT_PUBLIC_PAYMENT_GATEWAY"] !== "none"
+    ) {
+        selectedModules.add("billing");
+    }
+
+    setValue("SELECTED_MODULES", Array.from(selectedModules), {
+        shouldDirty: true,
+        shouldValidate: true,
+    });
+
     return count;
 }
 
@@ -81,9 +107,11 @@ export function parseEnvFile(content: string, setValue: any) {
 export function buildEnvVarsFromForm(values: FormValues): Record<string, string> {
     const envVars: Record<string, string> = {};
     const envKeys = Object.keys(values).filter((k) => k !== "name") as (keyof FormValues)[];
+    const selectedModules = new Set(values.SELECTED_MODULES || []);
 
     for (const key of envKeys) {
-        if (key === "NEXT_PUBLIC_AUTH_PROVIDERS") continue;
+        if (key === "NEXT_PUBLIC_AUTH_PROVIDERS" || key === "SELECTED_MODULES") continue;
+        if (!selectedModules.has("billing") && PAYMENT_ENV_FIELDS.has(key as string)) continue;
 
         const value = values[key];
         if (Array.isArray(value) && value.length > 0) {

@@ -1,6 +1,6 @@
 {
   "name": "saas-forge",
-  "version": "1.0.3",
+  "version": "1.2.0",
   "scripts": {
     "build": "turbo build",
     "dev": "turbo dev",
@@ -11,7 +11,10 @@
     "generate": "cd packages/database && pnpm run generate",
     "migrate": "cd packages/database && pnpm run migrate",
     "seed": "cd packages/database && pnpm run seed",
-    "reset": "cd packages/database && pnpm run reset"
+    "reset": "cd packages/database && pnpm run reset",
+    "desktop:publish:linux:edge": "pnpm --dir apps/desktop build:prod && pnpm --dir apps/desktop package:snap && pnpm --dir apps/desktop publish:snapstore:edge",
+    "desktop:publish:linux:stable": "pnpm --dir apps/desktop build:prod && pnpm --dir apps/desktop package:snap && pnpm --dir apps/desktop publish:snapstore:stable",
+    "desktop:install:linux": "pnpm --dir apps/desktop build:prod && pnpm --dir apps/desktop package:snap && pnpm --dir apps/desktop install:locally"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.9.1",

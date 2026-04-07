@@ -38,8 +38,10 @@ function DeepLinkHandler() {
 }
 
 function App() {
+  const themeType = (import.meta.env.VITE_THEME_TYPE || "system") as "light" | "dark" | "system";
+
   return (
-    <ThemeProvider>
+    <ThemeProvider defaultTheme={themeType}>
       <HashRouter>
         <Toaster position="top-center" richColors />
         <DeepLinkHandler />

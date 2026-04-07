@@ -42,6 +42,8 @@ pnpm --dir apps/web build
 pnpm --dir apps/web typecheck
 pnpm --dir apps/mobile dev
 pnpm --dir apps/desktop dev
+pnpm desktop:install:linux
+pnpm desktop:publish:linux:edge
 
 # Database
 pnpm generate

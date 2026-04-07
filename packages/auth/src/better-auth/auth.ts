@@ -4,6 +4,7 @@ import db from '@workspace/database/client';
 import { admin,  openAPI, jwt } from "better-auth/plugins";
 import { expo } from "@better-auth/expo";
 import { sendResetEmail, sendVerificationEmail } from "@workspace/email/resend/index"
+import { authCookiePrefix } from "./cookies";
 
 type DeleteQueryCallbackArgs = {
     args: any;
@@ -163,6 +164,7 @@ const options = {
         },
     },
     advanced: {
+        cookiePrefix: authCookiePrefix,
         // crossSubDomainCookies fails on localhost (no valid TLD for domain extraction)
         // Only enable in production where the real domain is used
         crossSubDomainCookies: {
@@ -173,7 +175,6 @@ const options = {
             secure: true,
         }
     }
-
 } satisfies BetterAuthOptions;
 
 import { toNextJsHandler } from "better-auth/next-js";

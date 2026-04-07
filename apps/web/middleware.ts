@@ -1,4 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
+import {
+  authSessionCookieName,
+  secureAuthSessionCookieName,
+} from "@workspace/auth/better-auth/cookies";
 
 const publicRoutes = [
   "/landing",
@@ -85,8 +89,8 @@ export default async function middleware(req: NextRequest) {
   // Check for both the local and Secure (production HTTPS) cookie prefixes.
   // Better Auth uses __Secure- prefix in production.
   const sessionToken =
-    req.cookies.get("better-auth.session_token")?.value ||
-    req.cookies.get("__Secure-better-auth.session_token")?.value;
+    req.cookies.get(authSessionCookieName)?.value ||
+    req.cookies.get(secureAuthSessionCookieName)?.value;
   const isLoggedIn = !!sessionToken;
 
   if (isAuthRoute) {

@@ -1,0 +1,76 @@
+# Platform Security / Trust Boundary Hardening
+
+## Context
+
+The repo already has documented production-readiness gaps in `docs/issues/April2'26.mdx`, especially around admin enforcement, scaffold download protection, cross-origin trust, upload validation, and Electron security posture. These are not isolated bugs; they reflect missing platform-level trust-boundary rules.
+
+The current concerns touch concrete surfaces:
+
+- admin and CMS access patterns in `apps/web/trpc/init.ts` and `apps/web/trpc/routers/*`
+- scaffold download and auth routes in `apps/web/app/api/scaffold/route.ts` and `apps/web/app/api/auth/[...all]/route.ts`
+- upload routes in `apps/web/app/api/cms/upload/route.ts` and `apps/web/app/api/settings/modifyAvatar/route.ts`
+- Electron sandboxing and deep-link handling in `apps/desktop/src/main/index.ts`
+
+## Why This Priority
+
+This is ranked third because credibility, safe defaults, and template trust matter before SaaS Forge expands its surface area with AI, mobile, and richer integrations. A boilerplate that advertises production-readiness cannot leave core auth, upload, and CORS assumptions ambiguous.
+
+It remains behind `#1 Multi-Tenancy` and `#2 Runtime Site Config` because those two are larger strategic platform unlocks. It stays ahead of `#4 AI` and `#5 Mobile Parity` because shipping more capabilities on top of weak trust boundaries would compound risk and make later hardening more painful.
+
+## Overview
+
+Turn the current scattered fixes into a coherent hardening track for auth, admin procedures, scaffold/download protection, file uploads, desktop trust, and server config boundaries.
+
+This should be treated as a cross-cutting platform initiative, not as a single endpoint patch.
+
+## Main Approach
+
+Define and enforce explicit trust rules at the framework layer so app features inherit safe behavior by default.
+
+Key implementation direction:
+
+- Standardize `publicProcedure`, `protectedProcedure`, and `adminProcedure` usage across all routers.
+- Remove or narrow permissive CORS and origin reflection behavior on scaffold/auth routes.
+- Add explicit anonymous rejection before accessing session-dependent values.
+- Rework cookie and CSRF assumptions for same-site defaults unless a specific cross-site flow truly requires broader behavior.
+- Harden uploads with magic-byte validation, server-side image normalization, key sanitization, and more defensive storage defaults.
+- Re-enable Electron security posture with sandboxing/context isolation where feasible and narrow trusted callback origins.
+- Introduce a typed env/config boundary so privileged server logic stops depending on loosely-scoped public env reads.
+
+This spec should bundle both remediation and reusable platform primitives so later features inherit stronger defaults.
+
+## Deliverables
+
+1. Security hardening audit checklist mapped to concrete repo surfaces.
+2. Framework-level auth and admin guard cleanup across tRPC and route handlers.
+3. Scaffold/API/auth CORS and CSRF protection updates.
+4. Upload security pipeline improvements for avatar/CMS uploads.
+5. Electron sandboxing and auth callback trust-boundary changes.
+6. Typed server config module separating public vs secret config.
+7. Regression tests covering hostile-origin, non-admin, spoofed-upload, and anonymous-access scenarios.
+
+## Likely Files / Systems Affected
+
+- `docs/issues/April2'26.mdx` as the source issue inventory
+- `apps/web/trpc/init.ts`
+- `apps/web/trpc/routers/*`
+- `apps/web/app/api/**/*`
+- `packages/auth/src/**/*`
+- `apps/desktop/src/main/**/*`
+- `packages/observability` for structured security event logging
+
+## Risks / Dependencies
+
+- Tightening auth and cross-origin behavior may break current desktop/mobile flows unless callback and session behavior are tested end-to-end.
+- Some fixes may require migration of existing assumptions in upload URLs, auth callbacks, or scaffold consumers.
+- Security hardening should avoid turning the starter into a local-dev-hostile system; safe defaults need local override paths where appropriate.
+- This work should coordinate with multi-tenancy so new auth primitives are compatible with future org-scoped authorization.
+
+## Verification
+
+1. Anonymous and non-admin callers receive `401/403` for protected admin and CMS procedures.
+2. `/api/scaffold` rejects hostile-origin or CSRF-prone flows that are not explicitly allowed.
+3. Upload routes reject spoofed MIME payloads and invalid image binaries.
+4. Desktop auth still works after origin narrowing and sandbox changes.
+5. Server logic no longer relies on `NEXT_PUBLIC_*` values for privileged decisions.
+6. The existing hardening issues in `docs/issues/April2'26.mdx` can each be mapped to a fixed or explicitly deferred remediation item.

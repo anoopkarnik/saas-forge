@@ -1,0 +1,68 @@
+# Cron Jobs / Scheduled Tasks
+
+## Context
+
+Recurring maintenance and lifecycle operations are inevitable in SaaS products: trial expiry checks, usage resets, reminder emails, data cleanup, billing follow-ups, and scheduled reporting. SaaS Forge does not yet provide a first-class scheduled-task system, even though several likely future features depend on one.
+
+This is related to background jobs, but not the same thing. Jobs handle asynchronous execution for individual events; cron handles recurring triggers.
+
+## Why This Priority
+
+This is ranked twentieth because it is useful infrastructure, but it is best specified after a queue/job model exists so scheduled work can enqueue standard jobs rather than inventing a parallel execution path. It is important, just less urgent than the broader product and platform capabilities above it.
+
+It stays behind `#19 Product Analytics` because analytics helps steer product improvement sooner once core events exist. It is correctly last in this set because the earlier nineteen items either unlock larger product value or provide foundations cron should build on.
+
+## Overview
+
+Add a reusable scheduled-task layer for recurring platform work, with visibility into last run, next run, and failure state.
+
+Initial task candidates:
+
+- usage reset jobs
+- trial/subscription lifecycle checks
+- reminder and digest emails
+- cleanup of stale data
+- report generation triggers
+- webhook retry sweeps or reconciliation tasks where needed
+
+## Main Approach
+
+Treat scheduled tasks as trigger definitions that enqueue standard background jobs instead of doing heavy work inline.
+
+Key implementation direction:
+
+- Choose a scheduler approach compatible with the main deployment story, such as Vercel Cron or Upstash-backed schedules.
+- Define a registry of named scheduled tasks with cadence, handler target, and observability metadata.
+- Route actual work through `packages/jobs` so retries and dead-letter behavior stay centralized.
+- Provide minimal admin diagnostics for last run, next run, and recent failures.
+- Keep task definitions explicit in code to avoid hidden operational behavior.
+
+## Deliverables
+
+1. Scheduled-task registry and execution entrypoints.
+2. Scheduler provider integration.
+3. Initial scheduled tasks for usage reset, lifecycle reminders, and cleanup.
+4. Monitoring metadata for run status and failure visibility.
+5. Documentation on adding new recurring tasks safely.
+
+## Likely Files / Systems Affected
+
+- scheduler config files such as `vercel.json` or equivalent
+- `apps/web/app/api/**/*` or job entrypoints
+- future `packages/jobs` integration
+- observability and admin diagnostics surfaces
+
+## Risks / Dependencies
+
+- Cron without the jobs layer will encourage duplicated retry/error logic.
+- Timezone, cadence, and idempotency rules must be explicit or recurring tasks will behave unpredictably.
+- Self-hosting and managed-hosting scheduler capabilities may differ, so the abstraction should reflect supported deployment modes.
+- Scheduled tasks should emit observability and audit-friendly signals for debugging.
+
+## Verification
+
+1. A scheduled task can trigger on cadence and enqueue a standard job successfully.
+2. Task runs are idempotent enough to tolerate retries or duplicate scheduler triggers.
+3. Operators can see recent run status and diagnose failures.
+4. New tasks can be added through a documented, consistent pattern.
+5. The scheduler works cleanly with the chosen deployment story for the starter.

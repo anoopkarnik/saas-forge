@@ -3,6 +3,12 @@ import { auth } from "@workspace/auth/better-auth/auth";
 import { ratelimit } from "@/server/ratelimit";
 
 const DEFAULT_ORIGIN = "http://localhost:3000";
+class MockInvalidScaffoldModuleError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "InvalidScaffoldModuleError";
+  }
+}
 
 // Mock Auth
 vi.mock("@workspace/auth/better-auth/auth", () => ({
@@ -38,6 +44,23 @@ vi.mock("next/headers", () => ({
 // Mock next/cache
 vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),
+}));
+
+const mockLoadScaffoldRegistry = vi.fn();
+const mockValidateSelectedModules = vi.fn();
+const mockCalculateScaffoldCredits = vi.fn();
+const mockCreateTempScaffoldDir = vi.fn();
+const mockCompileScaffoldVariant = vi.fn();
+
+vi.mock("@/lib/scaffold-modules", () => ({
+  InvalidScaffoldModuleError: MockInvalidScaffoldModuleError,
+  loadScaffoldRegistry: (...args: any[]) => mockLoadScaffoldRegistry(...args),
+  validateSelectedModules: (...args: any[]) =>
+    mockValidateSelectedModules(...args),
+  calculateScaffoldCredits: (...args: any[]) =>
+    mockCalculateScaffoldCredits(...args),
+  createTempScaffoldDir: (...args: any[]) => mockCreateTempScaffoldDir(...args),
+  compileScaffoldVariant: (...args: any[]) => mockCompileScaffoldVariant(...args),
 }));
 
 // Mock archiver - each call creates a fresh callback set to avoid cross-test leakage
@@ -83,13 +106,16 @@ vi.mock("archiver", () => ({
 // Mock fs
 const mockExistsSync = vi.fn();
 const mockReadFileSync = vi.fn();
-vi.mock("fs", () => ({
+const mockRmSync = vi.fn();
+vi.mock("node:fs", () => ({
   default: {
     existsSync: (...args: any[]) => mockExistsSync(...args),
     readFileSync: (...args: any[]) => mockReadFileSync(...args),
+    rmSync: (...args: any[]) => mockRmSync(...args),
   },
   existsSync: (...args: any[]) => mockExistsSync(...args),
   readFileSync: (...args: any[]) => mockReadFileSync(...args),
+  rmSync: (...args: any[]) => mockRmSync(...args),
 }));
 
 function createScaffoldRequest(url: string, init: RequestInit = {}) {
@@ -137,8 +163,73 @@ describe("Scaffold Route Integration Tests", () => {
     // Default: scaffold root exists, .env.example exists
     mockExistsSync.mockReturnValue(true);
     mockReadFileSync.mockReturnValue("DATABASE_URL=\nNEXT_PUBLIC_URL=\n");
+    mockRmSync.mockReturnValue(undefined);
 
     mockUserUpdate.mockResolvedValue({});
+
+    mockLoadScaffoldRegistry.mockReturnValue({
+      baseCreditsCost: 20,
+      modules: [
+        {
+          id: "billing",
+          label: "Billing & Payments",
+          default: false,
+          creditsCost: 10,
+          requires: [],
+          incompatibleWith: [],
+          downloadEnabled: true,
+        },
+        {
+          id: "multi_tenancy",
+          label: "Organizations / Teams",
+          default: false,
+          creditsCost: 15,
+          requires: [],
+          incompatibleWith: [],
+          downloadEnabled: false,
+        },
+      ],
+    });
+    mockValidateSelectedModules.mockImplementation((modules = [], registry) => {
+      const selected = [...new Set(modules)];
+      const registryMap = new Map(
+        (registry?.modules ?? []).map((module: any) => [module.id, module]),
+      );
+
+      for (const moduleId of selected) {
+        const entry = registryMap.get(moduleId) as
+          | { downloadEnabled?: boolean }
+          | undefined;
+        if (!entry) {
+          throw new MockInvalidScaffoldModuleError(
+            `Unknown scaffold module: ${moduleId}`,
+          );
+        }
+
+        if (entry.downloadEnabled === false) {
+          throw new MockInvalidScaffoldModuleError(
+            `Scaffold module "${moduleId}" is not available for download yet`,
+          );
+        }
+      }
+
+      return selected;
+    });
+    mockCalculateScaffoldCredits.mockImplementation((selectedModules = []) => {
+      const modules = selectedModules.map((moduleId: string) => ({
+        moduleId,
+        credits: moduleId === "billing" ? 10 : 0,
+      }));
+
+      return {
+        baseCredits: 20,
+        moduleCredits: modules,
+        totalCredits:
+          20 + modules.reduce((sum: number, entry: any) => sum + entry.credits, 0),
+      };
+    });
+    mockCreateTempScaffoldDir.mockReturnValue("/tmp/saas-forge-scaffold-test");
+    mockCompileScaffoldVariant.mockImplementation(({ tempDir }: any) => tempDir);
   });
 
   describe("POST handler", () => {
@@ -232,10 +323,17 @@ describe("Scaffold Route Integration Tests", () => {
     });
 
     it("should return 500 when scaffold root is not found", async () => {
-      // First call: pnpm-workspace.yaml check returns true, second+ calls for scaffold root return false
-      mockExistsSync
-        .mockReturnValueOnce(true) // pnpm-workspace.yaml
-        .mockReturnValue(false); // scaffoldRoot not found
+      mockExistsSync.mockImplementation((target: string) => {
+        const value = String(target);
+        if (
+          value.includes(".generated/saas-boilerplate") ||
+          value.includes("templates/saas-boilerplate")
+        ) {
+          return false;
+        }
+
+        return true;
+      });
 
       const { POST } = await import("../../app/api/scaffold/route.js");
 
@@ -252,6 +350,46 @@ describe("Scaffold Route Integration Tests", () => {
 
       expect(response.status).toBe(500);
       expect(data.error).toBe("Scaffold root not found");
+    });
+
+    it("should return 400 for unknown scaffold modules", async () => {
+      const { POST } = await import("../../app/api/scaffold/route.js");
+
+      const response = await POST(
+        createScaffoldRequest("http://localhost:3000/api/scaffold", {
+          method: "POST",
+          body: JSON.stringify({
+            name: "my-project",
+            envVars: {},
+            modules: ["does_not_exist"],
+          }),
+        }) as any,
+      );
+      const data = await response.json();
+
+      expect(response.status).toBe(400);
+      expect(data.error).toContain("Unknown scaffold module");
+      expect(mockUserUpdate).not.toHaveBeenCalled();
+    });
+
+    it("should return 400 for modules that are not downloadable yet", async () => {
+      const { POST } = await import("../../app/api/scaffold/route.js");
+
+      const response = await POST(
+        createScaffoldRequest("http://localhost:3000/api/scaffold", {
+          method: "POST",
+          body: JSON.stringify({
+            name: "my-project",
+            envVars: {},
+            modules: ["multi_tenancy"],
+          }),
+        }) as any,
+      );
+      const data = await response.json();
+
+      expect(response.status).toBe(400);
+      expect(data.error).toContain("not available for download yet");
+      expect(mockUserUpdate).not.toHaveBeenCalled();
     });
 
     it("should successfully generate and stream a zip file", async () => {
@@ -282,13 +420,50 @@ describe("Scaffold Route Integration Tests", () => {
 
       // Verify archive methods were called
       expect(mockDirectory).toHaveBeenCalled();
+      expect(mockCreateTempScaffoldDir).toHaveBeenCalled();
+      expect(mockCompileScaffoldVariant).toHaveBeenCalledWith({
+        baseRoot: expect.any(String),
+        tempDir: "/tmp/saas-forge-scaffold-test",
+        selectedModules: [],
+        platforms: ["web"],
+        registry: expect.any(Object),
+      });
       expect(mockAppend).toHaveBeenCalled(); // .env files
       expect(mockFinalize).toHaveBeenCalled();
 
       // Verify credits were deducted
       expect(mockUserUpdate).toHaveBeenCalledWith({
         where: { id: "user_1" },
-        data: { creditsUsed: 20 }, // 0 + CREDITS_COST (20)
+        data: { creditsUsed: 20 },
+      });
+
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      expect(mockRmSync).toHaveBeenCalledWith(
+        "/tmp/saas-forge-scaffold-test",
+        { recursive: true, force: true },
+      );
+    });
+
+    it("should add selected module credits to the scaffold total", async () => {
+      const { POST } = await import("../../app/api/scaffold/route.js");
+
+      const response = await POST(
+        createScaffoldRequest("http://localhost:3000/api/scaffold", {
+          method: "POST",
+          body: JSON.stringify({
+            name: "billing-enabled",
+            envVars: {
+              NEXT_PUBLIC_PAYMENT_GATEWAY: "stripe",
+            },
+            modules: ["billing"],
+          }),
+        }) as any,
+      );
+
+      expect(response.status).toBe(200);
+      expect(mockUserUpdate).toHaveBeenCalledWith({
+        where: { id: "user_1" },
+        data: { creditsUsed: 30 },
       });
     });
 
@@ -344,11 +519,14 @@ describe("Scaffold Route Integration Tests", () => {
     });
 
     it("should generate .env from vars when no .env.example exists", async () => {
-      // existsSync: true for workspace markers, true for scaffold root, false for .env.example
-      mockExistsSync
-        .mockReturnValueOnce(true) // pnpm-workspace.yaml
-        .mockReturnValueOnce(true) // scaffoldRoot
-        .mockReturnValueOnce(false); // .env.example does not exist
+      mockExistsSync.mockImplementation((target: string) => {
+        const value = String(target);
+        if (value.endsWith("apps/web/.env.example")) {
+          return false;
+        }
+
+        return true;
+      });
 
       const { POST } = await import("../../app/api/scaffold/route.js");
 

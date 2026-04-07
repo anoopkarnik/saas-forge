@@ -4,602 +4,1432 @@ import * as React from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
-    Download,
-    Upload,
-    ExternalLink,
-    Rocket,
-    Check,
-    Clock,
-    DollarSign,
-    ListChecks,
-    ChevronDown,
-    ChevronUp,
-    Sparkles,
-    X,
-    Users,
-    AlertTriangle,
-    ArrowUpRight,
-    TrendingUp,
+  AlertTriangle,
+  ArrowRight,
+  Check,
+  ChevronDown,
+  ChevronUp,
+  CircleDot,
+  Download,
+  ExternalLink,
+  FileUp,
+  Layers3,
+  Rocket,
+  Settings2,
+  Sparkles,
+  Upload,
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 
 import { Button } from "@workspace/ui/components/shadcn/button";
 import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
 } from "@workspace/ui/components/shadcn/card";
 import {
-    Form,
-    FormControl,
-    FormField,
-    FormItem,
-    FormMessage,
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormMessage,
 } from "@workspace/ui/components/shadcn/form";
-import { Input } from "@workspace/ui/components/shadcn/input";
-import { formSchema, FormValues } from "../../lib/zod/download";
+import { Badge } from "@workspace/ui/components/shadcn/badge";
+import { Progress } from "@workspace/ui/components/shadcn/progress";
+import { Separator } from "@workspace/ui/components/shadcn/separator";
+import { Switch } from "@workspace/ui/components/shadcn/switch";
 import { FloatingLabelInput } from "@workspace/ui/components/misc/floating-label-input";
-import { cn } from "../../lib/utils";
 
-// Module Configuration
+import { cn } from "../../lib/utils";
+import { formSchema, FormValues } from "../../lib/zod/download";
 import { MODULE_CONFIG } from "../../lib/constants/module";
+import {
+  BASE_SCAFFOLD_CREDITS_COST,
+  calculateScaffoldCredits,
+  type ScaffoldModuleId,
+  SCAFFOLD_MODULE_OPTIONS,
+} from "../../lib/constants/scaffold-modules";
 import { PRESETS, PresetInfo } from "../../lib/constants/presets";
 import EnvField from "../../components/home/EnvField";
-
-import { buildEnvVarsFromForm, buildVercelDeployUrl, parseEnvFile } from "../../lib/utils/scaffold";
+import {
+  buildEnvVarsFromForm,
+  buildVercelDeployUrl,
+  parseEnvFile,
+} from "../../lib/utils/scaffold";
+import {
+  getAccountsProviderGroups,
+  getReviewSummaryItems,
+  getWizardFieldMeta,
+  getWizardStepFields,
+  isWizardFieldComplete,
+  isWizardFieldRequired,
+  WIZARD_STEPS,
+  type ProviderGroup,
+  type WizardFieldName,
+  type WizardStepId,
+} from "../../lib/scaffold-wizard";
 
 interface DashboardPageProps {
-    onSubmitConfiguration: (safeName: string, envVars: Record<string, string>) => Promise<void>;
-    docsBaseUrl?: string; // e.g. process.env.NEXT_PUBLIC_URL
-    onNavigateDoc?: (slug: string) => void; // in-app doc navigation (desktop)
+  onSubmitConfiguration: (
+    safeName: string,
+    envVars: Record<string, string>,
+    modules: ScaffoldModuleId[],
+  ) => Promise<void>;
+  docsBaseUrl?: string;
+  onNavigateDoc?: (slug: string) => void;
 }
 
-export default function DashboardPage({ onSubmitConfiguration, docsBaseUrl = "", onNavigateDoc }: DashboardPageProps) {
-    const [isDownloading, setIsDownloading] = React.useState(false);
-    const [selectedPreset, setSelectedPreset] = React.useState<PresetInfo | null>(null);
-    const [expandedSteps, setExpandedSteps] = React.useState<Set<number>>(new Set());
+export type EntryChoice = "manual" | "preset" | "import";
 
-    const form = useForm<FormValues>({
-        resolver: zodResolver(formSchema),
-        defaultValues: {
-            name: "",
-            NEXT_PUBLIC_THEME: "neutral",
-            NEXT_PUBLIC_THEME_TYPE: "system",
-            NEXT_PUBLIC_SAAS_NAME: "",
-            NEXT_PUBLIC_COMPANY_NAME: "",
-            NEXT_PUBLIC_URL: "",
-            NEXT_PUBLIC_PLATFORM: ["web"],
-            NEXT_PUBLIC_CMS: "notion",
-            LANDING_DATABASE_ID: "",
-            HERO_DATABASE_ID: "",
-            FEATURE_DATABASE_ID: "",
-            TESTIMONIAL_DATABASE_ID: "",
-            PRICING_DATABASE_ID: "",
-            FAQ_DATABASE_ID: "",
-            FOOTER_DATABASE_ID: "",
-            DOCUMENTATION_DATABASE_ID: "",
-            NOTION_API_TOKEN: "",
-            UPSTASH_REDIS_REST_URL: "",
-            UPSTASH_REDIS_REST_TOKEN: "",
-            NEXT_PUBLIC_AUTH_FRAMEWORK: "better-auth",
-            BETTER_AUTH_SECRET: "",
-            NEXT_PUBLIC_AUTH_PROVIDERS: [] as ("email_verification" | "linkedin" | "google" | "github")[],
-            AUTH_LINKEDIN_CLIENT_ID: "",
-            AUTH_LINKEDIN_CLIENT_SECRET: "",
-            AUTH_GITHUB_CLIENT_ID: "",
-            AUTH_GITHUB_CLIENT_SECRET: "",
-            AUTH_GOOGLE_CLIENT_ID: "",
-            AUTH_GOOGLE_CLIENT_SECRET: "",
-            NEXT_PUBLIC_EMAIL_CLIENT: "none",
-            RESEND_API_KEY: "",
-            NEXT_PUBLIC_SUPPORT_FEATURES: [] as ("support_mail" | "calendly")[],
-            NEXT_PUBLIC_SUPPORT_MAIL: "",
-            NEXT_PUBLIC_CALENDLY_BOOKING_URL: "",
-            NEXT_PUBLIC_IMAGE_STORAGE: "vercel_blob",
-            BLOB_READ_WRITE_TOKEN: "",
-            DATABASE_URL: "",
-            NEXT_PUBLIC_OBSERVABILITY_FEATURES: [] as ("logging" | "google_analytics" | "rate_limiting")[],
-            BETTERSTACK_TELEMETRY_SOURCE_TOKEN: "",
-            BETTERSTACK_TELEMETRY_INGESTING_HOST: "",
-            NEXT_PUBLIC_GOOGLE_ANALYTICS_MEASUREMENT_ID: "",
-            NEXT_PUBLIC_ALLOW_RATE_LIMIT: "upstash",
-            NEXT_PUBLIC_PAYMENT_GATEWAY: "none",
-            DODO_PAYMENTS_API_KEY: "",
-            DODO_PAYMENTS_WEBHOOK_KEY: "",
-            DODO_PAYMENTS_RETURN_URL: "",
-            DODO_PAYMENTS_ENVIRONMENT: "",
-            DODO_CREDITS_PRODUCT_ID: "",
-            NEXT_PUBLIC_DODO_PAYMENTS_URL: "",
-        },
-        mode: "onChange",
-    });
+const DEFAULT_FORM_VALUES: FormValues = {
+  name: "",
+  NEXT_PUBLIC_THEME: "neutral",
+  NEXT_PUBLIC_THEME_TYPE: "system",
+  SELECTED_MODULES: [],
+  NEXT_PUBLIC_SAAS_NAME: "",
+  NEXT_PUBLIC_COMPANY_NAME: "",
+  NEXT_PUBLIC_URL: "",
+  NEXT_PUBLIC_PLATFORM: ["web"],
+  NEXT_PUBLIC_CMS: "notion",
+  LANDING_DATABASE_ID: "",
+  HERO_DATABASE_ID: "",
+  FEATURE_DATABASE_ID: "",
+  TESTIMONIAL_DATABASE_ID: "",
+  PRICING_DATABASE_ID: "",
+  FAQ_DATABASE_ID: "",
+  FOOTER_DATABASE_ID: "",
+  DOCUMENTATION_DATABASE_ID: "",
+  NOTION_API_TOKEN: "",
+  UPSTASH_REDIS_REST_URL: "",
+  UPSTASH_REDIS_REST_TOKEN: "",
+  NEXT_PUBLIC_AUTH_FRAMEWORK: "better-auth",
+  BETTER_AUTH_SECRET: "",
+  NEXT_PUBLIC_AUTH_PROVIDERS: [],
+  AUTH_LINKEDIN_CLIENT_ID: "",
+  AUTH_LINKEDIN_CLIENT_SECRET: "",
+  AUTH_GITHUB_CLIENT_ID: "",
+  AUTH_GITHUB_CLIENT_SECRET: "",
+  AUTH_GOOGLE_CLIENT_ID: "",
+  AUTH_GOOGLE_CLIENT_SECRET: "",
+  NEXT_PUBLIC_EMAIL_CLIENT: "none",
+  RESEND_API_KEY: "",
+  NEXT_PUBLIC_SUPPORT_FEATURES: [],
+  NEXT_PUBLIC_SUPPORT_MAIL: "",
+  NEXT_PUBLIC_CALENDLY_BOOKING_URL: "",
+  NEXT_PUBLIC_IMAGE_STORAGE: "vercel_blob",
+  BLOB_READ_WRITE_TOKEN: "",
+  R2_ACCOUNT_ID: "",
+  R2_ACCESS_KEY_ID: "",
+  R2_SECRET_ACCESS_KEY: "",
+  R2_BUCKET_NAME: "",
+  NEXT_PUBLIC_R2_PUBLIC_URL: "",
+  DATABASE_URL: "",
+  NEXT_PUBLIC_OBSERVABILITY_FEATURES: [],
+  BETTERSTACK_TELEMETRY_SOURCE_TOKEN: "",
+  BETTERSTACK_TELEMETRY_INGESTING_HOST: "",
+  NEXT_PUBLIC_GOOGLE_ANALYTICS_MEASUREMENT_ID: "",
+  NEXT_PUBLIC_ALLOW_RATE_LIMIT: "upstash",
+  NEXT_PUBLIC_PAYMENT_GATEWAY: "none",
+  DODO_PAYMENTS_API_KEY: "",
+  DODO_PAYMENTS_WEBHOOK_KEY: "",
+  DODO_PAYMENTS_RETURN_URL: "",
+  DODO_PAYMENTS_ENVIRONMENT: "",
+  DODO_CREDITS_PRODUCT_ID: "",
+  NEXT_PUBLIC_DODO_PAYMENTS_URL: "",
+  STRIPE_SECRET_KEY: "",
+  STRIPE_WEBHOOK_SECRET: "",
+};
 
-    const watchedSupportMail = form.watch("NEXT_PUBLIC_SUPPORT_MAIL");
-    const watchedAuthProviders = form.watch("NEXT_PUBLIC_AUTH_PROVIDERS");
-    const watchedEmailClient = form.watch("NEXT_PUBLIC_EMAIL_CLIENT");
-    const watchedPaymentGateway = form.watch("NEXT_PUBLIC_PAYMENT_GATEWAY");
+const STEP_INDEX_BY_ID = new Map(
+  WIZARD_STEPS.map((step, index) => [step.id, index]),
+);
 
-    React.useEffect(() => {
-        form.trigger("NEXT_PUBLIC_EMAIL_CLIENT");
-    }, [watchedSupportMail, watchedAuthProviders]);
+import { FeaturePanel } from "@workspace/ui/components/dashboard/FeaturePanel";
+import { StepChip } from "@workspace/ui/components/dashboard/StepChip";
+import { StartChoiceCard } from "@workspace/ui/components/dashboard/StartChoiceCard";
+import { PresetCard } from "@workspace/ui/components/dashboard/PresetCard";
+import { WizardSummary } from "@workspace/ui/components/dashboard/WizardSummary";
 
-    React.useEffect(() => {
-        form.trigger("RESEND_API_KEY");
-    }, [watchedEmailClient]);
+export default function DashboardPage({
+  onSubmitConfiguration,
+  docsBaseUrl = "",
+  onNavigateDoc,
+}: DashboardPageProps) {
+  const [isDownloading, setIsDownloading] = React.useState(false);
+  const [selectedPreset, setSelectedPreset] = React.useState<PresetInfo | null>(
+    null,
+  );
+  const [expandedSteps, setExpandedSteps] = React.useState<Set<number>>(new Set());
+  const [advancedMode, setAdvancedMode] = React.useState(false);
+  const [currentStepIndex, setCurrentStepIndex] = React.useState(0);
+  const [entryChoice, setEntryChoice] = React.useState<EntryChoice>("manual");
+  const [importedFieldCount, setImportedFieldCount] = React.useState(0);
+  const [showTechnicalDetails, setShowTechnicalDetails] = React.useState(false);
+  const importInputRef = React.useRef<HTMLInputElement | null>(null);
 
-    React.useEffect(() => {
-        form.trigger(["DODO_PAYMENTS_API_KEY", "DODO_PAYMENTS_WEBHOOK_KEY", "DODO_PAYMENTS_RETURN_URL", "DODO_PAYMENTS_ENVIRONMENT", "DODO_CREDITS_PRODUCT_ID", "NEXT_PUBLIC_DODO_PAYMENTS_URL"]);
-    }, [watchedPaymentGateway]);
+  const form = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: DEFAULT_FORM_VALUES,
+    mode: "onChange",
+  });
 
-    const onSubmit = async (values: FormValues) => {
-        setIsDownloading(true);
-        try {
-            const safeName = values.name
-                .trim()
-                .replace(/[^\w.-]+/g, "-")
-                .replace(/^-+|-+$/g, "")
-                .slice(0, 80);
+  const values = form.watch();
+  const pricing = React.useMemo(
+    () => calculateScaffoldCredits((values.SELECTED_MODULES || []) as ScaffoldModuleId[]),
+    [values.SELECTED_MODULES],
+  );
+  const accountGroups = React.useMemo(
+    () => getAccountsProviderGroups(values),
+    [values],
+  );
+  const reviewSummary = React.useMemo(
+    () => getReviewSummaryItems(values),
+    [values],
+  );
 
-            const envVars = buildEnvVarsFromForm(values);
+  const fieldLookup = React.useMemo(() => {
+    const map = new Map<string, (typeof MODULE_CONFIG)[number]["fields"][number]>();
+    for (const section of MODULE_CONFIG) {
+      for (const field of section.fields) {
+        map.set(field.name, field);
+      }
+    }
+    return map;
+  }, []);
 
-            await onSubmitConfiguration(safeName, envVars);
-        } catch (error) {
-            console.error("Download failed:", error);
-        } finally {
-            setIsDownloading(false);
-        }
-    };
+  const validationSnapshot = React.useMemo(() => formSchema.safeParse(values), [values]);
+  const issuePaths = React.useMemo(() => {
+    if (validationSnapshot.success) return new Set<string>();
+    return new Set(
+      validationSnapshot.error.issues
+        .map((issue) => issue.path[0])
+        .filter((path): path is string => typeof path === "string"),
+    );
+  }, [validationSnapshot]);
 
-    const applyPreset = (preset: PresetInfo) => {
-        const isDeselecting = selectedPreset?.id === preset.id;
-        if (isDeselecting) {
-            setSelectedPreset(null);
-            setExpandedSteps(new Set());
-            return;
-        }
-        setSelectedPreset(preset);
+  const completionByStep = React.useMemo(() => {
+    return WIZARD_STEPS.reduce<Record<WizardStepId, boolean>>((acc, step) => {
+      if (step.id === "start") {
+        acc[step.id] = true;
+        return acc;
+      }
+
+      const requiredFields = getWizardStepFields(step.id, values).filter((field) =>
+        isWizardFieldRequired(field, values),
+      );
+
+      acc[step.id] =
+        requiredFields.length === 0 ||
+        requiredFields.every(
+          (field) =>
+            isWizardFieldComplete(field, values) && !issuePaths.has(field as string),
+        );
+
+      return acc;
+    }, {} as Record<WizardStepId, boolean>);
+  }, [issuePaths, values]);
+
+  const missingRequiredFields = React.useMemo(() => {
+    const fields = WIZARD_STEPS.flatMap((step) =>
+      getWizardStepFields(step.id, values).filter((field) =>
+        isWizardFieldRequired(field, values),
+      ),
+    );
+
+    return Array.from(new Set(fields)).filter(
+      (field) =>
+        !isWizardFieldComplete(field, values) || issuePaths.has(field as string),
+    );
+  }, [issuePaths, values]);
+
+  const missingLabels = React.useMemo(
+    () =>
+      missingRequiredFields.map(
+        (field) => getWizardFieldMeta(field)?.label ?? field,
+      ),
+    [missingRequiredFields],
+  );
+
+  const applyPreset = React.useCallback(
+    (preset: PresetInfo) => {
+      const isDeselecting = selectedPreset?.id === preset.id;
+
+      if (isDeselecting) {
+        setSelectedPreset(null);
+        setEntryChoice("manual");
         setExpandedSteps(new Set());
+        setShowTechnicalDetails(false);
+        return;
+      }
 
-        // Apply all non-secret preset values to the form
-        for (const [key, value] of Object.entries(preset.values)) {
-            form.setValue(key as keyof FormValues, value as any, {
-                shouldDirty: true,
-                shouldValidate: true,
-            });
+      setSelectedPreset(preset);
+      setEntryChoice("preset");
+      setExpandedSteps(new Set());
+      setShowTechnicalDetails(false);
+
+      for (const [key, value] of Object.entries(preset.values)) {
+        form.setValue(key as keyof FormValues, value as never, {
+          shouldDirty: true,
+          shouldValidate: true,
+        });
+      }
+
+      form.setValue(
+        "SELECTED_MODULES",
+        preset.values.NEXT_PUBLIC_PAYMENT_GATEWAY &&
+          preset.values.NEXT_PUBLIC_PAYMENT_GATEWAY !== "none"
+          ? ["billing"]
+          : [],
+        {
+          shouldDirty: true,
+          shouldValidate: true,
+        },
+      );
+    },
+    [form, selectedPreset],
+  );
+
+  const toggleScaffoldModule = React.useCallback(
+    (moduleId: ScaffoldModuleId) => {
+      const currentModules = form.getValues("SELECTED_MODULES") || [];
+      const nextModules = currentModules.includes(moduleId)
+        ? currentModules.filter((id) => id !== moduleId)
+        : [...currentModules, moduleId];
+
+      form.setValue("SELECTED_MODULES", nextModules, {
+        shouldDirty: true,
+        shouldValidate: true,
+      });
+
+      if (moduleId === "billing" && !nextModules.includes("billing")) {
+        form.setValue("NEXT_PUBLIC_PAYMENT_GATEWAY", "none", {
+          shouldDirty: true,
+          shouldValidate: true,
+        });
+      }
+    },
+    [form],
+  );
+
+  const openImportPicker = React.useCallback(() => {
+    setEntryChoice("import");
+    importInputRef.current?.click();
+  }, []);
+
+  const handleFileUpload = React.useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (loadEvent) => {
+        const content = loadEvent.target?.result as string;
+        if (!content) return;
+
+        const count = parseEnvFile(content, form.setValue);
+        setImportedFieldCount(count);
+        setEntryChoice("import");
+      };
+      reader.readAsText(file);
+    },
+    [form.setValue],
+  );
+
+  const getFirstStepForField = React.useCallback(
+    (field: WizardFieldName) => {
+      for (const step of WIZARD_STEPS) {
+        if (getWizardStepFields(step.id, form.getValues()).includes(field)) {
+          return STEP_INDEX_BY_ID.get(step.id) ?? 0;
         }
-    };
+      }
+      return 0;
+    },
+    [form],
+  );
 
-    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
+  const validateStep = React.useCallback(
+    async (stepId: WizardStepId) => {
+      const currentValues = form.getValues();
+      const fields = getWizardStepFields(stepId, currentValues).filter((field) =>
+        isWizardFieldRequired(field, currentValues),
+      );
 
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            const content = event.target?.result as string;
-            if (!content) return;
+      if (fields.length === 0) return true;
 
-            const count = parseEnvFile(content, form.setValue);
-            console.log(`Auto-filled ${count} fields from .env file`);
-        };
-        reader.readAsText(file);
-    };
+      const schemaValid = await form.trigger(fields);
+
+      let firstMissingField: WizardFieldName | null = null;
+
+      for (const field of fields) {
+        if (!isWizardFieldComplete(field, currentValues)) {
+          form.setError(field, {
+            type: "manual",
+            message: "This is needed before you continue.",
+          });
+          firstMissingField ??= field;
+        }
+      }
+
+      if (firstMissingField) {
+        form.setFocus(firstMissingField);
+        return false;
+      }
+
+      return schemaValid;
+    },
+    [form],
+  );
+
+  const handleNext = React.useCallback(async () => {
+    const step = WIZARD_STEPS[currentStepIndex];
+    if (!step) return;
+
+    const valid = await validateStep(step.id);
+    if (!valid) return;
+
+    setCurrentStepIndex((prev) => Math.min(prev + 1, WIZARD_STEPS.length - 1));
+  }, [currentStepIndex, validateStep]);
+
+  const handleBack = React.useCallback(() => {
+    setCurrentStepIndex((prev) => Math.max(prev - 1, 0));
+  }, []);
+
+  const onSubmit = React.useCallback(
+    async (submittedValues: FormValues) => {
+      setIsDownloading(true);
+      try {
+        const safeName = submittedValues.name
+          .trim()
+          .replace(/[^\w.-]+/g, "-")
+          .replace(/^-+|-+$/g, "")
+          .slice(0, 80);
+
+        const envVars = buildEnvVarsFromForm(submittedValues);
+        await onSubmitConfiguration(
+          safeName,
+          envVars,
+          submittedValues.SELECTED_MODULES || [],
+        );
+      } finally {
+        setIsDownloading(false);
+      }
+    },
+    [onSubmitConfiguration],
+  );
+
+  const handleFinalDownload = React.useCallback(async () => {
+    const currentValues = form.getValues();
+    const fields = WIZARD_STEPS.flatMap((step) =>
+      getWizardStepFields(step.id, currentValues).filter((field) =>
+        isWizardFieldRequired(field, currentValues),
+      ),
+    );
+    const dedupedFields = Array.from(new Set(fields));
+
+    const schemaValid = await form.trigger(dedupedFields);
+
+    const firstMissingField = dedupedFields.find(
+      (field) => !isWizardFieldComplete(field, currentValues),
+    );
+
+    if (firstMissingField) {
+      form.setError(firstMissingField, {
+        type: "manual",
+        message: "Please finish this field before downloading.",
+      });
+      setCurrentStepIndex(getFirstStepForField(firstMissingField));
+      form.setFocus(firstMissingField);
+      return;
+    }
+
+    if (!schemaValid) {
+      const latestSnapshot = formSchema.safeParse(form.getValues());
+      if (!latestSnapshot.success) {
+        const firstIssue = latestSnapshot.error.issues.find(
+          (issue) => typeof issue.path[0] === "string",
+        );
+        if (firstIssue && typeof firstIssue.path[0] === "string") {
+          const field = firstIssue.path[0] as WizardFieldName;
+          setCurrentStepIndex(getFirstStepForField(field));
+          form.setFocus(field);
+        }
+      }
+      return;
+    }
+
+    await onSubmit(form.getValues());
+  }, [form, getFirstStepForField, onSubmit]);
+
+  const renderWizardField = React.useCallback(
+    (name: WizardFieldName, sectionId: string) => {
+      const meta = getWizardFieldMeta(name);
+      const fieldConfig = fieldLookup.get(name);
+
+      return (
+        <EnvField
+          control={form.control}
+          name={name}
+          label={meta?.label}
+          description={meta?.helper ?? fieldConfig?.description}
+          required={isWizardFieldRequired(name, values)}
+          sectionId={sectionId}
+          providerHints={fieldConfig?.providerHints}
+        />
+      );
+    },
+    [fieldLookup, form.control, values],
+  );
+
+  const renderPresetDetails = selectedPreset ? (
+    <Card className="border-border/60 bg-muted/20 shadow-sm">
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center justify-between gap-3 text-base">
+          <span className="flex items-center gap-2">
+            <selectedPreset.icon className={cn("h-4 w-4", selectedPreset.color)} />
+            {selectedPreset.name}
+          </span>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowTechnicalDetails((prev) => !prev)}
+          >
+            {showTechnicalDetails ? "Hide Technical Details" : "See Technical Details"}
+          </Button>
+        </CardTitle>
+        <CardDescription>{selectedPreset.tagline}</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex flex-wrap gap-2">
+          <Badge variant="outline">{selectedPreset.setupTime}</Badge>
+          <Badge variant="outline">{selectedPreset.estimatedCost}</Badge>
+          <Badge variant="outline">
+            {selectedPreset.accountsNeeded.length} accounts needed
+          </Badge>
+        </div>
+
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            What this auto-selects
+          </p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {selectedPreset.highlights.map((highlight) => (
+              <Badge key={highlight} className="bg-primary/10 text-primary">
+                {highlight}
+              </Badge>
+            ))}
+          </div>
+        </div>
+
+        <AnimatePresence initial={false}>
+          {showTechnicalDetails ? (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+              className="space-y-4"
+            >
+              <Separator />
+
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Accounts You&apos;ll Need
+                </p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {selectedPreset.accountsNeeded.map((account) => (
+                    <Badge key={account} variant="outline">
+                      {account}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <div className="mb-3 flex items-center justify-between">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Setup Guide
+                  </p>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      if (expandedSteps.size === selectedPreset.steps.length) {
+                        setExpandedSteps(new Set());
+                        return;
+                      }
+                      setExpandedSteps(
+                        new Set(selectedPreset.steps.map((_, index) => index)),
+                      );
+                    }}
+                  >
+                    {expandedSteps.size === selectedPreset.steps.length
+                      ? "Collapse All"
+                      : "Expand All"}
+                  </Button>
+                </div>
+                <div className="space-y-2">
+                  {selectedPreset.steps.map((step, index) => {
+                    const expanded = expandedSteps.has(index);
+
+                    return (
+                      <div
+                        key={step.title}
+                        className="overflow-hidden rounded-xl border border-border/60"
+                      >
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setExpandedSteps((prev) => {
+                              const next = new Set(prev);
+                              if (next.has(index)) next.delete(index);
+                              else next.add(index);
+                              return next;
+                            });
+                          }}
+                          className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-muted/40"
+                        >
+                          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+                            {index + 1}
+                          </span>
+                          <span className="flex-1 text-sm font-medium">
+                            {step.title}
+                          </span>
+                          {expanded ? (
+                            <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                          ) : (
+                            <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                          )}
+                        </button>
+                        <AnimatePresence initial={false}>
+                          {expanded ? (
+                            <motion.div
+                              initial={{ opacity: 0, height: 0 }}
+                              animate={{ opacity: 1, height: "auto" }}
+                              exit={{ opacity: 0, height: 0 }}
+                              transition={{ duration: 0.2, ease: "easeOut" }}
+                            >
+                              <ul className="space-y-2 px-4 pb-4 pl-14 text-sm text-muted-foreground">
+                                {step.details.map((detail) => (
+                                  <li key={detail} className="flex items-start gap-2">
+                                    <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-muted-foreground/40" />
+                                    <span>{detail}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </motion.div>
+                          ) : null}
+                        </AnimatePresence>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
+      </CardContent>
+    </Card>
+  ) : null;
+
+  const renderAdvancedMode = () => (
+    <div className="space-y-8">
+      <div className="rounded-2xl border border-border/60 bg-muted/20 p-6">
+        <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h2 className="text-xl font-semibold">Advanced Setup</h2>
+            <p className="text-sm text-muted-foreground">
+              Power-user view with every form section visible at once.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={openImportPicker}
+              className="touch-manipulation"
+            >
+              <Upload className="mr-2 h-4 w-4" />
+              Import .env
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              disabled
+              onClick={() => {
+                const url = buildVercelDeployUrl(form.getValues());
+                window.open(url, "_blank", "noopener,noreferrer");
+              }}
+            >
+              <Rocket className="mr-2 h-4 w-4" />
+              Deploy to Vercel (Coming Soon)
+            </Button>
+            <Button
+              type="button"
+              onClick={handleFinalDownload}
+              disabled={isDownloading}
+              className="touch-manipulation"
+            >
+              <Download className="mr-2 h-4 w-4" />
+              {isDownloading ? "Downloading…" : "Download Boilerplate"}
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      <Card className="border-border/60 shadow-sm">
+        <CardHeader>
+          <CardTitle>Optional Features</CardTitle>
+          <CardDescription>
+            Start with the lean base starter, then add heavier capabilities only
+            when you want them in the ZIP.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+            {SCAFFOLD_MODULE_OPTIONS.map((module) => {
+              const isSelected = (values.SELECTED_MODULES || []).includes(module.id);
+
+              return (
+                <button
+                  key={module.id}
+                  type="button"
+                  disabled={!module.available}
+                  onClick={() => toggleScaffoldModule(module.id)}
+                  className={cn(
+                    "rounded-xl border p-4 text-left transition-all",
+                    isSelected
+                      ? "border-primary bg-primary/10 shadow-sm"
+                      : "border-border/60 bg-background hover:border-primary/40",
+                    !module.available && "cursor-not-allowed opacity-60",
+                  )}
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="font-semibold">{module.label}</div>
+                    <div className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                      +{module.creditsCost} credits
+                    </div>
+                  </div>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    {module.description}
+                  </p>
+                  <p className="mt-3 text-xs text-muted-foreground">
+                    {!module.available
+                      ? "Coming soon"
+                      : isSelected
+                        ? "Selected"
+                        : "Optional"}
+                  </p>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="rounded-xl bg-muted/40 p-4">
+            <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+              <div>
+                <p className="text-sm font-semibold">Scaffold pricing</p>
+                <p className="text-xs text-muted-foreground">
+                  Base starter costs {BASE_SCAFFOLD_CREDITS_COST} credits.
+                </p>
+              </div>
+              <p className="text-lg font-semibold">{pricing.totalCredits} credits</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="border-border/60 shadow-sm">
+        <CardHeader>
+          <CardTitle>Quick Start Presets</CardTitle>
+          <CardDescription>
+            Pick a starter path to pre-fill the form before tweaking details.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+            {PRESETS.map((preset) => (
+              <PresetCard
+                key={preset.id}
+                preset={preset}
+                active={selectedPreset?.id === preset.id}
+                onClick={() => applyPreset(preset)}
+              />
+            ))}
+          </div>
+          {renderPresetDetails}
+        </CardContent>
+      </Card>
+
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+        {MODULE_CONFIG.map((section) => {
+          if (section.id === "payment" && !(values.SELECTED_MODULES || []).includes("billing")) {
+            return null;
+          }
+
+          return (
+            <Card
+              key={section.id}
+              className={cn(
+                "border-border/60 shadow-sm",
+                section.id === "project" && "xl:col-span-2",
+              )}
+            >
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between gap-3">
+                  <span className="flex items-center gap-2">
+                    <section.icon className={cn("h-5 w-5", section.color)} />
+                    {section.title}
+                  </span>
+                  {section.documentation?.length ? (
+                    <div className="flex flex-wrap gap-2">
+                      {section.documentation.map((doc) =>
+                        onNavigateDoc ? (
+                          <Button
+                            key={doc.slug}
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => onNavigateDoc(doc.slug)}
+                          >
+                            {doc.label}
+                            <ExternalLink className="ml-1.5 h-3.5 w-3.5" />
+                          </Button>
+                        ) : (
+                          <Button key={doc.slug} type="button" variant="ghost" size="sm" asChild>
+                            <a
+                              href={`${docsBaseUrl}/landing/doc/${doc.slug}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              {doc.label}
+                              <ExternalLink className="ml-1.5 h-3.5 w-3.5" />
+                            </a>
+                          </Button>
+                        ),
+                      )}
+                    </div>
+                  ) : null}
+                </CardTitle>
+                <CardDescription>{section.description}</CardDescription>
+              </CardHeader>
+              <CardContent
+                className={cn(
+                  "space-y-4",
+                  section.id === "project" && "grid gap-4 md:grid-cols-2",
+                )}
+              >
+                {section.id === "project" ? (
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem className="md:col-span-2">
+                        <FormControl>
+                          <FloatingLabelInput
+                            id="advanced-project-name"
+                            label="Project Name (Folder Name)"
+                            className="bg-background"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                ) : null}
+
+                {section.fields
+                  .filter((field) => {
+                    if (field.showIf) {
+                      const dependencyValue = form.getValues(
+                        field.showIf.field as keyof FormValues,
+                      );
+                      if (Array.isArray(field.showIf.value)) {
+                        return field.showIf.value.includes(dependencyValue as string);
+                      }
+                      return dependencyValue === field.showIf.value;
+                    }
+
+                    if (field.showIfIncludes) {
+                      const dependencyValue = form.getValues(
+                        field.showIfIncludes.field as keyof FormValues,
+                      );
+                      return (
+                        Array.isArray(dependencyValue) &&
+                        (dependencyValue as string[]).includes(field.showIfIncludes.value as string)
+                      );
+                    }
+
+                    return true;
+                  })
+                  .map((field) => (
+                    <EnvField
+                      key={field.name}
+                      control={form.control}
+                      name={field.name as keyof FormValues}
+                      description={field.description}
+                      required={field.required}
+                      sectionId={section.id}
+                      providerHints={field.providerHints}
+                    />
+                  ))}
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+    </div>
+  );
+
+  const renderWizardMode = () => {
+    const currentStep = WIZARD_STEPS[currentStepIndex];
+    if (!currentStep) return null;
 
     return (
-        <div className="flex flex-col min-h-svh p-6 md:p-8 space-y-8 max-w-8xl mx-auto w-full">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-foreground to-foreground/60 bg-clip-text text-transparent">
-                        Configure Your SaaS Stack
-                    </h1>
-                    <p className="text-muted-foreground mt-2 max-w-2xl text-lg">
-                        Customize your boilerplate settings and download a production-ready monorepo.
-                    </p>
-                </div>
-                <div className="flex items-center gap-2">
-                    <Button
-                        onClick={form.handleSubmit(onSubmit)}
-                        disabled={!form.formState.isValid || isDownloading}
-                        size="lg"
-                        className="shadow-lg hover:shadow-xl transition-all"
-                    >
-                        {isDownloading ? (
-                            <>Downloading...</>
-                        ) : (
-                            <>
-                                <Download className="mr-2 h-4 w-4" /> Download Boilerplate
-                            </>
-                        )}
-                    </Button>
-                    <Button
-                        variant="outline"
-                        size="lg"
-                        disabled={true}
-                        className="shadow-lg hover:shadow-xl transition-all"
+      <div className="grid grid-cols-1 gap-8 xl:grid-cols-[minmax(0,1fr)_340px]">
+        <div className="space-y-6">
+          <div className="space-y-4">
+            <div className="overflow-x-auto pb-1">
+              <div className="flex min-w-max gap-3">
+                {WIZARD_STEPS.map((step, index) => (
+                  <StepChip
+                    key={step.id}
+                    step={step}
+                    index={index}
+                    currentStepIndex={currentStepIndex}
+                    isComplete={completionByStep[step.id]}
+                    onClick={() => setCurrentStepIndex(index)}
+                  />
+                ))}
+              </div>
+            </div>
+
+            <Card className="border-border/60 shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-xl">{currentStep.title}</CardTitle>
+                <CardDescription>{currentStep.description}</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {currentStep.id === "start" ? (
+                  <>
+                    <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+                      <StartChoiceCard
+                        title="Import Existing Config"
+                        description="Upload a .env file and let the wizard populate what it can."
+                        icon={<FileUp className="h-5 w-5" />}
+                        active={entryChoice === "import"}
+                        onClick={openImportPicker}
+                      />
+                      <StartChoiceCard
+                        title="Use a Preset"
+                        description="Start from a proven setup path, then customize the details."
+                        icon={<Sparkles className="h-5 w-5" />}
+                        active={entryChoice === "preset"}
+                        onClick={() => setEntryChoice("preset")}
+                      />
+                      <StartChoiceCard
+                        title="Set Up Manually"
+                        description="Build your own configuration step by step with beginner-friendly guidance."
+                        icon={<Settings2 className="h-5 w-5" />}
+                        active={entryChoice === "manual"}
                         onClick={() => {
-                            const url = buildVercelDeployUrl(form.getValues());
-                            window.open(url, "_blank", "noopener,noreferrer");
+                          setEntryChoice("manual");
+                          setSelectedPreset(null);
+                          setShowTechnicalDetails(false);
                         }}
-                    >
-                        <Rocket className="mr-2 h-4 w-4" /> Deploy to Vercel (Coming Soon)
-                    </Button>
-                </div>
-            </div>
-
-            {/* Upload Zone */}
-            <div className="relative group rounded-xl border-2 border-dashed border-muted-foreground/25 hover:border-primary/50 transition-colors bg-muted/30 p-8 text-center cursor-pointer">
-                <Input
-                    id="env-import"
-                    type="file"
-                    accept=".env"
-                    onChange={handleFileUpload}
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                />
-                <div className="flex flex-col items-center justify-center gap-2 pointer-events-none">
-                    <div className="p-3 bg-background rounded-full shadow-sm">
-                        <Upload className="h-6 w-6 text-primary" />
+                      />
                     </div>
-                    <p className="font-medium text-foreground">Import .env Configuration</p>
-                    <p className="text-sm text-muted-foreground">Drag and drop or click to upload your .env file to auto-fill fields.</p>
-                </div>
-            </div>
 
-            {/* ── Preset Strategy Selector ─────────────────────────────── */}
-            <div className="space-y-4">
-                <div className="flex items-center gap-2">
-                    <Sparkles className="h-5 w-5 text-primary" />
-                    <h2 className="text-xl font-semibold">Quick Start Presets</h2>
-                    <span className="text-sm text-muted-foreground">— pick a strategy to auto-fill the form</span>
-                </div>
+                    {importedFieldCount > 0 ? (
+                      <div className="rounded-2xl border border-emerald-500/40 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-700 dark:text-emerald-300">
+                        Imported {importedFieldCount} fields from your `.env` file.
+                        You can still edit everything in the next steps.
+                      </div>
+                    ) : null}
 
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-                    {PRESETS.map((preset) => {
-                        const isActive = selectedPreset?.id === preset.id;
-                        return (
-                            <button
-                                key={preset.id}
-                                type="button"
-                                onClick={() => applyPreset(preset)}
-                                className={cn(
-                                    "relative flex flex-col items-center gap-2 rounded-xl border-2 p-4 transition-all duration-200 cursor-pointer text-center",
-                                    isActive
-                                        ? `${preset.bgColor} shadow-md scale-[1.02]`
-                                        : "border-border/50 bg-muted/20 hover:border-border hover:bg-muted/40 hover:shadow-sm"
-                                )}
-                            >
-                                {isActive && (
-                                    <div className="absolute top-2 right-2">
-                                        <Check className="h-4 w-4 text-primary" />
-                                    </div>
-                                )}
-                                <preset.icon className={cn("h-6 w-6", preset.color)} />
-                                <span className="text-sm font-semibold leading-tight">{preset.name}</span>
-                                <span className="text-[11px] text-muted-foreground leading-snug line-clamp-2">{preset.tagline}</span>
-                                <div className="flex items-center gap-2 mt-1">
-                                    <span className={cn(
-                                        "inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold leading-none",
-                                        preset.estimatedCost === "$0/mo"
-                                            ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
-                                            : "bg-amber-500/15 text-amber-600 dark:text-amber-400"
-                                    )}>
-                                        <DollarSign className="h-2.5 w-2.5" />
-                                        {preset.estimatedCost}
-                                    </span>
-                                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold leading-none bg-blue-500/15 text-blue-600 dark:text-blue-400">
-                                        <Clock className="h-2.5 w-2.5" />
-                                        {preset.setupTime}
-                                    </span>
-                                </div>
-                            </button>
-                        );
-                    })}
-                </div>
-
-                {/* ── Selected Preset Detail Panel ──────────────────────── */}
-                <AnimatePresence mode="wait">
-                    {selectedPreset && (
-                        <motion.div
-                            key={selectedPreset.id}
-                            initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: "auto" }}
-                            exit={{ opacity: 0, height: 0 }}
-                            transition={{ duration: 0.25, ease: "easeOut" }}
+                    <div className="rounded-2xl border border-dashed border-border/70 bg-muted/20 p-6">
+                      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                        <div>
+                          <h3 className="text-base font-semibold">
+                            Starter Presets
+                          </h3>
+                          <p className="text-sm text-muted-foreground">
+                            The fastest way to avoid scary setup choices is to begin
+                            from a setup path that already makes sensible tradeoffs.
+                          </p>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={openImportPicker}
                         >
-                            <Card className={cn("border-l-4 shadow-sm", selectedPreset.bgColor.split(" ")[0])}>
-                                <CardHeader className="pb-3">
-                                    <CardTitle className="flex items-center justify-between">
-                                        <div className="flex items-center gap-2">
-                                            <selectedPreset.icon className={cn("h-5 w-5", selectedPreset.color)} />
-                                            {selectedPreset.name}
-                                        </div>
-                                        <Button variant="ghost" size="sm" onClick={() => { setSelectedPreset(null); setExpandedSteps(new Set()); }}>
-                                            <X className="h-4 w-4" />
-                                        </Button>
-                                    </CardTitle>
-                                    <CardDescription>{selectedPreset.tagline}</CardDescription>
-                                </CardHeader>
-                                <CardContent className="space-y-4">
-                                    {/* Cost / Time / MAU / Steps row */}
-                                    <div className="flex flex-wrap gap-3">
-                                        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-background border">
-                                            <DollarSign className="h-4 w-4 text-emerald-500" />
-                                            <div>
-                                                <p className="text-[10px] text-muted-foreground uppercase font-medium">Est. Cost</p>
-                                                <p className="text-sm font-bold">{selectedPreset.estimatedCost}</p>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-background border">
-                                            <Clock className="h-4 w-4 text-blue-500" />
-                                            <div>
-                                                <p className="text-[10px] text-muted-foreground uppercase font-medium">Setup Time</p>
-                                                <p className="text-sm font-bold">{selectedPreset.setupTime}</p>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-background border">
-                                            <Users className="h-4 w-4 text-orange-500" />
-                                            <div>
-                                                <p className="text-[10px] text-muted-foreground uppercase font-medium">Est. MAU</p>
-                                                <p className="text-sm font-bold">{selectedPreset.capacity.estimatedMAU}</p>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-background border">
-                                            <ListChecks className="h-4 w-4 text-purple-500" />
-                                            <div>
-                                                <p className="text-[10px] text-muted-foreground uppercase font-medium">Steps</p>
-                                                <p className="text-sm font-bold">{selectedPreset.steps.length} steps</p>
-                                            </div>
-                                        </div>
-                                    </div>
+                          <Upload className="mr-2 h-4 w-4" />
+                          Upload `.env`
+                        </Button>
+                      </div>
 
-                                    {/* First Bottleneck Warning */}
-                                    <div className="flex items-start gap-2 px-3 py-2.5 rounded-lg bg-amber-500/10 border border-amber-500/30">
-                                        <AlertTriangle className="h-4 w-4 text-amber-500 mt-0.5 flex-shrink-0" />
-                                        <div>
-                                            <p className="text-xs font-semibold text-amber-600 dark:text-amber-400">First Bottleneck</p>
-                                            <p className="text-xs text-muted-foreground mt-0.5">{selectedPreset.capacity.firstBottleneck}</p>
-                                        </div>
-                                    </div>
+                      <div className="mt-5 grid grid-cols-1 gap-3 lg:grid-cols-2">
+                        {PRESETS.map((preset) => (
+                          <PresetCard
+                            key={preset.id}
+                            preset={preset}
+                            active={selectedPreset?.id === preset.id}
+                            onClick={() => applyPreset(preset)}
+                          />
+                        ))}
+                      </div>
+                    </div>
 
-                                    {/* What's included */}
-                                    <div>
-                                        <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">What&apos;s Included</p>
-                                        <div className="flex flex-wrap gap-1.5">
-                                            {selectedPreset.highlights.map((h, i) => (
-                                                <span key={i} className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-primary/10 text-primary text-xs font-medium">
-                                                    <Check className="h-3 w-3" /> {h}
-                                                </span>
-                                            ))}
-                                        </div>
-                                    </div>
+                    {renderPresetDetails}
+                  </>
+                ) : null}
 
-                                    {/* Accounts Needed */}
-                                    <div>
-                                        <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Accounts You&apos;ll Need ({selectedPreset.accountsNeeded.length})</p>
-                                        <div className="flex flex-wrap gap-1.5">
-                                            {selectedPreset.accountsNeeded.map((account, i) => (
-                                                <span key={i} className="inline-flex items-center px-2 py-1 rounded-md bg-muted/60 text-muted-foreground text-xs font-medium border border-border/50">
-                                                    {account}
-                                                </span>
-                                            ))}
-                                        </div>
-                                    </div>
+                {currentStep.id === "basics" ? (
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <Card className="border-border/60 md:col-span-2">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-base">Core Identity</CardTitle>
+                        <CardDescription>
+                          These values shape the product name, URL, and visual theme
+                          across the starter.
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="grid gap-4 md:grid-cols-2">
+                        <FormField
+                          control={form.control}
+                          name="name"
+                          render={({ field }) => (
+                            <FormItem className="md:col-span-2">
+                              <FormControl>
+                                <FloatingLabelInput
+                                  id="wizard-project-name"
+                                  label={getWizardFieldMeta("name")?.label ?? "Project Name"}
+                                  className="bg-background"
+                                  {...field}
+                                />
+                              </FormControl>
+                              <p className="text-xs text-muted-foreground">
+                                {getWizardFieldMeta("name")?.helper}
+                              </p>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        {renderWizardField("NEXT_PUBLIC_SAAS_NAME", "basics")}
+                        {renderWizardField("NEXT_PUBLIC_COMPANY_NAME", "basics")}
+                        {renderWizardField("NEXT_PUBLIC_URL", "basics")}
+                        {renderWizardField("NEXT_PUBLIC_THEME", "basics")}
+                        {renderWizardField("NEXT_PUBLIC_THEME_TYPE", "basics")}
+                        <div className="md:col-span-2">
+                          {renderWizardField("NEXT_PUBLIC_PLATFORM", "basics")}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                ) : null}
 
-                                    {/* Service Limits Table */}
-                                    <div>
-                                        <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Service Limits</p>
-                                        <div className="rounded-lg border border-border/60 overflow-hidden">
-                                            <div className="grid grid-cols-[1fr_2fr] text-[11px] font-semibold text-muted-foreground uppercase bg-muted/40 px-3 py-1.5 border-b border-border/40">
-                                                <span>Service</span>
-                                                <span>Limit</span>
-                                            </div>
-                                            {selectedPreset.capacity.serviceLimits.map((sl, i) => (
-                                                <div
-                                                    key={i}
-                                                    className={cn(
-                                                        "grid grid-cols-[1fr_2fr] px-3 py-2 text-xs border-b border-border/20 last:border-b-0",
-                                                        sl.bottleneck && "bg-amber-500/5"
-                                                    )}
-                                                >
-                                                    <span className={cn(
-                                                        "font-medium",
-                                                        sl.bottleneck ? "text-amber-600 dark:text-amber-400" : "text-foreground"
-                                                    )}>
-                                                        {sl.service}
-                                                        {sl.bottleneck && <AlertTriangle className="inline h-3 w-3 ml-1 -mt-0.5" />}
-                                                    </span>
-                                                    <span className="text-muted-foreground">{sl.limit}</span>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
+                {currentStep.id === "features" ? (
+                  <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                    <FeaturePanel
+                      title="Marketing Content"
+                      question="How do you want to manage your landing page and docs?"
+                      description="Pick the content source that matches how hands-on you want your team to be."
+                    >
+                      {renderWizardField("NEXT_PUBLIC_CMS", "features-cms")}
+                    </FeaturePanel>
 
-                                    {/* Upgrade Guide */}
-                                    <div>
-                                        <p className="text-xs font-semibold text-muted-foreground uppercase mb-2 flex items-center gap-1.5">
-                                            <TrendingUp className="h-3.5 w-3.5" /> How to Scale Beyond This
-                                        </p>
-                                        <div className="space-y-1.5">
-                                            {selectedPreset.capacity.upgradeGuide.map((guide, i) => (
-                                                <div key={i} className="flex items-start gap-2 text-xs text-muted-foreground">
-                                                    <ArrowUpRight className="h-3 w-3 text-primary mt-0.5 flex-shrink-0" />
-                                                    <span>{guide}</span>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
+                    <FeaturePanel
+                      title="User Sign-In"
+                      question="How should people create accounts and sign in?"
+                      description="Choose the login options your product should support from day one."
+                    >
+                      {renderWizardField(
+                        "NEXT_PUBLIC_AUTH_PROVIDERS",
+                        "features-auth",
+                      )}
+                    </FeaturePanel>
 
-                                    {/* Implementation Steps Accordion */}
-                                    <div>
-                                        <div className="flex items-center justify-between mb-3">
-                                            <p className="text-xs font-semibold text-muted-foreground uppercase">Implementation Steps</p>
-                                            <button
-                                                type="button"
-                                                onClick={() => {
-                                                    if (expandedSteps.size === selectedPreset.steps.length) {
-                                                        setExpandedSteps(new Set());
-                                                    } else {
-                                                        setExpandedSteps(new Set(selectedPreset.steps.map((_, i) => i)));
-                                                    }
-                                                }}
-                                                className="text-[11px] text-primary hover:text-primary/80 font-medium cursor-pointer transition-colors"
-                                            >
-                                                {expandedSteps.size === selectedPreset.steps.length ? "Collapse All" : "Expand All"}
-                                            </button>
-                                        </div>
-                                        <div className="space-y-2">
-                                            {selectedPreset.steps.map((step, i) => {
-                                                const isExpanded = expandedSteps.has(i);
-                                                return (
-                                                    <div key={i} className="rounded-lg border border-border/60 overflow-hidden">
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => {
-                                                                setExpandedSteps(prev => {
-                                                                    const next = new Set(prev);
-                                                                    if (next.has(i)) next.delete(i);
-                                                                    else next.add(i);
-                                                                    return next;
-                                                                });
-                                                            }}
-                                                            className="w-full flex items-center gap-3 px-3 py-2.5 text-left hover:bg-muted/40 transition-colors cursor-pointer"
-                                                        >
-                                                            <span className="flex-shrink-0 flex items-center justify-center h-6 w-6 rounded-full bg-primary/15 text-primary text-xs font-bold">
-                                                                {i + 1}
-                                                            </span>
-                                                            <span className="flex-1 text-sm font-medium">{step.title}</span>
-                                                            {isExpanded
-                                                                ? <ChevronUp className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                                                                : <ChevronDown className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                                                            }
-                                                        </button>
-                                                        <AnimatePresence>
-                                                            {isExpanded && (
-                                                                <motion.div
-                                                                    initial={{ height: 0, opacity: 0 }}
-                                                                    animate={{ height: "auto", opacity: 1 }}
-                                                                    exit={{ height: 0, opacity: 0 }}
-                                                                    transition={{ duration: 0.2, ease: "easeOut" }}
-                                                                >
-                                                                    <ul className="px-3 pb-3 pl-12 space-y-1.5">
-                                                                        {step.details.map((detail, j) => (
-                                                                            <li key={j} className="flex items-start gap-2 text-xs text-muted-foreground">
-                                                                                <span className="mt-1.5 h-1 w-1 rounded-full bg-muted-foreground/40 flex-shrink-0" />
-                                                                                <span>{detail}</span>
-                                                                            </li>
-                                                                        ))}
-                                                                    </ul>
-                                                                </motion.div>
-                                                            )}
-                                                        </AnimatePresence>
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
+                    <FeaturePanel
+                      title="Support Experience"
+                      question="Do you want support email or booking links built in?"
+                      description="Leave this empty if you want to keep support lightweight for now."
+                    >
+                      {renderWizardField(
+                        "NEXT_PUBLIC_SUPPORT_FEATURES",
+                        "features-support",
+                      )}
+                    </FeaturePanel>
 
-                                    <p className="text-xs text-muted-foreground italic">
-                                        Form fields below have been auto-filled. Fill in your API keys and secrets, then download.
-                                    </p>
-                                </CardContent>
-                            </Card>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
+                    <FeaturePanel
+                      title="Uploaded Files"
+                      question="Where should product images and uploaded assets live?"
+                      description="Choose the asset storage provider that fits your scale and comfort level."
+                    >
+                      {renderWizardField(
+                        "NEXT_PUBLIC_IMAGE_STORAGE",
+                        "features-storage",
+                      )}
+                    </FeaturePanel>
+
+                    <FeaturePanel
+                      title="Monitoring & Protection"
+                      question="Which operational extras do you want included?"
+                      description="Turn on analytics, logging, or rate limiting only when you know you need them."
+                    >
+                      {renderWizardField(
+                        "NEXT_PUBLIC_OBSERVABILITY_FEATURES",
+                        "features-observability",
+                      )}
+                    </FeaturePanel>
+
+                    <FeaturePanel
+                      title="Take Payments"
+                      question="Should the scaffold include checkout, billing, and credits flows?"
+                      description="Enable this only if you want payment UI, transaction history, and webhooks already wired in."
+                    >
+                      {SCAFFOLD_MODULE_OPTIONS.filter((module) => module.id === "billing").map(
+                        (module) => {
+                          const selected = (values.SELECTED_MODULES || []).includes(
+                            module.id,
+                          );
+
+                          return (
+                            <button
+                              key={module.id}
+                              type="button"
+                              onClick={() => toggleScaffoldModule(module.id)}
+                              className={cn(
+                                "w-full rounded-2xl border p-4 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
+                                selected
+                                  ? "border-primary bg-primary/10 shadow-sm"
+                                  : "border-border/60 bg-background hover:border-primary/40",
+                              )}
+                            >
+                              <div className="flex items-center justify-between gap-3">
+                                <div>
+                                  <div className="flex items-center gap-2 text-sm font-semibold">
+                                    <CircleDot className="h-4 w-4 text-primary" />
+                                    {module.label}
+                                  </div>
+                                  <p className="mt-2 text-sm text-muted-foreground">
+                                    {module.description}
+                                  </p>
+                                </div>
+                                <Badge variant={selected ? "default" : "outline"}>
+                                  {selected ? "Included" : `+${module.creditsCost} credits`}
+                                </Badge>
+                              </div>
+                            </button>
+                          );
+                        },
+                      )}
+                    </FeaturePanel>
+                  </div>
+                ) : null}
+
+                {currentStep.id === "accounts" ? (
+                  <div className="space-y-4">
+                    {accountGroups.map((group: ProviderGroup) => (
+                      <Card key={group.id} className="border-border/60 shadow-sm">
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-base">{group.title}</CardTitle>
+                          <CardDescription>{group.description}</CardDescription>
+                        </CardHeader>
+                        <CardContent className="grid gap-4 md:grid-cols-2">
+                          {group.fields.map((field) => (
+                            <div
+                              key={field}
+                              className={cn(
+                                field.endsWith("_TOKEN") ||
+                                  field.endsWith("_SECRET") ||
+                                  field === "DATABASE_URL" ||
+                                  field.includes("KEY")
+                                  ? "md:col-span-2"
+                                  : "",
+                              )}
+                            >
+                              {renderWizardField(field, group.id)}
+                            </div>
+                          ))}
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                ) : null}
+
+                {currentStep.id === "review" ? (
+                  <div className="space-y-4">
+                    <Card className="border-border/60 shadow-sm">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-base">What You&apos;re Building</CardTitle>
+                        <CardDescription>
+                          A quick, human-readable summary before download.
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="grid gap-3 md:grid-cols-2">
+                        <div className="rounded-2xl border border-border/60 p-4">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                            Basics
+                          </p>
+                          <div className="mt-3 space-y-2 text-sm">
+                            <div className="flex items-center justify-between gap-3">
+                              <span className="text-muted-foreground">Project</span>
+                              <span className="font-medium">
+                                {values.NEXT_PUBLIC_SAAS_NAME || "Not named yet"}
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between gap-3">
+                              <span className="text-muted-foreground">Company</span>
+                              <span className="font-medium">
+                                {values.NEXT_PUBLIC_COMPANY_NAME || "Not set"}
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between gap-3">
+                              <span className="text-muted-foreground">URL</span>
+                              <span className="font-medium">
+                                {values.NEXT_PUBLIC_URL || "Not set"}
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between gap-3">
+                              <span className="text-muted-foreground">Platforms</span>
+                              <span className="font-medium">
+                                {formatList(values.NEXT_PUBLIC_PLATFORM || [])}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="rounded-2xl border border-border/60 p-4">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                            Credits
+                          </p>
+                          <div className="mt-3 space-y-2 text-sm">
+                            <div className="flex items-center justify-between gap-3">
+                              <span className="text-muted-foreground">Base starter</span>
+                              <span className="font-medium">
+                                {pricing.baseCredits} credits
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between gap-3">
+                              <span className="text-muted-foreground">Extra features</span>
+                              <span className="font-medium">
+                                {pricing.moduleCredits.length > 0
+                                  ? pricing.moduleCredits
+                                    .map((entry) => `${entry.label} (+${entry.credits})`)
+                                    .join(", ")
+                                  : "None"}
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between gap-3">
+                              <span className="text-muted-foreground">Total</span>
+                              <span className="text-lg font-semibold">
+                                {pricing.totalCredits}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card className="border-border/60 shadow-sm">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-base">Chosen Capabilities</CardTitle>
+                      </CardHeader>
+                      <CardContent className="grid gap-3 md:grid-cols-2">
+                        {reviewSummary.map((item) => (
+                          <div
+                            key={item.label}
+                            className="rounded-2xl border border-border/60 p-4"
+                          >
+                            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                              {item.label}
+                            </p>
+                            <p className="mt-2 text-sm font-medium">{item.value}</p>
+                          </div>
+                        ))}
+                      </CardContent>
+                    </Card>
+
+                    <Card className="border-border/60 shadow-sm">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-base">Connected Services</CardTitle>
+                        <CardDescription>
+                          These are the accounts and providers this setup currently depends on.
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="flex flex-wrap gap-2">
+                        {accountGroups.map((group) => (
+                          <Badge key={group.id} variant="outline">
+                            {group.title}
+                          </Badge>
+                        ))}
+                      </CardContent>
+                    </Card>
+
+                    <Card
+                      className={cn(
+                        "shadow-sm",
+                        missingLabels.length > 0
+                          ? "border-amber-500/40 bg-amber-500/5"
+                          : "border-emerald-500/40 bg-emerald-500/5",
+                      )}
+                    >
+                      <CardHeader className="pb-3">
+                        <CardTitle className="flex items-center gap-2 text-base">
+                          {missingLabels.length > 0 ? (
+                            <AlertTriangle className="h-4 w-4 text-amber-500" />
+                          ) : (
+                            <Check className="h-4 w-4 text-emerald-500" />
+                          )}
+                          {missingLabels.length > 0
+                            ? "Missing Before Download"
+                            : "Ready to Download"}
+                        </CardTitle>
+                        <CardDescription>
+                          {missingLabels.length > 0
+                            ? "These are the remaining items still blocking a clean scaffold download."
+                            : "The required setup details are filled in."}
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        {missingLabels.length > 0 ? (
+                          <ul className="space-y-2 text-sm text-muted-foreground">
+                            {missingLabels.map((label) => (
+                              <li key={label} className="flex items-start gap-2">
+                                <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-amber-500" />
+                                <span>{label}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p className="text-sm text-emerald-700 dark:text-emerald-300">
+                            The wizard has enough information to generate your scaffold.
+                          </p>
+                        )}
+                      </CardContent>
+                    </Card>
+
+                    <div className="flex flex-col gap-3 md:flex-row">
+                      <Button
+                        type="button"
+                        onClick={handleFinalDownload}
+                        disabled={isDownloading || missingLabels.length > 0}
+                        size="lg"
+                        className="touch-manipulation"
+                      >
+                        <Download className="mr-2 h-4 w-4" />
+                        {isDownloading ? "Downloading…" : "Download Boilerplate"}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        disabled
+                        onClick={() => {
+                          const url = buildVercelDeployUrl(form.getValues());
+                          window.open(url, "_blank", "noopener,noreferrer");
+                        }}
+                        size="lg"
+                      >
+                        <Rocket className="mr-2 h-4 w-4" />
+                        Deploy to Vercel (Coming Soon)
+                      </Button>
+                    </div>
+                  </div>
+                ) : null}
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="flex flex-col gap-3 sm:flex-row sm:justify-between">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleBack}
+              disabled={currentStepIndex === 0}
+            >
+              Back
+            </Button>
+            {currentStep.id !== "review" ? (
+              <Button type="button" onClick={handleNext}>
+                Next
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            ) : null}
+          </div>
+        </div>
+
+        <WizardSummary
+          currentStepIndex={currentStepIndex}
+          completionByStep={completionByStep}
+          selectedPreset={selectedPreset}
+          entryChoice={entryChoice}
+          pricing={pricing}
+          values={values}
+          missingLabels={missingLabels}
+        />
+      </div>
+    );
+  };
+
+  return (
+    <Form {...form}>
+      <form
+        onSubmit={(event) => {
+          event.preventDefault();
+        }}
+        className="min-h-svh"
+      >
+        <input
+          ref={importInputRef}
+          type="file"
+          accept=".env"
+          onChange={handleFileUpload}
+          className="hidden"
+        />
+
+        <div className="mx-auto flex w-full max-w-8xl flex-col gap-8 p-6 md:p-8">
+          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+            <div className="max-w-3xl">
+              <h1 className="text-balance text-3xl font-bold md:text-4xl">
+                Beginner-Friendly Scaffold Setup
+              </h1>
+              <p className="mt-2 text-base text-muted-foreground">
+                Start with a preset, import an existing config, or walk through the
+                setup one understandable step at a time.
+              </p>
             </div>
 
-            <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+            <div className="rounded-2xl border border-border/60 bg-background p-4 shadow-sm">
+              <div className="flex items-center gap-3">
+                <div className="rounded-xl bg-muted p-2">
+                  {advancedMode ? (
+                    <Layers3 className="h-4 w-4 text-primary" />
+                  ) : (
+                    <Sparkles className="h-4 w-4 text-primary" />
+                  )}
+                </div>
+                <div>
+                  <p className="text-sm font-semibold">Advanced Setup</p>
+                  <p className="text-xs text-muted-foreground">
+                    Toggle the dense power-user form when you want every setting visible.
+                  </p>
+                </div>
+                <Switch
+                  checked={advancedMode}
+                  onCheckedChange={setAdvancedMode}
+                  aria-label="Toggle advanced scaffold setup"
+                />
+              </div>
+            </div>
+          </div>
 
-                        {MODULE_CONFIG.map((module) => (
-                            <Card key={module.id} className={`shadow-sm border-border/60 border-l-4 ${module.borderColor} ${module.id === "project" ? "xl:col-span-2" : ""}`}>
-                                <CardHeader>
-                                    <CardTitle className="flex items-center justify-between gap-2">
-                                        <div className="flex items-center gap-2">
-                                            <module.icon className={`h-5 w-5 ${module.color}`} /> {module.title}
-                                        </div>
-                                        {module.documentation && module.documentation.length > 0 && (
-                                            <div className="flex items-center gap-2">
-                                                {module.documentation.map((doc, idx) => (
-                                                    onNavigateDoc ? (
-                                                        <Button key={idx} variant="ghost" size="sm" className="h-8 px-2 text-muted-foreground hover:text-primary" onClick={() => onNavigateDoc(doc.slug)}>
-                                                            <span className="text-xs">{doc.label}</span>
-                                                            <ExternalLink className="h-3.5 w-3.5 ml-1.5" />
-                                                        </Button>
-                                                    ) : (
-                                                        <Button key={idx} variant="ghost" size="sm" className="h-8 px-2 text-muted-foreground hover:text-primary" asChild>
-                                                            <a href={(docsBaseUrl || "") + "/landing/doc/" + doc.slug} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5">
-                                                                <span className="text-xs">{doc.label}</span>
-                                                                <ExternalLink className="h-3.5 w-3.5" />
-                                                            </a>
-                                                        </Button>
-                                                    )
-                                                ))}
-                                            </div>
-                                        )}
-                                    </CardTitle>
-                                    <CardDescription>{module.description}</CardDescription>
-                                </CardHeader>
-                                <CardContent className={`space-y-4 ${module.id === "project" ? "grid md:grid-cols-2 gap-4 space-y-0" : ""}`}>
-                                    {module.id === "project" && (
-                                        <FormField
-                                            control={form.control}
-                                            name="name"
-                                            render={({ field }) => (
-                                                <FormItem className="col-span-2">
-                                                    <FormControl>
-                                                        <FloatingLabelInput id="projectName" label="Project Name (Folder Name)" className="bg-background" {...field} />
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                    )}
-                                    <AnimatePresence mode="popLayout">
-                                        {module.fields
-                                            .filter((field) => {
-                                                if (field.showIf) {
-                                                    const dependencyValue = form.watch(field.showIf.field as keyof FormValues);
-                                                    if (Array.isArray(field.showIf.value)) {
-                                                        if (!field.showIf.value.includes(dependencyValue as string)) return false;
-                                                    } else {
-                                                        if (dependencyValue !== field.showIf.value) return false;
-                                                    }
-                                                }
-                                                if (field.showIfIncludes) {
-                                                    const dependencyValue = form.watch(field.showIfIncludes.field as keyof FormValues);
-                                                    if (!Array.isArray(dependencyValue) || !(dependencyValue as string[]).includes(field.showIfIncludes.value)) return false;
-                                                }
-                                                return true;
-                                            })
-                                            .map((field) => (
-                                                <motion.div
-                                                    key={field.name}
-                                                    initial={{ opacity: 0, height: 0 }}
-                                                    animate={{ opacity: 1, height: "auto" }}
-                                                    exit={{ opacity: 0, height: 0 }}
-                                                    transition={{ duration: 0.2, ease: "easeOut" }}
-                                                >
-                                                    <EnvField
-                                                        control={form.control}
-                                                        name={field.name as keyof FormValues}
-                                                        description={field.description}
-                                                        required={field.required}
-                                                        sectionId={module.id}
-                                                        providerHints={field.providerHints}
-                                                    />
-                                                </motion.div>
-                                            ))}
-                                    </AnimatePresence>
-                                </CardContent>
-                            </Card>
-                        ))}
-
-                    </div>
-                </form>
-            </Form>
+          {advancedMode ? renderAdvancedMode() : renderWizardMode()}
         </div>
-    );
+      </form>
+    </Form>
+  );
 }

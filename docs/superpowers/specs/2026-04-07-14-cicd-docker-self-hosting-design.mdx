@@ -1,0 +1,67 @@
+# CI/CD / Docker / Self-Hosting
+
+## Context
+
+SaaS Forge is a large monorepo with web, desktop, mobile, shared packages, scaffolding logic, and template sync flows. Yet the repo still lacks a complete first-class CI/CD story and a polished self-hosting path, despite those being common expectations for serious boilerplates.
+
+`docs/plan.md` already calls out the empty GitHub Actions posture and the need for Docker-based deployment options.
+
+## Why This Priority
+
+This is ranked fourteenth because it improves trust, contributor flow, and adoption, but it is more of a delivery/ops multiplier than a product capability. The earlier features either unlock core business value or close more visible product gaps.
+
+It stays behind `#13 Audit Logging` because auditability supports the product itself. It stays ahead of `#15 Usage Billing Metering` because a stable CI/CD and self-hosting story benefits every future change and lowers adoption friction for technically sophisticated buyers.
+
+## Overview
+
+Add a baseline production-grade contributor and deployment pipeline for validation, previews, and self-hosted installs.
+
+Primary goals:
+
+- reliable PR validation
+- deployment readiness checks
+- Docker-based local/self-hosted path
+- template-sync and scaffold validation in automation
+
+## Main Approach
+
+Treat CI/CD as part of the product quality contract, not as optional repo maintenance.
+
+Key implementation direction:
+
+- Add GitHub Actions for lint, typecheck, test, and targeted build validation.
+- Include template-sync checks so the shipped boilerplate cannot silently drift from source.
+- Add Docker assets for the web app and supporting services appropriate to the starter.
+- Document environment setup for self-hosters clearly.
+- Keep desktop/mobile release automation out of the first pass unless the repo is ready to support those channels cleanly.
+
+## Deliverables
+
+1. CI workflow for lint, typecheck, tests, and selected builds.
+2. Template validation workflow covering stage/check/build flows where practical.
+3. Dockerfile and compose guidance for self-hosted web deployment.
+4. Deployment documentation for Vercel-first and Docker/self-hosted paths.
+5. Optional preview deployment guidance for pull requests.
+
+## Likely Files / Systems Affected
+
+- `.github/workflows/*`
+- root `package.json`
+- Docker-related files at repo root
+- README and deployment docs
+- scaffold/template scripts for automation hooks
+
+## Risks / Dependencies
+
+- CI must be scoped carefully or the monorepo will become too slow/noisy for contributors.
+- Self-hosting docs should reflect what is truly supported rather than implying full one-click parity across every optional service.
+- Template validation should avoid brittle workflows that fail for unrelated reasons.
+- Secrets and external service dependencies need clear handling in CI.
+
+## Verification
+
+1. Pull requests run lint, typecheck, and tests automatically.
+2. CI catches template drift or staging/build breakages before merge.
+3. A documented Docker path can run the core web product locally/self-hosted.
+4. Build failures provide actionable logs rather than opaque monorepo errors.
+5. Contributor docs reflect the automated checks accurately.

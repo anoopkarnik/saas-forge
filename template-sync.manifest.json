@@ -1,5 +1,5 @@
 {
-  "templateVersion": "1.0.3",
+  "templateVersion": "1.2.0",
   "templateRoot": "templates/saas-boilerplate",
   "stageRoot": ".generated/saas-boilerplate",
   "overrideRoot": "template-overrides/saas-boilerplate",
@@ -15,7 +15,9 @@
     "pnpm-workspace.yaml",
     "tsconfig.json",
     "turbo.json",
-    "vitest.workspace.ts"
+    "vitest.workspace.ts",
+    "scripts/publish-desktop.mjs",
+    "scripts/bump-version.mjs"
   ],
   "exclude": [
     "apps/mobile/components/downloads",

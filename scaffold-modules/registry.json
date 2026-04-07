@@ -1,0 +1,50 @@
+{
+  "baseCreditsCost": 20,
+  "modules": [
+    {
+      "id": "billing",
+      "label": "Billing & Payments",
+      "default": false,
+      "creditsCost": 10,
+      "requires": [],
+      "incompatibleWith": [],
+      "downloadEnabled": true
+    },
+    {
+      "id": "multi_tenancy",
+      "label": "Organizations / Teams",
+      "default": false,
+      "creditsCost": 15,
+      "requires": [],
+      "incompatibleWith": [],
+      "downloadEnabled": false
+    },
+    {
+      "id": "ai",
+      "label": "AI",
+      "default": false,
+      "creditsCost": 15,
+      "requires": [],
+      "incompatibleWith": [],
+      "downloadEnabled": false
+    },
+    {
+      "id": "api_keys",
+      "label": "API Keys",
+      "default": false,
+      "creditsCost": 5,
+      "requires": [],
+      "incompatibleWith": [],
+      "downloadEnabled": false
+    },
+    {
+      "id": "notifications",
+      "label": "Notifications",
+      "default": false,
+      "creditsCost": 5,
+      "requires": [],
+      "incompatibleWith": [],
+      "downloadEnabled": false
+    }
+  ]
+}

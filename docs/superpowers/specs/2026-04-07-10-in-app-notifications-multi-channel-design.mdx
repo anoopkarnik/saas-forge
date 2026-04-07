@@ -1,0 +1,71 @@
+# In-App Notifications / Multi-Channel Delivery
+
+## Context
+
+SaaS Forge has email capability and support surfaces, but no built-in notification center, unread state, or reusable pattern for user-facing alerts across web, desktop, and mobile. As the product adds invites, billing alerts, onboarding nudges, webhook failures, and AI usage warnings, that absence becomes more noticeable.
+
+Notifications are also one of the first features downstream teams rebuild when a boilerplate lacks them.
+
+## Why This Priority
+
+This is ranked tenth because it becomes much more valuable once onboarding, billing, orgs, and jobs exist, but it is still not as foundational as the items ahead of it. It is primarily an engagement and UX multiplier rather than a prerequisite architectural change.
+
+It stays behind `#9 Onboarding` because first-run activation should come before re-engagement patterns. It stays ahead of `#11 Advanced File Uploads` because notifications can touch many parts of the product immediately, while richer uploads are important but narrower in scope.
+
+## Overview
+
+Add a cross-platform notification system with in-app inbox support first, then optional email, browser push, and mobile push delivery channels.
+
+Initial notification types:
+
+- invite accepted / invite received
+- payment success or billing issue
+- credit usage threshold warnings
+- support reply / admin action
+- future job/webhook/report completion alerts
+
+## Main Approach
+
+Design notifications as domain events rendered through one shared delivery model, not as ad hoc toasts hardcoded into individual screens.
+
+Key implementation direction:
+
+- Add a `Notification` data model with type, actor, target, channel state, and read/unread tracking.
+- Reuse the jobs system for delivery fan-out to email or push channels.
+- Ship web and desktop inbox/bell UI first; mobile can add an inbox screen alongside later push support.
+- Support user-level notification preferences by type and channel.
+- Keep high-value durable notifications separate from ephemeral UI toasts.
+
+## Deliverables
+
+1. Notification model and persistence.
+2. Web/desktop notification bell or inbox UI with unread counts.
+3. Notification creation helpers for common event types.
+4. User preferences for channel/type opt-in.
+5. Email and future push fan-out hooks through background jobs.
+6. Admin visibility into delivery failures for system notifications.
+
+## Likely Files / Systems Affected
+
+- `packages/database/prisma/*`
+- `apps/web/app/(home)/**/*`
+- `apps/desktop/src/renderer/**/*`
+- `apps/mobile/**/*`
+- `packages/ui/src/components/**/*`
+- `packages/email/src/**/*`
+- future `packages/jobs` integration
+
+## Risks / Dependencies
+
+- Notifications should not be modeled only as UI toasts; durable state is needed for inbox behavior.
+- Jobs infrastructure is the right place for multi-channel delivery and retries.
+- Notification spam and preference fatigue are real risks, so preference controls should be part of the initial architecture.
+- Multi-tenancy should eventually scope notifications by org and workspace context.
+
+## Verification
+
+1. A system event can create a durable notification row and surface it in-app.
+2. Users can mark notifications read/unread and unread counts update correctly.
+3. Channel preferences are respected for email or future push delivery.
+4. Notification delivery failures are observable rather than silently dropped.
+5. Web and desktop can render the same notification model consistently.

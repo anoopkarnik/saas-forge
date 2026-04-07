@@ -1,0 +1,69 @@
+# Outgoing Webhooks / Event Delivery
+
+## Context
+
+SaaS Forge already supports internal product flows, but it does not yet give customers a way to subscribe to product events and automate downstream systems. Outgoing webhooks are one of the most common integration layers SaaS buyers expect once a product moves beyond basic internal CRUD.
+
+This feature becomes especially relevant after organizations, audit logs, notifications, API keys, and billing usage events exist, because those systems naturally create meaningful external events.
+
+## Why This Priority
+
+This is ranked sixteenth because it is a strong platform extension, but it becomes cleaner and safer after jobs, audit logging, and usage foundations exist. It is valuable, just less urgent than the earlier work that shapes the product's internal model and reliability.
+
+It stays behind `#15 Usage Billing Metering` because core monetization clarity is more central to the product. It stays ahead of `#17 API Key Management` because event delivery can begin as a platform-managed integration surface even before exposing full programmable API access.
+
+## Overview
+
+Add customer-configurable outgoing webhooks with event subscriptions, signing secrets, retries, and delivery visibility.
+
+Initial event types:
+
+- user or membership events
+- billing or credit events
+- support or feedback events
+- feature-flag or admin setting changes
+- future AI/completion events where relevant
+
+## Main Approach
+
+Use the background jobs platform for delivery so webhook dispatch is resilient, observable, and retryable.
+
+Key implementation direction:
+
+- Add a `WebhookEndpoint` model with target URL, secret, status, subscribed events, and ownership scope.
+- Define a structured event envelope shared across all outgoing deliveries.
+- Sign each delivery with HMAC and include timestamp/replay protection guidance.
+- Queue deliveries asynchronously with retry/backoff and dead-letter handling.
+- Provide an admin or customer-facing delivery log view with recent attempts and statuses.
+
+## Deliverables
+
+1. Webhook endpoint data model and management UI.
+2. Structured event envelope contract and event registry.
+3. Signed delivery implementation with retry/backoff behavior.
+4. Delivery logs and recent-attempt diagnostics.
+5. Docs for signature verification and local testing.
+6. Ownership model aligned with user/org context.
+
+## Likely Files / Systems Affected
+
+- `packages/database/prisma/*`
+- `apps/web/trpc/routers/*`
+- `apps/web/app/(home)/**/*`
+- future `packages/jobs` integration
+- `packages/observability` for delivery logging
+
+## Risks / Dependencies
+
+- Webhook delivery without background jobs will be fragile and should be avoided.
+- Event schemas must be versioned or consumers will be broken by future product changes.
+- Secrets must be stored and displayed carefully, with one-time reveal patterns where practical.
+- Audit logging becomes useful for tracking endpoint changes and secret rotations.
+
+## Verification
+
+1. A customer can create a webhook endpoint and subscribe to one or more event types.
+2. Triggered events are delivered asynchronously with signatures.
+3. Failed deliveries retry and eventually surface clear failure state.
+4. Delivery logs show request attempt metadata without exposing secrets.
+5. Event ownership and filtering work correctly for the current user or org context.

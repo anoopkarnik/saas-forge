@@ -69,5 +69,11 @@ export function parseMobileEnvFile(content: string, currentValues: FormState): {
         count++;
     }
 
+    newValues.SELECTED_MODULES =
+        parsedEnv["NEXT_PUBLIC_PAYMENT_GATEWAY"] &&
+        parsedEnv["NEXT_PUBLIC_PAYMENT_GATEWAY"] !== "none"
+            ? ["billing"]
+            : [];
+
     return { newValues, count };
 }

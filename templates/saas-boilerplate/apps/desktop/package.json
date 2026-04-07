@@ -1,6 +1,6 @@
 {
   "name": "saas-forge",
-  "version": "2.0.1",
+  "version": "1.2.0",
   "description": "SaaS Forge desktop application for managing your SaaS projects",
   "main": "out/main/index.js",
   "scripts": {
@@ -9,9 +9,9 @@
     "build": "electron-vite build",
     "build:prod": "electron-vite build --mode production",
     "package:snap": "electron-builder --linux snap",
-    "install:locally": "sudo snap install dist/saas-forge_2.0.0_amd64.snap --dangerous",
-    "publish:snapstore:edge": "snapcraft upload dist/saas-forge_2.0.0_amd64.snap --release=edge",
-    "publish:snapstore:stable": "snapcraft upload dist/saas-forge_2.0.0_amd64.snap --release=stable"
+    "install:locally": "node ../../scripts/publish-desktop.mjs --install-locally",
+    "publish:snapstore:edge": "node ../../scripts/publish-desktop.mjs --release edge",
+    "publish:snapstore:stable": "node ../../scripts/publish-desktop.mjs --release stable"
   },
   "dependencies": {
     "@radix-ui/react-icons": "^1.3.2",

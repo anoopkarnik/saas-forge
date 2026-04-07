@@ -1,0 +1,69 @@
+# API Key Management / Developer Access
+
+## Context
+
+SaaS Forge exposes application capabilities through tRPC and internal app surfaces, but it does not yet provide a first-class developer access model for programmatic integrations via API keys. That leaves downstream teams without a built-in path for automation, service-to-service access, or customer integrations.
+
+As the platform grows to include organizations, usage metering, webhooks, and audit logs, API keys become a natural next capability.
+
+## Why This Priority
+
+This is ranked seventeenth because it extends SaaS Forge from an app template into a more programmable platform, but it is safer to define after jobs, audit logs, usage metering, and webhook patterns exist. Those earlier features provide the ownership, logging, and quota primitives that API access should inherit.
+
+It stays behind `#16 Outgoing Webhooks` because webhooks offer controlled outbound integration before fully opening inbound programmable access. It stays ahead of `#18 Real-Time Infrastructure` because API keys unlock a broader class of integrations and automation than real-time UX alone.
+
+## Overview
+
+Add scoped API keys for authenticated programmatic access, with ownership, revocation, last-used visibility, and rate limiting.
+
+Initial goals:
+
+- create and revoke keys
+- scope access by capability
+- track key usage and last-used metadata
+- support user or org ownership
+- prepare for public API documentation later
+
+## Main Approach
+
+Build API keys as a disciplined auth surface layered on top of explicit scopes and server-side middleware.
+
+Key implementation direction:
+
+- Add an `ApiKey` model storing hashed keys, labels, scopes, owner, status, and last-used timestamp.
+- Introduce API-key auth middleware that resolves scopes and ownership cleanly.
+- Keep tRPC-internal app auth separate from external API access, even if some business logic is shared.
+- Add simple per-key rate limiting using existing Upstash infrastructure where practical.
+- Expose a management UI in settings or developer settings, with one-time key reveal behavior.
+
+## Deliverables
+
+1. API key model and secure hashing/storage strategy.
+2. Key creation/revocation UI and lifecycle rules.
+3. Middleware for API-key authentication and scope resolution.
+4. Basic rate limiting and last-used tracking.
+5. Audit log integration for key lifecycle events.
+6. Initial developer-facing documentation for key usage.
+
+## Likely Files / Systems Affected
+
+- `packages/database/prisma/*`
+- `apps/web/app/api/**/*`
+- `apps/web/trpc/routers/*` where shared business logic is reused
+- settings/developer UI in web
+- `packages/observability` and future audit logging integration
+
+## Risks / Dependencies
+
+- Raw keys must never be stored retrievably after creation.
+- API scopes must be explicit or external access will become overly broad.
+- User-vs-org ownership should follow the multi-tenancy design instead of inventing a second ownership model.
+- Usage metering and rate limiting should align so abusive keys can be throttled predictably.
+
+## Verification
+
+1. A user or org admin can create a key and only see the raw secret once.
+2. Revoked keys stop working immediately.
+3. Scope checks prevent keys from calling unauthorized endpoints.
+4. Last-used metadata and audit entries update on successful use.
+5. Rate limits apply consistently per key.

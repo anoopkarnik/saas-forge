@@ -1,0 +1,84 @@
+# AI SDK / Chat / Agents / Credit Metering
+
+## Context
+
+AI capability is now a default expectation for new SaaS products, yet SaaS Forge currently ships with no first-class AI package, no chat UI, no prompt management, and no token-aware metering layer. At the same time, the repo already has pieces that make AI a natural fit:
+
+- billing and credits already exist in `apps/web/trpc/routers/billingProcedures.ts`
+- shared UI and multi-surface delivery already exist across web, desktop, and mobile
+- observability and support tooling can support model tracing and failure reporting
+
+This creates a strong opportunity to add an AI foundation rather than forcing downstream users to integrate it themselves.
+
+## Why This Priority
+
+This is ranked fourth because it is one of the strongest commercial differentiators for the template and pairs directly with an existing monetization primitive: credits. It meaningfully increases product appeal without requiring the repo to become an AI-only product.
+
+It stays behind `#3 Security Hardening` because new AI endpoints, uploads, and provider integrations expand attack and cost surfaces. It stays ahead of `#5 Mobile Parity` because AI is a higher market-pull differentiator for template buyers, while mobile parity is more about fulfillment of current product promise.
+
+## Overview
+
+Add a shared AI platform package plus a reference product flow: streaming chat, provider abstraction, prompt management, usage metering, and optional agent-style tool execution.
+
+Initial scope:
+
+- provider abstraction for OpenAI-compatible and Anthropic-style models
+- streaming chat UI for web first
+- prompt storage/versioning
+- token and request usage tracking tied to credits
+- basic tool-enabled assistant demo
+
+## Main Approach
+
+Build AI as a shared platform package instead of scattering provider logic across routes and UI components.
+
+Key implementation direction:
+
+- Create `packages/ai` for provider clients, prompt helpers, streaming adapters, and typed AI responses.
+- Add web server routes or tRPC procedures for chat generation and prompt-backed tasks.
+- Track estimated and actual token consumption, converting it into credit usage events that plug into existing billing primitives.
+- Ship a reference AI chat screen in web, then expose the same backend contract to desktop and mobile.
+- Keep provider credentials server-side only, with runtime feature toggles controlling model/provider availability.
+- Start with non-autonomous tool calling rather than a fully open-ended agent runtime.
+
+Phasing:
+
+- Phase 1: provider abstraction + chat streaming + credit tracking.
+- Phase 2: prompt registry and admin prompt editing/versioning.
+- Phase 3: tool-enabled assistants and org-scoped AI usage.
+
+## Deliverables
+
+1. `packages/ai` shared package.
+2. Web AI chat page and reusable message/thread UI blocks.
+3. Server generation layer with provider abstraction and streaming support.
+4. Credit-metering hooks for token/request usage.
+5. Prompt storage/versioning model and admin controls.
+6. Observability events for model, latency, failure, and cost tracking.
+7. Starter example flows such as summarization or support assistant.
+
+## Likely Files / Systems Affected
+
+- `packages/ai` new workspace
+- `apps/web/app/**/*` for AI routes/pages
+- `apps/web/trpc/routers/*`
+- `apps/web/lib/**/*`
+- `packages/ui/src/components/**/*`
+- `packages/database/prisma/*`
+- `packages/observability/src/**/*`
+
+## Risks / Dependencies
+
+- Credit accounting must be explicit or AI usage can create unbounded cost exposure.
+- Feature flags or runtime config should control provider/model availability.
+- Upload support and real-time streaming will improve AI UX later, but the first version should not depend on them completely.
+- Prompt editing and tool execution need role-based controls to prevent accidental breakage or abuse.
+
+## Verification
+
+1. A user can open a web chat UI, submit a prompt, and receive a streamed response.
+2. Token or request usage is recorded and reduces credits according to a defined rule.
+3. Provider failures surface clean error states without exposing secrets.
+4. Admins can change prompt configuration or disable AI features at runtime.
+5. Observability captures provider, latency, and error metadata for AI requests.
+6. The AI feature can be turned off cleanly for deployments that do not configure provider credentials.

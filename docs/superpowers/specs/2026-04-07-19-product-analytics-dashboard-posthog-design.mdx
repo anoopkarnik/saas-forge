@@ -1,0 +1,68 @@
+# Product Analytics Dashboard / PostHog
+
+## Context
+
+SaaS Forge already references Google Analytics and has an admin SEO/analytics direction, but that is focused on site and marketing visibility rather than product analytics. There is still no first-class event model for feature adoption, activation funnels, retention cohorts, or usage analysis inside the app itself.
+
+As the roadmap adds onboarding, AI, billing usage, and org workflows, product analytics becomes valuable for deciding what to improve next.
+
+## Why This Priority
+
+This is ranked nineteenth because it is highly useful for product learning, but it is less blocking than the platform and monetization work above it. It becomes more meaningful after onboarding, notifications, and usage events exist, because those features provide richer behavior to measure.
+
+It stays behind `#18 Real-Time Infrastructure` because real-time directly affects live user experience. It stays ahead of `#20 Cron Jobs` because product analytics helps guide ongoing roadmap decisions more directly than scheduled task infrastructure once jobs already exist.
+
+## Overview
+
+Add product analytics instrumentation and dashboards, likely with PostHog as the default reference implementation because it fits developer-oriented and self-hosting-friendly workflows.
+
+Initial analytics focus:
+
+- sign-up to activation funnel
+- onboarding completion
+- feature usage and adoption
+- billing conversion and churn signals
+- retention cohorts and path analysis
+
+## Main Approach
+
+Introduce a shared event-tracking wrapper so product code emits typed analytics events rather than vendor-specific calls scattered across components.
+
+Key implementation direction:
+
+- Add a client/server analytics wrapper with typed event names and payload shape guidance.
+- Integrate user identification and org context where applicable.
+- Instrument key flows first: auth, onboarding, billing, scaffold usage, and future AI usage.
+- Provide an admin/product dashboard or clear PostHog project conventions for prebuilt views.
+- Keep marketing/site analytics separate from product analytics concerns.
+
+## Deliverables
+
+1. Analytics integration with PostHog or a pluggable equivalent.
+2. Typed event-tracking wrapper for client and server events.
+3. Core instrumentation for auth, onboarding, billing, and major product actions.
+4. Predefined dashboard guidance for activation, retention, and feature adoption.
+5. Privacy-conscious defaults and optional disable/config controls.
+
+## Likely Files / Systems Affected
+
+- `apps/web/app/**/*`
+- `apps/web/lib/**/*`
+- `packages/ui/src/**/*`
+- runtime config and onboarding/billing flows
+- optional admin reporting surface
+
+## Risks / Dependencies
+
+- Analytics should not be mixed with admin SEO reporting, which has a different purpose and audience.
+- Event naming must be stable or dashboards will drift into noise quickly.
+- Privacy and consent expectations should be considered, especially for self-hosted or compliance-sensitive deployments.
+- A shared wrapper is required to prevent vendor lock-in across the repo.
+
+## Verification
+
+1. Key product events are captured with consistent names and payloads.
+2. Authenticated users are identified correctly without exposing sensitive secrets.
+3. Product dashboards can answer activation and feature-adoption questions out of the box.
+4. Analytics can be disabled or reconfigured cleanly for privacy-sensitive deployments.
+5. Marketing analytics and product analytics remain conceptually separate in the implementation.

@@ -1,0 +1,78 @@
+# Internationalization / i18n
+
+## Context
+
+SaaS Forge currently assumes English-first UI copy across web, desktop, mobile, emails, and documentation-adjacent product surfaces. User-facing strings are embedded directly throughout components, which makes future localization harder with every new screen added.
+
+Because the repo spans three client surfaces plus email templates and admin UI, this is exactly the kind of cross-cutting concern that becomes expensive if delayed too long.
+
+## Why This Priority
+
+This is ranked seventh because i18n is both painful to retrofit and high leverage across every shipped surface. It deserves to land before more UI-heavy roadmap items expand the untranslated surface area.
+
+It stays behind `#6 Background Jobs` because jobs unlock more infrastructure-dependent product capabilities. It stays ahead of `#8 Feature Flags` and `#9 Onboarding` because flags and onboarding can be layered onto an i18n-ready product, whereas retrofitting localization later means revisiting nearly every existing screen.
+
+## Overview
+
+Introduce a shared internationalization framework for web first, with a translation model that can extend cleanly to desktop, mobile, and email templates.
+
+Initial scope:
+
+- locale-aware routing on web
+- translation dictionaries with English default
+- language switcher
+- localized date/number/currency formatting
+- admin-safe pattern for translating runtime content later
+
+## Main Approach
+
+Adopt a single translation strategy for user-facing strings and shared copy keys, rather than allowing each app surface to localize independently.
+
+Key implementation direction:
+
+- Integrate a modern Next.js-compatible i18n library for App Router.
+- Extract hardcoded UI strings into translation namespaces grouped by product area.
+- Add locale routing and a shared language selector for the web app.
+- Define a shared key naming convention that desktop/mobile can also consume.
+- Keep CMS content and user-generated content separate from UI localization so those concerns do not get mixed.
+- Add formatting utilities for dates, numbers, and currency to avoid ad hoc locale handling.
+
+Phasing:
+
+- Phase 1: web app shell, auth, dashboard, landing, and common components.
+- Phase 2: email templates and desktop/mobile shared copy.
+- Phase 3: RTL support and translated admin-managed content strategy.
+
+## Deliverables
+
+1. i18n framework integration and locale-aware routing.
+2. Translation message files with English baseline.
+3. Language switcher and persisted locale preference.
+4. Shared translation helpers for components and server-rendered content.
+5. Formatting utilities for locale-aware dates, numbers, and currencies.
+6. Developer workflow for extracting and validating translation keys.
+
+## Likely Files / Systems Affected
+
+- `apps/web/app/**/*`
+- `packages/ui/src/**/*`
+- `packages/email/src/**/*`
+- `apps/desktop/**/*`
+- `apps/mobile/**/*`
+- docs or contributor instructions for localization workflow
+
+## Risks / Dependencies
+
+- String extraction must be disciplined or the repo will end up with hybrid localized/non-localized screens.
+- CMS-managed landing content should not be incorrectly treated as compile-time translation copy.
+- Multi-surface reuse should be designed carefully so desktop/mobile are not blocked on web-specific library APIs.
+- Runtime site config may later want locale defaults per deployment or per org.
+
+## Verification
+
+1. The web app can render at least two locales with route-aware navigation.
+2. Shared UI components stop hardcoding user-visible strings directly.
+3. Locale preference persists between navigations and sessions.
+4. Auth, landing, and dashboard flows show translated copy consistently.
+5. Date, number, and currency displays adapt correctly by locale.
+6. Missing translation keys fail loudly in development rather than silently falling back unpredictably.

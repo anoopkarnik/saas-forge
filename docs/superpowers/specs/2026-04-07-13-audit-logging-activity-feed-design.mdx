@@ -1,0 +1,70 @@
+# Audit Logging / Activity Feed
+
+## Context
+
+As SaaS Forge moves toward teams, runtime settings, feature flags, billing, API keys, and webhooks, it needs a trustworthy record of who changed what and when. Today there is no first-class audit log model or reusable event trail across admin and product actions.
+
+That leaves both compliance-oriented SaaS use cases and everyday debugging weaker than they should be.
+
+## Why This Priority
+
+This is ranked thirteenth because it becomes much more valuable after organizations, admin settings, and notifications exist, but it is not required before those features can ship their first versions. It is a strong B2B capability with high trust value, though less immediate than parity or core platform unlocks.
+
+It stays behind `#12 Desktop Parity` because desktop completeness is a more visible current-product gap. It stays ahead of `#14 CI/CD` because auditability is part of the product surface and supports future enterprise-readiness more directly than contributor tooling alone.
+
+## Overview
+
+Add a durable audit trail for privileged actions and important domain events, plus a user-facing or admin-facing activity feed derived from the same event model.
+
+Initial audit targets:
+
+- auth events
+- admin settings changes
+- role or membership changes
+- billing/credit mutations
+- feature-flag updates
+- API key creation/revocation
+
+## Main Approach
+
+Model audit logging as structured event capture, not plain text logging.
+
+Key implementation direction:
+
+- Add an `AuditLog` model with actor, action, resource, org/user scope, timestamp, and structured metadata.
+- Introduce helper utilities or middleware so sensitive mutations can emit audit events consistently.
+- Reuse the same event source to power both admin audit views and lighter user activity feeds where appropriate.
+- Keep audit events append-only and minimize mutation/deletion.
+- Support filtering by actor, action type, time range, and target resource.
+
+## Deliverables
+
+1. Audit log data model and indexing strategy.
+2. Shared audit event emitter/helper layer.
+3. Automatic logging for high-value admin and billing actions.
+4. Admin audit viewer with filters and search.
+5. Activity feed reuse for user/org-facing change history where relevant.
+6. Retention/export strategy guidance for future compliance use cases.
+
+## Likely Files / Systems Affected
+
+- `packages/database/prisma/*`
+- `apps/web/trpc/routers/*`
+- `apps/web/app/(home)/admin/**/*`
+- `packages/observability/src/**/*`
+- future org, flag, API key, and billing modules
+
+## Risks / Dependencies
+
+- Logging too little reduces trust; logging too much creates noise and storage bloat.
+- Sensitive metadata must be redacted appropriately.
+- Multi-tenancy should shape audit scope and filtering once organizations exist.
+- Audit logs should complement, not replace, lower-level observability logs.
+
+## Verification
+
+1. High-value admin actions generate structured audit events automatically.
+2. Audit entries show actor, target, timestamp, and relevant metadata clearly.
+3. Audit logs are append-only and searchable/filterable in the admin UI.
+4. Sensitive secrets or raw tokens are never stored in audit metadata.
+5. Org-scoped filters work correctly once organization support exists.

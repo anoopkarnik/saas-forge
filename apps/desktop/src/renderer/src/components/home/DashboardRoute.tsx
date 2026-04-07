@@ -33,14 +33,14 @@ export default function DashboardRoute() {
         }
     }, [session, isPending, isRefetching, navigate, justLoggedIn]);
 
-    const handleSubmitConfiguration = async (safeName: string, envVars: Record<string, string>) => {
+    const handleSubmitConfiguration = async (safeName: string, envVars: Record<string, string>, modules: string[]) => {
         try {
             const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000'
             const response = await fetch(`${apiUrl}/api/scaffold`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 credentials: "include",
-                body: JSON.stringify({ name: safeName, envVars }),
+                body: JSON.stringify({ name: safeName, envVars, modules }),
             });
 
             if (!response.ok) {

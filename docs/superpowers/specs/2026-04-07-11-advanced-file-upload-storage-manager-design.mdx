@@ -1,0 +1,70 @@
+# Advanced File Upload / Storage Manager
+
+## Context
+
+SaaS Forge currently supports narrow upload cases such as avatar and CMS image uploads, but it does not yet offer a robust, reusable file platform for modern SaaS needs like multi-file upload, progress, validation, previews, storage abstraction, and future document handling for AI or collaboration features.
+
+The current implementation is also part of the repo's hardening concerns, since upload validation depends heavily on client-declared MIME/type assumptions in the existing routes.
+
+## Why This Priority
+
+This is ranked eleventh because it meaningfully expands template usefulness across many SaaS use cases, but it is still less foundational than the earlier auth, infra, and engagement work. It benefits from the security and jobs groundwork already planned.
+
+It stays behind `#10 Notifications` because notifications compound value across more surfaces immediately. It stays ahead of `#12 Desktop Parity` because a strong upload subsystem is a broadly reusable platform feature, while desktop parity is important but more surface-specific.
+
+## Overview
+
+Build a reusable storage and upload platform that supports direct uploads, strong validation, previews, metadata, and file-management UI.
+
+Initial supported scenarios:
+
+- avatar and CMS media uploads
+- drag-and-drop multi-file upload
+- direct-to-storage uploads using signed URLs
+- image optimization and thumbnail generation
+- file browser/list/delete/download patterns
+
+## Main Approach
+
+Separate storage orchestration, validation, and UI from individual route handlers.
+
+Key implementation direction:
+
+- Create a shared storage abstraction that can target Vercel Blob, R2, and future S3-compatible providers.
+- Move upload rules into reusable server-side validators rather than duplicating checks in each route.
+- Add support for presigned/direct uploads to reduce server load for larger files.
+- Persist file metadata so the product can list, preview, and manage uploads after initial transfer.
+- Normalize image handling with resizing/compression hooks for CMS and profile assets.
+- Build a reusable upload component set in `packages/ui`.
+
+## Deliverables
+
+1. Shared storage abstraction and provider adapters.
+2. Centralized upload validation pipeline, including stronger file-type validation.
+3. Presigned/direct upload flow for supported storage backends.
+4. Reusable drag-and-drop upload UI with progress states.
+5. File metadata model and simple file manager/list UI.
+6. Image optimization hooks for thumbnails and normalized asset variants.
+
+## Likely Files / Systems Affected
+
+- `apps/web/app/api/cms/upload/route.ts`
+- `apps/web/app/api/settings/modifyAvatar/route.ts`
+- `packages/ui/src/components/**/*`
+- `packages/database/prisma/*`
+- new shared storage helpers, likely under `packages` or `apps/web/lib`
+
+## Risks / Dependencies
+
+- Upload security hardening should inform the validator pipeline from day one.
+- Direct-upload flows require careful auth and object-key scoping.
+- File metadata ownership should align with user/org scoping once multi-tenancy exists.
+- Jobs become useful for post-upload image optimization and future virus scanning hooks.
+
+## Verification
+
+1. Users can upload multiple files with progress feedback.
+2. Invalid file types and oversized payloads are rejected consistently.
+3. Uploaded files can be listed, previewed, and deleted through a shared UI.
+4. Direct-upload flows store correct metadata and respect auth boundaries.
+5. Existing avatar/CMS uploads can be migrated onto the shared upload platform without regressions.

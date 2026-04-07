@@ -1,0 +1,68 @@
+# Desktop App Feature Parity
+
+## Context
+
+The Electron desktop app is much closer to useful parity than mobile, but it still trails the web app in several important areas, especially admin tooling, docs, and desktop-native polish. For a repo that already markets desktop support, this gap matters for perceived completeness.
+
+The current desktop surface already has auth, dashboard framing, billing-related flows, and scaffold interactions, which makes it a good candidate for focused parity work rather than a rewrite.
+
+## Why This Priority
+
+This is ranked twelfth because desktop already delivers more value than mobile, so it is less urgent than `#5 Mobile Parity`. It also trails the earlier platform features because those unlock broader leverage across all surfaces.
+
+It stays behind `#11 Advanced File Uploads` because upload infrastructure benefits every channel and multiple future features. It stays ahead of `#13 Audit Logging` because finishing a customer-visible platform surface has stronger near-term product value than an internal/compliance-oriented capability.
+
+## Overview
+
+Bring the desktop app to strong parity with the current web experience and then add a small set of desktop-native enhancements.
+
+Priority parity targets:
+
+- admin user management
+- admin CMS editing
+- documentation viewer
+- support widget parity
+- stable desktop-specific UX around updates, tray behavior, and notifications
+
+## Main Approach
+
+Reuse existing web APIs and shared UI blocks where possible, while respecting Electron-specific concerns such as update flow, offline-friendly state, and window/tray behavior.
+
+Key implementation direction:
+
+- Port missing admin and docs experiences using the same tRPC contracts as web.
+- Reuse `packages/ui` blocks where the UI patterns already fit desktop renderer constraints.
+- Add desktop-native capabilities only after the core web feature gaps are closed.
+- Keep Electron hardening in scope while adding parity so security posture does not regress.
+- Prefer renderer-side React reuse over main-process business logic duplication.
+
+## Deliverables
+
+1. Desktop admin user management screen.
+2. Desktop admin CMS editor parity with current web capabilities.
+3. Documentation listing and article viewer.
+4. Support/help UI parity.
+5. Auto-update flow and update notification UX.
+6. Optional native tray, notifications, and window-state persistence.
+
+## Likely Files / Systems Affected
+
+- `apps/desktop/src/renderer/**/*`
+- `apps/desktop/src/main/**/*`
+- `packages/ui/src/**/*`
+- existing web tRPC procedures and shared auth helpers
+
+## Risks / Dependencies
+
+- Electron hardening work should not be undermined by convenience shortcuts while adding parity.
+- Some web UI blocks may require renderer-specific adaptation rather than direct reuse.
+- Auto-update and tray behavior are deployment/distribution concerns that should stay optional for local development.
+- Desktop parity should continue to rely on server APIs, not fork business rules into Electron-only code.
+
+## Verification
+
+1. Desktop users can access admin tools already available on the web when authorized.
+2. Documentation and support flows work without falling back to the browser for common tasks.
+3. Desktop keeps auth/session behavior stable while new routes are added.
+4. Auto-update and native notification flows work when enabled, without breaking dev mode.
+5. Renderer and main-process responsibilities remain cleanly separated.

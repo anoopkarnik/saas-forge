@@ -1,4 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server"
+import {
+    authSessionCookieName,
+    secureAuthSessionCookieName,
+} from "@workspace/auth/better-auth/cookies"
 
 const publicRoutes = ["/landing","/public","/api/payments/dodo/webhook","/api/payments/stripe/webhook","/api/trpc", "/auth-callback"]
 
@@ -53,7 +57,7 @@ export default async function middleware(req:NextRequest){
         return response;
     }
 
-    const sessionToken = req.cookies.get('better-auth.session_token')?.value || req.cookies.get('__Secure-better-auth.session_token')?.value;
+    const sessionToken = req.cookies.get(authSessionCookieName)?.value || req.cookies.get(secureAuthSessionCookieName)?.value;
     const isLoggedIn = !!sessionToken;
 
 

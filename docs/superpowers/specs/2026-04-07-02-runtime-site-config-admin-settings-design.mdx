@@ -1,0 +1,90 @@
+# Runtime Site Config / Admin Settings
+
+## Context
+
+SaaS Forge still relies heavily on build-time `NEXT_PUBLIC_*` environment variables to drive user-facing behavior such as theme, app naming, auth provider visibility, support settings, analytics toggles, CMS choice, payment gateway selection, and storage options. That means many product settings require editing `.env` files and redeploying the app.
+
+This is visible across the repo:
+
+- `apps/web/.env.example` is the canonical config surface.
+- `packages/ui/src/lib/constants/module.ts` and preset definitions encode many user-facing toggles.
+- Shared UI, auth screens, and billing surfaces depend on public env assumptions that are static after build.
+
+## Why This Priority
+
+This is ranked second because it unlocks fast product iteration with relatively contained implementation cost while also laying groundwork for feature flags, white-labeling, per-org customization, and cleaner settings management. It creates leverage quickly across the current repo without requiring a full product rewrite.
+
+It stays behind `#1 Multi-Tenancy` because org-aware ownership is harder to retrofit and affects more future data models. It stays ahead of `#3 Security Hardening` because this feature directly unlocks multiple roadmap items and improves template usability immediately, while security hardening can proceed in parallel as a reliability track rather than as the primary product unlock.
+
+## Overview
+
+Move non-secret, user-facing configuration from build-time env variables into a database-backed settings system with admin controls and cache-backed reads.
+
+Initial runtime-controlled areas:
+
+- SaaS name and company name
+- theme and theme mode
+- auth provider visibility
+- payment gateway toggle
+- CMS provider choice
+- support email / booking URL
+- analytics measurement ID
+- image storage selection
+
+Secrets remain in env vars.
+
+## Main Approach
+
+Introduce a `SiteConfig` model as the runtime source of truth for non-secret settings, with env values remaining as defaults and fallback.
+
+Key implementation direction:
+
+- Add a single-row config model in `packages/database/prisma`.
+- Create a public read path and admin-only write path in tRPC.
+- Cache the resolved config in Upstash Redis for low-latency reads.
+- Wrap the web app in a `SiteConfigProvider` so components stop reading scattered `process.env.NEXT_PUBLIC_*` values directly.
+- Group admin controls into a dedicated settings page rather than overloading the current CMS screen.
+- Keep resolution order explicit: database value -> env fallback -> hardcoded default.
+
+Rollout approach:
+
+- Phase 1: centralize reads through a typed config service without changing behavior.
+- Phase 2: add admin UI and mutation flow.
+- Phase 3: move more public feature toggles off envs.
+
+## Deliverables
+
+1. `SiteConfig` data model and migration.
+2. Typed config service with runtime resolution and validation.
+3. `trpc.siteConfig.get` public query and `trpc.siteConfig.update` admin mutation.
+4. Web admin "Site Settings" page with grouped controls.
+5. `SiteConfigProvider` and `useSiteConfig()` hook for shared components.
+6. Redis cache + invalidation strategy on update.
+7. Backward-compatible env fallback behavior documented in README or admin docs.
+
+## Likely Files / Systems Affected
+
+- `packages/database/prisma/*`
+- `apps/web/trpc/routers/*`
+- `apps/web/trpc/init.ts`
+- `apps/web/app/layout.tsx`
+- `apps/web/app/(home)/admin/**/*`
+- `packages/ui/src/lib/constants/*`
+- `packages/ui/src/components/**/*`
+- `apps/desktop` and `apps/mobile` config consumers as follow-on surfaces
+
+## Risks / Dependencies
+
+- Server-only secrets must remain outside the database-backed runtime config surface.
+- The system should be typed and validated so invalid config does not break auth or billing surfaces at runtime.
+- If multi-tenancy lands first, config should be designed to evolve from global settings to org-scoped overrides.
+- Cache invalidation must be deterministic or admins will see confusing stale behavior.
+
+## Verification
+
+1. Updating a runtime setting in admin changes web UI behavior without a redeploy.
+2. When a DB value is missing, the app falls back to env defaults cleanly.
+3. Anonymous callers can read public config but cannot mutate it.
+4. Admin changes invalidate Redis and update the rendered site promptly.
+5. Existing deployments keep working even before the settings row is manually created.
+6. No secret env var becomes exposed through the public config response.

@@ -5,12 +5,12 @@ import DashboardPage from "@workspace/ui/blocks/dashboard/DashboardPage";
 import { toast } from "sonner";
 
 export default function Page() {
-  const handleSubmitConfiguration = async (safeName: string, envVars: Record<string, string>) => {
+  const handleSubmitConfiguration = async (safeName: string, envVars: Record<string, string>, modules: string[]) => {
     try {
       const response = await fetch("/api/scaffold", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: safeName, envVars }),
+        body: JSON.stringify({ name: safeName, envVars, modules }),
       });
 
       if (!response.ok) {

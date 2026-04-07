@@ -1,0 +1,69 @@
+# Usage Billing / Metering Dashboard
+
+## Context
+
+SaaS Forge already has credits and billing primitives, but it does not yet present a complete usage-metering product surface with transparent dashboards, threshold warnings, usage history, and clean expansion to AI or org-based billing. That limits both monetization flexibility and user trust.
+
+The need becomes even more visible once AI and organizations exist, because both introduce higher-value, more variable consumption patterns.
+
+## Why This Priority
+
+This is ranked fifteenth because it becomes substantially more powerful after AI, organizations, notifications, and jobs exist, but it is not a blocker for shipping those foundations first. It is an important monetization layer, though less urgent than platform quality and product completeness work.
+
+It stays behind `#14 CI/CD` because reliable delivery improves every later monetization change. It stays ahead of `#16 Outgoing Webhooks` because usage visibility is more central to the core product and revenue model than external event delivery.
+
+## Overview
+
+Expand the existing credits/billing surface into a user-visible usage platform with dashboards, quota awareness, alerts, and org-aware metering.
+
+Initial scope:
+
+- current balance and quota visibility
+- usage history over time
+- threshold alerts
+- clear mapping from billable actions to usage entries
+- future-ready support for AI and org usage aggregation
+
+## Main Approach
+
+Build usage metering as a first-class data model and reporting layer instead of relying only on aggregate counters.
+
+Key implementation direction:
+
+- Add usage event records or summarized daily usage tables tied to user and future org context.
+- Define billable event categories such as scaffold downloads, AI requests, storage usage, or premium actions.
+- Keep existing credit balance APIs but back them with richer usage history and classification.
+- Add a dashboard with charts, current plan/quota information, and recent billable actions.
+- Use notifications/jobs later for threshold emails or in-app warnings.
+
+## Deliverables
+
+1. Usage event or summary model and metering rules.
+2. Expanded billing APIs for usage history and thresholds.
+3. User-facing usage dashboard with charts or summary cards.
+4. Alert thresholds and warning hooks.
+5. Org-ready usage ownership model for later team billing.
+6. Clear mapping from AI and other premium actions into metered events.
+
+## Likely Files / Systems Affected
+
+- `packages/database/prisma/*`
+- `apps/web/trpc/routers/billingProcedures.ts`
+- `apps/web/app/(home)/**/*`
+- `packages/ui/src/components/**/*`
+- future AI and notification integrations
+
+## Risks / Dependencies
+
+- Metering rules must be explicit or billing disputes will follow.
+- The system should distinguish between immutable usage history and mutable account balances.
+- Org billing and AI billing should reuse the same metering primitives rather than inventing separate accounting systems.
+- Alerting depends on notifications/jobs for the best user experience.
+
+## Verification
+
+1. Users can see current credit balance plus recent usage history in the UI.
+2. Billable actions generate consistent usage records.
+3. Threshold warnings trigger at defined usage levels without double-sending.
+4. Billing APIs can explain why credits changed, not just show the final balance.
+5. The data model can evolve from user-owned usage to org-owned usage cleanly.

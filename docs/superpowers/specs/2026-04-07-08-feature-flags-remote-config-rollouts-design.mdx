@@ -1,0 +1,70 @@
+# Feature Flags / Remote Config / Rollouts
+
+## Context
+
+As SaaS Forge grows, it needs a safe way to ship unfinished capabilities, gate premium features, disable broken flows quickly, and run staged rollouts without redeploying. Today there is no first-class feature flag system; behavior is primarily controlled by code paths or environment configuration.
+
+This missing layer becomes more important as the roadmap introduces AI, orgs, notifications, API keys, and real-time features that may need selective exposure.
+
+## Why This Priority
+
+This is ranked eighth because it becomes far more valuable once runtime site config exists, but it is still less foundational than the earlier platform work. It is a release-safety and monetization multiplier rather than a core data-model change.
+
+It stays behind `#7 i18n` because translation readiness becomes harder to retrofit with every screen added. It stays ahead of `#9 Onboarding` and `#10 Notifications` because flags let the team ship those later features progressively and safely instead of requiring all-or-nothing launches.
+
+## Overview
+
+Add a shared feature flag and remote rollout system that supports global toggles first, then grows into org/user targeting and plan-based access.
+
+Initial flag use cases:
+
+- enable/disable AI surfaces
+- beta access to org features
+- plan-gated premium blocks
+- percentage rollout for risky new features
+- operational kill switches
+
+## Main Approach
+
+Build flags on top of the runtime config direction, but with a separate evaluation layer so product code can ask "is this enabled here?" through a single API.
+
+Key implementation direction:
+
+- Add a `FeatureFlag` data model with name, default behavior, targeting rules, and rollout metadata.
+- Implement server-side evaluation helpers for request-safe access control.
+- Add a client hook for rendering gated UI without duplicating rule logic everywhere.
+- Support baseline dimensions first: global, environment, plan tier, admin-only, beta cohort.
+- Keep rollout evaluation deterministic and observable for debugging.
+- Start with server-driven evaluation; avoid fully client-only flag logic for privileged access decisions.
+
+## Deliverables
+
+1. Data model and admin CRUD UI for feature flags.
+2. Server-side evaluation utility and client-side consumption hook.
+3. Simple rule types: on/off, plan-based, role-based, percentage rollout.
+4. Operational kill-switch support for high-risk features.
+5. Audit-friendly logging of flag changes and evaluation metadata.
+6. Documentation for how new features should integrate with flags.
+
+## Likely Files / Systems Affected
+
+- `packages/database/prisma/*`
+- `apps/web/trpc/routers/*`
+- `apps/web/app/(home)/admin/**/*`
+- `packages/ui/src/**/*`
+- runtime config service and future AI/billing/org modules
+
+## Risks / Dependencies
+
+- Privileged access cannot rely only on client-side flag checks.
+- Flags and runtime config need clear boundaries so they do not collapse into one unstructured settings blob.
+- Percentage rollout needs stable identifiers or users will see inconsistent behavior.
+- Audit logging becomes more valuable once flag changes affect live customer behavior.
+
+## Verification
+
+1. Admins can create and update a flag without redeploying.
+2. The same flag evaluates consistently on server and client for supported rule types.
+3. A disabled kill switch can hide or block a live feature immediately.
+4. Plan-gated and role-gated flags behave predictably for different users.
+5. Flag changes are traceable for debugging and rollback.

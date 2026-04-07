@@ -1,0 +1,87 @@
+# Mobile App Feature Parity
+
+## Context
+
+SaaS Forge includes an Expo mobile app, but today it is still heavily weighted toward authentication flows. The web app and desktop app expose meaningful product value beyond login, while mobile currently underserves the "full-stack SaaS boilerplate" promise.
+
+This gap is visible in the repo:
+
+- auth screens already exist in `apps/mobile`
+- web exposes dashboard, credits, scaffold download, support, docs, and admin surfaces
+- desktop has more post-auth functionality than mobile
+
+That makes mobile parity a product credibility issue as much as a feature gap.
+
+## Why This Priority
+
+This is ranked fifth because it directly improves the completeness of the shipped product, but it follows AI because AI is the stronger new-sales differentiator and follows security because parity work should not expand insecure flows. It also sits behind multi-tenancy/runtime-config because those are deeper platform primitives.
+
+It stays ahead of `#6 Background Jobs` because buyers evaluating the current repo can already see the missing mobile depth. It stays ahead of `#7 i18n` because mobile parity fixes an existing gap in the shipped promise, while i18n expands market reach after the core experience is more complete.
+
+## Overview
+
+Bring the mobile app to a credible post-auth baseline by reusing existing tRPC, billing, support, docs, and settings capabilities from the web stack.
+
+Minimum parity target:
+
+- authenticated home/dashboard
+- navigation shell
+- user profile and settings
+- credit balance and transactions
+- payment handoff
+- scaffold download handoff
+- support/contact surface
+- documentation viewer
+
+## Main Approach
+
+Reuse existing backend contracts wherever possible instead of designing mobile-specific APIs.
+
+Key implementation direction:
+
+- Introduce authenticated route groups and a stable mobile navigation shell in Expo Router.
+- Add shared tRPC client setup for queries/mutations already used by web/desktop.
+- Reuse common design primitives from `packages/ui` when practical, while keeping mobile-native interaction patterns.
+- Start with core user flows before attempting admin parity or heavy native features.
+- Use deep-link-safe checkout and auth callback handling as the foundation for payment and sign-in flows.
+- Add basic local caching and offline-friendly UX only after main feature coverage exists.
+
+Phasing:
+
+- Phase 1: dashboard, navigation, profile, settings, tRPC integration.
+- Phase 2: billing, transactions, checkout, scaffold flow, support, docs.
+- Phase 3: push notifications, biometrics, offline persistence, deeper native polish.
+
+## Deliverables
+
+1. Protected mobile home/dashboard flow.
+2. Authenticated navigation with main product tabs/screens.
+3. Mobile tRPC + React Query integration aligned with the web backend.
+4. Credit balance, transaction history, and payment handoff.
+5. Support/contact flow and documentation viewer.
+6. Scaffold/template download flow appropriate for mobile UX.
+7. Follow-on native enhancements backlog: push, biometrics, offline.
+
+## Likely Files / Systems Affected
+
+- `apps/mobile/**/*`
+- `apps/web/trpc/routers/*` for any missing mobile-safe procedures
+- `packages/ui` where shared components or logic can be reused
+- `packages/auth` for mobile callback/session helpers
+- billing and support procedures already present in web
+
+## Risks / Dependencies
+
+- Mobile deep-link, checkout return, and auth callback behavior must be tested carefully across iOS/Android.
+- Shared web UI cannot simply be copied; mobile needs native navigation and interaction patterns.
+- Some existing APIs may need small response-shape adjustments to serve mobile efficiently.
+- Security hardening should precede any exposure of additional admin-like capabilities to mobile.
+
+## Verification
+
+1. A signed-in mobile user lands on a real dashboard instead of only auth screens.
+2. Mobile can fetch profile, billing, and support data through tRPC successfully.
+3. Users can start checkout and return safely through deep links.
+4. Documentation content is readable in-app rather than requiring a browser fallback for basic use.
+5. Scaffold download works with a device-appropriate handoff flow.
+6. Session restoration, logout, and password update behave correctly on app relaunch.

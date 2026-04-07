@@ -1,5 +1,6 @@
 export type FormState = {
     name: string;
+    SELECTED_MODULES: string[];
     // Project
     NEXT_PUBLIC_THEME: string;
     NEXT_PUBLIC_THEME_TYPE: string;
@@ -65,6 +66,7 @@ export type FormState = {
 
 export const DEFAULT_FORM: FormState = {
     name: "",
+    SELECTED_MODULES: [],
     NEXT_PUBLIC_THEME: "neutral",
     NEXT_PUBLIC_THEME_TYPE: "system",
     NEXT_PUBLIC_PLATFORM: ["web"],
@@ -200,7 +202,59 @@ export const PAYMENT_GATEWAY_OPTIONS = [
     { value: "stripe", label: "Stripe" },
 ];
 
+export const PAYMENT_ENV_KEYS: (keyof FormState)[] = [
+    "NEXT_PUBLIC_PAYMENT_GATEWAY",
+    "DODO_PAYMENTS_API_KEY",
+    "DODO_PAYMENTS_WEBHOOK_KEY",
+    "DODO_PAYMENTS_RETURN_URL",
+    "DODO_PAYMENTS_ENVIRONMENT",
+    "DODO_CREDITS_PRODUCT_ID",
+    "NEXT_PUBLIC_DODO_PAYMENTS_URL",
+    "STRIPE_SECRET_KEY",
+    "STRIPE_WEBHOOK_SECRET",
+];
+
 export const DODO_ENV_OPTIONS = [
     { value: "test_mode", label: "Test Mode" },
     { value: "live_mode", label: "Live Mode" },
+];
+
+export const BASE_SCAFFOLD_CREDITS_COST = 10;
+
+export const SCAFFOLD_MODULE_OPTIONS = [
+    {
+        value: "billing",
+        label: "Billing & Payments",
+        description: "Checkout, credits purchase UI, transaction history, and payment webhooks.",
+        creditsCost: 10,
+        disabled: false,
+    },
+    {
+        value: "multi_tenancy",
+        label: "Organizations / Teams",
+        description: "Coming soon",
+        creditsCost: 15,
+        disabled: true,
+    },
+    {
+        value: "ai",
+        label: "AI",
+        description: "Coming soon",
+        creditsCost: 15,
+        disabled: true,
+    },
+    {
+        value: "api_keys",
+        label: "API Keys",
+        description: "Coming soon",
+        creditsCost: 5,
+        disabled: true,
+    },
+    {
+        value: "notifications",
+        label: "Notifications",
+        description: "Coming soon",
+        creditsCost: 5,
+        disabled: true,
+    },
 ];

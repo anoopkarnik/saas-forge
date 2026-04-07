@@ -1,14 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import archiver from "archiver";
-import path from "path";
-import fs from "fs";
+import path from "node:path";
+import fs from "node:fs";
 import { auth } from "@workspace/auth/better-auth/auth";
 import { headers } from "next/headers";
 import db from "@workspace/database/client";
 import { revalidatePath } from "next/cache";
 import { ratelimit } from "@/server/ratelimit";
+import {
+  calculateScaffoldCredits,
+  compileScaffoldVariant,
+  createTempScaffoldDir,
+  InvalidScaffoldModuleError,
+  loadScaffoldRegistry,
+  validateSelectedModules,
+} from "@/lib/scaffold-modules";
 
-const CREDITS_COST = 20;
 const scaffoldRoots = process.env.VERCEL
   ? ["templates/saas-boilerplate", ".generated/saas-boilerplate"]
   : [".generated/saas-boilerplate", "templates/saas-boilerplate"];
@@ -199,18 +206,6 @@ function createZipStream(
 
     if (shouldIgnore(relInsideProject)) return false;
 
-    // Exclude unselected platform apps
-    if (
-      !platforms.includes("mobile") &&
-      relInsideProject.startsWith("apps/mobile/")
-    )
-      return false;
-    if (
-      !platforms.includes("desktop") &&
-      relInsideProject.startsWith("apps/desktop/")
-    )
-      return false;
-
     return entry;
   });
 
@@ -266,6 +261,18 @@ function createZipStream(
 
 // POST handler - accepts JSON body with project name and env vars
 export async function POST(req: NextRequest) {
+  let tempScaffoldDir: string | null = null;
+  let cleanedUpTempDir = false;
+
+  const cleanupTempDir = () => {
+    if (!tempScaffoldDir || cleanedUpTempDir) {
+      return;
+    }
+
+    fs.rmSync(tempScaffoldDir, { recursive: true, force: true });
+    cleanedUpTempDir = true;
+  };
+
   try {
     if (!isAllowedScaffoldOrigin(req)) {
       return jsonWithCors(req, { error: "Forbidden" }, 403);
@@ -284,14 +291,17 @@ export async function POST(req: NextRequest) {
       return jsonWithCors(req, { error: "Rate limit exceeded" }, 429);
     }
 
-    if (session.user.creditsTotal - session.user.creditsUsed < CREDITS_COST) {
-      return jsonWithCors(req, { error: "Not enough credits" }, 403);
-    }
-
     const body = await req.json();
     const projectName = sanitizeProjectName(body.name ?? "");
     const envVars: Record<string, string> = body.envVars ?? {};
+    const registry = loadScaffoldRegistry();
+    const modules = validateSelectedModules(body.modules ?? [], registry);
+    const pricing = calculateScaffoldCredits(modules, registry);
     const scaffoldRoot = getScaffoldRoot();
+
+    if (session.user.creditsTotal - session.user.creditsUsed < pricing.totalCredits) {
+      return jsonWithCors(req, { error: "Not enough credits" }, 403);
+    }
 
     if (!fs.existsSync(scaffoldRoot)) {
       console.error(`Scaffold root not found at: ${scaffoldRoot}`);
@@ -302,9 +312,19 @@ export async function POST(req: NextRequest) {
     const platforms = envVars.NEXT_PUBLIC_PLATFORM
       ? envVars.NEXT_PUBLIC_PLATFORM.split(",").map((s) => s.trim())
       : ["web"];
+    const billingSelected = modules.includes("billing");
+
+    tempScaffoldDir = createTempScaffoldDir();
+    compileScaffoldVariant({
+      baseRoot: scaffoldRoot,
+      tempDir: tempScaffoldDir,
+      selectedModules: modules,
+      platforms,
+      registry,
+    });
 
     // Generate .env content from .env.example with user-provided values
-    const envExamplePath = path.join(scaffoldRoot, "apps/web/.env.example");
+    const envExamplePath = path.join(tempScaffoldDir, "apps/web/.env.example");
     const envContent = generateEnvContent(envExamplePath, envVars);
 
     // Helpers to map web env vars to mobile/desktop
@@ -314,11 +334,11 @@ export async function POST(req: NextRequest) {
 
     // Generate .env content for mobile and desktop
     const mobileEnvExamplePath = path.join(
-      scaffoldRoot,
+      tempScaffoldDir,
       "apps/mobile/.env.example",
     );
     const desktopEnvExamplePath = path.join(
-      scaffoldRoot,
+      tempScaffoldDir,
       "apps/desktop/.env.example",
     );
 
@@ -338,8 +358,9 @@ export async function POST(req: NextRequest) {
         : "false",
       EXPO_PUBLIC_THEME: envVars.NEXT_PUBLIC_THEME || "green",
       EXPO_PUBLIC_THEME_TYPE: envVars.NEXT_PUBLIC_THEME_TYPE || "light",
-      EXPO_PUBLIC_PAYMENT_GATEWAY:
-        envVars.NEXT_PUBLIC_PAYMENT_GATEWAY || "dodo",
+      EXPO_PUBLIC_PAYMENT_GATEWAY: billingSelected
+        ? envVars.NEXT_PUBLIC_PAYMENT_GATEWAY || "none"
+        : "none",
       EXPO_PUBLIC_CALENDLY_BOOKING_URL:
         envVars.NEXT_PUBLIC_CALENDLY_BOOKING_URL || '""',
     };
@@ -359,9 +380,11 @@ export async function POST(req: NextRequest) {
         envVars.NEXT_PUBLIC_AUTH_GITHUB === "true" ? "true" : "false",
       VITE_AUTH_LINKEDIN:
         envVars.NEXT_PUBLIC_AUTH_LINKEDIN === "true" ? "true" : "false",
-      VITE_PAYMENT_GATEWAY: envVars.NEXT_PUBLIC_PAYMENT_GATEWAY
-        ? `"${envVars.NEXT_PUBLIC_PAYMENT_GATEWAY}"`
-        : '"dodo"',
+      VITE_PAYMENT_GATEWAY: billingSelected
+        ? envVars.NEXT_PUBLIC_PAYMENT_GATEWAY
+          ? `"${envVars.NEXT_PUBLIC_PAYMENT_GATEWAY}"`
+          : '"none"'
+        : '"none"',
       VITE_SUPPORT_MAIL:
         support.includes("support_mail") && envVars.NEXT_PUBLIC_SUPPORT_MAIL
           ? `"${envVars.NEXT_PUBLIC_SUPPORT_MAIL}"`
@@ -370,6 +393,8 @@ export async function POST(req: NextRequest) {
         support.includes("calendly") && envVars.NEXT_PUBLIC_CALENDLY_BOOKING_URL
           ? `"${envVars.NEXT_PUBLIC_CALENDLY_BOOKING_URL}"`
           : '""',
+      VITE_THEME: envVars.NEXT_PUBLIC_THEME || "green",
+      VITE_THEME_TYPE: envVars.NEXT_PUBLIC_THEME_TYPE || "light",
     };
 
     const mobileEnvContent = fs.existsSync(mobileEnvExamplePath)
@@ -381,7 +406,7 @@ export async function POST(req: NextRequest) {
       : null;
 
     const archive = createZipStream(
-      scaffoldRoot,
+      tempScaffoldDir,
       projectName,
       envContent,
       mobileEnvContent,
@@ -394,11 +419,18 @@ export async function POST(req: NextRequest) {
     const stream = new ReadableStream({
       start(controller) {
         archive.on("data", (chunk: any) => controller.enqueue(chunk));
-        archive.on("end", () => controller.close());
-        archive.on("error", (err: any) => controller.error(err));
+        archive.on("end", () => {
+          controller.close();
+          cleanupTempDir();
+        });
+        archive.on("error", (err: any) => {
+          cleanupTempDir();
+          controller.error(err);
+        });
       },
       cancel() {
         archive.abort();
+        cleanupTempDir();
       },
     });
 
@@ -407,7 +439,7 @@ export async function POST(req: NextRequest) {
     // Deduct credits
     await db.user.update({
       where: { id: session.user.id },
-      data: { creditsUsed: session.user.creditsUsed + CREDITS_COST },
+      data: { creditsUsed: session.user.creditsUsed + pricing.totalCredits },
     });
 
     revalidatePath("/(home)");
@@ -421,6 +453,15 @@ export async function POST(req: NextRequest) {
       },
     });
   } catch (err: any) {
+    cleanupTempDir();
+
+    if (
+      err instanceof InvalidScaffoldModuleError ||
+      err?.name === "InvalidScaffoldModuleError"
+    ) {
+      return jsonWithCors(req, { error: err.message }, 400);
+    }
+
     return jsonWithCors(
       req,
       { error: err?.message ?? "Failed to generate zip" },

@@ -241,6 +241,8 @@ Only `templates/saas-boilerplate` is part of the released template workflow toda
 | Web typecheck | `pnpm --dir apps/web typecheck` |
 | Mobile dev | `pnpm --dir apps/mobile dev` |
 | Desktop dev | `pnpm --dir apps/desktop dev` |
+| Desktop install (Linux) | `pnpm desktop:install:linux` |
+| Desktop publish (Linux/Edge) | `pnpm desktop:publish:linux:edge` |
 | CMS package tests | `pnpm --filter @workspace/cms test` |
 
 ### Database
@@ -259,7 +261,7 @@ Only `templates/saas-boilerplate` is part of the released template workflow toda
 | Sync template from root | `pnpm template:sync` |
 | Check template drift | `pnpm template:check-sync` |
 | Stage clean starter copy | `pnpm template:stage` |
-| Bump boilerplate version + restage | `pnpm template:version <semver>` |
+| Bump versions across workspace | `pnpm version:bump <semver>` |
 | Stage + install + Prisma generate | `pnpm template:prepare` |
 | Build staged starter | `pnpm template:build` |
 | Test staged starter | `pnpm template:test` |
@@ -277,10 +279,10 @@ Only `templates/saas-boilerplate` is part of the released template workflow toda
 
 When you want to release a new starter version such as `1.0.1`, use this flow:
 
-1. Bump the boilerplate version metadata and restage the managed template:
+1. Bump the versions across the workspace and restage the managed template:
 
 ```bash
-pnpm template:version 1.0.1
+pnpm version:bump 1.0.1
 ```
 
 2. Verify the template is synced cleanly before pushing:
@@ -289,7 +291,7 @@ pnpm template:version 1.0.1
 pnpm template:check-sync
 ```
 
-If you changed template-managed files manually and did not use `pnpm template:version`, run:
+If you changed template-managed files manually and did not use `pnpm version:bump`, run:
 
 ```bash
 pnpm template:stage
@@ -306,7 +308,7 @@ git diff
 4. Commit the version bump on `main` and push it:
 
 ```bash
-git add package.json template-sync.manifest.json template-overrides/saas-boilerplate/package.json templates/saas-boilerplate .generated/saas-boilerplate scripts/bump-template-version.mjs README.md
+git add package.json template-sync.manifest.json template-overrides/saas-boilerplate/package.json templates/saas-boilerplate .generated/saas-boilerplate scripts/bump-version.mjs README.md
 git commit -m "chore: release boilerplate v1.0.1"
 git push origin main
 ```
@@ -326,7 +328,7 @@ This publishes:
 Use this to preview the version bump without editing files:
 
 ```bash
-pnpm template:version --dry-run 1.0.1
+pnpm version:bump --dry-run 1.0.1
 ```
 
 Use this to publish the template branch locally without pushing:

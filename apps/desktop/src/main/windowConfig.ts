@@ -1,4 +1,5 @@
 import type { BrowserWindowConstructorOptions } from "electron";
+import icon from "../../icon.png?asset";
 
 export function createMainWindowOptions(
   preloadPath: string,
@@ -8,6 +9,7 @@ export function createMainWindowOptions(
     height: 670,
     show: false,
     autoHideMenuBar: true,
+    icon,
     webPreferences: {
       preload: preloadPath,
       sandbox: true,

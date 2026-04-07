@@ -23,8 +23,8 @@ type SectionState = Record<string, boolean>;
 import {
     THEME_OPTIONS, THEME_TYPE_OPTIONS, PLATFORM_OPTIONS, CMS_OPTIONS, AUTH_FRAMEWORK_OPTIONS,
     AUTH_PROVIDER_OPTIONS, EMAIL_CLIENT_OPTIONS, SUPPORT_FEATURE_OPTIONS, IMAGE_STORAGE_OPTIONS,
-    OBSERVABILITY_FEATURE_OPTIONS, RATE_LIMIT_OPTIONS, PAYMENT_GATEWAY_OPTIONS, DODO_ENV_OPTIONS,
-    FormState, DEFAULT_FORM, STRING_FIELD_KEYS
+    OBSERVABILITY_FEATURE_OPTIONS, RATE_LIMIT_OPTIONS, PAYMENT_ENV_KEYS, PAYMENT_GATEWAY_OPTIONS, DODO_ENV_OPTIONS,
+    FormState, DEFAULT_FORM, STRING_FIELD_KEYS, SCAFFOLD_MODULE_OPTIONS, BASE_SCAFFOLD_CREDITS_COST
 } from "./constants";
 import { parseMobileEnvFile } from "./envParser";
 
@@ -40,6 +40,12 @@ export default function DownloadConfigForm({ templateTitle, onBack }: Props) {
         payment: false,
     });
     const [formValues, setFormValues] = useState<FormState>({ ...DEFAULT_FORM });
+    const selectedBilling = formValues.SELECTED_MODULES.includes("billing");
+    const totalCreditsCost =
+        BASE_SCAFFOLD_CREDITS_COST +
+        SCAFFOLD_MODULE_OPTIONS.filter((module) =>
+            formValues.SELECTED_MODULES.includes(module.value)
+        ).reduce((sum, module) => sum + module.creditsCost, 0);
 
     const toggleSection = (section: string) => {
         setExpandedSections((prev) => ({ ...prev, [section]: !prev[section] }));
@@ -52,10 +58,20 @@ export default function DownloadConfigForm({ templateTitle, onBack }: Props) {
     const toggleArrayField = (key: keyof FormState, value: string) => {
         setFormValues((prev) => {
             const arr = prev[key] as string[];
-            return {
+            const nextValues = {
                 ...prev,
                 [key]: arr.includes(value) ? arr.filter((v) => v !== value) : [...arr, value],
             };
+
+            if (
+                key === "SELECTED_MODULES" &&
+                value === "billing" &&
+                !nextValues.SELECTED_MODULES.includes("billing")
+            ) {
+                nextValues.NEXT_PUBLIC_PAYMENT_GATEWAY = "none";
+            }
+
+            return nextValues;
         });
     };
 
@@ -118,6 +134,9 @@ export default function DownloadConfigForm({ templateTitle, onBack }: Props) {
             // Map all string fields
             for (const key of STRING_FIELD_KEYS) {
                 const val = formValues[key];
+                if (!selectedBilling && PAYMENT_ENV_KEYS.includes(key)) {
+                    continue;
+                }
                 if (typeof val === "string" && val.trim()) {
                     envVars[key as string] = val;
                 }
@@ -141,13 +160,15 @@ export default function DownloadConfigForm({ templateTitle, onBack }: Props) {
                 envVars["NEXT_PUBLIC_PLATFORM"] = formValues.NEXT_PUBLIC_PLATFORM.join(",");
             }
 
+            const selectedModules = [...formValues.SELECTED_MODULES];
+
             if (Platform.OS === "web") {
                 // Web: use native browser download (credentials needed for auth cookies)
                 const response = await fetch(`${apiUrl}/api/scaffold`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     credentials: "include",
-                    body: JSON.stringify({ name: safeName, envVars }),
+                    body: JSON.stringify({ name: safeName, envVars, modules: selectedModules }),
                 });
 
                 if (!response.ok) throw new Error("Failed to generate boilerplate");
@@ -166,7 +187,7 @@ export default function DownloadConfigForm({ templateTitle, onBack }: Props) {
                 const response = await fetch(`${apiUrl}/api/scaffold`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ name: safeName, envVars }),
+                    body: JSON.stringify({ name: safeName, envVars, modules: selectedModules }),
                 });
 
                 if (!response.ok) throw new Error("Failed to generate boilerplate");
@@ -325,6 +346,44 @@ export default function DownloadConfigForm({ templateTitle, onBack }: Props) {
                 </MutedText>
             </TouchableOpacity>
 
+            <View className="rounded-xl bg-card border border-border/30 overflow-hidden mb-3">
+                <View className="p-4 border-b border-border/20">
+                    <Label className="text-sm">Optional Scaffold Modules</Label>
+                    <MutedText className="text-xs mt-1">
+                        Keep the starter lean by default, then add heavier modules only when you want them in the ZIP.
+                    </MutedText>
+                </View>
+                <View className="p-4 gap-3">
+                    {SCAFFOLD_MODULE_OPTIONS.map((module) => {
+                        const selected = formValues.SELECTED_MODULES.includes(module.value);
+                        return (
+                            <TouchableOpacity
+                                key={module.value}
+                                className={`rounded-xl border p-3 ${selected ? "border-primary bg-primary/10" : "border-border/30 bg-card"} ${module.disabled ? "opacity-50" : ""}`}
+                                activeOpacity={0.8}
+                                disabled={module.disabled}
+                                onPress={() => toggleArrayField("SELECTED_MODULES", module.value)}
+                            >
+                                <View className="flex-row items-center justify-between gap-3">
+                                    <Label className="text-sm">{module.label}</Label>
+                                    <MutedText className="text-xs font-semibold text-primary">
+                                        +{module.creditsCost} credits
+                                    </MutedText>
+                                </View>
+                                <MutedText className="text-xs mt-1">{module.description}</MutedText>
+                                <MutedText className="text-[11px] mt-2">
+                                    {module.disabled ? "Coming soon" : selected ? "Selected" : "Optional"}
+                                </MutedText>
+                            </TouchableOpacity>
+                        );
+                    })}
+                    <View className="rounded-lg bg-muted/40 px-3 py-3">
+                        <MutedText className="text-xs">Base starter: {BASE_SCAFFOLD_CREDITS_COST} credits</MutedText>
+                        <Label className="text-base mt-1">Total: {totalCreditsCost} credits</Label>
+                    </View>
+                </View>
+            </View>
+
             {/* ── Project Settings ──────────────────────────────────────── */}
             {renderSection("project", "Project Settings", "📦", "text-blue-500", "Core settings for your application identity.", <>
                 {renderField("Project Name *", "name", "my-saas-app")}
@@ -480,7 +539,7 @@ export default function DownloadConfigForm({ templateTitle, onBack }: Props) {
             </>)}
 
             {/* ── Payment Module ───────────────────────────────────────── */}
-            {renderSection("payment", "Payment Module", "💳", "text-green-500", "Payment gateway configuration.", <>
+            {selectedBilling && renderSection("payment", "Payment Module", "💳", "text-green-500", "Payment gateway configuration.", <>
                 {renderSelect("Payment Gateway *", "NEXT_PUBLIC_PAYMENT_GATEWAY", PAYMENT_GATEWAY_OPTIONS)}
 
                 {formValues.NEXT_PUBLIC_PAYMENT_GATEWAY === "dodo" && <>

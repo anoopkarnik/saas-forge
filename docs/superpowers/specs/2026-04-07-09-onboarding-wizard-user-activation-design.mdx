@@ -1,0 +1,70 @@
+# Onboarding Wizard / User Activation
+
+## Context
+
+SaaS Forge already provides auth, dashboard scaffolding, billing, support, docs, and admin surfaces, but there is no cohesive "first-run" experience that guides a new user from sign-up to product activation. That leaves template buyers to build onboarding themselves, even though activation is one of the highest-ROI SaaS capabilities.
+
+This is especially relevant once runtime config, AI, and mobile parity exist, because the product will offer more choices and more ways for a new user to get lost.
+
+## Why This Priority
+
+This is ranked ninth because it has strong near-term product value and conversion impact, but it depends less on deep platform changes than the items ahead of it. It is important, but it is easier to add after flags/config foundations exist.
+
+It stays behind `#8 Feature Flags` because flags make onboarding safer to iterate on progressively. It stays ahead of `#10 Notifications` because a great first-run experience improves activation before later engagement systems like notifications start pulling users back in.
+
+## Overview
+
+Add a reusable onboarding framework that can tailor first-run setup, highlight key actions, and track activation progress.
+
+Initial onboarding goals:
+
+- capture profile basics and intended use case
+- guide the user to high-value actions
+- show completion progress
+- unlock contextual next steps rather than a generic empty dashboard
+
+## Main Approach
+
+Treat onboarding as a structured product flow, not a one-off modal.
+
+Key implementation direction:
+
+- Add onboarding state to the user profile or a dedicated onboarding table.
+- Build a reusable multi-step wizard that can be used in web first and later adapted elsewhere.
+- Capture a small set of segmentation inputs: role, company/team size, primary use case, desired setup path.
+- Generate a personalized checklist on the dashboard based on selected goals and enabled features.
+- Support dismiss/resume behavior so onboarding is helpful rather than blocking.
+- Use runtime config and feature flags so deployments can customize or disable steps.
+
+## Deliverables
+
+1. Onboarding state model and progress tracking.
+2. Multi-step onboarding wizard UI.
+3. Dashboard checklist with completion state and recommended actions.
+4. Segmentation fields for use-case capture and future personalization.
+5. Optional welcome email or follow-up trigger hooks.
+6. Admin/runtime-config controls for enabling or customizing onboarding flows.
+
+## Likely Files / Systems Affected
+
+- `apps/web/app/(auth)/**/*`
+- `apps/web/app/(home)/**/*`
+- `apps/web/trpc/routers/*`
+- `packages/database/prisma/*`
+- `packages/ui/src/components/**/*`
+- `packages/email` for optional welcome sequences
+
+## Risks / Dependencies
+
+- Onboarding should not become a hard blocker that prevents users from reaching core product functionality.
+- The system must work even when certain features are disabled by config or flags.
+- Too many questions up front can hurt conversion; the first version should favor momentum over perfect profile completeness.
+- Analytics becomes useful later for measuring onboarding drop-off and activation quality.
+
+## Verification
+
+1. A new user sees a structured onboarding flow after sign-up.
+2. The user can skip or resume onboarding without losing partial progress.
+3. Completion state persists and updates the dashboard checklist.
+4. Different configuration/flag states can hide or show onboarding steps safely.
+5. Existing users can be backfilled into a non-blocking onboarding state without breaking access.

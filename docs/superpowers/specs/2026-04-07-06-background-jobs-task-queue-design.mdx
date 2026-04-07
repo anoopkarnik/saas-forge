@@ -1,0 +1,76 @@
+# Background Jobs / Task Queue
+
+## Context
+
+SaaS Forge already includes flows that benefit from asynchronous execution: email sending, webhook processing, scaffold-related follow-ups, future analytics/report generation, and any AI task that may run longer than a request-response cycle. Today, the repo does not provide a first-class queue or job runner abstraction, so downstream teams would need to invent one before building reliable async workflows.
+
+This gap blocks multiple roadmap items already present in `docs/plan.md`, especially outgoing webhooks, cron tasks, notification fan-out, and longer-running AI or reporting work.
+
+## Why This Priority
+
+This is ranked sixth because it is foundational infrastructure with broad leverage across later roadmap items, but it follows mobile parity and AI because those two are more visible buyer-facing value adds. It also stays behind the earlier platform primitives that influence auth, security, and configuration shape.
+
+It belongs ahead of `#7 i18n` because queues enable multiple product capabilities rather than just one cross-cutting UX improvement. It belongs ahead of `#8 Feature Flags` because safe async execution is a stronger platform unlock for emails, webhooks, analytics, and retries than rollout logic alone.
+
+## Overview
+
+Add a shared background job platform for deferred work, retries, backoff, scheduling integration, and operational visibility.
+
+Initial job candidates:
+
+- email sending
+- webhook delivery
+- notification fan-out
+- report generation
+- AI post-processing or summarization
+- future billing reconciliation tasks
+
+## Main Approach
+
+Create a shared `packages/jobs` abstraction so app features enqueue work through a single platform API instead of binding directly to one queue vendor.
+
+Key implementation direction:
+
+- Choose a serverless-friendly queue strategy that fits the current stack, likely Upstash-backed infrastructure because Redis is already part of the repo.
+- Define typed job payloads and handlers rather than free-form JSON blobs.
+- Add retry and dead-letter patterns as first-class behavior, not ad hoc handler code.
+- Separate enqueueing from execution so web routes remain fast and job workers can evolve independently.
+- Provide minimal admin visibility into job health, failures, and retries.
+
+Phasing:
+
+- Phase 1: email + webhook jobs.
+- Phase 2: notifications, reports, and AI offload.
+- Phase 3: admin dashboard, dead-letter replay, and richer observability.
+
+## Deliverables
+
+1. `packages/jobs` shared package with enqueue, handler registration, and retry helpers.
+2. Queue provider integration and worker execution setup.
+3. Typed jobs for email delivery and outgoing webhook delivery.
+4. Failure/retry/backoff strategy with dead-letter capture.
+5. Structured observability for job lifecycle events.
+6. Basic admin diagnostics page or log view for failed jobs.
+
+## Likely Files / Systems Affected
+
+- `packages/jobs` new workspace
+- `apps/web/app/api/**/*` or worker entrypoints
+- `packages/email/src/**/*`
+- `packages/observability/src/**/*`
+- future billing, notification, analytics, and AI modules
+
+## Risks / Dependencies
+
+- The queue choice should fit the deployment model of the starter rather than assuming one hosting vendor.
+- Job payloads must be typed and version-aware so later schema changes do not silently break retries.
+- This should not duplicate future cron scheduling; cron should trigger jobs, not replace the queue.
+- Strong observability is required or async failures become invisible to template users.
+
+## Verification
+
+1. An email-triggering action can enqueue work without blocking the request.
+2. Failed jobs retry with deterministic backoff and eventually move to a dead-letter state.
+3. Job logs record enqueue, start, success, failure, and retry attempts.
+4. Webhook delivery and email sending both run through the same queue abstraction.
+5. Queue behavior can be disabled or stubbed cleanly in local development/tests.

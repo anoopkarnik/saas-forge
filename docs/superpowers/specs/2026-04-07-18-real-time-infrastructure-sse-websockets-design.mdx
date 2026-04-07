@@ -1,0 +1,68 @@
+# Real-Time Infrastructure / SSE / WebSockets
+
+## Context
+
+SaaS Forge does not yet include a first-class real-time layer for streaming responses, live notifications, presence, or collaborative activity. Several roadmap items would benefit from it, especially AI streaming, live dashboards, and richer notifications.
+
+At the same time, not every SaaS feature needs WebSockets on day one, so this should be introduced deliberately rather than as premature complexity.
+
+## Why This Priority
+
+This is ranked eighteenth because it is valuable for UX and future collaboration patterns, but it depends on stronger foundations already ranked above it: jobs, AI, notifications, and access models. It is a multiplier, not a prerequisite.
+
+It stays behind `#17 API Key Management` because programmable platform access has broader immediate utility. It stays ahead of `#19 Product Analytics` because real-time support directly improves interactive product behavior, whereas analytics is more about understanding behavior after the fact.
+
+## Overview
+
+Introduce a real-time transport layer with SSE as the first-class streaming option and WebSockets reserved for cases that truly need bidirectional state.
+
+Initial use cases:
+
+- streaming AI responses
+- live notification updates
+- progress updates for long-running jobs
+- presence or lightweight activity indicators
+
+## Main Approach
+
+Prefer the simplest transport that fits each use case instead of defaulting everything to WebSockets.
+
+Key implementation direction:
+
+- Use SSE first for server-to-client streaming flows such as AI output or job progress.
+- Reserve WebSockets or a managed realtime service for presence and multi-user interactive features if/when needed.
+- Add shared hooks/utilities so product teams consume real-time updates through one abstraction.
+- Integrate real-time auth with existing session or API-key rules rather than inventing a separate auth model.
+- Keep fallback polling or graceful degradation where a full live connection is unavailable.
+
+## Deliverables
+
+1. Streaming transport abstraction with SSE-first support.
+2. Shared client hooks for subscribing to live updates.
+3. AI chat streaming integration.
+4. Notification or job-progress live update pattern.
+5. Auth model for protected realtime channels/streams.
+6. Guidance on when to use SSE vs WebSockets in future features.
+
+## Likely Files / Systems Affected
+
+- `apps/web/app/api/**/*`
+- `apps/web/lib/**/*`
+- `packages/ui/src/**/*`
+- AI and notification components
+- possible future service integration for managed realtime infrastructure
+
+## Risks / Dependencies
+
+- Real-time auth must be explicit or protected data can leak across channels.
+- WebSockets add infrastructure and scaling complexity; the first version should avoid overcommitting to them.
+- The transport choice should fit the deployment targets of the starter.
+- Jobs and notifications provide practical first use cases and should shape the initial event model.
+
+## Verification
+
+1. AI or job progress can be streamed to the UI over SSE successfully.
+2. Protected streams reject unauthorized access.
+3. The client can reconnect or degrade gracefully when a live connection drops.
+4. The shared realtime abstraction can support at least two use cases without duplicating transport logic.
+5. The docs clearly distinguish SSE-first flows from WebSocket-only scenarios.

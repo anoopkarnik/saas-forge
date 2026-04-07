@@ -1,0 +1,84 @@
+# Multi-Tenancy / Organizations / RBAC
+
+## Context
+
+SaaS Forge currently ships with a flat user model: authenticated users, admins, billing, CMS, scaffold download, and shared desktop/mobile/web auth flows. There is no concept of organization ownership, team membership, workspace switching, or scoped permissions. That is a major gap for B2B SaaS teams and one of the hardest platform capabilities to retrofit once product data and authorization assumptions spread across the codebase.
+
+The current repo shape makes that gap visible:
+
+- `packages/database/prisma/` models users and billing data, but not organizations or memberships.
+- `packages/auth` and `apps/web/trpc/init.ts` support authenticated and admin procedures, but not org-scoped authorization.
+- Web, desktop, and mobile all assume "one user -> one account context" rather than "one user -> many workspaces".
+
+## Why This Priority
+
+This is ranked first because it has the highest combined score across retrofit difficulty, market demand, and platform leverage. If organizations are added after more product modules, every billing, audit, admin, notification, API, and UI surface becomes harder to migrate safely.
+
+It belongs ahead of `#2 Runtime Site Config` because runtime settings can be layered onto either a single-tenant or org-aware system, while org-aware ownership changes the shape of nearly every future feature. It also belongs ahead of `#3 Security Hardening` in this ranking because multi-tenancy is both a top buyer-facing differentiator and the single most expensive capability to bolt on later.
+
+## Overview
+
+Introduce first-class organizations, memberships, invitations, workspace switching, and role-based access control across the shared platform.
+
+Initial scope:
+
+- One user can belong to multiple organizations.
+- Every protected product action runs in an explicit org context.
+- Minimum roles: `owner`, `admin`, `member`, `viewer`.
+- Billing, audit logs, notifications, API keys, and usage accounting become org-scoped by default.
+
+## Main Approach
+
+Add core data models for organizations and memberships in `packages/database/prisma`, then move authorization checks up into shared auth/tRPC layers so product features do not each reinvent team checks.
+
+Key implementation direction:
+
+- Create `Organization`, `OrganizationMembership`, and `OrganizationInvite` models.
+- Add `orgId` to data domains that should become workspace-owned, starting with billing, future audit logs, notifications, and runtime config.
+- Extend `packages/auth` to load active org context into session helpers.
+- Add `orgProcedure` and `orgRoleProcedure` patterns in `apps/web/trpc/init.ts`.
+- Introduce a shared org switcher UI in `packages/ui`, then reuse it in web and desktop; mobile can start with a simple org selector screen.
+- Default new users into a personal workspace to preserve backward compatibility for single-founder projects.
+
+Migration strategy:
+
+- Phase 1: add org tables and backfill each existing user into a personal org.
+- Phase 2: update billing, settings, and future modules to read/write through active org context.
+- Phase 3: expose invitations, membership management, and role controls in the admin/settings UI.
+
+## Deliverables
+
+1. Prisma models and migrations for organizations, memberships, invites, and active-org relationships.
+2. Shared auth/session helpers that can resolve active organization and user role.
+3. tRPC authorization helpers for org membership and org-role enforcement.
+4. Web and desktop workspace switcher plus team settings screens.
+5. Invite flow with email invite send, accept, reject, and expired-token handling.
+6. Initial org-scoped billing and usage ownership.
+7. Backfill script or migration path for existing single-user records.
+
+## Likely Files / Systems Affected
+
+- `packages/database/prisma/*`
+- `packages/auth/src/**/*`
+- `apps/web/trpc/init.ts`
+- `apps/web/trpc/routers/*`
+- `apps/web/app/(home)/**/*`
+- `apps/desktop/src/renderer/**/*`
+- `apps/mobile/**/*`
+- `packages/ui/src/components/**/*`
+
+## Risks / Dependencies
+
+- This depends on careful schema migration planning because existing data currently assumes user-owned records.
+- Better Auth organization support should be evaluated, but the repo should not become tightly coupled to plugin-specific behavior that is hard to share across web, desktop, and mobile.
+- Billing, notifications, audit logging, feature flags, and API keys should align to org ownership once introduced, so those later specs should assume this data model exists.
+- Personal-workspace fallback is required to avoid breaking users who do not need teams.
+
+## Verification
+
+1. A migrated existing user is assigned a personal organization automatically.
+2. A user can create a second organization, switch contexts, and see isolated org-scoped data.
+3. Non-members cannot access another org's tRPC procedures.
+4. Role checks work for at least `owner`, `admin`, and `member` on shared settings flows.
+5. Billing and future usage data resolve against active org context rather than only `userId`.
+6. Web and desktop keep session + active-org state in sync after org switching.

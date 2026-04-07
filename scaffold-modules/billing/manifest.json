@@ -1,0 +1,68 @@
+{
+  "id": "billing",
+  "selected": {},
+  "unselected": {
+    "remove": [
+      "apps/mobile/components/settings/BillingSection.tsx",
+      "apps/mobile/lib/billing-api.ts",
+      "apps/mobile/lib/credits-provider.tsx",
+      "apps/web/app/api/payments",
+      "apps/web/tests/integration/billingProcedures.test.ts",
+      "apps/web/tests/integration/webhookRoute.test.ts",
+      "apps/web/tests/integration/webhookRouteConfigured.test.ts",
+      "apps/web/trpc/routers/billingProcedures.ts",
+      "packages/ui/src/components/home/PlansBilling.tsx",
+      "packages/ui/src/components/payments"
+    ],
+    "replace": [
+      {
+        "from": "overrides/unselected/apps/desktop/src/renderer/src/components/home/SidebarUser.tsx",
+        "to": "apps/desktop/src/renderer/src/components/home/SidebarUser.tsx"
+      },
+      {
+        "from": "overrides/unselected/apps/desktop/.env.example",
+        "to": "apps/desktop/.env.example"
+      },
+      {
+        "from": "overrides/unselected/apps/mobile/app/(home)/_layout.tsx",
+        "to": "apps/mobile/app/(home)/_layout.tsx"
+      },
+      {
+        "from": "overrides/unselected/apps/mobile/app/(home)/settings.tsx",
+        "to": "apps/mobile/app/(home)/settings.tsx"
+      },
+      {
+        "from": "overrides/unselected/apps/mobile/components/home/TabHeader.tsx",
+        "to": "apps/mobile/components/home/TabHeader.tsx"
+      },
+      {
+        "from": "overrides/unselected/apps/mobile/.env.example",
+        "to": "apps/mobile/.env.example"
+      },
+      {
+        "from": "overrides/unselected/apps/web/blocks/home/SidebarUser.tsx",
+        "to": "apps/web/blocks/home/SidebarUser.tsx"
+      },
+      {
+        "from": "overrides/unselected/apps/web/trpc/routers/_app.ts",
+        "to": "apps/web/trpc/routers/_app.ts"
+      },
+      {
+        "from": "overrides/unselected/apps/web/.env.example",
+        "to": "apps/web/.env.example"
+      },
+      {
+        "from": "overrides/unselected/apps/web/middleware.ts",
+        "to": "apps/web/middleware.ts"
+      },
+      {
+        "from": "overrides/unselected/apps/web/package.json",
+        "to": "apps/web/package.json"
+      },
+      {
+        "from": "overrides/unselected/packages/ui/src/components/home/SettingsDialog.tsx",
+        "to": "packages/ui/src/components/home/SettingsDialog.tsx"
+      }
+    ]
+  }
+}

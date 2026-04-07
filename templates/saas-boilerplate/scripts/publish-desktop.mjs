@@ -2,7 +2,11 @@ import { execFileSync } from "child_process";
 import fs from "fs";
 import path from "path";
 
-const repoRoot = process.cwd();
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const repoRoot = path.resolve(__dirname, "..");
 
 function parseArgs() {
     const args = process.argv.slice(2);

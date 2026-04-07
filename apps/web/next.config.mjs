@@ -31,17 +31,25 @@ const scaffoldTraceIncludes = [
   "../../template-sync.manifest.json",
 ]
 
-const scaffoldTraceExcludes = scaffoldTraceRoots.flatMap((root) => [
-  `${root}/**/.cache/**`,
-  `${root}/**/.next/**`,
-  `${root}/**/.turbo/**`,
-  `${root}/**/.vercel/**`,
-  `${root}/**/build/**`,
-  `${root}/**/coverage/**`,
-  `${root}/**/dist/**`,
-  `${root}/**/node_modules/**`,
-  `${root}/**/out/**`,
-])
+const scaffoldTraceExcludes = [
+  ...scaffoldTraceRoots.flatMap((root) => [
+    `${root}/**/.cache/**`,
+    `${root}/**/.next/**`,
+    `${root}/**/.turbo/**`,
+    `${root}/**/.vercel/**`,
+    `${root}/**/build/**`,
+    `${root}/**/coverage/**`,
+    `${root}/**/dist/**`,
+    `${root}/**/node_modules/**`,
+    `${root}/**/out/**`,
+  ]),
+  "**/node_modules/.cache/**",
+  "**/node_modules/.bin/**",
+  "**/node_modules/.pnpm-debug.log",
+  "**/.next/cache/**",
+  "apps/web/.next/cache/**",
+  "apps/web/public/**",
+]
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {

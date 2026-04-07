@@ -58,6 +58,7 @@ import {
   buildVercelDeployUrl,
   parseEnvFile,
 } from "../../lib/utils/scaffold";
+import { formatList } from "../../lib/utils/formatList";
 import {
   getAccountsProviderGroups,
   getReviewSummaryItems,

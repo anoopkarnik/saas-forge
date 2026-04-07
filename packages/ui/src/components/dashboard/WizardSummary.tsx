@@ -16,15 +16,9 @@ import {
 } from "@workspace/ui/lib/constants/scaffold-modules";
 import { WIZARD_STEPS, WizardStepId } from "@workspace/ui/lib/scaffold-wizard";
 import { PresetInfo } from "@workspace/ui/lib/constants/presets";
-import { EntryChoice } from "../DashboardPage";
+import { EntryChoice } from "../../blocks/dashboard/DashboardPage";
 import { FormValues } from "@workspace/ui/lib/zod/download";
-
-function formatList(values: string[]) {
-    if (values.length === 0) return "None selected yet";
-    if (values.length === 1) return values[0];
-    if (values.length === 2) return `${values[0]} & ${values[1]}`;
-    return `${values.slice(0, -1).join(", ")} & ${values[values.length - 1]}`;
-}
+import { formatList } from "@workspace/ui/lib/utils/formatList";
 
 export function WizardSummary({
     currentStepIndex,

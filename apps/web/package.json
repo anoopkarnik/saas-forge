@@ -1,6 +1,6 @@
 {
   "name": "web",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "type": "module",
   "private": true,
   "scripts": {
@@ -48,7 +48,9 @@
     "react-error-boundary": "^6.0.0",
     "react-hook-form": "^7.67.0",
     "react-icons": "^5.5.0",
+    "react-markdown": "^10.1.0",
     "react-spinners": "^0.17.0",
+    "remark-gfm": "^4.0.1",
     "sharp": "^0.34.5",
     "sonner": "^2.0.7",
     "stripe": "^20.4.0",

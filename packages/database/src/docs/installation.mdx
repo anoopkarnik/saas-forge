@@ -1,0 +1,94 @@
+
+There are two ways to set up the SaaS Forge: using the CLI tool (recommended) or manual installation.
+
+
+## Option 1: Using the CLI (Recommended)
+
+
+The fastest way to get started:
+
+
+```bash
+npx saas-forge my-saas-app --theme=blue|green|neutral|orange|red|rose|violet|yellow
+```
+
+
+This command will:
+
+- Clone the repository
+- Copy `.env.example` to `.env`
+- Set your preferred theme (optional)
+- Install all dependencies
+
+## Option 2: Manual Installation
+
+
+### 1. Clone the Repository
+
+
+```bash
+git clone <https://github.com/anoopkarnik/saas-forge.git> my-saas-app
+cd my-saas-app
+```
+
+
+### 2. Install Dependencies
+
+
+We use `pnpm` for package management.
+
+
+```bash
+pnpm install
+```
+
+
+### 3. Environment Variables
+
+
+Copy the example environment file to create your own local configuration.
+
+
+```bash
+cd apps/web
+cp .env.example .env
+```
+
+
+```bash
+cd packages/database
+cp .env.example .env
+```
+
+> **Important**: You must fill in the `.env` file with your API keys and secrets. See the Environment Variables guide for a detailed reference of each variable.
+
+### 4. Database Setup
+
+
+Ensure your `DATABASE_URL` in `.env`  in database packages is correct, then generate the Prisma client and run migrations.
+
+
+```bash
+# Run from the root directory
+pnpm generate
+
+# Run migrations to create tables
+pnpm migrate
+```
+
+
+This will:
+
+1. Generate the Prisma client from your schema
+2. Create all necessary tables in your PostgreSQL database as defined in `packages/database/prisma/schema.prisma`
+
+### 5. Start Development Server
+
+
+```bash
+pnpm dev
+```
+
+
+Your app will be available at [http://localhost:3000](http://localhost:3000/)
+

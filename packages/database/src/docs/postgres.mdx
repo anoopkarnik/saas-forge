@@ -1,0 +1,35 @@
+
+The project uses PostgreSQL as its primary database. We recommend using a hosted provider like **Neon** or **Supabase**, but you can also run it locally via Docker or  in aws rds. 
+
+
+## Connection String
+
+
+Add your database connection string to the `.env` file:
+
+
+```plain text
+DATABASE_URL="postgresql://user:password@host:port/database"
+```
+
+
+## Schema Management
+
+
+We use **Prisma ORM** to manage the database schema. The schema file is located at `packages/database/prisma/schema.prisma`.
+
+
+### Common Commands
+
+- **Push Schema**: Update the database schema to match your Prisma file.
+
+    ```bash
+    pnpm migrate
+    ```
+
+- **Generate Client**: Regenerate the Prisma Client (run this after changing schema).
+
+    ```bash
+    pnpm generate
+    ```
+

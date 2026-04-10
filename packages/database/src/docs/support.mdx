@@ -1,0 +1,71 @@
+
+The application comes with a comprehensive, floating support widget located in the bottom-right corner of the screen. This widget serves as a central hub for user assistance.
+
+
+## Features
+
+
+### 1. Contact Support (Email)
+
+
+Users can send a support message directly from the widget.
+
+- **Backend**: Uses `trpc.support.sendSupportMessage`.
+- **Delivery**: Emails are sent via **Resend** to the address defined in `NEXT_PUBLIC_SUPPORT_MAIL`.
+- **Subject Line**: Automatically formatted as `Subject from user@email.com for AppName`.
+
+### 2. Book a Meeting
+
+
+Direct integration with Calendly for scheduling calls.
+
+- **Link**: Opens the URL defined in `NEXT_PUBLIC_CALENDLY_BOOKING_URL` in a new tab.
+
+### 3. Documentation
+
+
+Quick link to the documentation landing page (`/landing/doc`).
+
+
+### 4. Newsletter (Optional)
+
+
+Allows users to subscribe to product updates.
+
+- **Integration**: Sends a POST request to an n8n webhook.
+- **Env Variable**: `N8N_SUBSCRIBE_NEWSLETTER_WEBHOOK_URL`.
+- **Status**: Disabled by default in the UI. Uncomment the block in `apps/web/blocks/Support.tsx` to enable.
+
+### 5. AI Assistant (Optional)
+
+
+A chatbot interface for automated support.
+
+- **Integration**: Connects to an n8n AI agent via webhook.
+- **Env Variable**: `N8N_SAAS_ASSISTANT_WEBHOOK_URL`.
+- **Status**: Disabled by default in the UI. Uncomment the block in `apps/web/blocks/Support.tsx` to enable.
+
+## Configuration
+
+
+To configure the support module, set the following environment variables in your `.env` file:
+
+
+```plain text
+# Required for Email Support
+NEXT_PUBLIC_SUPPORT_MAIL=support@yourdomain.com
+
+# Required for Booking
+NEXT_PUBLIC_CALENDLY_BOOKING_URL=https://calendly.com/your-link
+
+# Optional: For Newsletter & AI Assistant
+N8N_SUBSCRIBE_NEWSLETTER_WEBHOOK_URL=https://your-n8n-instance.com/webhook/...
+N8N_SAAS_ASSISTANT_WEBHOOK_URL=https://your-n8n-instance.com/webhook/...
+```
+
+
+## Customization
+
+
+The widget is implemented in `apps/web/blocks/Support.tsx`. You can easily add or remove tiles from the grid menu to fit your needs.
+

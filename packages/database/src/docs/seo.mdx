@@ -1,0 +1,115 @@
+
+Optimize your SaaS Forge application for search engines.
+
+
+## Next.js Metadata API
+
+
+Configure metadata in `layout.tsx` or `page.tsx`:
+
+
+```typescript
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "My SaaS App",
+  description: "The best SaaS solution",
+  keywords: ["saas", "software", "productivity"],
+  authors: [{ name: "Your Name" }],
+  openGraph: {
+    title: "My SaaS App",
+    description: "The best SaaS solution",
+    url: "<https://mysaas.com>",
+    siteName: "My SaaS",
+    images: [{
+      url: "<https://mysaas.com/og-image.png>",
+      width: 1200,
+      height: 630,
+    }],
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "My SaaS App",
+    description: "The best SaaS solution",
+    images: ["<https://mysaas.com/twitter-image.png>"],
+  },
+};
+```
+
+
+## Dynamic Metadata
+
+
+```typescript
+export async function generateMetadata({ params }): Promise<Metadata> {
+  const post = await getPost(params.id);
+
+  return {
+    title: post.title,
+    description: post.excerpt,
+  };
+}
+```
+
+
+## Sitemap
+
+
+Create `app/sitemap.ts`:
+
+
+```typescript
+import { MetadataRoute } from "next";
+
+export default function sitemap(): MetadataRoute.Sitemap {
+  return [
+    {
+      url: "<https://mysaas.com>",
+      lastModified: new Date(),
+      changeFrequency: "yearly",
+      priority: 1,
+    },
+    {
+      url: "<https://mysaas.com/pricing>",
+      lastModified: new Date(),
+      changeFrequency: "monthly",
+      priority: 0.8,
+    },
+  ];
+}
+```
+
+
+## Robots.txt
+
+
+Create `app/robots.ts`:
+
+
+```typescript
+import { MetadataRoute } from "next";
+
+export default function robots(): MetadataRoute.Robots {
+  return {
+    rules: {
+      userAgent: "*",
+      allow: "/",
+      disallow: "/private/",
+    },
+    sitemap: "<https://mysaas.com/sitemap.xml>",
+  };
+}
+```
+
+
+## Best Practices
+
+1. **Unique titles**: Each page should have a unique title
+2. **Meta descriptions**: 150-160 characters
+3. **Open Graph images**: 1200x630px
+4. **Semantic HTML**: Use proper heading hierarchy
+5. **Alt text**: Describe all images
+6. **Mobile-friendly**: Responsive design
+7. **Fast loading**: Optimize performance

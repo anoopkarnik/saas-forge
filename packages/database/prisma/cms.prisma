@@ -46,6 +46,7 @@ model LandingPage {
   pricingPlans PricingPlan[]
   faqs         FAQ[]
   footerLinks  FooterLink[]
+  documentations Documentation[]
 
   @@schema("cms_schema")
 }
@@ -116,6 +117,20 @@ model FooterLink {
   label         String
   href          String?
   type          String?
+
+  @@schema("cms_schema")
+}
+
+model Documentation {
+  id            String      @id @default(cuid())
+  landingPageId String
+  landingPage   LandingPage @relation(fields: [landingPageId], references: [id], onDelete: Cascade)
+  slug          String      @unique
+  title         String
+  type          String?     
+  content       String      
+  order         Int         @default(0)
+  lastUpdated   DateTime    @default(now())
 
   @@schema("cms_schema")
 }

@@ -1,0 +1,34 @@
+
+We use **Resend** for transactional and marketing emails.
+
+
+## Configuration
+
+1. Create an account at [Resend](https://resend.com/).
+2. Verify your domain (required for sending to non-test emails).
+3. Create an API Key.
+4. Add it to `.env`:
+
+```plain text
+RESEND_API_KEY=re_123456789
+NEXT_PUBLIC_SUPPORT_MAIL=support@yourdomain.com
+```
+
+
+## Sending Emails
+
+
+We use React Email for templates. You can send an email using the `@workspace/email` package:
+
+
+```typescript
+import { sendEmail } from "@workspace/email";
+import { WelcomeEmail } from "@workspace/email/templates/welcome";
+
+await sendEmail({
+  to: "user@example.com",
+  subject: "Welcome!",
+  react: WelcomeEmail({ name: "User" }),
+});
+```
+

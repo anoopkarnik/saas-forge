@@ -1,0 +1,30 @@
+
+# Authentication
+
+
+The SaaS Boilerplate uses **Better Auth** for handling authentication. Better Auth interacts directly with your PostgreSQL database to store user sessions and account information.
+
+
+## How it works
+
+1. **Client**: The frontend uses `better-auth/client` to initiate sign-in requests (e.g., "Sign in with Google").
+2. **Server**: The backend verifies the request and communicates with the provider (Google, GitHub, LinkedIn).
+3. **Database**: Upon successful authentication, a user record is created (if new) and a session is stored in the database.
+4. **Session**: A secure, HTTP-only cookie is set on the user's browser to maintain the session.
+
+## Configuration
+
+
+All authentication logic is located in `packages/auth`.
+
+- **Providers**: Configured in `packages/auth/src/auth.ts`.
+- **Environment Variables**: You must provide Client IDs and Secrets in your `.env` file for each provider you wish to enable.
+
+## Adding a New Provider
+
+
+To add a new provider (e.g., Discord):
+
+1. Install the provider package/plugin if required.
+2. Update `packages/auth/src/auth.ts` to include the new provider in the `providers` array.
+3. Add the necessary environment variables.

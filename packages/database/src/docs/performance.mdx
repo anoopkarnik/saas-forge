@@ -1,0 +1,101 @@
+
+Strategies to keep your SaaS Forge application fast.
+
+
+## Image Optimization
+
+
+Use Next.js Image component:
+
+
+```typescript
+import Image from "next/image";
+
+<Image
+  src="/hero.jpg"
+  alt="Hero"
+  width={1200}
+  height={600}
+  priority // For above-the-fold images
+/>
+```
+
+
+## Code Splitting
+
+
+Lazy load components:
+
+
+```typescript
+import dynamic from "next/dynamic";
+
+const HeavyComponent = dynamic(() => import("./HeavyComponent"), {
+  loading: () => <Spinner />,
+  ssr: false, // Client-side only
+});
+```
+
+
+## Caching
+
+
+Use Redis for expensive operations:
+
+
+```typescript
+const cached = await redis.get(key);
+if (cached) return JSON.parse(cached);
+
+const data = await fetchExpensiveData();
+await redis.set(key, JSON.stringify(data), { ex: 3600 });
+```
+
+
+## Database Optimization
+
+- Add indexes to frequently queried fields
+- Use `select` to limit returned fields
+- Batch queries with `findMany` instead of multiple `findUnique`
+- Use database connections pooling
+
+## Bundle Optimization
+
+
+Analyze bundle size:
+
+
+```bash
+pnpm add -D @next/bundle-analyzer
+```
+
+
+```javascript
+// next.config.mjs
+import analyzer from "@next/bundle-analyzer";
+
+const withBundleAnalyzer = analyzer({
+  enabled: process.env.ANALYZE === "true",
+});
+
+export default withBundleAnalyzer(nextConfig);
+```
+
+
+Run analysis:
+
+
+```bash
+ANALYZE=true pnpm build
+```
+
+
+## Best Practices
+
+1. **Minimize JavaScript**: Remove unused dependencies
+2. **Use Server Components**: Reduce client-side JS
+3. **Optimize images**: WebP format, proper sizing
+4. **Enable compression**: Gzip/Brotli
+5. **Cache static assets**: CDN or Vercel caching
+6. **Lazy load**: Below-the-fold content
+7. **Monitor metrics**: Core Web Vitals

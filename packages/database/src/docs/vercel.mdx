@@ -1,0 +1,62 @@
+
+The easiest way to deploy this app is to use the [Vercel Platform](https://vercel.com/new).
+
+
+## Steps
+
+1. **Push your code** to a Git repository (GitHub, GitLab, Bitbucket).
+2. **Import the project** into Vercel from [vercel.com/new](https://vercel.com/new).
+3. **Configure Project Settings**:
+    - **Framework Preset**: Next.js
+    - **Root Directory**: Leave as apps/web
+    - **Build Command**: `pnpm -w run generate && pnpm build`  (or leave default)
+    - **Output Directory**: Leave default
+    - **Install Command**: Leave default
+4. **Environment Variables**:
+    - Copy all production values from your `.env` file into the Vercel Environment Variables UI
+    - **Security Note**: Never commit `.env` to Git
+
+## Monorepo Configuration
+
+
+Since this is a Turborepo monorepo, Vercel will:
+
+- Automatically detect workspace structure
+- Install dependencies from the root
+- Build only the `apps/web` package (configured in `turbo.json`)
+- Cache build outputs for faster deployments
+
+## Build Command
+
+
+The default build command `pnpm build` defined in `package.json` should work correctly. It triggers the Next.js build process.
+
+
+## Post-Deployment
+
+1. **Domain**: Configure your custom domain in Vercel settings.
+2. **Update Environment Variables**:
+    - Set `NEXT_PUBLIC_URL` to your production domain
+    - Update `DODO_PAYMENTS_RETURN_URL` to use your production domain
+3. **Configure Webhooks**:
+    - Update Dodo Payments webhook URL to `https://yourdomain.com/api/payments/dodo/webhook`
+    - Add your production domain to Better Auth allowed origins (if applicable)
+4. **Test Authentication**: Ensure OAuth redirect URIs are updated in:
+    - Google Cloud Console
+    - GitHub OAuth Apps
+    - LinkedIn Developer Portal
+
+## Troubleshooting
+
+
+### Build Fails with "Module not found"
+
+- Ensure all workspace dependencies are properly installed
+- Check that `@workspace/*` packages are correctly exported in their `package.json`
+- Verify `next.config.mjs` has proper transpilation configuration
+
+### Environment Variables Not Loading
+
+- Redeploy after adding new environment variables
+- Check variable names match exactly (case-sensitive)
+- Ensure variables are set for the correct environment (Production/Preview/Development)

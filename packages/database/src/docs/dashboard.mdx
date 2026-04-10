@@ -1,0 +1,79 @@
+
+The authenticated home area (`apps/web/app/(home)`) is where users land after signing in.
+
+
+## Structure
+
+
+```plain text
+app/(home)/
+├── layout.tsx           # Protected layout
+├── page.tsx             # Home dashboard
+├── billing/
+│   └── page.tsx         # Billing & credits
+└── tasks/               # Your custom features
+    └── page.tsx
+```
+
+
+## Protected Layout
+
+
+The `(home)` route group is automatically protected by middleware. Users must be authenticated to access these rout
+
+
+## Home Page
+
+
+Default landing for authenticated users:
+
+
+```typescript
+// app/(home)/page.tsx
+
+export default async function HomePage() {
+  return (
+    <div>
+      <h1>Welcome, {session.user.name}!</h1>
+      {/* Dashboard content */}
+    </div>
+  );
+}
+```
+
+
+## Adding Dashboard Features
+
+
+Create new routes under `(home)`:
+
+
+```bash
+mkdir apps/web/app/\\(home\\)/analytics
+touch apps/web/app/\\(home\\)/analytics/page.tsx
+```
+
+
+## Navigation
+
+
+Add links to your dashboard features:
+
+
+```typescript
+// components/DashboardNav.tsx
+<nav>
+  <Link href="/">Home</Link>
+  <Link href="/billing">Billing</Link>
+  <Link href="/tasks">Tasks</Link>
+  <Link href="/settings">Settings</Link>
+</nav>
+```
+
+
+## Best Practices
+
+1. **Loading states**: Use Suspense for async data
+2. **Error boundaries**: Handle errors gracefully
+3. **Responsive design**: Mobile-first approach
+4. **Performance**: Lazy load heavy features

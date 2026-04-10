@@ -1,0 +1,604 @@
+
+Solutions to common problems you might encounter while developing with SaaS Forge.
+
+
+## Installation Issues
+
+
+### `pnpm install` fails
+
+
+**Problem**: Installation fails with ENOENT or permission errors.
+
+
+**Solutions**:
+
+
+```bash
+# Clear pnpm cache
+pnpm store prune
+
+# Remove node_modules and lockfile
+rm -rf node_modules pnpm-lock.yaml
+
+# Reinstall
+pnpm install
+
+# If permission issues on macOS/Linux
+sudo chown -R $(whoami) ~/.pnpm-store
+```
+
+
+### Node version mismatch
+
+
+**Problem**: `Error: The engine "node" is incompatible with this module.`
+
+
+**Solution**:
+
+
+```bash
+# Check required version (in package.json)
+cat package.json | grep '"node"'
+
+# Install correct version with nvm
+nvm install 20
+nvm use 20
+
+# Or with fnm
+fnm install 20
+fnm use 20
+```
+
+
+## Database Issues
+
+
+### "Prisma Client not initialized"
+
+
+**Problem**: `PrismaClient is unable to run in the browser` or client not found.
+
+
+**Solutions**:
+
+
+```bash
+# Generate Prisma client
+pnpm --filter @workspace/database generate
+
+# If still failing, restart dev server
+# (Ctrl+C then pnpm dev)
+```
+
+
+### Migration fails
+
+
+**Problem**: `Migration failed to apply` or database schema mismatch.
+
+
+**Solutions**:
+
+
+```bash
+# Reset database (WARNING: deletes all data)
+pnpm --filter @workspace/database reset
+
+# Or manually push schema
+pnpm --filter @workspace/database migrate
+
+# Check database connection
+psql $DATABASE_URL -c "SELECT 1"
+```
+
+
+### "Column does not exist"
+
+
+**Problem**: Database schema doesn't match Prisma schema.
+
+
+**Solutions**:
+
+
+```bash
+# Push current schema to database
+pnpm --filter @workspace/database migrate
+
+# Or reset and reseed
+pnpm --filter @workspace/database reset
+```
+
+
+## TypeScript Errors
+
+
+### "Module '@workspace/...' not found"
+
+
+**Problem**: Workspace package can't be resolved.
+
+
+**Solutions**:
+
+
+```bash
+# Ensure package is built
+pnpm --filter @workspace/ui build
+
+# Check package.json exports
+cat packages/ui/package.json
+
+# Verify transpilePackages in next.config.mjs
+cat apps/web/next.config.mjs | grep transpilePackages
+
+# Restart TypeScript server in VSCode
+# Cmd+Shift+P > "TypeScript: Restart TS Server"
+```
+
+
+### "Type instantiation is excessively deep"
+
+
+**Problem**: tRPC router types are too complex.
+
+
+**Solutions**:
+
+- Split large routers into smaller sub-routers
+- Reduce nesting depth in router definitions
+- Update to latest tRPC version
+
+### "Cannot find module or its type declarations"
+
+
+**Problem**: TypeScript can't find types for a package.
+
+
+**Solutions**:
+
+
+```bash
+# Install type definitions
+pnpm add -D @types/package-name
+
+# Or add to tsconfig.json
+{
+  "compilerOptions": {
+    "skipLibCheck": true
+  }
+}
+```
+
+
+## Build Errors
+
+
+### "Module not found" during build
+
+
+**Problem**: Production build fails but dev works.
+
+
+**Solutions**:
+
+
+```bash
+# Clear Next.js cache
+rm -rf apps/web/.next
+
+# Clear Turbo cache
+rm -rf .turbo
+
+# Rebuild
+pnpm build
+
+# Check for dynamic imports that might fail
+# Ensure all dependencies are in dependencies, not devDependencies
+```
+
+
+### "Out of memory" during build
+
+
+**Problem**: Build process runs out of memory.
+
+
+**Solutions**:
+
+
+```bash
+# Increase Node memory limit
+NODE_OPTIONS=--max-old-space-size=4096 pnpm build
+
+# Or add to package.json
+{
+  "scripts": {
+    "build": "NODE_OPTIONS=--max-old-space-size=4096 turbo build"
+  }
+}
+```
+
+
+### Tailwind styles not working
+
+
+**Problem**: Tailwind classes don't apply styling.
+
+
+**Solutions**:
+
+
+```bash
+# Check tailwind.config.ts content paths
+cat tailwind.config.ts
+
+# Ensure paths include:
+content: [
+  "./app/**/*.{ts,tsx}",
+  "./components/**/*.{ts,tsx}",
+  "../../packages/ui/src/**/*.{ts,tsx}",
+]
+
+# Restart dev server
+```
+
+
+## Authentication Issues
+
+
+### Session not persisting
+
+
+**Problem**: User gets logged out on refresh.
+
+
+**Solutions**:
+
+- Check `BETTER_AUTH_SECRET` is set in `.env`
+- Verify cookie domain settings match your URL
+- Check browser cookie settings (third-party cookies)
+- Ensure HTTPS in production
+
+### OAuth redirect URI mismatch
+
+
+**Problem**: OAuth login fails with "redirect_uri_mismatch".
+
+
+**Solutions**:
+
+1. Go to OAuth provider settings (Google/GitHub/LinkedIn)
+2. Add your callback URL:
+    - Dev: `http://localhost:3000/api/auth/callback/google`
+    - Prod: `https://yourdomain.com/api/auth/callback/google`
+3. Ensure `NEXT_PUBLIC_URL` matches the domain
+
+### "Unauthorized" on protected routes
+
+
+**Problem**: Middleware redirects authenticated users.
+
+
+**Solutions**:
+
+
+```bash
+# Check middleware.ts session token name
+# Should match Better Auth config
+const sessionToken = req.cookies.get('better-auth.session_token')?.value;
+
+# Verify session in database
+psql $DATABASE_URL -c "SELECT * FROM user_schema.session LIMIT 5"
+
+# Check Better Auth logs
+```
+
+
+## tRPC Issues
+
+
+### "Procedure not found"
+
+
+**Problem**: `TRPCError: No procedure found`.
+
+
+**Solutions**:
+
+1. Verify router is added to `_app.ts`:
+
+    ```typescript
+    export const appRouter = createTRPCRouter({
+      myRouter: myRouter, // ← Make sure this exists
+    });
+    ```
+
+2. Check procedure exists in router:
+
+    ```typescript
+    export const myRouter = createTRPCRouter({
+      myProcedure: baseProcedure.query(...), // ← Defined?
+    });
+    ```
+
+3. Restart dev server (types might be stale)
+
+### "Context is undefined"
+
+
+**Problem**: `ctx` is undefined in procedure.
+
+
+**Solutions**:
+
+- Ensure `TRPCReactProvider` wraps your app
+- Check `createTRPCContext` is properly exported
+- Verify API route uses the correct context
+
+### Input validation fails
+
+
+**Problem**: Zod validation error on valid input.
+
+
+**Solutions**:
+
+
+```typescript
+// Check your schema matches input shape
+const schema = z.object({
+  name: z.string(), // Required by default
+  age: z.number().optional(), // Use .optional() if not required
+});
+
+// Debug by logging input
+.mutation(async ({ input }) => {
+  console.log("Received input:", input);
+  // ...
+});
+```
+
+
+## Environment Variables
+
+
+### Variables not loading
+
+
+**Problem**: `process.env.MY_VAR` is undefined.
+
+
+**Solutions**:
+
+1. Check `.env` file location (should be `apps/web/.env`)
+2. Restart dev server after changing `.env`
+3. For client-side, use `NEXT_PUBLIC_` prefix:
+
+    ```plain text
+    NEXT_PUBLIC_API_URL=https://api.example.com
+    ```
+
+4. Verify no typos in variable names (case-sensitive)
+
+### Variables not available in production
+
+
+**Problem**: Works locally but not on Vercel.
+
+
+**Solutions**:
+
+1. Add variables to Vercel dashboard (Project Settings > Environment Variables)
+2. Redeploy after adding variables
+3. Check correct environment (Production vs Preview)
+
+## Redis/Caching Issues
+
+
+### "Connection refused" to Redis
+
+
+**Problem**: Can't connect to Upstash Redis.
+
+
+**Solutions**:
+
+
+```bash
+# Verify credentials
+echo $UPSTASH_REDIS_REST_URL
+echo $UPSTASH_REDIS_REST_TOKEN
+
+# Test connection
+curl -H "Authorization: Bearer $UPSTASH_REDIS_REST_TOKEN" \\
+  $UPSTASH_REDIS_REST_URL/get/test-key
+
+# Check Upstash dashboard for status
+```
+
+
+### Stale cache data
+
+
+**Problem**: UI shows outdated information.
+
+
+**Solutions**:
+
+
+```bash
+# Clear specific key
+redis-cli -h your-redis.upstash.io -a $token DEL "key-name"
+
+# Or flush all cache (development only!)
+redis-cli -h your-redis.upstash.io -a $token FLUSHALL
+
+# In code, invalidate on mutation:
+await redis.del("cache-key");
+```
+
+
+## Payment Integration Issues
+
+
+### Webhook not receiving events
+
+
+**Problem**: Dodo Payments webhook never fires.
+
+
+**Solutions**:
+
+1. Verify webhook URL in Dodo dashboard
+2. Ensure route is public in `middleware.ts`:
+
+    ```typescript
+    const publicRoutes = [
+      "/api/payments/dodo/webhook", // ← Add this
+    ];
+    ```
+
+3. Check webhook signature verification
+4. Use ngrok for local testing:
+
+    ```bash
+    ngrok http 3000
+    # Use ngrok URL in Dodo dashboard
+    ```
+
+5. Check Dodo dashboard webhook logs
+
+### Payment succeeded but credits not added
+
+
+**Problem**: Payment completes but user credits don't update.
+
+
+**Solutions**:
+
+1. Check webhook handler logs
+2. Verify user ID matching between Dodo and your database
+3. Check database transaction completed:
+
+    ```bash
+    psql $DATABASE_URL -c "SELECT * FROM user_schema.user WHERE id='user-id'"
+    ```
+
+
+## Deployment Issues
+
+
+### Vercel build fails
+
+
+**Problem**: Build succeeds locally but fails on Vercel.
+
+
+**Solutions**:
+
+1. Check build logs for specific error
+2. Verify all environment variables are set
+3. Ensure `packages/database` is generated:
+
+    ```json
+    // package.json
+    {
+      "scripts": {
+        "build": "pnpm generate && turbo build"
+      }
+    }
+    ```
+
+4. Check Vercel Node.js version matches local
+
+### 500 error in production
+
+
+**Problem**: App works locally but crashes in production.
+
+
+**Solutions**:
+
+1. Check Vercel function logs (Dashboard > Logs)
+2. Ensure all env vars are set
+3. Verify database is accessible from Vercel IPs
+4. Check for hardcoded localhost URLs
+5. Enable verbose logging temporarily
+
+## Performance Issues
+
+
+### Slow page loads
+
+
+**Solutions**:
+
+
+```typescript
+// 1. Add caching to expensive queries
+const cached = await redis.get(key);
+if (cached) return JSON.parse(cached);
+
+// 2. Use React Query staleTime
+const { data } = api.query.useQuery(input, {
+  staleTime: 60 * 1000, // 1 minute
+});
+
+// 3. Lazy load heavy components
+const HeavyComponent = dynamic(() => import("./HeavyComponent"));
+
+// 4. Use loading states
+<Suspense fallback={<Spinner />}>
+  <Component />
+</Suspense>
+```
+
+
+### High memory usage
+
+
+**Solutions**:
+
+- Check for memory leaks (use Chrome DevTools)
+- Reduce bundle size (analyze with `@next/bundle-analyzer`)
+- Optimize images (use Next.js Image component)
+- Clear unused cache entries
+
+## Getting Help
+
+
+### Debug checklist
+
+
+Before asking for help:
+
+- [ ] Check this troubleshooting guide
+- [ ] Search existing GitHub issues
+- [ ] Check browser console for errors
+- [ ] Check server terminal for errors
+- [ ] Verify environment variables
+- [ ] Try clearing cache and restarting
+- [ ] Test in incognito/private browsing
+
+### Provide information
+
+
+When reporting issues:
+
+- Node version (`node -v`)
+- pnpm version (`pnpm -v`)
+- Operating system
+- Error message (full stack trace)
+- Steps to reproduce
+- Expected vs actual behavior
+
+### Resources
+
+- [GitHub Issues](https://github.com/anoopkarnik/saas-forge/issues)
+- [Next.js Docs](https://nextjs.org/docs)
+- [tRPC Docs](https://trpc.io/docs)
+- [Prisma Docs](https://www.prisma.io/docs)
+- [Better Auth Docs](https://www.better-auth.com/docs)

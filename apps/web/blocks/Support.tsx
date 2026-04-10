@@ -44,6 +44,8 @@ const Support = () => {
         <DropdownMenuTrigger asChild>
           <div
             ref={triggerRef}
+            role="button"
+            aria-label="Open support panel"
             className="fixed bottom-6 right-6 flex items-center justify-center w-14 h-14 rounded-full 
               bg-primary text-primary-foreground cursor-pointer shadow-xl hover:shadow-2xl hover:scale-105 
               transition-all duration-300 z-50 hover:ring-2 hover:ring-primary/50"

@@ -1,0 +1,220 @@
+
+SaaS Forge includes a built-in credits system integrated with Dodo Payments or Stripe.
+
+
+## Overview
+
+
+The billing system provides:
+
+- **Credit Purchases**: One-time credit purchases via Dodo Payments or Stripe.
+- **Automatic Credit Top-ups**: Webhook-based credit allocation with robust idempotency checks.
+- **Usage Tracking**: Track credits used and remaining.
+
+## User Credits
+
+
+Each user has two credit fields:
+
+- `creditsTotal`: Total credits purchased
+- `creditsUsed`: Credits consumed
+
+```typescript
+// Check user credits
+const user = await db.user.findUnique({
+  where: { id: userId },
+  select: { creditsTotal: true, creditsUsed: true },
+});
+
+const remaining = user.creditsTotal - user.creditsUsed;
+```
+
+
+### Purchase Credits
+
+
+To purchase credits, use the createCheckoutSession mutation from the billing router. Credits are currently configured to be purchased in multiples of 50.
+
+
+```typescript
+const mutation = api.billing.createCheckoutSession.useMutation();
+
+const handlePurchase = async () => {
+  const result = await mutation.mutateAsync({
+    credits: 100, // Credits must be a multiple of 50
+  });
+
+  // Redirect to checkout (Stripe or Dodo Payments)
+  window.location.href = result.checkoutUrl;
+};
+```
+
+
+## Credits Configuration
+
+
+Set credits per unit in `apps/web/trpc/routers/billingProcedures.ts`:
+
+
+```typescript
+const CREDITS_PER_UNIT = 50; // 1 unit ($10) = 50 credits
+```
+
+
+## Webhook Integration
+
+
+When a payment succeeds, the respective payment gateway sends a webhook to your application:
+
+- **Stripe**: `/api/payments/stripe/webhook`
+- **Dodo Payments**: `/api/payments/dodo/webhook`
+
+The webhook handlers automatically verify the signature and safely assign credits to the user. We implement a robust idempotency check using a database transaction to prevent duplicate credit assignments if the webhook fires multiple times.
+
+
+```typescript
+// Inside webhook handler (e.g. Stripe)
+// Re-check INSIDE the transaction to prevent TOCTOU race condition
+const alreadyProcessed = await tx.transaction.findFirst({
+  where: { checkoutSessionId: session.id }
+});
+if (alreadyProcessed) {
+  return; // exits the transaction callback without creating anything
+}
+
+await tx.transaction.create({ ... });
+await tx.user.update({ ... });
+```
+
+
+## Using Credits in Features
+
+
+### Check Credits Before Operation
+
+
+```typescript
+export const aiFeatureRouter = createTRPCRouter({
+  generate: protectedProcedure
+    .input(z.object({ prompt: z.string() }))
+    .mutation(async ({ input, ctx }) => {
+      const user = await db.user.findUnique({
+        where: { id: ctx.session.user.id },
+      });
+
+      const remaining = user.creditsTotal - user.creditsUsed;
+
+      if (remaining < 10) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Insufficient credits",
+        });
+      }
+
+      // Perform operation
+      const result = await generateAI(input.prompt);
+
+      // Deduct credits
+      await db.user.update({
+        where: { id: ctx.session.user.id },
+        data: {
+          creditsUsed: { increment: 10 },
+        },
+      });
+
+      return result;
+    }),
+});
+```
+
+
+### Display Credits in UI
+
+
+```typescript
+"use client";
+import { api } from "@/trpc/client";
+
+export function CreditsDisplay() {
+  const { data: balance } = api.billing.getCreditsBalance.useQuery();
+
+  if (!balance) return null;
+
+  const remaining = balance.creditsTotal - balance.creditsUsed;
+
+  return (
+    <div className="flex items-center gap-2">
+      <span>Credits: {remaining}</span>
+      {remaining < 10 && (
+        <a href="/billing" className="text-blue-600">
+          Buy more
+        </a>
+      )}
+    </div>
+  );
+}
+```
+
+
+## Billing Page Example
+
+
+```typescript
+// apps/web/app/(home)/billing/page.tsx
+"use client";
+import { api } from "@/trpc/client";
+
+export default function BillingPage() {
+  const { data: address } = api.billing.getBillingAddress.useQuery();
+  const purchaseMutation = api.billing.createCheckoutSession.useMutation();
+
+  const handlePurchase = async (quantity: number) => {
+    // 1 unit = 50 credits
+    const result = await purchaseMutation.mutateAsync({
+      credits: quantity * 50,
+    });
+
+    window.location.href = result.checkoutUrl;
+  };
+
+  return (
+    <div>
+      <h1>Billing</h1>
+      <div className="grid grid-cols-3 gap-4">
+        <PricingCard
+          title="50 Credits"
+          price="$10"
+          onClick={() => handlePurchase(1)}
+        />
+        <PricingCard
+          title="100 Credits"
+          price="$18"
+          onClick={() => handlePurchase(2)}
+        />
+        <PricingCard
+          title="250 Credits"
+          price="$40"
+          onClick={() => handlePurchase(5)}
+        />
+      </div>
+    </div>
+  );
+}
+```
+
+
+## Testing Webhooks Locally
+
+
+Use the respective CLI tools to test webhooks on localhost:
+
+
+```bash
+# Stripe CLI
+stripe listen --forward-to localhost:3000/api/payments/stripe/webhook
+
+# Dodo Payments (using ngrok)
+ngrok http 3000
+# Then add https://<your-id>.ngrok.io/api/payments/dodo/webhook to your Dodo webhook dashboard
+```
+

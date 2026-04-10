@@ -1,9 +1,13 @@
-import React from 'react'
+import { fetchDocumentation } from "@/lib/functions/fetchDocumentation";
+import { notFound, redirect } from "next/navigation";
 
-const page = () => {
-  return (
-    <div></div>
-  )
+export default async function DocumentationIndexPage() {
+  const documentation = await fetchDocumentation();
+  const firstDoc = documentation.docs[0];
+
+  if (!firstDoc) {
+    notFound();
+  }
+
+  redirect(`/landing/doc/${firstDoc.slug}`);
 }
-
-export default page

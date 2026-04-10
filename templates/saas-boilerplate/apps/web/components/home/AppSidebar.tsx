@@ -14,7 +14,7 @@ import {
 } from "@workspace/ui/components/shadcn/sidebar";
 import { useTheme } from "next-themes";
 import { cn } from "@workspace/ui/lib/utils";
-import { Database, HomeIcon, Users } from "lucide-react";
+import { Database, FileText, HomeIcon, Users } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { useTRPC } from "@/trpc/client";
 import { useQuery } from "@tanstack/react-query";
@@ -119,6 +119,21 @@ export function AppSidebar() {
                   <div className="flex items-center gap-3">
                     <Database className="h-5 w-5 text-red-500" />
                     <div className="text-xs">CMS</div>
+                  </div>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  tooltip="Documentation"
+                  className={cn(
+                    "h-10 cursor-pointer transition-all duration-200 ease-in-out hover:pl-3",
+                    pathname === "/admin/doc" && "bg-sidebar-accent font-medium text-sidebar-accent-foreground shadow-sm"
+                  )}
+                  onClick={() => router.push("/admin/doc")}
+                >
+                  <div className="flex items-center gap-3">
+                    <FileText className="h-5 w-5 text-amber-500" />
+                    <div className="text-xs">Documentation</div>
                   </div>
                 </SidebarMenuButton>
               </SidebarMenuItem>

@@ -1,0 +1,284 @@
+
+The SaaS Forge CLI tool provides the fastest way to create a new SaaS project.
+
+
+## Basic Usage
+
+
+### Create a new project
+
+
+```bash
+npx saas-forge my-saas-app
+```
+
+
+This will:
+
+1. Clone the SaaS Forge repository
+2. Create a new directory called `my-saas-app`
+3. Copy `.env.example` to `.env`
+
+### Specify project name
+
+
+```bash
+# Create project in current directory
+npx saas-forge .
+
+# Create with custom name
+npx saas-forge awesome-saas
+
+# Create in subdirectory
+npx saas-forge clients/acme-corp
+```
+
+
+## CLI Options
+
+
+### `-theme`
+
+
+Set the default theme for your application:
+
+
+```bash
+# Colour theme
+npx saas-forge my-app --theme=blue|green|neutral|orange|red|rose|violet|yellow
+```
+
+
+This sets the `NEXT_PUBLIC_THEME` environment variable in your `.env` file.
+
+
+## What the CLI Does
+
+
+### 1. Repository Cloning
+
+
+The CLI clones the latest version from GitHub:
+
+
+```bash
+git clone --depth=1 <https://github.com/anoopkarnik/saas-forge.git> my-app
+```
+
+
+Using `--depth=1` performs a shallow clone, downloading only the latest commit to save time and bandwidth.
+
+
+### 2. Environment Setup
+
+
+Copies the example environment file:
+
+
+```bash
+cp apps/web/.env.example apps/web/.env
+```
+
+
+If you provided a `--theme` option, it updates the theme variable:
+
+
+```plain text
+NEXT_PUBLIC_THEME=blue
+```
+
+
+### 3. Dependency Installation
+
+
+Installs all workspace dependencies:
+
+
+```bash
+pnpm install
+```
+
+
+This installs dependencies for:
+
+- Root workspace
+- `apps/web` (Next.js app)
+- All packages (`@workspace/*`)
+
+## After Installation
+
+
+Once the CLI finishes, you'll need to:
+
+
+### 1. Configure Environment Variables
+
+
+Edit `apps/web/.env` and fill in required values:
+
+
+```plain text
+# Database
+DATABASE_URL=postgresql://...
+
+# Authentication
+BETTER_AUTH_SECRET=your-secret-here
+AUTH_GOOGLE_CLIENT_ID=...
+AUTH_GOOGLE_CLIENT_SECRET=...
+
+# CMS (Notion)
+NOTION_API_TOKEN=...
+LANDING_DATABASE_ID=...
+
+# See full list in Environment Variables guide
+```
+
+
+### 2. Setup Database
+
+
+Run migrations to create database tables:
+
+
+```bash
+cd my-saas-app
+pnpm migrate
+```
+
+
+### 3. Start Development Server
+
+
+```bash
+pnpm dev
+```
+
+
+Your app will be available at [http://localhost:3000](http://localhost:3000/)
+
+
+## Manual Installation Alternative
+
+
+If you prefer manual setup or the CLI doesn't work:
+
+
+```bash
+# Clone repository
+git clone <https://github.com/anoopkarnik/saas-forge.git> my-app
+cd my-app
+
+# Setup environment
+cd apps/web
+cp .env.example .env
+cd ../..
+
+# Install dependencies
+pnpm install
+
+# Generate Prisma client
+pnpm generate
+
+# Run migrations
+pnpm migrate
+
+# Start dev server
+pnpm dev
+```
+
+
+See the [Installation Guide](https://www.notion.so/docs/getting-started/installation) for more details.
+
+
+## Troubleshooting
+
+
+### "Command not found: npx"
+
+
+Install Node.js 20+ which includes npx:
+
+- [Download from nodejs.org](https://nodejs.org/)
+- Or use nvm: `nvm install 20`
+
+### "pnpm: command not found"
+
+
+Install pnpm globally:
+
+
+```bash
+npm install -g pnpm
+```
+
+
+Or use corepack (recommended):
+
+
+```bash
+corepack enable
+corepack prepare pnpm@latest --activate
+```
+
+
+### "Permission denied"
+
+
+On Unix systems, you might need to make the script executable:
+
+
+```bash
+chmod +x scripts/cli.js
+```
+
+
+### Clone fails with authentication error
+
+
+Ensure you have internet connection and can access GitHub:
+
+
+```bash
+# Test GitHub connectivity
+ping github.com
+
+# Try cloning manually
+git clone <https://github.com/anoopkarnik/saas-forge.git>
+```
+
+
+### Installation is slow
+
+
+The CLI clones the entire repository. For faster installation:
+
+- Use a stable internet connection
+- The `-depth=1` flag already minimizes data transfer
+- Consider manual installation if you already have the repo
+
+## Customizing the CLI
+
+
+You can fork the repository and modify `scripts/cli.js` to:
+
+- Add more command-line options
+- Pre-configure additional environment variables
+- Run custom setup scripts
+- Add project-specific initialization
+
+Example custom option:
+
+
+```javascript
+// Add --name option to set NEXT_PUBLIC_SAAS_NAME
+const nameArg = args.find(arg => arg.startsWith('--name='));
+const saasName = nameArg ? nameArg.split('=')[1] : null;
+
+if (saasName) {
+  envContent = envContent.replace(
+    /NEXT_PUBLIC_SAAS_NAME=.*/,
+    `NEXT_PUBLIC_SAAS_NAME=${saasName}`
+  );
+}
+```
+

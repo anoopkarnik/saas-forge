@@ -46,6 +46,7 @@ pnpm --dir apps/mobile dev
 pnpm --dir apps/desktop dev
 pnpm desktop:install:linux
 pnpm desktop:publish:linux:edge
+pnpm desktop:publish:linux:stable
 
 # Database
 pnpm generate
@@ -64,6 +65,8 @@ pnpm template:prepare
 pnpm template:build
 pnpm template:test
 pnpm template:test:coverage
+pnpm template:publish --version <semver>
+
 ```
 
 ## Repo Truth
@@ -293,6 +296,79 @@ Useful default checks:
 - `pnpm --dir apps/web test`
 - `pnpm template:check-sync` after starter-related changes
 - `pnpm template:build` when starter behavior may have changed
+
+## Release Workflow
+
+This repo ships three distinct artifacts on each release: the root npm package / git tag, the Electron desktop snap, and the `template/saas-boilerplate` git branch consumed by scaffolded projects.
+
+### 1. Bump the version
+
+```bash
+pnpm version:bump <semver>
+# e.g. pnpm version:bump 1.3.0
+```
+
+This atomically updates `package.json`, `apps/web/package.json`, `apps/desktop/package.json`, `apps/mobile/package.json`, `apps/mobile/app.json`, `template-overrides/saas-boilerplate/package.json`, and `template-sync.manifest.json`, then re-stages the template.
+
+### 2. Validate the template
+
+```bash
+pnpm template:check-sync
+pnpm template:build
+pnpm template:test
+```
+
+Fix any drift or build failures before proceeding.
+
+### 3. Commit and tag the root repo
+
+```bash
+git add -A
+git commit -m "chore: release v<semver>"
+git tag v<semver>
+git push origin main --tags
+```
+
+### 4. Publish the desktop app
+
+Linux snap (edge channel for pre-release, stable for GA):
+
+```bash
+# Test locally first
+pnpm desktop:install:linux
+
+# Publish to Snap Store — edge
+pnpm desktop:publish:linux:edge
+
+# Promote to stable when ready
+pnpm desktop:publish:linux:stable
+```
+
+Each command runs `electron-vite build --mode production`, then `electron-builder --linux snap`, then calls `snapcraft upload` (or `snap install --dangerous` for local). Snapcraft must be authenticated (`snapcraft login`) before publishing.
+
+### 5. Publish the template branch
+
+```bash
+pnpm template:publish --version <semver>
+```
+
+This runs `template:stage` then `scripts/publish-template-branch.mjs --version <semver>`, which:
+
+1. Creates a temporary git worktree on the `template/saas-boilerplate` orphan branch.
+2. Replaces its contents with `.generated/saas-boilerplate`.
+3. Writes a `.boilerplate-version` file.
+4. Commits and tags the branch as `template/v<semver>`.
+5. Pushes the branch and tag to `origin`.
+
+Projects scaffolded from this boilerplate track `template/saas-boilerplate` and receive updates when this branch is pushed. Use `--dry-run` to preview without making changes, or `--no-push` to commit locally only.
+
+### Release checklist summary
+
+1. `pnpm version:bump <semver>`
+2. `pnpm template:check-sync && pnpm template:build && pnpm template:test`
+3. `git commit -m "chore: release v<semver>" && git tag v<semver> && git push origin main --tags`
+4. `pnpm desktop:publish:linux:edge` (or `:stable`)
+5. `pnpm template:publish --version <semver>`
 
 ## Gotchas
 

@@ -1,6 +1,7 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import * as dotenv from "dotenv";
+import fs from "node:fs/promises";
 import prisma from "./client";
 
 function loadSeedEnv() {
@@ -22,7 +23,7 @@ async function main() {
     );
   }
 
-  const { landingPageData } = await import("./constants");
+  const { landingPageData, documentationData } = await import("./constants");
 
   console.log(`Seeding database for SaaS Name: ${saasName}`);
 
@@ -186,6 +187,44 @@ async function main() {
         type: link.type,
       }))
     });
+  }
+
+  // Documentation
+  if (documentationData && documentationData.length > 0) {
+    const currentFilePath = fileURLToPath(import.meta.url);
+    const docsDirPath = path.join(path.dirname(currentFilePath), "docs");
+
+    for (const doc of documentationData) {
+      const filePath = path.join(docsDirPath, doc.filePath);
+      let content = "";
+      try {
+        content = await fs.readFile(filePath, "utf-8");
+      } catch (err) {
+        console.error(`Warning: Could not read MDX file for documentation: ${filePath}`);
+        continue;
+      }
+
+      await prisma.documentation.upsert({
+        where: { slug: doc.slug },
+        update: {
+          title: doc.title,
+          type: doc.type,
+          content: content,
+          order: doc.order,
+          landingPageId: pageId,
+          lastUpdated: new Date()
+        },
+        create: {
+          slug: doc.slug,
+          title: doc.title,
+          type: doc.type,
+          content: content,
+          order: doc.order,
+          landingPageId: pageId
+        }
+      });
+    }
+    console.log(`Seeded ${documentationData.length} documentation files limits.`);
   }
 
   console.log("Database seeded successfully!");

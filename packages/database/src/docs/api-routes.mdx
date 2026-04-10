@@ -1,0 +1,533 @@
+
+While tRPC handles most API needs, sometimes you need custom API routes for webhooks, file uploads, or third-party integrations.
+
+
+## When to Use API Routes
+
+
+Use custom API routes for:
+
+- **Webhooks** from external services (Stripe, Dodo Payments)
+- **File uploads** (images, documents)
+- **Server-Sent Events** (SSE) for real-time updates
+- **Third-party integrations** that expect specific endpoints
+- **Public APIs** for mobile apps or external consumers
+
+For everything else, **use tRPC**.
+
+
+## Creating API Routes
+
+
+API routes live in `apps/web/app/api/`.
+
+
+### Basic GET Route
+
+
+```typescript
+// apps/web/app/api/hello/route.ts
+import { NextRequest, NextResponse } from "next/server";
+
+export async function GET(request: NextRequest) {
+  return NextResponse.json({ message: "Hello World" });
+}
+```
+
+
+### POST Route with Body
+
+
+```typescript
+// apps/web/app/api/contact/route.ts
+import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
+
+const contactSchema = z.object({
+  name: z.string().min(1),
+  email: z.string().email(),
+  message: z.string().min(10),
+});
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const data = contactSchema.parse(body);
+
+    // Process contact form
+    // ... send email, save to database, etc.
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: "Invalid input", issues: error.issues },
+        { status: 400 }
+      );
+    }
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
+  }
+}
+```
+
+
+### Protected Route
+
+
+```typescript
+// apps/web/app/api/user/profile/route.ts
+import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@workspace/auth/server";
+
+export async function GET(request: NextRequest) {
+  const session = await auth.api.getSession({
+    headers: request.headers,
+  });
+
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  return NextResponse.json({
+    user: session.user,
+  });
+}
+```
+
+
+## File Upload Route
+
+
+Handle multipart form data:
+
+
+```typescript
+// apps/web/app/api/upload/route.ts
+import { NextRequest, NextResponse } from "next/server";
+import { put } from "@vercel/blob";
+import { auth } from "@workspace/auth/server";
+
+export async function POST(request: NextRequest) {
+  const session = await auth.api.getSession({ headers: request.headers });
+
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  try {
+    const formData = await request.formData();
+    const file = formData.get("file") as File;
+
+    if (!file) {
+      return NextResponse.json({ error: "No file provided" }, { status: 400 });
+    }
+
+    // Validate file type and size
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+    if (!allowedTypes.includes(file.type)) {
+      return NextResponse.json({ error: "Invalid file type" }, { status: 400 });
+    }
+
+    if (file.size > 5 * 1024 * 1024) { // 5MB
+      return NextResponse.json({ error: "File too large" }, { status: 400 });
+    }
+
+    // Upload to Vercel Blob
+    const blob = await put(`uploads/${session.user.id}/${file.name}`, file, {
+      access: "public",
+    });
+
+    return NextResponse.json({ url: blob.url });
+  } catch (error) {
+    console.error("Upload error:", error);
+    return NextResponse.json(
+      { error: "Upload failed" },
+      { status: 500 }
+    );
+  }
+}
+```
+
+
+## Webhook Route
+
+
+Handle incoming webhooks from external services:
+
+
+```typescript
+// apps/web/app/api/payments/dodo/webhook/route.ts
+import { NextRequest, NextResponse } from "next/server";
+import crypto from "crypto";
+import db from "@workspace/database/client";
+
+function verifyWebhookSignature(
+  payload: string,
+  signature: string,
+  secret: string
+): boolean {
+  const hmac = crypto.createHmac("sha256", secret);
+  const digest = hmac.update(payload).digest("hex");
+  return crypto.timingSafeEqual(
+    Buffer.from(signature),
+    Buffer.from(digest)
+  );
+}
+
+export async function POST(request: NextRequest) {
+  const signature = request.headers.get("x-dodo-signature");
+  const payload = await request.text();
+
+  if (!signature) {
+    return NextResponse.json({ error: "No signature" }, { status: 400 });
+  }
+
+  // Verify webhook signature
+  const isValid = verifyWebhookSignature(
+    payload,
+    signature,
+    process.env.DODO_PAYMENTS_WEBHOOK_KEY!
+  );
+
+  if (!isValid) {
+    return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
+  }
+
+  const event = JSON.parse(payload);
+
+  // Handle different event types
+  switch (event.type) {
+    case "payment.succeeded":
+      await handlePaymentSucceeded(event.data);
+      break;
+    case "subscription.created":
+      await handleSubscriptionCreated(event.data);
+      break;
+    // ... other event types
+  }
+
+  return NextResponse.json({ received: true });
+}
+
+async function handlePaymentSucceeded(data: any) {
+  // Update user credits
+  await db.user.update({
+    where: { id: data.customerId },
+    data: {
+      creditsTotal: { increment: data.credits },
+    },
+  });
+}
+```
+
+
+## Server-Sent Events (SSE)
+
+
+Stream real-time updates to the client:
+
+
+```typescript
+// apps/web/app/api/notifications/stream/route.ts
+import { NextRequest } from "next/server";
+import { auth } from "@workspace/auth/server";
+
+export async function GET(request: NextRequest) {
+  const session = await auth.api.getSession({ headers: request.headers });
+
+  if (!session) {
+    return new Response("Unauthorized", { status: 401 });
+  }
+
+  const encoder = new TextEncoder();
+
+  const stream = new ReadableStream({
+    async start(controller) {
+      // Send initial message
+      controller.enqueue(
+        encoder.encode(`data: ${JSON.stringify({ type: "connected" })}\\n\\n`)
+      );
+
+      // Send updates every 5 seconds
+      const interval = setInterval(async () => {
+        const notifications = await getUnreadNotifications(session.user.id);
+
+        controller.enqueue(
+          encoder.encode(
+            `data: ${JSON.stringify({ type: "notifications", data: notifications })}\\n\\n`
+          )
+        );
+      }, 5000);
+
+      // Clean up on disconnect
+      request.signal.addEventListener("abort", () => {
+        clearInterval(interval);
+        controller.close();
+      });
+    },
+  });
+
+  return new Response(stream, {
+    headers: {
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache",
+      Connection: "keep-alive",
+    },
+  });
+}
+```
+
+
+**Client usage**:
+
+
+```typescript
+"use client";
+import { useEffect, useState } from "react";
+
+export function NotificationStream() {
+  const [notifications, setNotifications] = useState([]);
+
+  useEffect(() => {
+    const eventSource = new EventSource("/api/notifications/stream");
+
+    eventSource.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      if (data.type === "notifications") {
+        setNotifications(data.data);
+      }
+    };
+
+    return () => eventSource.close();
+  }, []);
+
+  return <div>Unread: {notifications.length}</div>;
+}
+```
+
+
+## Dynamic Routes
+
+
+Handle path parameters:
+
+
+```typescript
+// apps/web/app/api/posts/[id]/route.ts
+import { NextRequest, NextResponse } from "next/server";
+import db from "@workspace/database/client";
+
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  const post = await db.post.findUnique({
+    where: { id: params.id },
+  });
+
+  if (!post) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  return NextResponse.json(post);
+}
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  const session = await auth.api.getSession({ headers: request.headers });
+
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const post = await db.post.findUnique({
+    where: { id: params.id },
+  });
+
+  if (!post || post.authorId !== session.user.id) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  await db.post.delete({ where: { id: params.id } });
+
+  return NextResponse.json({ success: true });
+}
+```
+
+
+## Edge Runtime
+
+
+Run routes on the Edge for lower latency:
+
+
+```typescript
+// apps/web/app/api/edge/route.ts
+import { NextRequest, NextResponse } from "next/server";
+
+export const runtime = "edge"; // Use Edge Runtime
+
+export async function GET(request: NextRequest) {
+  return NextResponse.json({
+    message: "This runs on the Edge!",
+    region: process.env.VERCEL_REGION,
+  });
+}
+```
+
+
+**Limitations**:
+
+- No Node.js APIs (fs, crypto.randomBytes, etc.)
+- Use Web APIs instead (crypto.subtle, fetch, etc.)
+- Smaller bundle size
+- Cold starts are faster
+
+## Rate Limiting
+
+
+Protect your API routes:
+
+
+```typescript
+import { Ratelimit } from "@upstash/ratelimit";
+import { redis } from "@/server/redis";
+
+const ratelimit = new Ratelimit({
+  redis,
+  limiter: Ratelimit.slidingWindow(10, "10 s"),
+});
+
+export async function POST(request: NextRequest) {
+  const ip = request.ip ?? "127.0.0.1";
+  const { success, reset } = await ratelimit.limit(ip);
+
+  if (!success) {
+    return NextResponse.json(
+      { error: "Too many requests", resetAt: new Date(reset) },
+      { status: 429 }
+    );
+  }
+
+  // Handle request
+}
+```
+
+
+## CORS Handling
+
+
+Allow cross-origin requests:
+
+
+```typescript
+export async function POST(request: NextRequest) {
+  const origin = request.headers.get("origin");
+  const allowedOrigins = ["<https://example.com>", "<https://app.example.com>"];
+
+  const response = NextResponse.json({ success: true });
+
+  if (origin && allowedOrigins.includes(origin)) {
+    response.headers.set("Access-Control-Allow-Origin", origin);
+    response.headers.set("Access-Control-Allow-Methods", "POST, OPTIONS");
+    response.headers.set("Access-Control-Allow-Headers", "Content-Type");
+  }
+
+  return response;
+}
+
+export async function OPTIONS(request: NextRequest) {
+  // Handle preflight
+  const origin = request.headers.get("origin");
+  const response = new NextResponse(null, { status: 204 });
+
+  if (origin) {
+    response.headers.set("Access-Control-Allow-Origin", origin);
+    response.headers.set("Access-Control-Allow-Methods", "POST, OPTIONS");
+    response.headers.set("Access-Control-Allow-Headers", "Content-Type");
+  }
+
+  return response;
+}
+```
+
+
+## Error Handling Best Practices
+
+
+```typescript
+import { z } from "zod";
+
+export async function POST(request: NextRequest) {
+  try {
+    // Validate input
+    const body = await request.json();
+    const data = schema.parse(body);
+
+    // Business logic
+    const result = await processData(data);
+
+    return NextResponse.json({ success: true, data: result });
+  } catch (error) {
+    // Validation errors
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: "Validation failed", issues: error.issues },
+        { status: 400 }
+      );
+    }
+
+    // Known application errors
+    if (error instanceof NotFoundError) {
+      return NextResponse.json({ error: error.message }, { status: 404 });
+    }
+
+    // Log unknown errors
+    console.error("API error:", error);
+
+    // Don't leak internal errors
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
+  }
+}
+```
+
+
+## Testing API Routes
+
+
+```typescript
+// tests/api/hello.test.ts
+import { describe, it, expect } from "vitest";
+import { GET } from "@/app/api/hello/route";
+
+describe("/api/hello", () => {
+  it("returns hello message", async () => {
+    const request = new Request("<http://localhost:3000/api/hello>");
+    const response = await GET(request as any);
+    const data = await response.json();
+
+    expect(data).toEqual({ message: "Hello World" });
+  });
+});
+```
+
+
+## Best Practices
+
+1. **Prefer tRPC**: Only create API routes when necessary
+2. **Validate inputs**: Use Zod for type-safe validation
+3. **Authenticate requests**: Check session/API keys
+4. **Rate limit**: Protect against abuse
+5. **Handle errors**: Return appropriate status codes
+6. **Log errors**: Use Winston logger for debugging
+7. **Document routes**: Add comments or OpenAPI specs
+8. **Use TypeScript**: Type safety prevents bugs
+9. **Test thoroughly**: Write integration tests

@@ -1,0 +1,82 @@
+
+Essential security measures for your SaaS Forge application.
+
+
+## Environment Variables
+
+- Never commit `.env` files
+- Use different values for dev/prod
+- Rotate secrets regularly
+- Use strong random values: `openssl rand -base64 32`
+
+## Authentication
+
+- Use HTTPS in production
+- Set secure cookies (HttpOnly, Secure, SameSite)
+- Implement rate limiting on auth endpoints
+- Validate all inputs with Zod
+- Hash passwords with bcrypt (Better Auth does this)
+
+## API Security
+
+- Authenticate all protected routes
+- Validate user ownership of resources
+- Use CSRF tokens for forms
+- Rate limit API endpoints
+- Sanitize all inputs
+
+## Database
+
+- Use parameterized queries (Prisma does this)
+- Principle of least privilege for DB users
+- Enable SSL for database connections
+- Regular backups
+
+## Headers
+
+
+Add security headers in `next.config.mjs`:
+
+
+```javascript
+const securityHeaders = [
+  {
+    key: "X-Frame-Options",
+    value: "DENY",
+  },
+  {
+    key: "X-Content-Type-Options",
+    value: "nosniff",
+  },
+  {
+    key: "Referrer-Policy",
+    value: "strict-origin-when-cross-origin",
+  },
+];
+
+export default {
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: securityHeaders,
+      },
+    ];
+  },
+};
+```
+
+
+## Dependencies
+
+- Keep dependencies updated
+- Run `pnpm audit` regularly
+- Review dependency licenses
+- Use Dependabot for automated updates
+
+## Monitoring
+
+- Log authentication failures
+- Monitor for suspicious activity
+- Set up error tracking (Sentry)
+- Regular security audits

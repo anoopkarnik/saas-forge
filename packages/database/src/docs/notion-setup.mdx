@@ -1,0 +1,43 @@
+
+The project uses Notion as a Headless CMS for the landing page, blog, and documentation. This requires creating an Integration and getting specific Database IDs.
+
+
+## 1. Duplicate the Template
+
+
+Usage of this boilerplate requires a duplication of this Notion template - [SaaS CMS Template](https://www.notion.so/templates/saas-cms)
+
+
+## 2. Create a Notion Integration
+
+1. Go to [My Integrations](https://www.notion.so/my-integrations).
+2. Click **New integration**.
+3. Name it (e.g., "SaaS Forge CMS").
+4. Select the workspace where your content will live.
+5. **Capabilities**: Ensure "Read content" is enabled.
+6. Submit and copy the **Internal Integration Secret**.
+7. Add it to `.env`:
+
+```plain text
+NOTION_API_TOKEN=your_integration_secret
+```
+
+
+## 3. Get Database IDs
+
+
+For each database, copy the ID from the URL.
+
+- URL format: `https://www.notion.so/workspace/DATABASE_ID?v=...`
+- The ID is the 32-character string before the `?`.
+
+Add these to your `.env`:
+
+
+```plain text
+LANDING_DATABASE_ID=...
+HERO_DATABASE_ID=...
+FEATURE_DATABASE_ID=...
+# ... and so on for all required databases
+```
+

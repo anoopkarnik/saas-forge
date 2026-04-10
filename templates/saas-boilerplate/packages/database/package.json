@@ -17,7 +17,9 @@
   "license": "ISC",
   "packageManager": "pnpm@10.4.1",
   "devDependencies": {
+    "@notionhq/client": "^2.3.0",
     "@types/node": "^20.19.25",
+    "notion-to-md": "^3.1.9",
     "prisma": "^6.0.1",
     "tsx": "^4.21.0"
   },
@@ -28,6 +30,7 @@
   "dependencies": {
     "@prisma/adapter-pg": "^6.0.1",
     "@prisma/client": "^6.0.1",
+    "@workspace/cms": "workspace:^",
     "dotenv": "^17.2.3",
     "vitest": "^4.0.18"
   },

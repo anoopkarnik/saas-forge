@@ -1,0 +1,150 @@
+
+SaaS Forge uses tRPC for type-safe communication between frontend and backend.
+
+
+## Overview
+
+
+tRPC eliminates the need for API schemas, code generation, or maintaining separate type definitions. Your backend types automatically flow to the frontend.
+
+
+## Benefits
+
+- **Full Type Safety**: Catch errors at compile time
+- **Auto-completion**: IntelliSense for all API calls
+- **No Code Generation**: Types are inferred automatically
+- **React Query Integration**: Built-in caching and state management
+
+## Project Setup
+
+
+The tRPC infrastructure is already configured in SaaS Forge. See the [tRPC Setup Guide](https://www.notion.so/docs/architecture/trpc-setup) for complete documentation.
+
+
+## Available Routers
+
+
+Your SaaS Forge instance includes these routers:
+
+
+### Landing Router
+
+
+```typescript
+api.landing.getLandingPage.useQuery()
+```
+
+
+Fetches landing page data from Notion CMS.
+
+
+### Documentation Router
+
+
+```typescript
+api.documentation.getDocumentation.useQuery({ docId })
+```
+
+
+Fetches documentation pages from Notion.
+
+
+### Support Router
+
+
+```typescript
+api.support.sendMessage.useMutation()
+api.support.subscribe.useMutation()
+```
+
+
+Handles contact forms and newsletter subscriptions via n8n webhooks.
+
+
+### Home Router
+
+
+```typescript
+api.home.getHomeData.useQuery()
+```
+
+
+Fetches authenticated user's home page data.
+
+
+### Billing Router
+
+
+```typescript
+api.billing.getCountryCodes.useQuery()
+api.billing.getBillingAddress.useQuery()
+api.billing.saveBillingAddress.useMutation()
+api.billing.purchaseCredits.useMutation()
+```
+
+
+Manages billing, addresses, and credit purchases via Dodo Payments.
+
+
+## Quick Start
+
+
+### Client-Side Query
+
+
+```typescript
+"use client";
+import { api } from "@/trpc/client";
+
+export function MyComponent() {
+  const { data, isLoading, error } = api.myRouter.getData.useQuery({ id: "123" });
+
+  if (isLoading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error.message}</div>;
+
+  return <div>{data.name}</div>;
+}
+```
+
+
+### Client-Side Mutation
+
+
+```typescript
+"use client";
+import { api } from "@/trpc/client";
+
+export function MyForm() {
+  const utils = api.useUtils();
+  const mutation = api.myRouter.create.useMutation({
+    onSuccess: () => {
+      utils.myRouter.getData.invalidate();
+    },
+  });
+
+  const handleSubmit = (data) => {
+    mutation.mutate(data);
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      {/* form fields */}
+      <button disabled={mutation.isPending}>Save</button>
+    </form>
+  );
+}
+```
+
+
+### Server-Side
+
+
+```typescript
+import { api } from "@/trpc/server";
+
+export default async function Page() {
+  const data = await api.myRouter.getData({ id: "123" });
+  return <div>{data.name}</div>;
+}
+```
+

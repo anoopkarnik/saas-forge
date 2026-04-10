@@ -1,0 +1,526 @@
+
+SaaS Forge includes a shared UI component library (`@workspace/ui`) built on **shadcn/ui**, **Radix UI**, and **Tailwind CSS**.
+
+
+## Component Library Structure
+
+
+```plain text
+packages/ui/
+├── src/
+│   ├── components/
+│   │   ├── shadcn/       # shadcn/ui components
+│   │   ├── mdx/          # MDX renderers
+│   │   ├── notion/       # Notion block renderers
+│   │   ├── aceternity/   # Animated components
+│   │   └── misc/         # Utility components
+│   ├── lib/              # Utilities (cn, etc.)
+│   └── index.ts          # Exports
+├── tailwind.config.ts    # Tailwind configuration
+└── package.json
+```
+
+
+## Using Components
+
+
+### Importing Components
+
+
+```typescript
+// From your app
+import { Button } from "@workspace/ui/components/shadcn/button";
+import { Card } from "@workspace/ui/components/shadcn/card";
+import { NotionRenderer } from "@workspace/ui/components/notion/NotionRenderer";
+```
+
+
+### Example Usage
+
+
+```typescript
+import { Button } from "@workspace/ui/components/shadcn/button";
+import { Card, CardHeader, CardTitle, CardContent } from "@workspace/ui/components/shadcn/card";
+
+export function MyComponent() {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Hello World</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <p>This is a card component.</p>
+        <Button variant="default">Click Me</Button>
+      </CardContent>
+    </Card>
+  );
+}
+```
+
+
+## Adding shadcn/ui Components
+
+
+Use the shadcn CLI to add new components:
+
+
+```bash
+# From repository root
+pnpm dlx shadcn@latest add button -c apps/web
+
+# This will add the component to:
+# packages/ui/src/components/shadcn/button.tsx
+```
+
+
+The component is automatically configured to:
+
+- Use the shared Tailwind config
+- Export from `@workspace/ui`
+- Work across all apps in the monorepo
+
+### Available shadcn Components
+
+
+Some components already included:
+
+- `button` - Buttons with variants
+- `card` - Card layouts
+- `input` - Form inputs
+- `label` - Form labels
+- `checkbox` - Checkboxes
+- `dialog` - Modal dialogs
+- `dropdown-menu` - Dropdown menus
+- `avatar` - User avatars
+- `badge` - Status badges
+- `tabs` - Tab navigation
+- `toast` - Toast notifications
+
+[View all components](https://ui.shadcn.com/docs/components)
+
+
+## Creating Custom Components
+
+
+### 1. Create Component File
+
+
+`packages/ui/src/components/misc/FeatureCard.tsx`:
+
+
+```typescript
+import { Card, CardHeader, CardTitle, CardContent } from "../shadcn/card";
+import { Badge } from "../shadcn/badge";
+
+interface FeatureCardProps {
+  title: string;
+  description: string;
+  icon?: React.ReactNode;
+  badge?: string;
+}
+
+export function FeatureCard({
+  title,
+  description,
+  icon,
+  badge,
+}: FeatureCardProps) {
+  return (
+    <Card className="hover:shadow-lg transition-shadow">
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            {icon}
+            {title}
+          </CardTitle>
+          {badge && <Badge>{badge}</Badge>}
+        </div>
+      </CardHeader>
+      <CardContent>
+        <p className="text-muted-foreground">{description}</p>
+      </CardContent>
+    </Card>
+  );
+}
+```
+
+
+### 2. Export Component
+
+
+`packages/ui/src/components/misc/index.ts`:
+
+
+```typescript
+export { FeatureCard } from "./FeatureCard";
+```
+
+
+`packages/ui/src/index.ts`:
+
+
+```typescript
+// shadcn components
+export * from "./components/shadcn/button";
+export * from "./components/shadcn/card";
+
+// Custom components
+export * from "./components/misc";
+```
+
+
+### 3. Use in Your App
+
+
+```typescript
+import { FeatureCard } from "@workspace/ui/components/misc/FeatureCard";
+import { Zap } from "lucide-react";
+
+export function FeaturesSection() {
+  return (
+    <div className="grid grid-cols-3 gap-4">
+      <FeatureCard
+        title="Fast"
+        description="Lightning-fast performance"
+        icon={<Zap className="w-5 h-5" />}
+        badge="New"
+      />
+    </div>
+  );
+}
+```
+
+
+## Styling with Tailwind
+
+
+### Using the `cn` Utility
+
+
+Merge Tailwind classes conditionally:
+
+
+```typescript
+import { cn } from "@workspace/ui/lib/utils";
+
+interface ButtonProps {
+  variant?: "primary" | "secondary";
+  size?: "sm" | "lg";
+  className?: string;
+}
+
+export function CustomButton({ variant, size, className }: ButtonProps) {
+  return (
+    <button
+      className={cn(
+        "rounded-md font-medium transition-colors",
+        variant === "primary" && "bg-blue-600 text-white hover:bg-blue-700",
+        variant === "secondary" && "bg-gray-200 text-gray-900 hover:bg-gray-300",
+        size === "sm" && "px-3 py-1 text-sm",
+        size === "lg" && "px-6 py-3 text-lg",
+        className
+      )}
+    >
+      Click Me
+    </button>
+  );
+}
+```
+
+
+### Theme Colors
+
+
+Use CSS variables defined in `apps/web/app/globals.css`:
+
+
+```typescript
+<div className="bg-background text-foreground">
+  <h1 className="text-primary">Title</h1>
+  <p className="text-muted-foreground">Description</p>
+  <button className="bg-accent text-accent-foreground">Button</button>
+</div>
+```
+
+
+### Dark Mode Support
+
+
+Components automatically support dark mode via CSS variables:
+
+
+```typescript
+<div className="bg-white dark:bg-slate-900">
+  <p className="text-gray-900 dark:text-gray-100">
+    This text adapts to dark mode
+  </p>
+</div>
+```
+
+
+## Component Patterns
+
+
+### Compound Components
+
+
+Build flexible APIs:
+
+
+```typescript
+// packages/ui/src/components/misc/Stat.tsx
+function StatRoot({ children, className }: { children: React.ReactNode; className?: string }) {
+  return <div className={cn("rounded-lg border p-4", className)}>{children}</div>;
+}
+
+function StatLabel({ children }: { children: React.ReactNode }) {
+  return <div className="text-sm text-muted-foreground">{children}</div>;
+}
+
+function StatValue({ children }: { children: React.ReactNode }) {
+  return <div className="text-2xl font-bold">{children}</div>;
+}
+
+export const Stat = {
+  Root: StatRoot,
+  Label: StatLabel,
+  Value: StatValue,
+};
+
+// Usage:
+<Stat.Root>
+  <Stat.Label>Total Users</Stat.Label>
+  <Stat.Value>1,234</Stat.Value>
+</Stat.Root>
+```
+
+
+### Polymorphic Components
+
+
+Support different HTML elements:
+
+
+```typescript
+import { ComponentPropsWithoutRef, ElementType } from "react";
+
+interface PolymorphicProps<E extends ElementType> {
+  as?: E;
+}
+
+type Props<E extends ElementType> = PolymorphicProps<E> &
+  Omit<ComponentPropsWithoutRef<E>, keyof PolymorphicProps<E>>;
+
+export function Text<E extends ElementType = "p">({
+  as,
+  className,
+  ...props
+}: Props<E>) {
+  const Component = as || "p";
+  return <Component className={cn("text-base", className)} {...props} />;
+}
+
+// Usage:
+<Text>Paragraph</Text>
+<Text as="h1" className="text-3xl">Heading</Text>
+<Text as="span">Inline text</Text>
+```
+
+
+### Controlled vs Uncontrolled
+
+
+Support both patterns:
+
+
+```typescript
+import { useState } from "react";
+
+interface ToggleProps {
+  // Controlled
+  checked?: boolean;
+  onCheckedChange?: (checked: boolean) => void;
+  // Uncontrolled
+  defaultChecked?: boolean;
+}
+
+export function Toggle({ checked, onCheckedChange, defaultChecked }: ToggleProps) {
+  const [internalChecked, setInternalChecked] = useState(defaultChecked ?? false);
+
+  const isControlled = checked !== undefined;
+  const value = isControlled ? checked : internalChecked;
+
+  const handleChange = (newValue: boolean) => {
+    if (!isControlled) {
+      setInternalChecked(newValue);
+    }
+    onCheckedChange?.(newValue);
+  };
+
+  return (
+    <button
+      onClick={() => handleChange(!value)}
+      className={cn("toggle", value && "toggle-active")}
+    />
+  );
+}
+
+// Controlled:
+<Toggle checked={state} onCheckedChange={setState} />
+
+// Uncontrolled:
+<Toggle defaultChecked={false} onCheckedChange={(v) => console.log(v)} />
+```
+
+
+## Animated Components
+
+
+Use Framer Motion for animations:
+
+
+```typescript
+import { motion } from "framer-motion";
+
+export function FadeIn({ children, delay = 0 }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay }}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+// Usage:
+<FadeIn delay={0.2}>
+  <h1>Animated Title</h1>
+</FadeIn>
+```
+
+
+## Form Components
+
+
+Integrate with React Hook Form:
+
+
+```typescript
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { Button } from "@workspace/ui/components/shadcn/button";
+import { Input } from "@workspace/ui/components/shadcn/input";
+import { Label } from "@workspace/ui/components/shadcn/label";
+
+const schema = z.object({
+  email: z.string().email(),
+  password: z.string().min(8),
+});
+
+type FormData = z.infer<typeof schema>;
+
+export function LoginForm() {
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<FormData>({
+    resolver: zodResolver(schema),
+  });
+
+  const onSubmit = (data: FormData) => {
+    console.log(data);
+  };
+
+  return (
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <div>
+        <Label htmlFor="email">Email</Label>
+        <Input id="email" type="email" {...register("email")} />
+        {errors.email && (
+          <p className="text-sm text-red-600">{errors.email.message}</p>
+        )}
+      </div>
+
+      <div>
+        <Label htmlFor="password">Password</Label>
+        <Input id="password" type="password" {...register("password")} />
+        {errors.password && (
+          <p className="text-sm text-red-600">{errors.password.message}</p>
+        )}
+      </div>
+
+      <Button type="submit">Sign In</Button>
+    </form>
+  );
+}
+```
+
+
+## Testing Components
+
+
+Use Vitest + React Testing Library:
+
+
+```typescript
+import { render, screen } from "@testing-library/react";
+import { describe, it, expect } from "vitest";
+import { Button } from "./Button";
+
+describe("Button", () => {
+  it("renders children", () => {
+    render(<Button>Click me</Button>);
+    expect(screen.getByText("Click me")).toBeInTheDocument();
+  });
+
+  it("applies variant classes", () => {
+    render(<Button variant="destructive">Delete</Button>);
+    const button = screen.getByText("Delete");
+    expect(button).toHaveClass("bg-red-600");
+  });
+});
+```
+
+
+## Best Practices
+
+1. **Keep components small**: One component = one responsibility
+2. **Use TypeScript**: Provide proper types for all props
+3. **Support className prop**: Allow style overrides
+4. **Use forwardRef**: When wrapping native elements
+5. **Document props**: Add JSDoc comments
+6. **Export from index**: Centralize exports
+7. **Follow naming conventions**: PascalCase for components
+8. **Use semantic HTML**: Accessibility matters
+9. **Support dark mode**: Use CSS variables
+10. **Test thoroughly**: Write unit tests for shared components
+
+## Troubleshooting
+
+
+### Component not found
+
+
+Ensure it's exported from `packages/ui/src/index.ts`.
+
+
+### Styles not applying
+
+
+Check that `apps/web/next.config.mjs` includes `transpilePackages`:
+
+
+```javascript
+transpilePackages: ["@workspace/ui"]
+```
+
+
+### TypeScript errors
+
+
+Run `pnpm --filter @workspace/ui typecheck` to find issues.
+

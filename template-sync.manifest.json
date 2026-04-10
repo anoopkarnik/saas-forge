@@ -1,5 +1,5 @@
 {
-  "templateVersion": "1.2.1",
+  "templateVersion": "1.2.3",
   "templateRoot": "templates/saas-boilerplate",
   "stageRoot": ".generated/saas-boilerplate",
   "overrideRoot": "template-overrides/saas-boilerplate",

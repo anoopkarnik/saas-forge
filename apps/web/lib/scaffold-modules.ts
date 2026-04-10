@@ -249,6 +249,19 @@ export function createTempScaffoldDir() {
   return fs.mkdtempSync(path.join(os.tmpdir(), "saas-forge-scaffold-"));
 }
 
+const SCAFFOLD_IGNORE_DIRS = new Set([
+  "node_modules",
+  ".git",
+  ".next",
+  "dist",
+  "build",
+  "out",
+  ".turbo",
+  ".vercel",
+  ".cache",
+  "coverage",
+]);
+
 export function compileScaffoldVariant({
   baseRoot,
   tempDir,
@@ -262,7 +275,10 @@ export function compileScaffoldVariant({
   platforms: string[];
   registry?: RegistryShape;
 }) {
-  fs.cpSync(baseRoot, tempDir, { recursive: true });
+  fs.cpSync(baseRoot, tempDir, {
+    recursive: true,
+    filter: (src) => !SCAFFOLD_IGNORE_DIRS.has(path.basename(src)),
+  });
 
   const selectedModuleSet = new Set(selectedModules);
 

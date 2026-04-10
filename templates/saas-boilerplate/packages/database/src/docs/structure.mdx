@@ -1,0 +1,103 @@
+
+### **Folder Structure**
+
+
+Here’s how the boilerplate is organized:
+
+
+```plain text
+/saas-boilerplate
+├── apps
+│   ├── web  # Next.js app
+├── packages
+│   ├── ui  # Shared UI components and styles (ShadCN based)
+│   |   ├── components (Shadcn, Aceternity, Mdx, Notion components)
+│   |   ├── styles (Shadcn and Custom Colour themes and css styles to use)
+│   |   ├── typography
+│   ├── auth # Better Auth Authentication library
+│   ├── database # Prisma ORM Client library
+│   ├── email # Email Templates and Resend Client library
+│   ├── typescript-config # Typescript configs library
+│   ├── eslint-config # Eslint configs library
+│   ├── cms # Notion Client for functions
+│   ├── analytics # Google and Vercel Analytics
+│   ├── payments # Dodo
+│   ├── observability
+├── docker  # Docker configuration with example env files
+└── docs  #Docs for opensource contributors to this repo
+└── .github  #Github Actions for testing
+└── vitest.config.ts  #Vitest Config for testing
+├── scripts # Bash Scripts to run to get started
+└── turbo.json  # TurboRepo config
+```
+
+
+# Tech Stack
+
+
+The SaaS Boilerplate is built on a modern, robust technology stack.
+
+
+## Core Framework
+
+- [**Next.js 15**](https://nextjs.org/): The React framework for the web. Used with the App Router for improved routing and layouts.
+- [**React 19**](https://react.dev/): The library for web and native user interfaces.
+- [**TypeScript**](https://www.typescriptlang.org/): Strongly typed JavaScript for better tooling and fewer bugs.
+
+## Styling
+
+- [**Tailwind CSS 4**](https://tailwindcss.com/): A utility-first CSS framework for rapidly building custom designs.
+- [**Shadcn/UI**](https://ui.shadcn.com/): Re-usable components built using Radix UI and Tailwind CSS.
+- [**Lucide React**](https://lucide.dev/): Beautiful & consistent icons.
+
+## Data Fetching & State
+
+- [**TanStack Query**](https://tanstack.com/query/latest): Powerful asynchronous state management.
+- [**tRPC**](https://trpc.io/): End-to-end typesafe APIs.
+
+## Database & Backend
+
+- [**Prisma**](https://www.prisma.io/): Next-generation Node.js and TypeScript ORM.
+- [**PostgreSQL**](https://www.postgresql.org/): Advanced open-source relational database.
+- [**Upstash Redis**](https://upstash.com/): Serverless Redis for caching and rate limiting.
+
+## Authentication & Security
+
+- [**Better Auth**](https://www.better-auth.com/): Modern authentication library with built-in session management.
+- **OAuth Providers**: GitHub, Google, LinkedIn integrations.
+
+## Payments & Commerce
+
+- [**Dodo Payments**](https://dodopayments.com/): Merchant of Record for global tax compliance and payment processing.
+
+## Content Management
+
+- [**Notion API**](https://developers.notion.com/): Headless CMS for landing pages and documentation.
+
+## File Storage
+
+- [**Vercel Blob**](https://vercel.com/docs/storage/vercel-blob): Serverless file storage for user uploads.
+
+## Observability
+
+- [**Winston**](https://github.com/winstonjs/winston): Universal logging library.
+- [**BetterStack**](https://betterstack.com/): Log aggregation and uptime monitoring.
+- [**Google Analytics**](https://analytics.google.com/): User analytics and tracking.
+
+## Email
+
+- [**Resend**](https://resend.com/): Modern email API for transactional emails.
+- [**React Email**](https://react.email/): Build emails using React components.
+
+## Infrastructure & Tools
+
+- [**TurboRepo**](https://turbo.build/): High-performance build system for monorepos.
+- [**pnpm**](https://pnpm.io/): Fast, disk space efficient package manager.
+- [**Zod**](https://zod.dev/): TypeScript-first schema declaration and validation.
+- [**React Hook Form**](https://react-hook-form.com/): Performant, flexible and extensible forms with easy-to-use validation.
+
+## UI & Animation
+
+- [**Framer Motion**](https://www.framer.com/motion/): Production-ready motion library for React.
+- [**Radix UI**](https://www.radix-ui.com/): Unstyled, accessible component primitives.
+- [**MDX**](https://mdxjs.com/): Markdown for the component era.

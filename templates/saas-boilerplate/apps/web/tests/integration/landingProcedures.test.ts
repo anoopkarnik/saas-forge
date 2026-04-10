@@ -103,6 +103,7 @@ function createCallerContext(session: any = null) {
 describe('Landing Router Integration Tests', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.stubEnv('NEXT_PUBLIC_SAAS_NAME', 'Test SaaS');
     vi.mocked(auth.api.getSession).mockResolvedValue({
       session: { id: 'session_1' },
       user: { id: 'user_1', role: 'admin', email: 'admin@test.com' },
@@ -139,7 +140,7 @@ describe('Landing Router Integration Tests', () => {
       const result = await caller.getLandingInfoFromNotion();
 
       expect(result).toEqual(mockLandingPageData);
-      expect(mockRedisGet).toHaveBeenCalledWith('landing-page:notion:v3');
+      expect(mockRedisGet).toHaveBeenCalledWith('test saas-landing-page:cms:v1');
       expect(mockFetchLandingPageData).not.toHaveBeenCalled();
     });
 
@@ -155,10 +156,10 @@ describe('Landing Router Integration Tests', () => {
       const result = await caller.getLandingInfoFromNotion();
 
       expect(result).toEqual(mockLandingPageData);
-      expect(mockRedisGet).toHaveBeenCalledWith('landing-page:notion:v3');
+      expect(mockRedisGet).toHaveBeenCalledWith('test saas-landing-page:cms:v1');
       expect(mockFetchLandingPageData).toHaveBeenCalledTimes(1);
       expect(mockRedisSet).toHaveBeenCalledWith(
-        'landing-page:notion:v3',
+        'test saas-landing-page:cms:v1',
         mockLandingPageData,
         { ex: 3600 }
       );

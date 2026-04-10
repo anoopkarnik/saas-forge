@@ -6,6 +6,8 @@ import { Blocks } from '@workspace/ui/components/notion/block';
 import { motion } from 'framer-motion';
 import { formatDistanceToNow } from 'date-fns';
 import { ReactElement } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface Props {
   slug: string;
@@ -53,7 +55,11 @@ const DocPostPage = ({ slug }: Props): ReactElement => {
         transition={{ duration: 0.6, delay: 0.2 }}
         className="prose prose-zinc dark:prose-invert prose-lg max-w-none mx-auto prose-headings:font-bold prose-headings:tracking-tight prose-a:text-primary hover:prose-a:underline prose-img:rounded-xl prose-img:shadow-lg"
       >
-        <Blocks blocks={blocks || []} />
+        {typeof blocks === 'string' ? (
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>{blocks}</ReactMarkdown>
+        ) : (
+          <Blocks blocks={blocks || []} />
+        )}
       </motion.article>
     </div>
   )

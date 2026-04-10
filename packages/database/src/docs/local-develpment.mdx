@@ -1,0 +1,47 @@
+
+Once you have installed dependencies and configured your environment variables, you can start the development server.
+
+
+## Starting the Server
+
+
+From the root of the project:
+
+
+```bash
+pnpm dev
+```
+
+
+This command starts the Next.js application in `apps/web` and any other required services.
+
+- **Web App**: Accessible at [http://localhost:3000](http://localhost:3000/)
+
+## Typical Workflow
+
+1. **Make Changes**: Modify code in `apps/web` or `packages/*`.
+2. **Auto Reload**: The browser will automatically reload to reflect your changes.
+3. **Database Changes**:
+    - If you modify `packages/database/prisma/schema.prisma`, run `pnpm migrate` to update the database.
+    - Restart the dev server if you typescript errors related to Prisma Client persist.
+
+## Troubleshooting
+
+
+### "Prisma Client not initialized"
+
+
+Ensure you ran `pnpm migrate` or `pnpm generate`.
+
+
+### "Missing Environment Variable"
+
+
+Check your terminal output. The app will fail to start if critical variables (like `BETTER_AUTH_SECRET` or `DATABASE_URL`) are missing.
+
+
+### Linting Errors
+
+
+Run `pnpm lint` to check for code quality issues.
+

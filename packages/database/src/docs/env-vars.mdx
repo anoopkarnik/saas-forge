@@ -1,0 +1,45 @@
+
+| Variable                         | Description                                       | Required?              |
+| -------------------------------- | ------------------------------------------------- | ---------------------- |
+| **Project Settings**             |                                                   |                        |
+| `NEXT_PUBLIC_THEME`              | `light`, `dark`, or `system`. Default theme.      | No                     |
+| `NEXT_PUBLIC_SAAS_NAME`          | The name of your product.                         | Yes                    |
+| `NEXT_PUBLIC_COMPANY_NAME`       | Legal name for footer/policies.                   | Yes                    |
+| `NEXT_PUBLIC_URL`                | Your production URL (e.g., `https://example.com`) | Yes                    |
+| **CMS (Notion)**                 |                                                   |                        |
+| `NOTION_API_TOKEN`               | Integration secret for Notion API.                | Yes                    |
+| `LANDING_DATABASE_ID`            | ID for the main Landing Page database.            | Yes                    |
+| `HERO_DATABASE_ID`               | ID for Hero section database.                     | Yes                    |
+| `FEATURE_DATABASE_ID`            | ID for Features database.                         | Yes                    |
+| `TESTIMONIAL_DATABASE_ID`        | ID for Testimonials database.                     | Yes                    |
+| `PRICING_DATABASE_ID`            | ID for Pricing database.                          | Yes                    |
+| `FAQ_DATABASE_ID`                | ID for FAQ database.                              | Yes                    |
+| `FOOTER_DATABASE_ID`             | ID for Footer database.                           | Yes                    |
+| **Authentication**               |                                                   |                        |
+| `BETTER_AUTH_SECRET`             | Random string for encrypting sessions.            | Yes                    |
+| `AUTH_GOOGLE_CLIENT_ID`          | Google OAuth Client ID.                           | Optional               |
+| `AUTH_GOOGLE_CLIENT_SECRET`      | Google OAuth Client Secret.                       | Optional               |
+| `AUTH_GITHUB_CLIENT_ID`          | GitHub OAuth Client ID.                           | Optional               |
+| `AUTH_GITHUB_CLIENT_SECRET`      | GitHub OAuth Client Secret.                       | Optional               |
+| `AUTH_LINKEDIN_CLIENT_ID`        | LinkedIn OAuth Client ID.                         | Optional               |
+| `AUTH_LINKEDIN_CLIENT_SECRET`    | LinkedIn OAuth Client Secret.                     | Optional               |
+| **Database & Cache**             |                                                   |                        |
+| `DATABASE_URL`                   | Postgres connection string.                       | Yes                    |
+| `UPSTASH_REDIS_REST_URL`         | Redis REST URL.                                   | Yes                    |
+| `UPSTASH_REDIS_REST_TOKEN`       | Redis REST Token.                                 | Yes                    |
+| **Payments**                     |                                                   |                        |
+| `DODO_PAYMENTS_API_KEY`          | Private API Key from Dodo.                        | Yes                    |
+| `DODO_PAYMENTS_WEBHOOK_KEY`      | Webhook signing secret.                           | Yes                    |
+| `DODO_PAYMENTS_RETURN_URL`       | URL to redirect after payment.                    | Yes                    |
+| `DODO_PAYMENTS_ENVIRONMENT`      | `test_mode` or `live_mode`.                       | Yes                    |
+| `DODO_CREDITS_PRODUCT_ID`        | Product ID for internal reference.                | Yes                    |
+| `NEXT_PUBLIC_DODO_PAYMENTS_URL`  | Dodo Checkout Base URL.                           | Yes                    |
+| **Email**                        |                                                   |                        |
+| `RESEND_API_KEY`                 | API Key for sending emails.                       | Yes                    |
+| `NEXT_PUBLIC_SUPPORT_MAIL`       | Email address displayed for support.              | Yes                    |
+| **Storage**                      |                                                   |                        |
+| `BLOB_READ_WRITE_TOKEN`          | Vercel Blob access token.                         | Yes (if using uploads) |
+| **Observability**                |                                                   |                        |
+| `BETTERSTACK_TELEMETRY_*`        | BetterStack Source Token & Host.                  | Optional               |
+| `NEXT_PUBLIC_GOOGLE_ANALYTICS_*` | GA4 Measurement ID.                               | Optional               |
+

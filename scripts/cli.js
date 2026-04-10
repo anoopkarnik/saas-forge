@@ -11,6 +11,15 @@ const main = () => {
   const args = process.argv.slice(2);
   const targetDir = args[0] && !args[0].startsWith('--') ? args[0] : 'saas-forge';
 
+  // Check for pnpm
+  try {
+    execSync('pnpm --version', { stdio: 'ignore' });
+  } catch (e) {
+    console.error('\x1b[31mError: pnpm is required to use saas-forge.\x1b[0m');
+    console.log('Please install pnpm first: https://pnpm.io/installation');
+    process.exit(1);
+  }
+
   // Extract --theme argument
   const themeArg = args.find(arg => arg.startsWith('--theme='));
   const theme = themeArg ? themeArg.split('=')[1] : null;

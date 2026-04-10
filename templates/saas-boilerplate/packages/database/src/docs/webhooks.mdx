@@ -1,0 +1,56 @@
+
+SaaS Forge can integrate with n8n for automation workflows via webhooks.
+
+
+## Overview
+
+
+The support router (`apps/web/trpc/routers/supportProcedures.ts`) sends data to n8n webhooks for:
+
+- Contact form submissions
+- Newsletter subscriptions
+- Chatbot messages
+
+## Configuration
+
+
+Set webhook URLs in `.env`:
+
+
+```plain text
+CONTACT_WEBHOOK_URL=https://your-n8n.app.n8n.cloud/webhook/contact
+NEWSLETTER_WEBHOOK_URL=https://your-n8n.app.n8n.cloud/webhook/newsletter
+```
+
+
+## Support Router
+
+
+```typescript
+export const supportRouter = createTRPCRouter({
+  sendMessage: baseProcedure
+    .input(contactSchema)
+    .mutation(async ({ input }) => {
+      await fetch(process.env.CONTACT_WEBHOOK_URL!, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      });
+
+      return { success: true };
+    }),
+
+  subscribe: baseProcedure
+    .input(z.object({ email: z.string().email() }))
+    .mutation(async ({ input }) => {
+      await fetch(process.env.NEWSLETTER_WEBHOOK_URL!, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      });
+
+      return { success: true };
+    }),
+});
+```
+

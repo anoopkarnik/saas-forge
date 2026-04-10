@@ -1,0 +1,151 @@
+
+We support two storage providers:
+
+- **Vercel Blob** (default, easiest for Vercel deploy)
+- **Cloudflare R2** (scalable and cost‑efficient for production SaaS)
+
+---
+
+
+# Option 1 --- Vercel Blob
+
+
+## Configuration
+
+1. Go to your project in the Vercel Dashboard
+2. Navigate to **Storage** tab
+3. Click **Create Database → Blob**
+4. Connect it to your project
+5. Add environment variables:
+
+```plain text
+BLOB_READ_WRITE_TOKEN=vercel_blob_rw_...
+STORAGE_PROVIDER=vercel_blob
+```
+
+
+---
+
+
+## Usage
+
+
+```typescript
+import { put } from "@vercel/blob";
+
+const blob = await put("profiles/avatar.png", file, {
+  access: "public",
+});
+
+console.log(blob.url);
+```
+
+
+---
+
+
+# Option 2 --- Cloudflare R2
+
+
+## Configuration
+
+1. Go to Cloudflare Dashboard
+2. Navigate to **R2**
+3. Create a bucket
+4. Go to **Manage R2 API Tokens**
+5. Create a custom token with:
+    - Account → R2 → Edit
+6. Copy:
+    - Access Key ID
+    - Secret Access Key
+
+---
+
+
+## Environment Variables
+
+
+```plain text
+STORAGE_PROVIDER=cloudflare_r2
+
+R2_ACCESS_KEY_ID=
+R2_SECRET_ACCESS_KEY=
+R2_BUCKET_NAME=
+R2_ACCOUNT_ID=
+```
+
+
+---
+
+
+# Unified Storage Layer (Recommended)
+
+
+---
+
+
+## Implementation
+
+
+```typescript
+import { put as putBlob } from "@vercel/blob";
+import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+
+const provider = process.env.STORAGE_PROVIDER;
+
+export async function uploadFile(key: string, file: Buffer | Blob) {
+  if (provider === "cloudflare_r2") {
+    const s3 = new S3Client({
+      region: "auto",
+      endpoint: process.env.R2_ENDPOINT,
+      credentials: {
+        accessKeyId: process.env.R2_ACCESS_KEY_ID!,
+        secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
+      },
+    });
+
+    await s3.send(
+      new PutObjectCommand({
+        Bucket: process.env.R2_BUCKET_NAME!,
+        Key: key,
+        Body: file,
+      })
+    );
+
+    return {
+      url: `${process.env.R2_ENDPOINT}/${process.env.R2_BUCKET_NAME}/${key}`,
+    };
+  }
+
+  // Default: Vercel Blob
+  const blob = await putBlob(key, file, { access: "public" });
+  return { url: blob.url };
+}
+```
+
+
+---
+
+
+# Usage in App
+
+
+```typescript
+import { uploadFile } from "@workspace/storage";
+
+const { url } = await uploadFile("profiles/avatar.png", file);
+```
+
+
+---
+
+
+# Production Recommendation
+
+- Start with **Vercel Blob** for speed.
+- Switch to **Cloudflare R2** when scaling storage.
+- Prefer signed URLs for large production systems.
+- Keep storage logic isolated in `packages/storage` in Turborepo.
+
+---
+

@@ -4,8 +4,9 @@ import { useAuth } from "@/lib/auth-provider";
 import { Heading, Subtitle, Label, MutedText } from "@/components/common";
 import UserManagement from "@/components/admin/UserManagement";
 import CmsManagement from "@/components/admin/CmsManagement";
+import DocManagement from "@/components/admin/DocManagement";
 
-type AdminSection = "menu" | "users" | "cms";
+type AdminSection = "menu" | "users" | "cms" | "docs";
 
 export default function Admin() {
     const { user } = useAuth();
@@ -29,6 +30,10 @@ export default function Admin() {
         return <CmsManagement onBack={() => setActiveSection("menu")} />;
     }
 
+    if (activeSection === "docs") {
+        return <DocManagement onBack={() => setActiveSection("menu")} />;
+    }
+
     const menuItems = [
         {
             title: "User Management",
@@ -43,6 +48,13 @@ export default function Admin() {
             icon: "🗄️",
             iconBg: "bg-red-500/15",
             onPress: () => setActiveSection("cms"),
+        },
+        {
+            title: "Documentation Management",
+            description: "Create and edit public documentation pages",
+            icon: "📄",
+            iconBg: "bg-amber-500/15",
+            onPress: () => setActiveSection("docs"),
         },
     ];
 

@@ -1,0 +1,359 @@
+
+Advanced Better Auth features and customization options in SaaS Forge.
+
+
+## Session Management
+
+
+### Session Configuration
+
+
+Located in `packages/auth/src/better-auth/auth.ts`:
+
+
+```typescript
+export const auth = betterAuth({
+  session: {
+    expiresIn: 60 * 60 * 24 * 7, // 7 days
+    updateAge: 60 * 60 * 24, // Update session daily
+    cookieCache: {
+      enabled: true,
+      maxAge: 5 * 60, // 5 minutes
+    },
+  },
+});
+```
+
+
+### Session Cookie
+
+- **Name**: `better-auth.session_token`
+- **HttpOnly**: Yes (not accessible via JavaScript)
+- **Secure**: Yes (HTTPS only in production)
+- **SameSite**: Lax
+- **Path**: `/`
+
+### Accessing Session
+
+
+**Server-side**:
+
+
+```typescript
+import { auth } from "@workspace/auth/server";
+import { headers } from "next/headers";
+
+const session = await auth.api.getSession({
+  headers: await headers(),
+});
+```
+
+
+**Client-side**:
+
+
+```typescript
+"use client";
+import { useSession } from "@workspace/auth/client";
+
+const { data: session, isPending, error } = useSession();
+```
+
+
+## Custom User Fields
+
+
+The schema includes custom fields:
+
+
+```typescript
+export const auth = betterAuth({
+  user: {
+    additionalFields: {
+      creditsTotal: {
+        type: "number",
+        required: false,
+        defaultValue: 0,
+      },
+      creditsUsed: {
+        type: "number",
+        required: false,
+        defaultValue: 0,
+      },
+    },
+  },
+});
+```
+
+
+Access in your code:
+
+
+```typescript
+const session = await auth.api.getSession({ headers });
+console.log(session.user.creditsTotal);
+console.log(session.user.creditsUsed);
+```
+
+
+## Email Verification Flow
+
+
+### How It Works
+
+1. User signs up with email/password
+2. Verification email is sent via `@workspace/email`
+3. User clicks verification link
+4. Email is marked as verified
+
+### Skip Verification for Social Logins
+
+
+```typescript
+// In packages/auth/src/better-auth/auth.ts
+emailAndPassword: {
+  enabled: true,
+  sendEmailVerificationOnSignUp: async ({ user }) => {
+    // Skip email verification for social logins
+    const account = await db.account.findFirst({
+      where: { userId: user.id },
+    });
+
+    if (account && account.provider !== "credential") {
+      return false; // Don't send verification email
+    }
+
+    return true; // Send verification email
+  },
+},
+```
+
+
+### Custom Verification Email
+
+
+```typescript
+import { sendVerificationEmail } from "@workspace/email/resend";
+
+await sendVerificationEmail({
+  to: user.email,
+  verificationUrl: `${process.env.NEXT_PUBLIC_URL}/verify?token=${token}`,
+  userName: user.name,
+});
+```
+
+
+## Password Reset
+
+
+### Trigger Reset
+
+
+```typescript
+"use client";
+import { authClient } from "@workspace/auth/client";
+
+const handleForgotPassword = async (email: string) => {
+  await authClient.forgetPassword({ email, redirectTo: "/reset-password" });
+};
+```
+
+
+### Reset Page
+
+
+```typescript
+// app/(auth)/reset-password/page.tsx
+"use client";
+import { authClient } from "@workspace/auth/client";
+
+export default function ResetPasswordPage() {
+  const handleReset = async (token: string, newPassword: string) => {
+    await authClient.resetPassword({
+      newPassword,
+      token,
+    });
+  };
+
+  return <ResetPasswordForm onSubmit={handleReset} />;
+}
+```
+
+
+## Admin Features
+
+
+Better Auth includes admin capabilities:
+
+
+```typescript
+export const auth = betterAuth({
+  plugins: [
+    admin({
+      impersonationSessionDuration: 60 * 60, // 1 hour
+    }),
+  ],
+});
+```
+
+
+### Impersonation
+
+
+Admin users can impersonate other users:
+
+
+```typescript
+await auth.api.impersonate({
+  userId: "target-user-id",
+  adminId: "admin-user-id",
+});
+```
+
+
+## Multiple Auth Providers
+
+
+### Link Accounts
+
+
+Users can link multiple OAuth providers to one account:
+
+
+```typescript
+"use client";
+import { authClient } from "@workspace/auth/client";
+
+// Link Google account
+await authClient.signIn.social({
+  provider: "google",
+  callbackURL: "/settings",
+});
+```
+
+
+### View Linked Accounts
+
+
+```typescript
+const accounts = await db.account.findMany({
+  where: { userId: session.user.id },
+});
+```
+
+
+## Extending Better Auth
+
+
+### Add New OAuth Provider
+
+1. **Install provider package** (if needed)
+2. **Update auth config**:
+
+```typescript
+export const auth = betterAuth({
+  socialProviders: {
+    discord: {
+      clientId: process.env.AUTH_DISCORD_CLIENT_ID!,
+      clientSecret: process.env.AUTH_DISCORD_CLIENT_SECRET!,
+    },
+  },
+});
+```
+
+1. **Add sign-in button**:
+
+```typescript
+<button
+  onClick={() =>
+    authClient.signIn.social({
+      provider: "discord",
+      callbackURL: "/",
+    })
+  }
+>
+  Sign in with Discord
+</button>
+```
+
+1. **Configure OAuth app** in provider dashboard
+
+## Security Best Practices
+
+1. **Use HTTPS in production**: Required for secure cookies
+2. **Set strong secrets**: Use `openssl rand -base64 32` for `BETTER_AUTH_SECRET`
+3. **Validate redirect URLs**: Prevent open redirect vulnerabilities
+4. **Rate limit auth endpoints**: Prevent brute force attacks
+5. **Monitor failed logins**: Detect suspicious activity
+6. **Use CSP headers**: Protect against XSS
+
+## Database Schema
+
+
+Better Auth creates these tables:
+
+
+```plain text
+model User {
+  id            String    @id
+  email         String    @unique
+  emailVerified Boolean   @default(false)
+  name          String?
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Account {
+  id                String  @id
+  userId            String
+  provider          String
+  providerAccountId String
+  accessToken       String?
+  refreshToken      String?
+  expiresAt         Int?
+  user              User    @relation(fields: [userId], references: [id])
+}
+
+model Session {
+  id        String   @id
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+}
+```
+
+
+## Troubleshooting
+
+
+### Session not persisting
+
+- Check `BETTER_AUTH_SECRET` is set
+- Verify cookie domain matches your URL
+- Ensure HTTPS in production
+
+### OAuth callback fails
+
+- Verify redirect URI in provider settings
+- Check client ID and secret
+- Ensure `NEXT_PUBLIC_URL` is correct
+
+### Email verification not working
+
+- Check Resend API key
+- Verify email templates render correctly
+- Check spam folder
+
+## Next Steps
+
+- [Authentication Overview](https://www.notion.so/docs/authentication/overview)
+- [Middleware](https://www.notion.so/docs/architecture/middleware)
+- [Email Setup](https://www.notion.so/docs/features/email)

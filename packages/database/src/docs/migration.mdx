@@ -1,0 +1,444 @@
+
+Prisma Migrate manages database schema changes in a safe, version-controlled way.
+
+
+## Migration Workflow
+
+
+### 1. Update Schema
+
+
+Edit `packages/database/prisma/schema.prisma`:
+
+
+```plain text
+model User {
+  id    String @id @default(cuid())
+  email String @unique
+  bio   String? // ← New field
+}
+```
+
+
+### 2. Create Migration
+
+
+```bash
+pnpm --filter @workspace/database migrate
+```
+
+
+This creates a migration file in `packages/database/prisma/migrations/`.
+
+
+### 3. Apply Migration
+
+
+Migrations are automatically applied when you run the `migrate` command.
+
+
+### 4. Regenerate Client
+
+
+```bash
+pnpm generate
+```
+
+
+This updates the Prisma client with new types.
+
+
+## Migration Commands
+
+
+### Create and Apply Migration
+
+
+```bash
+# Named migration
+pnpm migrate
+
+# Prisma will prompt for a name
+# Example: "add_bio_to_user"
+```
+
+
+### Generate Client Only
+
+
+```bash
+pnpm generate
+```
+
+
+### Reset Database (Dev Only)
+
+
+**WARNING**: This deletes all data!
+
+
+```bash
+pnpm reset
+```
+
+
+This will:
+
+1. Drop the database
+2. Create a new database
+3. Apply all migrations
+4. Run seed scripts (if any)
+
+## Migration Files
+
+
+### Location
+
+
+```plain text
+packages/database/prisma/migrations/
+├── 20240115_init/
+│   └── migration.sql
+├── 20240116_add_credits/
+│   └── migration.sql
+└── migration_lock.toml
+```
+
+
+### Example Migration
+
+
+```sql
+-- CreateTable
+CREATE TABLE "user_schema"."users" (
+    "id" TEXT NOT NULL,
+    "email" TEXT NOT NULL,
+    "name" TEXT,
+    "creditsTotal" INTEGER NOT NULL DEFAULT 0,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "users_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateIndex
+CREATE UNIQUE INDEX "users_email_key" ON "user_schema"."users"("email");
+```
+
+
+## Development Workflow
+
+
+### Local Development
+
+
+```bash
+# 1. Pull latest schema
+git pull
+
+# 2. Apply migrations
+pnpm --filter @workspace/database migrate
+
+# 3. Generate client
+pnpm --filter @workspace/database generate
+
+# 4. Restart dev server
+pnpm dev
+```
+
+
+### Making Changes
+
+
+```bash
+# 1. Edit schema.prisma
+# 2. Create migration
+pnpm --filter @workspace/database migrate
+# 3. Commit migration files
+git add packages/database/prisma/migrations
+git commit -m "Add bio field to User"
+```
+
+
+## Production Deployment
+
+
+### Automatic (Vercel)
+
+
+Add to `package.json`:
+
+
+```json
+{
+  "scripts": {
+    "build": "pnpm db:migrate && turbo build",
+    "db:migrate": "pnpm --filter @workspace/database migrate"
+  }
+}
+```
+
+
+Migrations run automatically on deployment.
+
+
+### Manual
+
+
+```bash
+# On production server
+pnpm --filter @workspace/database migrate
+```
+
+
+## Common Scenarios
+
+
+### Add Column
+
+
+```plain text
+model User {
+  bio String? // ← New optional column
+}
+```
+
+
+```bash
+pnpm --filter @workspace/database migrate
+```
+
+
+### Remove Column
+
+
+```plain text
+model User {
+  // Remove: oldField String
+}
+```
+
+
+Prisma will warn about data loss. Confirm to proceed.
+
+
+### Rename Column
+
+
+Prisma can't detect renames automatically. Use two steps:
+
+
+```bash
+# 1. Add new column
+# 2. Manually edit migration to RENAME instead of ADD/DROP
+```
+
+
+### Change Column Type
+
+
+```plain text
+model User {
+  age Int // Changed from String to Int
+}
+```
+
+
+May require data transformation in migration.
+
+
+## Advanced Migrations
+
+
+### Custom SQL
+
+
+Edit generated migration before applying:
+
+
+```sql
+-- AlterTable (generated)
+ALTER TABLE "users" ADD COLUMN "bio" TEXT;
+
+-- Custom logic (added manually)
+UPDATE "users"
+SET "bio" = 'Default bio for ' || "name"
+WHERE "bio" IS NULL;
+```
+
+
+### Data Migrations
+
+
+Create a TypeScript script:
+
+
+```typescript
+// scripts/data-migration.ts
+import db from "@workspace/database/client";
+
+async function migrate() {
+  const users = await db.user.findMany();
+
+  for (const user of users) {
+    await db.user.update({
+      where: { id: user.id },
+      data: {
+        slug: user.name.toLowerCase().replace(/\\s+/g, "-"),
+      },
+    });
+  }
+}
+
+migrate();
+```
+
+
+Run after schema migration:
+
+
+```bash
+pnpm --filter @workspace/database migrate
+tsx scripts/data-migration.ts
+```
+
+
+## Seeding
+
+
+### Create Seed Script
+
+
+```typescript
+// packages/database/seed.ts
+import db from "./src/client";
+
+async function seed() {
+  await db.user.create({
+    data: {
+      email: "admin@example.com",
+      name: "Admin",
+      role: "ADMIN",
+    },
+  });
+
+  console.log("Database seeded");
+}
+
+seed();
+```
+
+
+### Add to package.json
+
+
+```json
+{
+  "prisma": {
+    "seed": "tsx seed.ts"
+  }
+}
+```
+
+
+### Run Seed
+
+
+```bash
+# Automatically runs after reset
+pnpm --filter @workspace/database reset
+
+# Or manually
+tsx packages/database/seed.ts
+```
+
+
+## Troubleshooting
+
+
+### Migration fails
+
+
+```bash
+# Check database connection
+psql $DATABASE_URL -c "SELECT 1"
+
+# View migration status
+npx prisma migrate status --schema packages/database/prisma/schema.prisma
+
+# Resolve failed migration
+npx prisma migrate resolve --rolled-back "20240115_migration_name"
+```
+
+
+### Schema drift
+
+
+Database doesn't match Prisma schema:
+
+
+```bash
+# Push schema without creating migration (dev only)
+npx prisma db push --schema packages/database/prisma/schema.prisma
+```
+
+
+### Migration conflicts
+
+
+Multiple developers created migrations:
+
+
+```bash
+# 1. Pull latest changes
+git pull
+
+# 2. Reset local database
+pnpm --filter @workspace/database reset
+
+# 3. Apply all migrations
+pnpm --filter @workspace/database migrate
+```
+
+
+## Best Practices
+
+1. **Never edit applied migrations**: Create a new one instead
+2. **Use descriptive names**: `add_user_bio` not `migration_1`
+3. **Test migrations**: Run on staging before production
+4. **Backup before migrating**: Especially in production
+5. **Keep migrations small**: One logical change per migration
+6. **Commit migrations**: Version control is essential
+7. **Review generated SQL**: Ensure it does what you expect
+
+## CI/CD Integration
+
+
+### GitHub Actions
+
+
+```yaml
+name: Database Migration
+
+on:
+  push:
+    paths:
+      - "packages/database/prisma/**"
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: pnpm/action-setup@v2
+      - run: pnpm install
+      - run: pnpm --filter @workspace/database migrate
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+```
+
+
+## Next Steps
+
+- [Database Schema](https://www.notion.so/docs/database/schema)
+- [PostgreSQL Setup](https://www.notion.so/docs/database/postgres)
+- [Prisma Migrate Docs](https://www.prisma.io/docs/concepts/components/prisma-migrate)

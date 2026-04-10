@@ -1,0 +1,73 @@
+
+If you are not using our pre-built template, you must configure your Notion databases with the following properties.
+
+
+## 1. Main Landing Page Database (`LANDING_DATABASE_ID`)
+
+
+This is the "Parent" database. All other sections link to an entry here.
+
+- `title`: Title
+- `logo`: Files & Media (Light mode logo)
+- `darkLogo`: Files & Media (Dark mode logo)
+- `tagline`: Text
+- `description`: Text
+- `codeSnippet`: Text
+- `appointmentLink`: URL
+- `githubLink`, `githubUsername`, `githubRepositoryName`: Text
+- `donateNowLink`: URL
+- `supportEmailAddress`: Text
+- `companyLegalName`: Text
+- `websiteUrl`: URL
+
+## 2. Hero Section (`HERO_DATABASE_ID`)
+
+- `SaaS Landing Page`: Relation (to Main DB)
+- `title`: Title
+- `image`: Files & Media
+
+## 3. Features (`FEATURE_DATABASE_ID`)
+
+- `SaaS Landing Page`: Relation
+- `title`: Title
+- `description`: Text
+- `category`: Select
+- `image`: Files & Media
+
+## 4. Testimonials (`TESTIMONIAL_DATABASE_ID`)
+
+- `SaaS Landing Page`: Relation
+- `name`: Text
+- `title`: Text
+- `comment`: Text
+- `image`: Files & Media
+
+## 5. Pricing (`PRICING_DATABASE_ID`)
+
+- `SaaS Landing Page`: Relation
+- `title`: Title
+- `price`: Text
+- `popular`: Checkbox
+- `description`: Text
+- `priceType`: Text (e.g., "/mo")
+- `benefitList`: Text (Comma-separated values)
+
+## 6. FAQ (`FAQ_DATABASE_ID`)
+
+- `SaaS Landing Page`: Relation
+- `question`: Title
+- `answer`: Text
+
+## 7. Footer (`FOOTER_DATABASE_ID`)
+
+- `SaaS Landing Page`: Relation
+- `label`: Title
+- `href`: Text (URL)
+- `type`: Select (Column/Category)
+
+## 7. Documentation ( `DOCUMENTATION_DATABASE_ID`)
+
+- `SaaS Landing Page`: Relation
+- `Name`: Title
+- `order`: Number (order in which these docs are displayed
+- `type`: Select (Column/Category)

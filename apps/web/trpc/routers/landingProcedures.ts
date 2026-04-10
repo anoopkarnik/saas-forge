@@ -9,8 +9,9 @@ import { trashPage } from "@workspace/cms/notion/page/trashPage";
 import { queryAllNotionDatabase } from "@workspace/cms/notion/database/queryDatabase";
 import prisma from "@workspace/database/client";
 
-const LANDING_PAGE_CACHE_KEY = process.env.NEXT_PUBLIC_SAAS_NAME?.toLowerCase().replace(" ", "-")+"-landing-page:cms:v1";
 const LANDING_CACHE_TTL_SECONDS = 3600; // 10 minutes
+const getLandingCacheKey = () =>
+    `${(process.env.NEXT_PUBLIC_SAAS_NAME || "landing-page").toLowerCase()}-landing-page:cms:v1`;
 
 export const landingRouter = createTRPCRouter({
     getLandingInfoFromNotion: baseProcedure
@@ -26,14 +27,14 @@ export const landingRouter = createTRPCRouter({
         return data;
       }
 
-      const cached = await redis.get<LandingPageProps>(LANDING_PAGE_CACHE_KEY);
+      const cached = await redis.get<LandingPageProps>(getLandingCacheKey());
       if (cached) {
         return cached;
       }
 
       const data = await fetchLandingPageData();
 
-      await redis.set(LANDING_PAGE_CACHE_KEY, data, { ex: LANDING_CACHE_TTL_SECONDS });
+      await redis.set(getLandingCacheKey(), data, { ex: LANDING_CACHE_TTL_SECONDS });
       return data;
 
     }),
@@ -223,7 +224,7 @@ export const landingRouter = createTRPCRouter({
                 }
 
                 if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
-                    await redis.del(LANDING_PAGE_CACHE_KEY);
+                    await redis.del(getLandingCacheKey());
                 }
 
                 return { success: true };
@@ -385,7 +386,7 @@ export const landingRouter = createTRPCRouter({
 
             // 3. Invalidate Cache
             if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
-                await redis.del(LANDING_PAGE_CACHE_KEY);
+                await redis.del(getLandingCacheKey());
             }
 
             return { success: true };

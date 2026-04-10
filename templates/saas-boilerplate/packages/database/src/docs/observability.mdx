@@ -1,0 +1,27 @@
+
+We integrate with **BetterStack** for logs/uptime and **Google Analytics** for traffic.
+
+
+## BetterStack (Logs & Uptime)
+
+1. Create an account at [BetterStack](https://betterstack.com/).
+2. Create a new source (e.g., Next.js / Node.js).
+3. Get the **Source Token**.
+4. Add to `.env`:
+
+```plain text
+BETTERSTACK_TELEMETRY_SOURCE_TOKEN=your_token
+BETTERSTACK_TELEMETRY_INGESTING_HOST=https://in.logs.betterstack.com
+```
+
+
+## Google Analytics 4 (GA4)
+
+1. Create a Property in Google Analytics.
+2. Get the **Measurement ID** (starts with `G-`).
+3. Add to `.env`:
+
+```plain text
+NEXT_PUBLIC_GOOGLE_ANALYTICS_MEASUREMENT_ID=G-XXXXXXXXXX
+```
+

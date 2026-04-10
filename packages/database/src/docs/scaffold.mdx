@@ -1,0 +1,177 @@
+
+The scaffold feature allows users to download a customized copy of the SaaS Forge boilerplate.
+
+
+## Overview
+
+
+Located at `/api/scaffold`, this API route creates a ZIP archive of the entire project, excluding build artifacts and dependencies.
+
+
+## How It Works
+
+
+The scaffold route:
+
+1. Sanitizes the project name
+2. Creates a ZIP archive of the codebase
+3. Excludes unnecessary files (node_modules, .git, .next, etc.)
+4. Streams the ZIP file to the user
+
+## API Endpoint
+
+
+**POST** `/api/scaffold`
+
+
+### Request Body
+
+
+```json
+{
+  "projectName": "my-awesome-saas"
+}
+```
+
+
+### Response
+
+
+Binary ZIP file download.
+
+
+## Implementation
+
+
+Located at `apps/web/app/api/scaffold/route.ts`:
+
+
+```typescript
+export async function POST(req: NextRequest) {
+  const body = await req.json();
+  const projectName = sanitizeProjectName(body.projectName);
+
+  const archive = archiver("zip", { zlib: { level: 9 } });
+
+  // Stream response
+  const stream = new ReadableStream({
+    start(controller) {
+      archive.on("data", (chunk) => {
+        controller.enqueue(chunk);
+      });
+
+      archive.on("end", () => {
+        controller.close();
+      });
+
+      // Add files to archive
+      const projectRoot = process.cwd();
+      archive.glob("**/*", {
+        cwd: projectRoot,
+        ignore: shouldIgnorePatterns,
+      });
+
+      archive.finalize();
+    },
+  });
+
+  return new Response(stream, {
+    headers: {
+      "Content-Type": "application/zip",
+      "Content-Disposition": `attachment; filename="${projectName}.zip"`,
+    },
+  });
+}
+```
+
+
+## Excluded Files
+
+
+The following are excluded from the ZIP:
+
+- `node_modules/`
+- `.git/`
+- `.next/`
+- `dist/`, `build/`, `out/`
+- `.turbo/`, `.vercel/`, `.cache/`
+- `coverage/`
+- `.DS_Store`, `Thumbs.db`
+- `pnpm-lock.yaml`
+
+## Frontend Integration
+
+
+```typescript
+"use client";
+
+export function DownloadButton() {
+  const [isDownloading, setIsDownloading] = useState(false);
+
+  const handleDownload = async () => {
+    setIsDownloading(true);
+
+    try {
+      const response = await fetch("/api/scaffold", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          projectName: "my-saas-project",
+        }),
+      });
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "my-saas-project.zip";
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Download failed:", error);
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  return (
+    <button onClick={handleDownload} disabled={isDownloading}>
+      {isDownloading ? "Downloading..." : "Download Project"}
+    </button>
+  );
+}
+```
+
+
+## Security Considerations
+
+1. **Sanitize input**: Project names are sanitized to prevent directory traversal
+2. **Limit file size**: Large projects may time out
+3. **Rate limiting**: Consider adding rate limits to prevent abuse
+4. **Authentication**: Optionally require authentication
+
+## Use Cases
+
+- **Project templates**: Distribute customized starter templates
+- **Backup**: Allow users to download their configured instance
+- **Offline development**: Work without internet access
+- **Custom deployments**: Deploy to non-Vercel platforms
+
+## Customization
+
+
+Add custom filtering logic in `shouldIgnore()`:
+
+
+```typescript
+function shouldIgnore(relPath: string): boolean {
+  // Add custom logic
+  if (relPath.includes("private")) return true;
+  if (relPath.endsWith(".secret")) return true;
+
+  // Default logic
+  const ignoreDirs = new Set(["node_modules", ".git", ".next"]);
+  return parts.some((p) => ignoreDirs.has(p));
+}
+```
+

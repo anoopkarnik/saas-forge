@@ -1,0 +1,84 @@
+
+We use **Stripe** and **Dodo Payments** to handle credit top-ups. Dodo Payments also acts as a Merchant of Record (MoR) to handle global tax compliance for you if needed.
+
+
+## Configuration
+
+
+**Stripe:**
+
+1. Create an account at [Stripe](https://stripe.com/).
+2. Get your **Pub** **Secret key**, and **Webhook signing secret** from the developer dashboard.
+3. Add variables to `.env`:
+
+```plain text
+STRIPE_SECRET_KEY=your_secret_key
+STRIPE_WEBHOOK_SECRET=your_webhook_secret
+```
+
+
+**Dodo Payments:**
+
+1. Create an account at [Dodo Payments](https://dodopayments.com/).
+2. Get your **API Key** and **Webhook Key** from the developer settings.
+3. Set the environment to `test_mode` for development.
+4. Add variables to `.env`:
+
+```plain text
+DODO_PAYMENTS_API_KEY=your_api_key
+DODO_PAYMENTS_WEBHOOK_KEY=your_webhook_key
+DODO_PAYMENTS_RETURN_URL=http://localhost:3000
+DODO_PAYMENTS_ENVIRONMENT=test_mode
+NEXT_PUBLIC_DODO_PAYMENTS_URL=https://test.dodopayments.com
+```
+
+
+## Creating Products (only for Dodo)
+
+1. Create a product in your dashboard  for one-time credit top-ups (e.g., "100 Credits").
+2. Copy the **Product ID**.
+3. Add it to your `.env` (e.g., `DODO_CREDITS_PRODUCT_ID`).
+
+## Webhooks
+
+
+The boilerplate includes webhook handlers to process payment events automatically.
+
+
+**Stripe Webhook:**
+
+- Located at `/api/payments/stripe/webhook`
+- Listens for `checkout.session.completed` events.
+
+**Dodo Webhook:**
+
+- Located at `/api/payments/dodo/webhook`
+- Listens for payment success events.
+
+### Testing Webhooks Locally
+
+
+Use tools like the **Stripe CLI** for Stripe, or **ngrok** for Dodo or you can do cloudflare tunnel for both
+
+
+```bash
+# Stripe CLI
+stripe listen --forward-to localhost:3000/api/payments/stripe/webhook
+
+# ngrok for Dodo
+ngrok http 3000
+```
+
+
+Then use the provided forwarding URLs in your dashboard webhook settings.
+
+
+## Credits System
+
+
+The boilerplate includes a built-in credits system:
+
+- Each user has `creditsTotal` and `creditsUsed` fields
+- Credits are added automatically when a payment succeeds
+- Track credit usage in your app features
+- Configure `CREDITS_PER_UNIT` in the billing procedures

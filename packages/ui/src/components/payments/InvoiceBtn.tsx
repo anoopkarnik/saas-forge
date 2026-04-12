@@ -8,7 +8,7 @@ const InvoiceBtn = ({ receiptUrl }: { receiptUrl: string | null }) => {
     if (!receiptUrl) return null;
 
     return (
-        <a href={receiptUrl} target='_blank'>
+        <a href={receiptUrl} target='_blank' rel="noreferrer">
             <Button variant={"ghost"} size={"sm"} className='text-xs gap-2 text-muted-foreground px-1' >
                 Invoice
             </Button>

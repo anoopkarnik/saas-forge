@@ -9,6 +9,9 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "strict": true,
+    "types": [
+      "node"
+    ],
     "noEmit": false // <--- Make sure this is here!
   },
   "include": [

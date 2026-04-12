@@ -1,4 +1,6 @@
 import { parse } from "node-html-parser";
+import { fetchDocumentation } from "@/lib/functions/fetchDocumentation";
+import { PUBLIC_SEO_STATIC_ROUTES } from "@/lib/seo";
 import type {
   SeoAuditResponse,
   PageAuditResult,
@@ -6,13 +8,7 @@ import type {
   SeoCheckStatus,
 } from "@/lib/ts-types/seo";
 
-const PAGES_TO_CHECK = [
-  "/",
-  "/landing",
-  "/landing/doc",
-  "/sign-in",
-  "/sign-up",
-];
+const SITE_WIDE_CHECK_IDS = new Set(["robots", "sitemap"]);
 
 function check(
   id: string,
@@ -49,27 +45,60 @@ async function checkSitemap(baseUrl: string): Promise<SeoCheckResult> {
 async function checkPageSpeed(url: string): Promise<SeoCheckResult> {
   const apiKey = process.env.GOOGLE_PAGESPEED_API_KEY;
   if (!apiKey) {
-    return check("pagespeed", "PageSpeed score", "performance", "warn", "API key not configured");
+    return check("pagespeed", "Google PageSpeed Insights performance", "performance", "warn", "API key not configured");
   }
   try {
     const apiUrl = `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${encodeURIComponent(url)}&key=${apiKey}&category=performance`;
     const res = await fetch(apiUrl, { cache: "no-store" });
     if (!res.ok) {
-      return check("pagespeed", "PageSpeed score", "performance", "warn", `PageSpeed API returned ${res.status}`);
+      return check("pagespeed", "Google PageSpeed Insights performance", "performance", "warn", `PageSpeed API returned ${res.status}`);
     }
     const data = await res.json();
     const score = Math.round(
       (data.lighthouseResult?.categories?.performance?.score ?? 0) * 100
     );
     if (score >= 90) {
-      return check("pagespeed", "PageSpeed score", "performance", "pass", `Score: ${score}/100`);
+      return check("pagespeed", "Google PageSpeed Insights performance", "performance", "pass", `Score: ${score}/100`);
     } else if (score >= 50) {
-      return check("pagespeed", "PageSpeed score", "performance", "warn", `Score: ${score}/100`);
+      return check("pagespeed", "Google PageSpeed Insights performance", "performance", "warn", `Score: ${score}/100`);
     }
-    return check("pagespeed", "PageSpeed score", "performance", "fail", `Score: ${score}/100`);
+    return check("pagespeed", "Google PageSpeed Insights performance", "performance", "fail", `Score: ${score}/100`);
   } catch (e) {
-    return check("pagespeed", "PageSpeed score", "performance", "warn", `PageSpeed check failed: ${(e as Error).message}`);
+    return check("pagespeed", "Google PageSpeed Insights performance", "performance", "warn", `PageSpeed check failed: ${(e as Error).message}`);
   }
+}
+
+async function resolvePagesToCheck(): Promise<string[]> {
+  let docRoutes: string[] = [];
+
+  try {
+    const documentation = await fetchDocumentation();
+    docRoutes = documentation.docs.map((doc) => `/landing/doc/${doc.slug}`);
+  } catch (e) {
+    console.error("[SEO] audit documentation route error:", e);
+  }
+
+  return [...PUBLIC_SEO_STATIC_ROUTES, ...docRoutes];
+}
+
+function scoreChecks(checks: SeoCheckResult[]): number {
+  if (checks.length === 0) {
+    return 0;
+  }
+
+  const score = checks.reduce((sum, checkResult) => {
+    if (checkResult.status === "pass") {
+      return sum + 1;
+    }
+
+    if (checkResult.status === "warn") {
+      return sum + 0.75;
+    }
+
+    return sum;
+  }, 0);
+
+  return Math.round((score / checks.length) * 100);
 }
 
 function auditHtml(html: string): SeoCheckResult[] {
@@ -155,8 +184,8 @@ async function auditPage(
     const htmlChecks = auditHtml(html);
     const pageSpeedCheck = await checkPageSpeed(url);
     const allChecks = [...htmlChecks, ...siteWideChecks, pageSpeedCheck];
-    const passes = allChecks.filter((c) => c.status === "pass").length;
-    const score = Math.round((passes / allChecks.length) * 100);
+    const pageScoredChecks = allChecks.filter((c) => !SITE_WIDE_CHECK_IDS.has(c.id));
+    const score = scoreChecks(pageScoredChecks);
     return { url, path, score, checks: allChecks };
   } catch (e) {
     return {
@@ -172,6 +201,7 @@ async function auditPage(
 }
 
 export async function runSeoAudit(baseUrl: string): Promise<SeoAuditResponse> {
+  const pagesToCheck = await resolvePagesToCheck();
   const [robotsCheck, sitemapCheck] = await Promise.all([
     checkRobotsTxt(baseUrl),
     checkSitemap(baseUrl),
@@ -179,13 +209,16 @@ export async function runSeoAudit(baseUrl: string): Promise<SeoAuditResponse> {
   const siteWideChecks = [robotsCheck, sitemapCheck];
 
   const pages = await Promise.all(
-    PAGES_TO_CHECK.map((path) => auditPage(baseUrl, path, siteWideChecks))
+    pagesToCheck.map((path) => auditPage(baseUrl, path, siteWideChecks))
   );
 
-  const overallScore =
-    pages.length > 0
-      ? Math.round(pages.reduce((sum, p) => sum + p.score, 0) / pages.length)
-      : 0;
+  const siteWideScore = scoreChecks(siteWideChecks);
+  const overallScore = pages.length > 0
+    ? Math.round(
+        (pages.reduce((sum, p) => sum + p.score, 0) + siteWideScore) /
+          (pages.length + 1)
+      )
+    : siteWideScore;
 
   return {
     pages,

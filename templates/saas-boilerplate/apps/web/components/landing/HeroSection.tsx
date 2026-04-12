@@ -4,23 +4,38 @@ import { Button } from "@workspace/ui/components/shadcn/button";
 import { useEffect, useState } from "react";
 import { HeroSectionProps } from "@/lib/ts-types/landing";
 import { useRouter } from "next/navigation";
-import TypewriterComponent from 'typewriter-effect';
+import dynamic from "next/dynamic";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@workspace/ui/components/shadcn/carousel";
-import { BackgroundBeams } from "@workspace/ui/components/aceternity/background-beams";
 import Image from "next/image";
 import { ContainerScroll } from "@workspace/ui/components/aceternity/container-scroll-animation";
 import { HeroCodeBlock } from "@workspace/ui/components/misc/HeroCodeBlock";
 import { motion } from "framer-motion";
 import { ReactElement } from "react";
 
+const TypewriterComponent = dynamic(() => import("typewriter-effect"), {
+  ssr: false,
+});
+
+const BackgroundBeams = dynamic(
+  () =>
+    import("@workspace/ui/components/aceternity/background-beams").then(
+      (mod) => mod.BackgroundBeams,
+    ),
+  { ssr: false },
+);
+
 const HeroSection = ({ heroSection }: { heroSection: HeroSectionProps }): ReactElement => {
-  const [taglineArray, setTaglineArray] = useState<string[]>([])
+  const [isClientReady, setIsClientReady] = useState(false);
   const router = useRouter()
+
   useEffect(() => {
-    if (heroSection.tagline) {
-      setTaglineArray(heroSection.tagline.split(" "))
-    }
-  }, [heroSection.tagline])
+    const frameId = window.requestAnimationFrame(() => setIsClientReady(true));
+    return () => window.cancelAnimationFrame(frameId);
+  }, [])
+
+  const tagline = heroSection.tagline?.trim() || "Build and launch your SaaS faster";
+  const description = heroSection.description?.trim() || "Ship your product with a production-ready SaaS foundation.";
+  const taglineArray = tagline.split(/\s+/);
 
   // Simple string replacer for basic youtube links to convert them to embed format
   const getYoutubeEmbedUrl = (url?: string) => {
@@ -35,7 +50,7 @@ const HeroSection = ({ heroSection }: { heroSection: HeroSectionProps }): ReactE
         const videoId = url.split('youtu.be/')[1]?.split('?')[0];
         return videoId ? `https://www.youtube.com/embed/${videoId}` : url;
       }
-    } catch (e) {
+    } catch {
       // Just fallback to the raw url
     }
     return url;
@@ -74,12 +89,16 @@ const HeroSection = ({ heroSection }: { heroSection: HeroSectionProps }): ReactE
           transition={{ delay: 0.3, duration: 0.5 }}
           className="text-xl text-zinc-300 md:w-10/12 mx-auto lg:mx-0"
         >
-          <TypewriterComponent
-            options={{
-              strings: heroSection.description,
-              autoStart: true,
-              loop: true,
-            }} />
+          {isClientReady ? (
+            <TypewriterComponent
+              options={{
+                strings: description,
+                autoStart: true,
+                loop: true,
+              }} />
+          ) : (
+            <p>{description}</p>
+          )}
         </motion.div>
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
@@ -127,7 +146,7 @@ const HeroSection = ({ heroSection }: { heroSection: HeroSectionProps }): ReactE
         <Carousel className="w-full z-10   ">
           <ContainerScroll titleComponent={<></>}>
             <CarouselContent className="">
-              {embedUrl && (
+              {embedUrl && isClientReady && (
                 <CarouselItem className="flex items-center justify-center relative w-full aspect-video">
                   <iframe
                     src={embedUrl}
@@ -176,7 +195,7 @@ const HeroSection = ({ heroSection }: { heroSection: HeroSectionProps }): ReactE
 
       </div>
 
-      <BackgroundBeams />
+      {isClientReady ? <BackgroundBeams /> : null}
     </section>
   );
 };

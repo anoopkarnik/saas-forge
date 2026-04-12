@@ -8,10 +8,11 @@ import { GoogleAnalytics } from "@next/third-parties/google";
 import { SpeedInsights } from "@vercel/speed-insights/next"
 import { TRPCReactProvider } from "@/trpc/client";
 import Support from "@/blocks/Support";
+import { createSeoMetadata, getSiteUrl } from "@/lib/seo";
 
 export const metadata: Metadata = {
-  title: process.env.NEXT_PUBLIC_SAAS_NAME!,
-  description: "Boilerplate to build and deploy SaaS products quickly.",
+  metadataBase: new URL(getSiteUrl()),
+  ...createSeoMetadata(),
 };
 
 
@@ -21,6 +22,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>): React.ReactElement {
   const themeColor = process.env.NEXT_PUBLIC_THEME || "green";
+  const gaId = process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_MEASUREMENT_ID;
 
   return (
     <html lang="en" suppressHydrationWarning className={`theme-${themeColor}`}>
@@ -32,7 +34,7 @@ export default function RootLayout({
             <Toaster />
             <Analytics />
             <SpeedInsights />
-            <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_MEASUREMENT_ID as string} />
+            {gaId ? <GoogleAnalytics gaId={gaId} /> : null}
           </ThemeProvider>
         </TRPCReactProvider>
       </body>

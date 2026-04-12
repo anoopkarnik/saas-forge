@@ -5,9 +5,16 @@ import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
 import { ReactElement, Suspense } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import CancellationRefundPolicies from "@/blocks/landing/CancellationRefundPolicies";
+import { createSeoMetadata } from "@/lib/seo";
 
-// export const revalidate = 600;
-export const dynamic = "force-dynamic";
+export const revalidate = 600;
+
+export const metadata = createSeoMetadata({
+  title: "Cancellation and Refund Policy",
+  description: "Read the cancellation and refund policy for this SaaS application.",
+  pathname: "/landing/legal/cancellation-refund-policies",
+});
+
 const Page = async (): Promise<ReactElement> => {
   const queryClient = getQueryClient();
   await Promise.all([

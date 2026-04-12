@@ -61,7 +61,6 @@ const nextConfig = {
       { hostname: 'localhost', protocol: 'http' },
       { hostname: "prod-files-secure.s3.us-west-2.amazonaws.com", protocol: "https" },
     ],
-    unoptimized: true,
   },
   outputFileTracingIncludes: {
     "/api/scaffold": scaffoldTraceIncludes,

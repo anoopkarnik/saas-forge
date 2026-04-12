@@ -13,7 +13,7 @@ import {
 } from "@workspace/ui/components/shadcn/sidebar";
 import { useTheme } from "next-themes";
 import { cn } from "@workspace/ui/lib/utils";
-import { HomeIcon, Users, Shield, Settings, Database, FileText } from "lucide-react";
+import { HomeIcon, Users, Shield, Settings, Database, FileText, Search } from "lucide-react";
 import { MdSaveAs } from "react-icons/md";
 import { usePathname, useRouter } from "next/navigation";
 import { useTRPC } from "@/trpc/client";
@@ -110,6 +110,16 @@ export function AppSidebar() {
                                     <div className="flex items-center gap-3">
                                         <FileText className="w-5 h-5 text-amber-500" />
                                         <div className="text-xs">Documentation</div>
+                                    </div>
+                                </SidebarMenuButton>
+                            </SidebarMenuItem>
+                            <SidebarMenuItem>
+                                <SidebarMenuButton tooltip={"SEO Reports"}
+                                    className={cn("cursor-pointer transition-all duration-200 ease-in-out hover:pl-3 h-10", pathname === "/admin/seo" && "bg-sidebar-accent text-sidebar-accent-foreground font-medium shadow-sm")}
+                                    onClick={() => router.push("/admin/seo")}>
+                                    <div className="flex items-center gap-3">
+                                        <Search className="w-5 h-5 text-emerald-500" />
+                                        <div className="text-xs">SEO Reports</div>
                                     </div>
                                 </SidebarMenuButton>
                             </SidebarMenuItem>

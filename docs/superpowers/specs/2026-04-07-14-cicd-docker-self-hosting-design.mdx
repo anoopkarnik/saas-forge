@@ -2,66 +2,257 @@
 
 ## Context
 
-SaaS Forge is a large monorepo with web, desktop, mobile, shared packages, scaffolding logic, and template sync flows. Yet the repo still lacks a complete first-class CI/CD story and a polished self-hosting path, despite those being common expectations for serious boilerplates.
+SaaS Forge is a pnpm + Turborepo monorepo with a Next.js web app, Expo mobile app, Electron desktop app, shared workspace packages, scaffold modules, and template sync flows. The project already has useful package scripts, but the CI/CD story is incomplete: some checks are local-only, some scripts need normalization before they are safe as merge gates, Docker/self-hosting assets are still missing, and Vercel currently deploys directly from GitHub.
 
-`docs/plan.md` already calls out the empty GitHub Actions posture and the need for Docker-based deployment options.
+This roadmap turns CI/CD into a product-quality contract. The first pass should make local scripts reliable, add GitHub Actions quality gates, keep Vercel Git deployments as the primary hosted deployment path, and then add a Docker/self-hosted path for users who want to run SaaS Forge outside Vercel.
 
 ## Why This Priority
 
-This is ranked fourteenth because it improves trust, contributor flow, and adoption, but it is more of a delivery/ops multiplier than a product capability. The earlier features either unlock core business value or close more visible product gaps.
+This is ranked fourteenth because it improves trust, contributor flow, adoption, and long-term maintenance. It is more of a delivery and operations multiplier than a product capability, but it touches every future feature because broken automation makes the starter harder to ship, support, and extend.
 
-It stays behind `#13 Audit Logging` because auditability supports the product itself. It stays ahead of `#15 Usage Billing Metering` because a stable CI/CD and self-hosting story benefits every future change and lowers adoption friction for technically sophisticated buyers.
+It stays behind `#13 Audit Logging` because auditability supports the product itself. It stays ahead of `#15 Usage Billing Metering` because stable CI/CD and Docker support benefit every future change and lower adoption friction for technical buyers.
 
-## Overview
+## Current State
 
-Add a baseline production-grade contributor and deployment pipeline for validation, previews, and self-hosted installs.
+Observed repo state on April 11, 2026:
 
-Primary goals:
+- The monorepo uses pnpm, Turborepo, `apps/web`, `apps/mobile`, `apps/desktop`, and shared packages under `packages/*`.
+- GitHub Actions currently has one workflow: `.github/workflows/template-sync.yml`.
+- `pnpm test` passes across the tested workspaces.
+- `pnpm --dir apps/web typecheck` passes.
+- `pnpm template:check-sync` passes.
+- `pnpm --dir apps/web build` passes, with lint/env warnings during the Next.js build.
+- `pnpm lint` currently fails because `packages/ui` runs ESLint with `--max-warnings 0`, has existing warnings, and scans generated coverage output.
+- `turbo.json` defines a `check-types` task, but the web package exposes `typecheck`, so typecheck automation is not normalized yet.
+- `apps/web` still uses deprecated `next lint`, which should be migrated to the ESLint CLI before making lint a hard CI gate.
+- Web Docker support is not ready because the app is not configured for standalone output and root Docker assets are missing.
+- Prisma migrations exist, but the database package has only `migrate dev`; production CI/self-hosting needs a non-interactive deploy command.
 
-- reliable PR validation
-- deployment readiness checks
-- Docker-based local/self-hosted path
-- template-sync and scaffold validation in automation
+## Target Pipeline Model
 
-## Main Approach
+Vercel remains the default hosted deployment system:
 
-Treat CI/CD as part of the product quality contract, not as optional repo maintenance.
+- Vercel creates preview deployments from pull requests and production deployments from the production branch through Git integration.
+- GitHub Actions runs validation before merge and becomes the source of required branch-protection checks.
+- Vercel project settings own preview/production environments, deployment protection, rollback, and runtime logs.
+- GitHub Actions owns linting, typechecking, tests, template drift checks, security checks, Docker image builds, and optional release automation.
+- Do not add Vercel CLI deployments from GitHub Actions in the first pass. Add `VERCEL_TOKEN`, `VERCEL_ORG_ID`, and `VERCEL_PROJECT_ID` only if the project later moves to prebuilt deploys, manual promotion, or custom deployment gates.
 
-Key implementation direction:
+## Priority Roadmap
 
-- Add GitHub Actions for lint, typecheck, test, and targeted build validation.
-- Include template-sync checks so the shipped boilerplate cannot silently drift from source.
-- Add Docker assets for the web app and supporting services appropriate to the starter.
-- Document environment setup for self-hosters clearly.
-- Keep desktop/mobile release automation out of the first pass unless the repo is ready to support those channels cleanly.
+### P0: Make Scripts CI-Safe
 
-## Deliverables
+Normalize the local commands before using them as required checks.
 
-1. CI workflow for lint, typecheck, tests, and selected builds.
-2. Template validation workflow covering stage/check/build flows where practical.
-3. Dockerfile and compose guidance for self-hosted web deployment.
-4. Deployment documentation for Vercel-first and Docker/self-hosted paths.
-5. Optional preview deployment guidance for pull requests.
+Implementation tasks:
+
+1. Add or normalize root scripts for `lint`, `typecheck`, `test`, `test:coverage`, `build`, and `template:check-sync`.
+2. Rename or replace the Turbo `check-types` task with `typecheck` so the root script maps to package scripts consistently.
+3. Add `typecheck` scripts to TypeScript workspaces that have a `tsconfig.json` and should participate in CI.
+4. Fix lint inputs so generated folders are excluded everywhere: `coverage`, `.next`, `.turbo`, `.generated`, `dist`, `build`, `out`, and `node_modules`.
+5. Migrate `apps/web` from `next lint` to direct ESLint CLI usage.
+6. Decide whether existing lint warnings are blockers. The recommended path is to fix or intentionally suppress current warnings before enforcing `--max-warnings 0` in CI.
+7. Add `packages/database` script `migrate:deploy` using Prisma's production migration command.
+
+Acceptance criteria:
+
+- `pnpm lint` exits successfully on a clean checkout.
+- `pnpm typecheck` runs through Turbo and succeeds.
+- `pnpm test` succeeds without relying on local generated artifacts.
+- `pnpm --dir packages/database migrate:deploy` is available for CI/self-hosting.
+
+### P1: Add Core GitHub Actions
+
+Add a clear CI workflow for pull requests and pushes to `main`.
+
+Implementation tasks:
+
+1. Keep the current template sync workflow or fold it into a broader `ci.yml` workflow.
+2. Add `.github/workflows/ci.yml` with readable jobs for install/setup, template sync, lint, typecheck, tests, and web build.
+3. Use Node 20 and pnpm 10.4.1 to match the repo's `packageManager`.
+4. Enable pnpm dependency caching through `actions/setup-node`.
+5. Add workflow concurrency so superseded pushes cancel in-progress runs.
+6. Use separate jobs for fast diagnosis, while sharing the same setup pattern.
+7. Add optional Turbo remote cache support later with `TURBO_TOKEN` and `TURBO_TEAM`.
+
+Recommended first-pass checks:
+
+```bash
+pnpm template:check-sync
+pnpm lint
+pnpm typecheck
+pnpm test
+pnpm --dir apps/web build
+```
+
+Acceptance criteria:
+
+- Pull requests run the core checks automatically.
+- Pushes to `main` run the same core checks.
+- Branch protection can require CI before merge.
+- Template drift fails with an actionable error.
+
+### P2: Lock Vercel Git Deployment Workflow
+
+Document and preserve the Vercel-first deployment path.
+
+Implementation tasks:
+
+1. Configure the Vercel project to use `apps/web` as the application root, unless the project intentionally builds from the monorepo root.
+2. Keep Vercel's GitHub integration enabled for previews and production.
+3. Require GitHub CI checks before merging into the production branch.
+4. Use `apps/web/.env.example` as the source of truth for Vercel environment variables.
+5. Separate production and preview env vars in Vercel, especially service tokens and OAuth callback URLs.
+6. Document rollback through Vercel's deployment UI and logs, not through GitHub Actions.
+
+Required Vercel env groups:
+
+- Core: `NEXT_PUBLIC_URL`, `DATABASE_URL`, `BETTER_AUTH_SECRET`
+- CMS when enabled: `NEXT_PUBLIC_CMS`, `NOTION_API_TOKEN`, Notion database IDs
+- Auth providers when enabled: OAuth client IDs and secrets
+- Email when enabled: `RESEND_API_KEY`
+- Storage when enabled: Vercel Blob token or Cloudflare R2 credentials
+- Rate limiting when enabled: Upstash REST URL and token
+- Payments when enabled: Stripe or Dodo API and webhook secrets
+- Observability when enabled: BetterStack, Google Analytics, and PageSpeed credentials
+
+Acceptance criteria:
+
+- Vercel remains responsible for preview and production deployments.
+- GitHub Actions does not need Vercel deployment secrets for the first CI/CD pass.
+- The docs clearly distinguish merge validation from deployment execution.
+
+### P3: Add Docker / Self-Hosting Support
+
+Add a supported Docker path for users who do not want to deploy on Vercel.
+
+Implementation tasks:
+
+1. Enable Next.js standalone output for `apps/web`.
+2. Add a root `.dockerignore` that excludes dependencies, caches, build outputs, local env files, generated artifacts, and coverage.
+3. Add a multi-stage `apps/web/Dockerfile` or root `Dockerfile.web` that:
+   - uses Node 20,
+   - installs pnpm 10.4.1,
+   - installs workspace dependencies with a frozen lockfile,
+   - builds only the web app and required packages,
+   - copies the standalone server output,
+   - runs as a non-root user.
+4. Add `docker-compose.yml` for `web` and `postgres`.
+5. Add Redis to compose only as an optional profile for rate limiting or future background infrastructure.
+6. Add root scripts:
+   - `docker:build:web`
+   - `docker:up`
+7. Add production migration docs using `pnpm --dir packages/database migrate:deploy`.
+8. Document which integrations are required and which are optional for self-hosters.
+
+Minimum self-hosted runtime:
+
+- Web app container
+- PostgreSQL database
+- `DATABASE_URL`
+- `NEXT_PUBLIC_URL`
+- `BETTER_AUTH_SECRET`
+
+Optional runtime integrations:
+
+- Notion CMS
+- Stripe payments
+- Dodo payments
+- Resend email
+- Vercel Blob or Cloudflare R2 storage
+- Upstash Redis rate limiting
+- Google Analytics and PageSpeed
+- BetterStack observability
+
+Acceptance criteria:
+
+- `pnpm docker:build:web` builds a web image.
+- `pnpm docker:up` starts web and Postgres locally.
+- The app can boot from compose with documented env vars.
+- Prisma production migrations can run non-interactively before app startup or as a separate operator step.
+
+### P4: Add Release Automation Later
+
+Keep release automation manual until CI is consistently green.
+
+Desktop release path:
+
+- Keep existing Snap/AppImage/deb packaging scripts.
+- Add a manual GitHub Actions workflow only after Linux packaging works repeatedly in CI.
+- Use `SNAPCRAFT_TOKEN` only for Snap Store publishing jobs.
+
+Mobile release path:
+
+- Keep existing EAS profiles for preview and production.
+- Add manual EAS workflows only after the web/core CI is stable.
+- Use `EXPO_TOKEN` for GitHub-triggered EAS builds.
+
+Template and npm publishing path:
+
+- Keep template branch publishing separate from regular CI.
+- Keep npm package publishing manual until branch protection and release tagging are stable.
+- Use `NPM_TOKEN` or the chosen registry token only in release workflows.
+
+## Public Interfaces
+
+Normalized developer commands:
+
+```bash
+pnpm lint
+pnpm typecheck
+pnpm test
+pnpm test:coverage
+pnpm build
+pnpm template:check-sync
+pnpm template:build
+pnpm docker:build:web
+pnpm docker:up
+pnpm --dir packages/database migrate:deploy
+```
+
+CI secrets to document:
+
+- `TURBO_TOKEN` and `TURBO_TEAM`: optional Turbo remote cache.
+- `VERCEL_TOKEN`, `VERCEL_ORG_ID`, and `VERCEL_PROJECT_ID`: only needed if GitHub Actions later performs Vercel CLI deploys, promotions, or rollbacks.
+- `EXPO_TOKEN`: optional mobile EAS builds.
+- `SNAPCRAFT_TOKEN`: optional desktop Snap Store publishing.
+- `NPM_TOKEN`: optional npm package publishing.
 
 ## Likely Files / Systems Affected
 
-- `.github/workflows/*`
-- root `package.json`
-- Docker-related files at repo root
-- README and deployment docs
-- scaffold/template scripts for automation hooks
+- `.github/workflows/template-sync.yml`
+- `.github/workflows/ci.yml`
+- `package.json`
+- `turbo.json`
+- `apps/web/package.json`
+- `apps/web/next.config.mjs`
+- `packages/database/package.json`
+- Docker assets such as `.dockerignore`, `Dockerfile.web` or `apps/web/Dockerfile`, and `docker-compose.yml`
+- Deployment docs and README sections for CI, Vercel, and self-hosting
 
 ## Risks / Dependencies
 
-- CI must be scoped carefully or the monorepo will become too slow/noisy for contributors.
-- Self-hosting docs should reflect what is truly supported rather than implying full one-click parity across every optional service.
-- Template validation should avoid brittle workflows that fail for unrelated reasons.
-- Secrets and external service dependencies need clear handling in CI.
+- Lint should not become a required merge gate until current warnings and generated-output scanning are addressed.
+- CI must stay scoped enough to be fast for contributors, with heavier template and Docker checks separated if they become slow.
+- Vercel env vars and self-hosted env vars must not be conflated; hosted and Docker users have different operational responsibilities.
+- Docker support should be honest about optional managed services instead of implying one-command parity for every integration.
+- Prisma migration commands must be non-interactive in CI and production.
+- Existing SEO/template work in the dirty worktree should not be reverted while implementing this roadmap.
 
 ## Verification
 
-1. Pull requests run lint, typecheck, and tests automatically.
-2. CI catches template drift or staging/build breakages before merge.
-3. A documented Docker path can run the core web product locally/self-hosted.
-4. Build failures provide actionable logs rather than opaque monorepo errors.
-5. Contributor docs reflect the automated checks accurately.
+Documentation verification for this spec:
+
+1. The current state matches the observed repo checks: template sync only in GitHub Actions; tests, web typecheck, template sync, and web build pass; root lint fails today.
+2. The roadmap keeps Vercel Git deployments as the default instead of replacing them with GitHub Actions deploys.
+3. The roadmap orders implementation so local scripts become reliable before branch protection depends on them.
+4. Docker/self-hosting work is separated from core CI so it can be implemented after the quality gate is stable.
+
+Future implementation verification:
+
+1. Pull requests run template sync, lint, typecheck, tests, and web build automatically.
+2. Branch protection blocks merges when required CI checks fail.
+3. Template drift fails before merge.
+4. Docker image builds locally and boots through compose.
+5. Prisma production migrations are available through a non-interactive deploy command.
+6. Vercel continues to own preview and production deployments from GitHub.

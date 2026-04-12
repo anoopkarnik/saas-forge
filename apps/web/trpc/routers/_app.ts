@@ -4,13 +4,15 @@ import { landingRouter } from './landingProcedures';
 import { documentationRouter } from './docProcedures';
 import { homeRouter } from './homeProcedures';
 import { billingRouter } from './billingProcedures';
+import { seoRouter } from './seoProcedures';
 
 export const appRouter = createTRPCRouter({
     support: supportRouter,
     landing: landingRouter,
     documentation: documentationRouter,
     home: homeRouter,
-    billing: billingRouter
+    billing: billingRouter,
+    seo: seoRouter
 });
 // export type definition of API
 export type AppRouter = typeof appRouter;

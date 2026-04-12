@@ -52,7 +52,7 @@ const RegisterCard = ({ showEmail, showGoogleProvider, showGithubProvider, showL
   return (
     <Card className='w-full max-w-md border-border/50 shadow-xl bg-card/50 backdrop-blur-sm'>
       <CardHeader className="space-y-1 ">
-        <h2 className='text-3xl font-bold tracking-tight text-center'>Create an account</h2>
+        <h1 className='text-3xl font-bold tracking-tight text-center'>Create an account</h1>
         <p className='text-sm text-muted-foreground text-center'>
           Enter your information to get started
         </p>

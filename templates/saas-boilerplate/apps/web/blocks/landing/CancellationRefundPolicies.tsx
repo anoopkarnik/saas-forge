@@ -50,7 +50,7 @@ const CancellationRefundPolicies = () => {
                     <p><strong>Service</strong> refers to the Website and all associated services.</p>
                 </li>
                 <li className="mb-2">
-                    <p><strong>Website</strong> refers to {data.cancellationRefundPolicies.siteName}, accessible from <a href={data.cancellationRefundPolicies.websiteUrl} rel="external nofollow noopener" target="_blank">{data.cancellationRefundPolicies.websiteUrl}</a></p>
+                    <p><strong>Website</strong> refers to {data.cancellationRefundPolicies.siteName}, accessible from <a href={data.cancellationRefundPolicies.websiteUrl} rel="external nofollow noopener noreferrer" target="_blank">{data.cancellationRefundPolicies.websiteUrl}</a></p>
                 </li>
                 <li className="mb-2">
                     <p><strong>You</strong> means the individual accessing or using the Service, or the company, or other legal entity on behalf of which such individual is accessing or using the Service, as applicable.</p>

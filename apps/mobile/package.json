@@ -1,6 +1,6 @@
 {
   "name": "mobile",
-  "version": "1.2.6",
+  "version": "1.2.7",
   "main": "expo-router/entry",
   "scripts": {
     "dev": "expo start --web --clear",
@@ -8,6 +8,7 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
+    "typecheck": "tsc --noEmit",
     "deploy:android:preview": "npx eas-cli build --platform android --profile preview",
     "deploy:android:production": "npx eas-cli build --platform android --profile production"
   },

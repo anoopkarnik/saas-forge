@@ -54,6 +54,7 @@ const scaffoldTraceExcludes = [
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   transpilePackages: ["@workspace/ui", "@workspace/auth", "@workspace/database"],
+  output: "standalone",
   outputFileTracingRoot: monorepoRoot,
   images: {
     remotePatterns: [

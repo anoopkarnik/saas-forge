@@ -5,6 +5,9 @@
     "jsx": "react-jsx",
     "jsxImportSource": "nativewind",
     "baseUrl": ".",
+    "types": [
+      "react"
+    ],
     "paths": {
       "@/*": [
         "./*"

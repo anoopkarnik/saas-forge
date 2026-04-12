@@ -38,7 +38,7 @@ export const supportRouter = createTRPCRouter({
       }
 
       const { subject, email, message } = input;
-      let newSubject = subject + " from " + email + " for " + process.env.NEXT_PUBLIC_SAAS_NAME ; 
+      const newSubject = subject + " from " + email + " for " + process.env.NEXT_PUBLIC_SAAS_NAME ; 
       const res = await sendSupportEmail(newSubject,message)
 
 

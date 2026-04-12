@@ -187,6 +187,42 @@ Also see:
 - [`apps/mobile/.env.example`](apps/mobile/.env.example)
 - [`packages/database/.env.example`](packages/database/.env.example)
 
+## 🚢 CI, Deployment, and Self-Hosting
+
+GitHub Actions validates changes before merge. Vercel remains the default hosted deployment path: Vercel Git integration owns preview deployments, production deployments from `main`, rollback, runtime logs, and deployment protection. GitHub Actions does not need `VERCEL_TOKEN`, `VERCEL_ORG_ID`, or `VERCEL_PROJECT_ID` unless you later move to prebuilt/manual Vercel deploys.
+
+Recommended required branch protection checks:
+
+- `Template Sync`
+- `Lint`
+- `Typecheck`
+- `Test`
+- `Web Build`
+- `Docker Web Build`
+
+For Vercel, configure the project for `apps/web` and set preview and production environment variables separately. Required core values are `NEXT_PUBLIC_URL`, `DATABASE_URL`, and `BETTER_AUTH_SECRET`. Enable optional groups only when the matching integration is used: Notion CMS/database IDs, OAuth client IDs/secrets, `RESEND_API_KEY`, Blob/R2 storage, Upstash rate limiting, Stripe or Dodo payments, BetterStack, Google Analytics, and PageSpeed credentials.
+
+### Docker self-hosting
+
+The minimum Docker runtime is the web container, Postgres, `DATABASE_URL`, `NEXT_PUBLIC_URL`, and `BETTER_AUTH_SECRET`.
+
+```bash
+pnpm docker:build:web
+pnpm docker:up
+```
+
+Run production migrations as an operator step before or during rollout:
+
+```bash
+DATABASE_URL="postgresql://postgres:postgres@localhost:5433/saas_forge" pnpm --dir packages/database migrate:deploy
+```
+
+Compose includes an optional Redis service behind the `redis` profile for future/self-hosted infrastructure experiments:
+
+```bash
+docker compose --profile redis up --build
+```
+
 ## 🧱 Project Layout
 
 ```text
@@ -228,8 +264,11 @@ Only `templates/saas-boilerplate` is part of the released template workflow toda
 | Start all apps | `pnpm dev` |
 | Build all workspaces | `pnpm build` |
 | Lint all workspaces | `pnpm lint` |
+| Typecheck all TypeScript workspaces | `pnpm typecheck` |
 | Run all tests | `pnpm test` |
 | Run coverage | `pnpm test:coverage` |
+| Build web Docker image | `pnpm docker:build:web` |
+| Start Docker web + Postgres | `pnpm docker:up` |
 | Format Markdown/TS/TSX | `pnpm format` |
 
 ### Single app or package checks
@@ -251,6 +290,7 @@ Only `templates/saas-boilerplate` is part of the released template workflow toda
 |---|---|
 | Generate Prisma client | `pnpm generate` |
 | Run local migrations | `pnpm migrate` |
+| Deploy production migrations | `pnpm --dir packages/database migrate:deploy` |
 | Seed database | `pnpm seed` |
 | Reset database | `pnpm reset` |
 

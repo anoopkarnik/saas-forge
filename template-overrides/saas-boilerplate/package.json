@@ -1,10 +1,11 @@
 {
   "name": "saas-forge",
-  "version": "1.2.6",
+  "version": "1.2.7",
   "scripts": {
     "build": "turbo build",
     "dev": "turbo dev",
     "lint": "turbo lint",
+    "typecheck": "turbo typecheck",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "test": "turbo test",
     "test:coverage": "turbo test:coverage",
@@ -12,6 +13,8 @@
     "migrate": "cd packages/database && pnpm run migrate",
     "seed": "cd packages/database && pnpm run seed",
     "reset": "cd packages/database && pnpm run reset",
+    "docker:build:web": "docker build -f Dockerfile.web -t saas-forge-web .",
+    "docker:up": "docker compose up --build --detach",
     "desktop:publish:linux:edge": "pnpm --dir apps/desktop build:prod && pnpm --dir apps/desktop package:snap && pnpm --dir apps/desktop publish:snapstore:edge",
     "desktop:publish:linux:stable": "pnpm --dir apps/desktop build:prod && pnpm --dir apps/desktop package:snap && pnpm --dir apps/desktop publish:snapstore:stable",
     "desktop:install:linux": "pnpm --dir apps/desktop build:prod && pnpm --dir apps/desktop package:snap && pnpm --dir apps/desktop install:locally"

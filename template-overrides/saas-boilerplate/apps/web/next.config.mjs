@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   transpilePackages: ["@workspace/ui", "@workspace/auth", "@workspace/database"],
+  output: "standalone",
   images: {
     remotePatterns: [
       { hostname: "strapi.bayesian-labs.com", protocol: "https" },

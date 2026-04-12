@@ -1,0 +1,48 @@
+# Dependencies
+node_modules
+**/node_modules
+.pnp
+.pnp.js
+
+# Local env files
+.env
+.env.*
+!*.env.example
+!**/*.env.example
+
+# Generated files and caches
+.cache
+**/.cache
+.generated/
+**/.generated
+.next
+**/.next
+.turbo
+**/.turbo
+.vercel
+**/.vercel
+coverage
+**/coverage
+playwright/.auth
+playwright/test-results
+playwright-report
+
+# Build outputs
+build
+**/build
+dist
+**/dist
+out
+**/out
+
+# Docker and VCS noise
+.git
+.gitignore
+Dockerfile*
+docker-compose*.yml
+docker-compose*.yaml
+
+# Misc
+.DS_Store
+*.log
+*.pem

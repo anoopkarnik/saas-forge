@@ -8,8 +8,10 @@
     "test": "vitest run --passWithNoTests",
     "generate": "npx prisma generate --schema prisma",
     "migrate": "npx prisma migrate dev --schema prisma",
+    "migrate:deploy": "npx prisma migrate deploy --schema prisma",
     "reset": "npx prisma migrate reset --force --schema prisma",
     "seed": "npx prisma db seed",
+    "typecheck": "tsc --noEmit",
     "test:coverage": "vitest run --coverage --passWithNoTests"
   },
   "keywords": [],

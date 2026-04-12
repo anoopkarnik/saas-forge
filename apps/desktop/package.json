@@ -1,6 +1,6 @@
 {
   "name": "saas-forge",
-  "version": "1.2.6",
+  "version": "1.2.7",
   "description": "SaaS Forge desktop application for managing your SaaS projects",
   "main": "out/main/index.js",
   "scripts": {
@@ -8,6 +8,7 @@
     "package": "electron-builder",
     "build": "electron-vite build",
     "build:prod": "electron-vite build --mode production",
+    "typecheck": "tsc --noEmit",
     "package:snap": "electron-builder --linux snap",
     "install:locally": "node ../../scripts/publish-desktop.mjs --install-locally",
     "publish:snapstore:edge": "node ../../scripts/publish-desktop.mjs --release edge",

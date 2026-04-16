@@ -1,5 +1,47 @@
 {
   "id": "ai",
   "selected": {},
-  "unselected": {}
+  "unselected": {
+    "remove": [
+      "apps/web/app/(home)/ai",
+      "apps/web/app/(home)/admin/ai",
+      "apps/web/app/api/ai",
+      "apps/web/trpc/routers/aiProcedures.ts",
+      "apps/web/tests/integration/aiProcedures.test.ts",
+      "apps/web/tests/integration/aiChatRoute.test.ts",
+      "apps/web/tests/integration/aiSpeechRoute.test.ts",
+      "apps/web/lib/aiSpeech.ts",
+      "apps/web/lib/aiSpeechServer.ts",
+      "packages/ai",
+      "packages/ui/src/components/ai",
+      "packages/database/prisma/ai.prisma",
+      "packages/observability/src/ai-logger.ts"
+    ],
+    "replace": [
+      {
+        "from": "overrides/unselected/apps/web/trpc/routers/_app.ts",
+        "to": "apps/web/trpc/routers/_app.ts"
+      },
+      {
+        "from": "overrides/unselected/apps/web/.env.example",
+        "to": "apps/web/.env.example"
+      },
+      {
+        "from": "overrides/unselected/apps/web/package.json",
+        "to": "apps/web/package.json"
+      },
+      {
+        "from": "overrides/unselected/apps/web/components/home/AppSidebar.tsx",
+        "to": "apps/web/components/home/AppSidebar.tsx"
+      },
+      {
+        "from": "overrides/unselected/packages/database/prisma/schema.prisma",
+        "to": "packages/database/prisma/schema.prisma"
+      },
+      {
+        "from": "overrides/unselected/packages/observability/package.json",
+        "to": "packages/observability/package.json"
+      }
+    ]
+  }
 }

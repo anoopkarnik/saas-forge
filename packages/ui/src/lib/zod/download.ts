@@ -1,7 +1,8 @@
 import { z } from 'zod';
-import { 
-  validatePlatform, validateCMS, validateAuth, 
-  validateSupport, validateStorage, validateObservability, validatePayment 
+import {
+  validatePlatform, validateCMS, validateAuth,
+  validateSupport, validateStorage, validateObservability, validatePayment,
+  validateAI
 } from './validators';
 
 export const formSchema = z.object({
@@ -64,11 +65,24 @@ export const formSchema = z.object({
   DATABASE_URL: z.string(),
 
   // Observability Module Variables
-  NEXT_PUBLIC_OBSERVABILITY_FEATURES: z.array(z.enum(["logging", "google_analytics", "rate_limiting"])).optional(),
+  NEXT_PUBLIC_OBSERVABILITY_FEATURES: z.array(z.enum(["logging", "google_analytics", "ga4_reports", "pagespeed_insights", "rate_limiting"])).optional(),
   BETTERSTACK_TELEMETRY_SOURCE_TOKEN: z.string().optional(),
   BETTERSTACK_TELEMETRY_INGESTING_HOST: z.string().optional(),
   NEXT_PUBLIC_GOOGLE_ANALYTICS_MEASUREMENT_ID: z.string().optional(),
+  GA4_PROPERTY_ID: z.string().optional(),
+  GA4_CREDENTIALS_JSON: z.string().optional(),
+  GOOGLE_PAGESPEED_API_KEY: z.string().optional(),
   NEXT_PUBLIC_ALLOW_RATE_LIMIT: z.enum(["upstash"]).optional(),
+
+  // AI Module Variables
+  NEXT_PUBLIC_AI_ENABLED: z.enum(["true", "false"]).optional(),
+  AI_GATEWAY_API_KEY: z.string().optional(),
+  OPENAI_API_KEY: z.string().optional(),
+  ANTHROPIC_API_KEY: z.string().optional(),
+  GOOGLE_GENERATIVE_AI_API_KEY: z.string().optional(),
+  OPENROUTER_API_KEY: z.string().optional(),
+  OLLAMA_BASE_URL: z.string().optional(),
+  OPENAI_COMPATIBLE_BASE_URL: z.string().optional(),
 
   // Payment Module Variables
   NEXT_PUBLIC_PAYMENT_GATEWAY: z.enum(['none', 'dodo', 'stripe']),
@@ -88,6 +102,7 @@ export const formSchema = z.object({
   validateStorage(data, ctx);
   validateObservability(data, ctx);
   validatePayment(data, ctx);
+  validateAI(data, ctx);
 });
 
 export type FormValues = z.infer<typeof formSchema>;

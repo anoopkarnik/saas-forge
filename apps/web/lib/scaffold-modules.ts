@@ -232,6 +232,60 @@ function applyModuleActions(
   }
 }
 
+/**
+ * After module actions, _app.ts may reference router files that were deleted by
+ * another module's unselected actions. This function removes those dead imports
+ * and their router registrations so the scaffold compiles cleanly.
+ */
+function cleanDeadRouterImports(tempDir: string) {
+  const appRouterPath = path.join(tempDir, "apps/web/trpc/routers/_app.ts");
+  if (!fs.existsSync(appRouterPath)) return;
+
+  const content = fs.readFileSync(appRouterPath, "utf-8");
+  const lines = content.split("\n");
+
+  // Collect which local procedure files actually exist
+  const routersDir = path.dirname(appRouterPath);
+  const deadImports = new Set<string>();
+
+  for (const line of lines) {
+    const match = line.match(
+      /import\s+\{[^}]+\}\s+from\s+['"]\.\/([\w]+)['"]/,
+    );
+    if (match?.[1]) {
+      const importedFile = path.join(routersDir, `${match[1]}.ts`);
+      if (!fs.existsSync(importedFile)) {
+        deadImports.add(match[1]);
+      }
+    }
+  }
+
+  if (deadImports.size === 0) return;
+
+  const cleaned = lines.filter((line) => {
+    for (const dead of deadImports) {
+      // Remove the import line
+      if (line.match(new RegExp(`from\\s+['"]\\./${dead}['"]`))) return false;
+      // Remove the router registration line (e.g. "    billing: billingRouter,")
+      if (line.match(new RegExp(`^\\s+\\w+:\\s+\\w+Router`))) {
+        // Extract the router variable name from the dead import line in original content
+        const importLine = content
+          .split("\n")
+          .find((l) => l.includes(`./${dead}`));
+        if (importLine) {
+          const routerMatch = importLine.match(
+            /import\s+\{\s*(\w+)\s*\}\s+from/,
+          );
+          if (routerMatch?.[1] && line.includes(routerMatch[1])) return false;
+        }
+      }
+    }
+    return true;
+  });
+
+  fs.writeFileSync(appRouterPath, cleaned.join("\n"));
+}
+
 export function prunePlatforms(tempDir: string, platforms: string[]) {
   if (!platforms.includes("mobile")) {
     fs.rmSync(path.join(tempDir, "apps/mobile"), { recursive: true, force: true });
@@ -293,6 +347,7 @@ export function compileScaffoldVariant({
     }
   }
 
+  cleanDeadRouterImports(tempDir);
   prunePlatforms(tempDir, platforms);
 
   return tempDir;

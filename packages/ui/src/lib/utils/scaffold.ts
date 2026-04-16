@@ -13,6 +13,17 @@ const PAYMENT_ENV_FIELDS = new Set([
     "STRIPE_WEBHOOK_SECRET",
 ]);
 
+const AI_ENV_FIELDS = new Set([
+    "NEXT_PUBLIC_AI_ENABLED",
+    "AI_GATEWAY_API_KEY",
+    "OPENAI_API_KEY",
+    "ANTHROPIC_API_KEY",
+    "GOOGLE_GENERATIVE_AI_API_KEY",
+    "OPENROUTER_API_KEY",
+    "OLLAMA_BASE_URL",
+    "OPENAI_COMPATIBLE_BASE_URL",
+]);
+
 const TEMPLATE_REPO_URL = "https://github.com/anoopkarnik/saas-forge";
 
 /**
@@ -64,7 +75,7 @@ export function parseEnvFile(content: string, setValue: any) {
     }
 
     if (parsedEnv["NEXT_PUBLIC_OBSERVABILITY_FEATURES"]) {
-        const obsFeatures = parsedEnv["NEXT_PUBLIC_OBSERVABILITY_FEATURES"].split(",").map(f => f.trim()) as ("logging" | "google_analytics" | "rate_limiting")[];
+        const obsFeatures = parsedEnv["NEXT_PUBLIC_OBSERVABILITY_FEATURES"].split(",").map(f => f.trim()) as ("logging" | "google_analytics" | "ga4_reports" | "pagespeed_insights" | "rate_limiting")[];
         if (obsFeatures.length > 0) {
             setValue("NEXT_PUBLIC_OBSERVABILITY_FEATURES", obsFeatures, {
                 shouldDirty: true,
@@ -92,6 +103,9 @@ export function parseEnvFile(content: string, setValue: any) {
     ) {
         selectedModules.add("billing");
     }
+    if (parsedEnv["NEXT_PUBLIC_AI_ENABLED"] === "true") {
+        selectedModules.add("ai");
+    }
 
     setValue("SELECTED_MODULES", Array.from(selectedModules), {
         shouldDirty: true,
@@ -112,6 +126,7 @@ export function buildEnvVarsFromForm(values: FormValues): Record<string, string>
     for (const key of envKeys) {
         if (key === "NEXT_PUBLIC_AUTH_PROVIDERS" || key === "SELECTED_MODULES") continue;
         if (!selectedModules.has("billing") && PAYMENT_ENV_FIELDS.has(key as string)) continue;
+        if (!selectedModules.has("ai") && AI_ENV_FIELDS.has(key as string)) continue;
 
         const value = values[key];
         if (Array.isArray(value) && value.length > 0) {

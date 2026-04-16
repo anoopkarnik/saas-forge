@@ -1,6 +1,6 @@
 {
   "name": "saas-forge",
-  "version": "1.2.7",
+  "version": "1.2.8",
   "description": "Full-stack SaaS boilerplate with Next.js, Electron, Expo, and tRPC. Ship your SaaS faster with a pre-built scaffold and shared platform modules.",
   "scripts": {
     "build": "pnpm template:stage && turbo build",
@@ -30,7 +30,9 @@
     "desktop:publish:linux:edge": "pnpm --dir apps/desktop build:prod && pnpm --dir apps/desktop package:snap && pnpm --dir apps/desktop publish:snapstore:edge",
     "desktop:publish:linux:stable": "pnpm --dir apps/desktop build:prod && pnpm --dir apps/desktop package:snap && pnpm --dir apps/desktop publish:snapstore:stable",
     "desktop:install:linux": "pnpm --dir apps/desktop build:prod && pnpm --dir apps/desktop package:snap && pnpm --dir apps/desktop install:locally",
-    "publish:npm:package": "pnpm login && pnpm publish"
+    "publish:npm:package": "pnpm login && pnpm publish",
+    "mobile:publish:android:preview": "pnpm --dir apps/mobile deploy:android:preview",
+    "mobile:publish:android:production": "pnpm --dir apps/mobile deploy:android:production"
   },
   "files": [
     "scripts/cli.js",

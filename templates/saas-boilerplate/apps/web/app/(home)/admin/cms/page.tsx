@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@workspace/ui/componen
 import { Card, CardContent } from "@workspace/ui/components/shadcn/card";
 import { Settings2, Loader2, LayoutPanelTop, Home, Sparkles, MessageSquareQuote, CreditCard, HelpCircle, ShieldCheck } from "lucide-react";
 
-import type { CmsFormValues } from "@/lib/zod/cms";
+import type { CmsAssistantSection, CmsFormValues } from "@/lib/zod/cms";
 import { useAdminGuard } from "@/hooks/useAdminGuard";
 import { NavbarTabContent } from "@/blocks/admin/NavbarTabContent";
 import { HeroTabContent } from "@/blocks/admin/HeroTabContent";
@@ -22,6 +22,11 @@ export default function CMSAdminPage() {
     const { isPending, isAdmin } = useAdminGuard();
     const trpc = useTRPC();
     const queryClient = useQueryClient();
+    const [aiDraft, setAiDraft] = React.useState<{
+        section: CmsAssistantSection;
+        values: Partial<CmsFormValues>;
+        nonce: number;
+    } | null>(null);
 
     const { data: landingInfo, isLoading: isLoadingCMS } = useQuery(trpc.landing.getLandingInfoFromNotion.queryOptions());
 
@@ -42,8 +47,37 @@ export default function CMSAdminPage() {
         })
     );
 
+    const fillCmsWithAiMutation = useMutation(
+        trpc.ai.generateAdminDraft.mutationOptions({
+            onSuccess: (draft) => {
+                if (draft.kind !== "cms" || !draft.section) return;
+
+                setAiDraft({
+                    section: draft.section as CmsAssistantSection,
+                    values: draft.values as Partial<CmsFormValues>,
+                    nonce: Date.now(),
+                });
+                toast.success("CMS form filled");
+            },
+            onError: (error) => {
+                toast.error("Could not fill CMS form", {
+                    description: error.message,
+                });
+            },
+        }),
+    );
+
     const handleSave = (values: Partial<CmsFormValues>) => {
         updateLandingInfoMutation.mutate(values as any);
+    };
+
+    const handleAIFill = (section: CmsAssistantSection, currentValues: Partial<CmsFormValues>, instruction?: string) => {
+        fillCmsWithAiMutation.mutate({
+            kind: "cms",
+            section,
+            current: currentValues as Record<string, unknown>,
+            instruction,
+        });
     };
 
     if (isPending || (!isAdmin && isLoadingCMS)) {
@@ -60,6 +94,9 @@ export default function CMSAdminPage() {
         initialData: landingInfo,
         onSave: handleSave,
         isSaving: updateLandingInfoMutation.isPending,
+        aiDraft,
+        isAiFilling: fillCmsWithAiMutation.isPending,
+        onAIFill: handleAIFill,
     };
 
     return (

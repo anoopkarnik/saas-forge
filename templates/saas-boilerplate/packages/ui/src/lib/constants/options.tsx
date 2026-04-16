@@ -74,6 +74,10 @@ export const selectOptions: Record<string, SelectOption[]> = {
   NEXT_PUBLIC_AUTH_FRAMEWORK: [
     { value: "better-auth", label: "Better Auth", icon: <Shield className="h-4 w-4 text-amber-500" /> },
   ],
+  NEXT_PUBLIC_AI_ENABLED: [
+    { value: "false", label: "Disabled", icon: <Ban className="h-4 w-4 text-muted-foreground" /> },
+    { value: "true", label: "Enabled", icon: <Zap className="h-4 w-4 text-emerald-500" /> },
+  ],
 };
 
 // ─── Multiselect options ───────────────────────────────────────────────
@@ -94,7 +98,9 @@ export const multiselectOptions: Record<string, MultiselectOption[]> = {
   ],
   NEXT_PUBLIC_OBSERVABILITY_FEATURES: [
     { value: "logging", label: "Logging", icon: <Activity className="h-5 w-5" />, color: "text-orange-500 border-orange-500/50 bg-orange-500/10" },
-    { value: "google_analytics", label: "Google Analytics", icon: <BarChart3 className="h-5 w-5" />, color: "text-yellow-500 border-yellow-500/50 bg-yellow-500/10" },
+    { value: "google_analytics", label: "Google Analytics Tracking", icon: <BarChart3 className="h-5 w-5" />, color: "text-yellow-500 border-yellow-500/50 bg-yellow-500/10" },
+    { value: "ga4_reports", label: "GA4 In-App Reports", icon: <BarChart3 className="h-5 w-5" />, color: "text-emerald-500 border-emerald-500/50 bg-emerald-500/10" },
+    { value: "pagespeed_insights", label: "PageSpeed Insights", icon: <Zap className="h-5 w-5" />, color: "text-cyan-500 border-cyan-500/50 bg-cyan-500/10" },
     { value: "rate_limiting", label: "Rate Limiting", icon: <ShieldAlert className="h-5 w-5" />, color: "text-blue-500 border-blue-500/50 bg-blue-500/10" },
   ],
   NEXT_PUBLIC_PLATFORM: [

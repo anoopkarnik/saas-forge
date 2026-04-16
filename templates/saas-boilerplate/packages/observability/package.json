@@ -11,6 +11,7 @@
   "keywords": [],
   "author": "",
   "exports": {
+    "./ai-logger": "./src/ai-logger.ts",
     "./winston-logger": "./src/winston-logger.ts"
   },
   "license": "ISC",

@@ -10,7 +10,8 @@ import {
   Shield,
   Calendar,
   BarChart3,
-  CircleDot
+  CircleDot,
+  Bot
 } from "lucide-react";
 import React from "react";
 import { SiVercel, SiResend, SiNotion, SiUpstash } from "react-icons/si";
@@ -244,10 +245,21 @@ export const MODULE_CONFIG: ModuleSection[] = [
       },
       { 
         name: "NEXT_PUBLIC_GOOGLE_ANALYTICS_MEASUREMENT_ID", 
-        description: "Measurement ID for Google Analytics.", 
+        description: "Measurement ID for browser-side Google Analytics tracking.", 
         showIfIncludes: { field: "NEXT_PUBLIC_OBSERVABILITY_FEATURES", value: "google_analytics" },
         providerHints: [
           { name: "Google Analytics", url: "https://analytics.google.com", color: "text-yellow-500", icon: BarChart3, tier: "Free", info: "Industry standard analytics, free to use." },
+        ]
+      },
+      { name: "GA4_PROPERTY_ID", description: "GA4 property ID for in-app analytics reports.", showIfIncludes: { field: "NEXT_PUBLIC_OBSERVABILITY_FEATURES", value: "ga4_reports" }, required: true },
+      { name: "GA4_CREDENTIALS_JSON", description: "Inline service account JSON or file path for the Google Analytics Data API.", showIfIncludes: { field: "NEXT_PUBLIC_OBSERVABILITY_FEATURES", value: "ga4_reports" }, required: true },
+      { 
+        name: "GOOGLE_PAGESPEED_API_KEY", 
+        description: "API key for Google PageSpeed Insights audits.", 
+        showIfIncludes: { field: "NEXT_PUBLIC_OBSERVABILITY_FEATURES", value: "pagespeed_insights" },
+        required: true,
+        providerHints: [
+          { name: "PageSpeed Insights", url: "https://developers.google.com/speed/docs/insights/v5/get-started", color: "text-cyan-500", icon: BarChart3, tier: "Free", info: "Runs Lighthouse-powered performance checks from the admin SEO audit." },
         ]
       },
       { name: "NEXT_PUBLIC_ALLOW_RATE_LIMIT", description: "Rate limiting provider.", showIfIncludes: { field: "NEXT_PUBLIC_OBSERVABILITY_FEATURES", value: "rate_limiting" }, required: true },
@@ -299,6 +311,38 @@ export const MODULE_CONFIG: ModuleSection[] = [
           { name: "Stripe", url: "https://stripe.com", color: "text-[#635bff]", icon: FaStripe, tier: "Pay per tx", info: "Industry standard payment gateway." },
         ]
       },
+    ],
+  },
+  {
+    id: "ai",
+    title: "AI Module",
+    icon: Bot,
+    color: "text-emerald-500",
+    borderColor: "border-l-emerald-500",
+    description: "Multi-provider AI with chat, speech, and credit metering.",
+    fields: [
+      { name: "NEXT_PUBLIC_AI_ENABLED", description: "Enable AI features in your app.", required: true },
+      {
+        name: "OPENAI_API_KEY",
+        description: "API Key for OpenAI.",
+        showIf: { field: "NEXT_PUBLIC_AI_ENABLED", value: "true" },
+        providerHints: [
+          { name: "OpenAI", url: "https://platform.openai.com/api-keys", color: "text-emerald-500", icon: Bot, tier: "Pay per token", info: "GPT-4o, GPT-4o-mini, and more. Pay-as-you-go pricing." },
+        ]
+      },
+      {
+        name: "ANTHROPIC_API_KEY",
+        description: "API Key for Anthropic.",
+        showIf: { field: "NEXT_PUBLIC_AI_ENABLED", value: "true" },
+        providerHints: [
+          { name: "Anthropic", url: "https://console.anthropic.com/settings/keys", color: "text-orange-500", icon: Bot, tier: "Pay per token", info: "Claude models. Pay-as-you-go pricing." },
+        ]
+      },
+      { name: "GOOGLE_GENERATIVE_AI_API_KEY", description: "API Key for Google Generative AI (Gemini).", showIf: { field: "NEXT_PUBLIC_AI_ENABLED", value: "true" } },
+      { name: "OPENROUTER_API_KEY", description: "API Key for OpenRouter (multi-model gateway).", showIf: { field: "NEXT_PUBLIC_AI_ENABLED", value: "true" } },
+      { name: "AI_GATEWAY_API_KEY", description: "API Key for AI Gateway.", showIf: { field: "NEXT_PUBLIC_AI_ENABLED", value: "true" } },
+      { name: "OLLAMA_BASE_URL", description: "Base URL for local Ollama instance (e.g. http://localhost:11434).", showIf: { field: "NEXT_PUBLIC_AI_ENABLED", value: "true" } },
+      { name: "OPENAI_COMPATIBLE_BASE_URL", description: "Base URL for any OpenAI-compatible API.", showIf: { field: "NEXT_PUBLIC_AI_ENABLED", value: "true" } },
     ],
   },
 ];

@@ -1,0 +1,29 @@
+{
+  "name": "@workspace/ai",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests",
+    "test:coverage": "vitest run --coverage --passWithNoTests"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@ai-sdk/anthropic": "^2.0.0",
+    "@ai-sdk/google": "^3.0.63",
+    "@ai-sdk/openai": "^3.0.52",
+    "@ai-sdk/openai-compatible": "^2.0.0",
+    "ai": "^6.0.0",
+    "ai-sdk-ollama": "^3.8.3",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.25",
+    "@workspace/typescript-config": "workspace:*",
+    "typescript": "^5.9.2",
+    "vitest": "^4.0.18"
+  }
+}

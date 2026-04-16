@@ -51,7 +51,19 @@ export type FormState = {
     BETTERSTACK_TELEMETRY_SOURCE_TOKEN: string;
     BETTERSTACK_TELEMETRY_INGESTING_HOST: string;
     NEXT_PUBLIC_GOOGLE_ANALYTICS_MEASUREMENT_ID: string;
+    GA4_PROPERTY_ID: string;
+    GA4_CREDENTIALS_JSON: string;
+    GOOGLE_PAGESPEED_API_KEY: string;
     NEXT_PUBLIC_ALLOW_RATE_LIMIT: string;
+    // AI
+    NEXT_PUBLIC_AI_ENABLED: string;
+    AI_GATEWAY_API_KEY: string;
+    OPENAI_API_KEY: string;
+    ANTHROPIC_API_KEY: string;
+    GOOGLE_GENERATIVE_AI_API_KEY: string;
+    OPENROUTER_API_KEY: string;
+    OLLAMA_BASE_URL: string;
+    OPENAI_COMPATIBLE_BASE_URL: string;
     // Payment
     NEXT_PUBLIC_PAYMENT_GATEWAY: string;
     DODO_PAYMENTS_API_KEY: string;
@@ -111,7 +123,18 @@ export const DEFAULT_FORM: FormState = {
     BETTERSTACK_TELEMETRY_SOURCE_TOKEN: "",
     BETTERSTACK_TELEMETRY_INGESTING_HOST: "",
     NEXT_PUBLIC_GOOGLE_ANALYTICS_MEASUREMENT_ID: "",
+    GA4_PROPERTY_ID: "",
+    GA4_CREDENTIALS_JSON: "",
+    GOOGLE_PAGESPEED_API_KEY: "",
     NEXT_PUBLIC_ALLOW_RATE_LIMIT: "upstash",
+    NEXT_PUBLIC_AI_ENABLED: "false",
+    AI_GATEWAY_API_KEY: "",
+    OPENAI_API_KEY: "",
+    ANTHROPIC_API_KEY: "",
+    GOOGLE_GENERATIVE_AI_API_KEY: "",
+    OPENROUTER_API_KEY: "",
+    OLLAMA_BASE_URL: "",
+    OPENAI_COMPATIBLE_BASE_URL: "",
     NEXT_PUBLIC_PAYMENT_GATEWAY: "none",
     DODO_PAYMENTS_API_KEY: "",
     DODO_PAYMENTS_WEBHOOK_KEY: "",
@@ -188,7 +211,9 @@ export const IMAGE_STORAGE_OPTIONS = [
 
 export const OBSERVABILITY_FEATURE_OPTIONS = [
     { value: "logging", label: "Logging" },
-    { value: "google_analytics", label: "Google Analytics" },
+    { value: "google_analytics", label: "Google Analytics Tracking" },
+    { value: "ga4_reports", label: "GA4 In-App Reports" },
+    { value: "pagespeed_insights", label: "PageSpeed Insights" },
     { value: "rate_limiting", label: "Rate Limiting" },
 ];
 
@@ -212,6 +237,22 @@ export const PAYMENT_ENV_KEYS: (keyof FormState)[] = [
     "NEXT_PUBLIC_DODO_PAYMENTS_URL",
     "STRIPE_SECRET_KEY",
     "STRIPE_WEBHOOK_SECRET",
+];
+
+export const AI_ENV_KEYS: (keyof FormState)[] = [
+    "NEXT_PUBLIC_AI_ENABLED",
+    "AI_GATEWAY_API_KEY",
+    "OPENAI_API_KEY",
+    "ANTHROPIC_API_KEY",
+    "GOOGLE_GENERATIVE_AI_API_KEY",
+    "OPENROUTER_API_KEY",
+    "OLLAMA_BASE_URL",
+    "OPENAI_COMPATIBLE_BASE_URL",
+];
+
+export const AI_ENABLED_OPTIONS = [
+    { value: "false", label: "Disabled" },
+    { value: "true", label: "Enabled" },
 ];
 
 export const DODO_ENV_OPTIONS = [
@@ -238,10 +279,10 @@ export const SCAFFOLD_MODULE_OPTIONS = [
     },
     {
         value: "ai",
-        label: "AI",
-        description: "Coming soon",
-        creditsCost: 15,
-        disabled: true,
+        label: "AI Platform",
+        description: "Chat UI, prompt management, multi-provider abstraction, speech (TTS/STT), and token-aware credit metering.",
+        creditsCost: 20,
+        disabled: false,
     },
     {
         value: "api_keys",

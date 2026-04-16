@@ -11,6 +11,7 @@ import { Input } from "@workspace/ui/components/shadcn/input";
 import { Textarea } from "@workspace/ui/components/shadcn/textarea";
 import { Badge } from "@workspace/ui/components/shadcn/badge";
 import { Loader2, FileText, Plus, RefreshCw, Trash2, Save } from "lucide-react";
+import { AIFillPromptDialog } from "@workspace/ui/components/admin/AIFillPromptDialog";
 
 type DocFormState = {
     title: string;
@@ -131,6 +132,28 @@ export default function DocumentationAdminPage() {
         }),
     );
 
+    const fillDocWithAiMutation = useMutation(
+        trpc.ai.generateAdminDraft.mutationOptions({
+            onSuccess: (draft) => {
+                if (draft.kind !== "documentation") return;
+
+                setForm({
+                    title: draft.values.title,
+                    slug: draft.values.slug,
+                    type: draft.values.type,
+                    order: String(draft.values.order),
+                    content: draft.values.content,
+                });
+                toast.success("Documentation form filled");
+            },
+            onError: (error) => {
+                toast.error("Could not fill documentation", {
+                    description: error.message,
+                });
+            },
+        }),
+    );
+
     const isSaving = createDocMutation.isPending || updateDocMutation.isPending;
     const activeDoc = docsQuery.data?.find((doc) => doc.id === selectedId) ?? null;
 
@@ -177,6 +200,20 @@ export default function DocumentationAdminPage() {
         if (typeof selectedId !== "string" || !activeDoc) return;
         if (!confirm(`Delete "${activeDoc.title}"? This action cannot be undone.`)) return;
         deleteDocMutation.mutate({ id: selectedId });
+    };
+
+    const handleAiFill = (instruction: string) => {
+        fillDocWithAiMutation.mutate({
+            kind: "documentation",
+            current: {
+                title: form.title,
+                slug: form.slug,
+                type: form.type,
+                order: Number(form.order) || 0,
+                content: form.content,
+            },
+            instruction,
+        });
     };
 
     if (isPending || (isPostgresCms && docsQuery.isLoading)) {
@@ -244,9 +281,8 @@ export default function DocumentationAdminPage() {
                                         key={doc.id}
                                         type="button"
                                         onClick={() => setSelectedId(doc.id)}
-                                        className={`w-full rounded-lg border p-4 text-left transition ${
-                                            selectedId === doc.id ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"
-                                        }`}
+                                        className={`w-full rounded-lg border p-4 text-left transition ${selectedId === doc.id ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"
+                                            }`}
                                     >
                                         <div className="mb-2 flex items-center justify-between gap-2">
                                             <div className="truncate font-medium">{doc.title}</div>
@@ -334,10 +370,16 @@ export default function DocumentationAdminPage() {
                                                 ? `Last updated ${new Date(activeDoc.lastUpdated).toLocaleString()}`
                                                 : "This page has not been saved yet."}
                                         </p>
-                                        <Button onClick={handleSave} disabled={isSaving}>
-                                            {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                                            Save
-                                        </Button>
+                                        <div className="flex items-center gap-2">
+                                            <AIFillPromptDialog
+                                                isPending={fillDocWithAiMutation.isPending}
+                                                onFill={handleAiFill}
+                                            />
+                                            <Button onClick={handleSave} disabled={isSaving}>
+                                                {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                                                Save
+                                            </Button>
+                                        </div>
                                     </div>
                                 </>
                             )}

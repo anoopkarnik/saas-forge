@@ -21,12 +21,12 @@
     },
     {
       "id": "ai",
-      "label": "AI",
+      "label": "AI Platform",
       "default": false,
-      "creditsCost": 15,
+      "creditsCost": 20,
       "requires": [],
       "incompatibleWith": [],
-      "downloadEnabled": false
+      "downloadEnabled": true
     },
     {
       "id": "api_keys",

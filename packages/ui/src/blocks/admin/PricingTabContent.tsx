@@ -8,12 +8,13 @@ import { Input } from "@workspace/ui/components/shadcn/input";
 import { Textarea } from "@workspace/ui/components/shadcn/textarea";
 import { Switch } from "@workspace/ui/components/shadcn/switch";
 import { Button } from "@workspace/ui/components/shadcn/button";
-import { CreditCard, Save, Loader2 } from "lucide-react";
+import { AIFillPromptDialog } from "@workspace/ui/components/admin/AIFillPromptDialog";
+import { CreditCard, Save, Loader2, WandSparkles } from "lucide-react";
 import { SectionHeader } from "@workspace/ui/components/admin/SectionHeader";
 import { ArrayEditor } from "@workspace/ui/components/admin/ArrayEditor";
 import { pricingFormSchema, type PricingFormValues, type SectionTabProps } from "@workspace/ui/lib/zod/cms";
 
-export function PricingTabContent({ initialData, onSave, isSaving }: SectionTabProps) {
+export function PricingTabContent({ initialData, onSave, isSaving, aiDraft, isAiFilling, onAIFill }: SectionTabProps) {
     const form = useForm<PricingFormValues>({
         resolver: zodResolver(pricingFormSchema),
         defaultValues: {
@@ -32,6 +33,17 @@ export function PricingTabContent({ initialData, onSave, isSaving }: SectionTabP
             });
         }
     }, [initialData, form]);
+
+    useEffect(() => {
+        if (aiDraft?.section !== "pricing") return;
+
+        Object.entries(aiDraft.values).forEach(([key, value]) => {
+            form.setValue(key as keyof PricingFormValues, value as never, {
+                shouldDirty: true,
+                shouldTouch: true,
+            });
+        });
+    }, [aiDraft?.nonce, aiDraft?.section, aiDraft?.values, form]);
 
     const onSubmit = (values: PricingFormValues) => {
         const payload = {
@@ -104,9 +116,14 @@ export function PricingTabContent({ initialData, onSave, isSaving }: SectionTabP
                     <p className="text-xs text-muted-foreground">
                         {form.formState.isDirty ? "You have unsaved changes." : "All changes are saved."}
                     </p>
-                    <Button type="submit" disabled={isSaving || !form.formState.isDirty} size="sm">
-                        {isSaving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</> : <><Save className="mr-2 h-4 w-4" />Save Pricing</>}
-                    </Button>
+                    <div className="flex items-center gap-2">
+                        <Button type="button" variant="outline" disabled={!onAIFill || isAiFilling} size="sm" onClick={() => onAIFill?.("pricing", form.getValues() as any)}>
+                            {isAiFilling ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Filling...</> : <><WandSparkles className="mr-2 h-4 w-4" />Fill with AI</>}
+                        </Button>
+                        <Button type="submit" disabled={isSaving || !form.formState.isDirty} size="sm">
+                            {isSaving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</> : <><Save className="mr-2 h-4 w-4" />Save Pricing</>}
+                        </Button>
+                    </div>
                 </div>
             </form>
         </Form>

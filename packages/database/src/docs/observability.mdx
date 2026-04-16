@@ -19,9 +19,24 @@ BETTERSTACK_TELEMETRY_INGESTING_HOST=https://in.logs.betterstack.com
 
 1. Create a Property in Google Analytics.
 2. Get the **Measurement ID** (starts with `G-`).
-3. Add to `.env`:
+3. Add the public Measurement ID to `.env` for browser tracking:
 
 ```plain text
 NEXT_PUBLIC_GOOGLE_ANALYTICS_MEASUREMENT_ID=G-XXXXXXXXXX
 ```
 
+To show GA4 reports inside the admin SEO screen, also create a Google Cloud service account, enable the Google Analytics Data API, grant the service account access to the GA4 property, and add:
+
+```plain text
+GA4_PROPERTY_ID=123456789
+GA4_CREDENTIALS_JSON={"client_email":"...","private_key":"..."}
+```
+
+## PageSpeed Insights
+
+1. Create a Google API key with access to the PageSpeed Insights API.
+2. Add it to `.env`:
+
+```plain text
+GOOGLE_PAGESPEED_API_KEY=your_api_key
+```

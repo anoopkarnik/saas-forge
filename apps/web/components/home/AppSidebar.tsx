@@ -13,7 +13,7 @@ import {
 } from "@workspace/ui/components/shadcn/sidebar";
 import { useTheme } from "next-themes";
 import { cn } from "@workspace/ui/lib/utils";
-import { HomeIcon, Users, Shield, Settings, Database, FileText, Search } from "lucide-react";
+import { Bot, Users, Database, FileText, Search } from "lucide-react";
 import { MdSaveAs } from "react-icons/md";
 import { usePathname, useRouter } from "next/navigation";
 import { useTRPC } from "@/trpc/client";
@@ -76,6 +76,16 @@ export function AppSidebar() {
                                 </div>
                             </SidebarMenuButton>
                         </SidebarMenuItem>
+                        {/* <SidebarMenuItem>
+                            <SidebarMenuButton tooltip={"AI Chat"}
+                                className={cn("cursor-pointer transition-all duration-200 ease-in-out hover:pl-3 h-10", pathname === "/ai" && "bg-sidebar-accent text-sidebar-accent-foreground font-medium shadow-sm")}
+                                onClick={() => router.push("/ai")}>
+                                <div className="flex items-center gap-3">
+                                    <Bot className="w-5 h-5 text-emerald-500" />
+                                    <div className="text-xs">AI Chat</div>
+                                </div>
+                            </SidebarMenuButton>
+                        </SidebarMenuItem> */}
                     </SidebarMenu>
                 </SidebarGroup>
 
@@ -120,6 +130,16 @@ export function AppSidebar() {
                                     <div className="flex items-center gap-3">
                                         <Search className="w-5 h-5 text-emerald-500" />
                                         <div className="text-xs">SEO Reports</div>
+                                    </div>
+                                </SidebarMenuButton>
+                            </SidebarMenuItem>
+                            <SidebarMenuItem>
+                                <SidebarMenuButton tooltip={"AI Management"}
+                                    className={cn("cursor-pointer transition-all duration-200 ease-in-out hover:pl-3 h-10", pathname === "/admin/ai" && "bg-sidebar-accent text-sidebar-accent-foreground font-medium shadow-sm")}
+                                    onClick={() => router.push("/admin/ai")}>
+                                    <div className="flex items-center gap-3">
+                                        <Bot className="w-5 h-5 text-emerald-500" />
+                                        <div className="text-xs">AI Management</div>
                                     </div>
                                 </SidebarMenuButton>
                             </SidebarMenuItem>

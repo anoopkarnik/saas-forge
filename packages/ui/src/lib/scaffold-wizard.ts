@@ -239,8 +239,22 @@ export const WIZARD_FIELD_META: Partial<Record<WizardFieldName, WizardFieldMeta>
   },
   NEXT_PUBLIC_GOOGLE_ANALYTICS_MEASUREMENT_ID: {
     label: "Google Analytics Measurement ID",
-    helper: "Adds Google Analytics tracking to the starter.",
-    reviewLabel: "Google Analytics",
+    helper: "Adds browser-side Google Analytics tracking.",
+    reviewLabel: "Google Analytics tracking",
+  },
+  GA4_PROPERTY_ID: {
+    label: "GA4 Property ID",
+    helper: "Lets the admin dashboard read Google Analytics 4 reports.",
+    reviewLabel: "GA4 reports",
+  },
+  GA4_CREDENTIALS_JSON: {
+    label: "GA4 Service Account JSON",
+    helper: "Paste inline JSON or a file path for a service account with Analytics Data API access.",
+  },
+  GOOGLE_PAGESPEED_API_KEY: {
+    label: "Google PageSpeed API Key",
+    helper: "Enables PageSpeed Insights checks in the admin SEO audit.",
+    reviewLabel: "PageSpeed Insights",
   },
   BETTERSTACK_TELEMETRY_SOURCE_TOKEN: {
     label: "Better Stack Source Token",
@@ -296,9 +310,45 @@ export const WIZARD_FIELD_META: Partial<Record<WizardFieldName, WizardFieldMeta>
     label: "Stripe Webhook Secret",
     helper: "Lets the starter verify Stripe webhook events.",
   },
+  NEXT_PUBLIC_AI_ENABLED: {
+    label: "AI Features",
+    helper: "Enable or disable the AI platform on boot.",
+    reviewLabel: "AI enabled",
+  },
+  OPENAI_API_KEY: {
+    label: "OpenAI API Key",
+    helper: "Powers GPT-based chat and completions.",
+    reviewLabel: "OpenAI connected",
+  },
+  ANTHROPIC_API_KEY: {
+    label: "Anthropic API Key",
+    helper: "Powers Claude-based chat and completions.",
+    reviewLabel: "Anthropic connected",
+  },
+  GOOGLE_GENERATIVE_AI_API_KEY: {
+    label: "Google Generative AI Key",
+    helper: "Powers Gemini-based chat and completions.",
+  },
+  OPENROUTER_API_KEY: {
+    label: "OpenRouter API Key",
+    helper: "Multi-model gateway for many providers.",
+  },
+  AI_GATEWAY_API_KEY: {
+    label: "AI Gateway API Key",
+    helper: "API key for a managed AI gateway.",
+  },
+  OLLAMA_BASE_URL: {
+    label: "Ollama Base URL",
+    helper: "Local Ollama instance URL (e.g. http://localhost:11434).",
+  },
+  OPENAI_COMPATIBLE_BASE_URL: {
+    label: "OpenAI-Compatible Base URL",
+    helper: "Base URL for any OpenAI-compatible endpoint.",
+  },
 };
 
 const BILLING_MODULE_ID: ScaffoldModuleId = "billing";
+const AI_MODULE_ID: ScaffoldModuleId = "ai";
 
 const hasModule = (values: FormValues, moduleId: ScaffoldModuleId) =>
   Array.isArray(values.SELECTED_MODULES) &&
@@ -317,13 +367,28 @@ const usesResend = (values: FormValues) =>
 const usesR2 = (values: FormValues) => values.NEXT_PUBLIC_IMAGE_STORAGE === "cloudflare_r2";
 const usesBlob = (values: FormValues) => values.NEXT_PUBLIC_IMAGE_STORAGE === "vercel_blob";
 const usesBilling = (values: FormValues) => hasModule(values, BILLING_MODULE_ID);
+const usesAI = (values: FormValues) => hasModule(values, AI_MODULE_ID);
+const aiEnabled = (values: FormValues) =>
+  usesAI(values) && values.NEXT_PUBLIC_AI_ENABLED === "true";
 const usesLogging = (values: FormValues) =>
   (values.NEXT_PUBLIC_OBSERVABILITY_FEATURES || []).includes("logging");
 const usesGoogleAnalytics = (values: FormValues) =>
   (values.NEXT_PUBLIC_OBSERVABILITY_FEATURES || []).includes("google_analytics");
+const usesGa4Reports = (values: FormValues) =>
+  (values.NEXT_PUBLIC_OBSERVABILITY_FEATURES || []).includes("ga4_reports");
+const usesPageSpeedInsights = (values: FormValues) =>
+  (values.NEXT_PUBLIC_OBSERVABILITY_FEATURES || []).includes("pagespeed_insights");
 
 const dedupeFields = (fields: WizardFieldName[]) =>
   Array.from(new Set(fields));
+
+const OBSERVABILITY_FEATURE_LABELS: Record<string, string> = {
+  logging: "Logging",
+  google_analytics: "Google Analytics tracking",
+  ga4_reports: "GA4 in-app reports",
+  pagespeed_insights: "PageSpeed Insights",
+  rate_limiting: "Rate limiting",
+};
 
 export function getWizardFieldMeta(name: WizardFieldName) {
   return WIZARD_FIELD_META[name];
@@ -458,6 +523,12 @@ export function getAccountsProviderGroups(values: FormValues): ProviderGroup[] {
         ...(usesGoogleAnalytics(values)
           ? (["NEXT_PUBLIC_GOOGLE_ANALYTICS_MEASUREMENT_ID"] as WizardFieldName[])
           : []),
+        ...(usesGa4Reports(values)
+          ? (["GA4_PROPERTY_ID", "GA4_CREDENTIALS_JSON"] as WizardFieldName[])
+          : []),
+        ...(usesPageSpeedInsights(values)
+          ? (["GOOGLE_PAGESPEED_API_KEY"] as WizardFieldName[])
+          : []),
         ...(usesUpstashForRateLimit(values)
           ? (["NEXT_PUBLIC_ALLOW_RATE_LIMIT"] as WizardFieldName[])
           : []),
@@ -483,6 +554,28 @@ export function getAccountsProviderGroups(values: FormValues): ProviderGroup[] {
               "DODO_PAYMENTS_ENVIRONMENT",
               "DODO_CREDITS_PRODUCT_ID",
               "NEXT_PUBLIC_DODO_PAYMENTS_URL",
+            ] as WizardFieldName[])
+          : []),
+      ]),
+    },
+    {
+      id: "ai",
+      title: "AI Providers",
+      description:
+        "Supply at least one provider key so the AI module can call a model.",
+      fields: dedupeFields([
+        ...(usesAI(values)
+          ? (["NEXT_PUBLIC_AI_ENABLED"] as WizardFieldName[])
+          : []),
+        ...(aiEnabled(values)
+          ? ([
+              "OPENAI_API_KEY",
+              "ANTHROPIC_API_KEY",
+              "GOOGLE_GENERATIVE_AI_API_KEY",
+              "OPENROUTER_API_KEY",
+              "AI_GATEWAY_API_KEY",
+              "OLLAMA_BASE_URL",
+              "OPENAI_COMPATIBLE_BASE_URL",
             ] as WizardFieldName[])
           : []),
       ]),
@@ -527,7 +620,9 @@ export function getReviewSummaryItems(values: FormValues) {
       label: "Monitoring",
       value:
         values.NEXT_PUBLIC_OBSERVABILITY_FEATURES?.length
-          ? values.NEXT_PUBLIC_OBSERVABILITY_FEATURES.join(", ")
+          ? values.NEXT_PUBLIC_OBSERVABILITY_FEATURES
+              .map((feature) => OBSERVABILITY_FEATURE_LABELS[feature] ?? feature)
+              .join(", ")
           : "No extras enabled",
     },
     {
@@ -536,6 +631,14 @@ export function getReviewSummaryItems(values: FormValues) {
         ? values.NEXT_PUBLIC_PAYMENT_GATEWAY === "none"
           ? "Billing module enabled, provider not chosen yet"
           : values.NEXT_PUBLIC_PAYMENT_GATEWAY
+        : "Not included",
+    },
+    {
+      label: "AI",
+      value: usesAI(values)
+        ? values.NEXT_PUBLIC_AI_ENABLED === "true"
+          ? "Enabled"
+          : "Module included, not enabled yet"
         : "Not included",
     },
   ];
@@ -600,8 +703,15 @@ export function isWizardFieldRequired(
       return usesR2(values);
     case "NEXT_PUBLIC_ALLOW_RATE_LIMIT":
       return usesUpstashForRateLimit(values);
+    case "GA4_PROPERTY_ID":
+    case "GA4_CREDENTIALS_JSON":
+      return usesGa4Reports(values);
+    case "GOOGLE_PAGESPEED_API_KEY":
+      return usesPageSpeedInsights(values);
     case "NEXT_PUBLIC_PAYMENT_GATEWAY":
       return usesBilling(values);
+    case "NEXT_PUBLIC_AI_ENABLED":
+      return usesAI(values);
     case "STRIPE_SECRET_KEY":
     case "STRIPE_WEBHOOK_SECRET":
       return values.NEXT_PUBLIC_PAYMENT_GATEWAY === "stripe";

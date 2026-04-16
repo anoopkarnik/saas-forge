@@ -313,6 +313,7 @@ export async function POST(req: NextRequest) {
       ? envVars.NEXT_PUBLIC_PLATFORM.split(",").map((s) => s.trim())
       : ["web"];
     const billingSelected = modules.includes("billing");
+    const aiSelected = modules.includes("ai");
 
     tempScaffoldDir = createTempScaffoldDir();
     compileScaffoldVariant({
@@ -363,6 +364,9 @@ export async function POST(req: NextRequest) {
         : "none",
       EXPO_PUBLIC_CALENDLY_BOOKING_URL:
         envVars.NEXT_PUBLIC_CALENDLY_BOOKING_URL || '""',
+      EXPO_PUBLIC_AI_ENABLED: aiSelected
+        ? envVars.NEXT_PUBLIC_AI_ENABLED || "false"
+        : "false",
     };
 
     const desktopEnvVars: Record<string, string> = {
@@ -395,6 +399,9 @@ export async function POST(req: NextRequest) {
           : '""',
       VITE_THEME: envVars.NEXT_PUBLIC_THEME || "green",
       VITE_THEME_TYPE: envVars.NEXT_PUBLIC_THEME_TYPE || "light",
+      VITE_AI_ENABLED: aiSelected
+        ? envVars.NEXT_PUBLIC_AI_ENABLED || "false"
+        : "false",
     };
 
     const mobileEnvContent = fs.existsSync(mobileEnvExamplePath)

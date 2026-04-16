@@ -1,11 +1,29 @@
 import * as z from "zod";
 
+export type CmsAssistantSection =
+    | "navbar"
+    | "hero"
+    | "features"
+    | "testimonials"
+    | "pricing"
+    | "faq"
+    | "legal";
+
+export type CmsAssistantDraft = {
+    section: CmsAssistantSection;
+    values: Partial<CmsFormValues>;
+    nonce: number;
+};
+
 // Shared props for all section tab components
 export interface SectionTabProps {
     initialData: any;
     onSave: (values: Partial<CmsFormValues>) => void;
     isSaving: boolean;
     uploadUrl?: string;
+    aiDraft?: CmsAssistantDraft | null;
+    isAiFilling?: boolean;
+    onAIFill?: (section: CmsAssistantSection, currentValues: Partial<CmsFormValues>, instruction?: string) => void;
 }
 
 // --- Per-section schemas (used by individual tab forms) ---

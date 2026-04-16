@@ -1,0 +1,116 @@
+model AiPrompt {
+  id              String            @id @default(cuid())
+  key             String            @unique
+  name            String
+  description     String?
+  activeVersionId String?
+  activeVersion   AiPromptVersion?  @relation("ActivePromptVersion", fields: [activeVersionId], references: [id], onDelete: SetNull)
+  versions        AiPromptVersion[] @relation("PromptVersions")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@schema("ai_schema")
+}
+
+model AiPromptVersion {
+  id              String           @id @default(cuid())
+  promptId        String
+  prompt          AiPrompt         @relation("PromptVersions", fields: [promptId], references: [id], onDelete: Cascade)
+  activeFor       AiPrompt[]       @relation("ActivePromptVersion")
+  conversations   AiConversation[]
+  usageEvents     AiUsageEvent[]
+  version         Int
+  content         String
+  provider        String?
+  model           String?
+  createdByUserId String?
+  createdByUser   User?            @relation("AiPromptVersionCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@unique([promptId, version])
+  @@index([promptId])
+  @@index([createdByUserId])
+  @@schema("ai_schema")
+}
+
+model AiConversation {
+  id              String           @id @default(cuid())
+  userId          String
+  user            User             @relation("AiConversations", fields: [userId], references: [id], onDelete: Cascade)
+  promptKey       String
+  promptVersionId String?
+  promptVersion   AiPromptVersion? @relation(fields: [promptVersionId], references: [id], onDelete: SetNull)
+  title           String?
+  messages        AiMessage[]
+  usageEvents     AiUsageEvent[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([promptKey])
+  @@index([promptVersionId])
+  @@schema("ai_schema")
+}
+
+model AiMessage {
+  id             String         @id @default(cuid())
+  conversationId String
+  conversation   AiConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User           @relation("AiMessages", fields: [userId], references: [id], onDelete: Cascade)
+  role           String
+  content        String
+  parts          Json?
+
+  createdAt DateTime @default(now())
+
+  @@index([conversationId])
+  @@index([userId])
+  @@schema("ai_schema")
+}
+
+model AiUsageEvent {
+  id              String           @id @default(cuid())
+  userId          String
+  user            User             @relation("AiUsageEvents", fields: [userId], references: [id], onDelete: Cascade)
+  conversationId  String?
+  conversation    AiConversation?  @relation(fields: [conversationId], references: [id], onDelete: SetNull)
+  promptKey       String
+  promptVersionId String?
+  promptVersion   AiPromptVersion? @relation(fields: [promptVersionId], references: [id], onDelete: SetNull)
+  provider        String
+  model           String
+  requestTokens   Int              @default(0)
+  responseTokens  Int              @default(0)
+  totalTokens     Int              @default(0)
+  creditsCharged  Int              @default(0)
+  latencyMs       Int              @default(0)
+  status          String
+  errorCode       String?
+  errorMessage    String?
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([conversationId])
+  @@index([promptKey])
+  @@index([status])
+  @@schema("ai_schema")
+}
+
+model AiSpeechConfig {
+  id         String  @id @default(cuid())
+  capability String  @unique
+  provider   String  @default("custom")
+  enabled    Boolean @default(false)
+  url        String
+  sampleBody Json
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@schema("ai_schema")
+}

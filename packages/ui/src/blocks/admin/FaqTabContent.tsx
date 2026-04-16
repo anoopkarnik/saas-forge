@@ -7,12 +7,13 @@ import { Form, FormControl, FormField, FormItem, FormLabel } from "@workspace/ui
 import { Input } from "@workspace/ui/components/shadcn/input";
 import { Textarea } from "@workspace/ui/components/shadcn/textarea";
 import { Button } from "@workspace/ui/components/shadcn/button";
-import { HelpCircle, Save, Loader2 } from "lucide-react";
+import { AIFillPromptDialog } from "@workspace/ui/components/admin/AIFillPromptDialog";
+import { HelpCircle, Save, Loader2, WandSparkles } from "lucide-react";
 import { SectionHeader } from "@workspace/ui/components/admin/SectionHeader";
 import { ArrayEditor } from "@workspace/ui/components/admin/ArrayEditor";
 import { faqFormSchema, type FaqFormValues, type SectionTabProps } from "@workspace/ui/lib/zod/cms";
 
-export function FaqTabContent({ initialData, onSave, isSaving }: SectionTabProps) {
+export function FaqTabContent({ initialData, onSave, isSaving, aiDraft, isAiFilling, onAIFill }: SectionTabProps) {
     const form = useForm<FaqFormValues>({
         resolver: zodResolver(faqFormSchema),
         defaultValues: {
@@ -29,6 +30,17 @@ export function FaqTabContent({ initialData, onSave, isSaving }: SectionTabProps
             });
         }
     }, [initialData, form]);
+
+    useEffect(() => {
+        if (aiDraft?.section !== "faq") return;
+
+        Object.entries(aiDraft.values).forEach(([key, value]) => {
+            form.setValue(key as keyof FaqFormValues, value as never, {
+                shouldDirty: true,
+                shouldTouch: true,
+            });
+        });
+    }, [aiDraft?.nonce, aiDraft?.section, aiDraft?.values, form]);
 
     const onSubmit = (values: FaqFormValues) => {
         onSave(values);
@@ -70,9 +82,12 @@ export function FaqTabContent({ initialData, onSave, isSaving }: SectionTabProps
                     <p className="text-xs text-muted-foreground">
                         {form.formState.isDirty ? "You have unsaved changes." : "All changes are saved."}
                     </p>
-                    <Button type="submit" disabled={isSaving || !form.formState.isDirty} size="sm">
-                        {isSaving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</> : <><Save className="mr-2 h-4 w-4" />Save FAQ</>}
-                    </Button>
+                    <div className="flex items-center gap-2">
+                        <AIFillPromptDialog isPending={Boolean(isAiFilling)} disabled={!onAIFill} onFill={(instruction) => onAIFill?.("faq", form.getValues(), instruction)} buttonSize="sm" />
+                        <Button type="submit" disabled={isSaving || !form.formState.isDirty} size="sm">
+                            {isSaving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</> : <><Save className="mr-2 h-4 w-4" />Save FAQ</>}
+                        </Button>
+                    </div>
                 </div>
             </form>
         </Form>

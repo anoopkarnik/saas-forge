@@ -526,7 +526,16 @@ export default function DownloadConfigForm({ templateTitle, onBack }: Props) {
                 </>}
 
                 {formValues.NEXT_PUBLIC_OBSERVABILITY_FEATURES.includes("google_analytics") &&
-                    renderField("Google Analytics ID", "NEXT_PUBLIC_GOOGLE_ANALYTICS_MEASUREMENT_ID", "G-XXXXXXXXXX")
+                    renderField("Google Analytics Measurement ID", "NEXT_PUBLIC_GOOGLE_ANALYTICS_MEASUREMENT_ID", "G-XXXXXXXXXX")
+                }
+
+                {formValues.NEXT_PUBLIC_OBSERVABILITY_FEATURES.includes("ga4_reports") && <>
+                    {renderField("GA4 Property ID *", "GA4_PROPERTY_ID", "123456789")}
+                    {renderField("GA4 Service Account JSON *", "GA4_CREDENTIALS_JSON", "{\"client_email\":\"...\"}", true)}
+                </>}
+
+                {formValues.NEXT_PUBLIC_OBSERVABILITY_FEATURES.includes("pagespeed_insights") &&
+                    renderField("Google PageSpeed API Key *", "GOOGLE_PAGESPEED_API_KEY", "AIza...", true)
                 }
 
                 {formValues.NEXT_PUBLIC_OBSERVABILITY_FEATURES.includes("rate_limiting") && <>

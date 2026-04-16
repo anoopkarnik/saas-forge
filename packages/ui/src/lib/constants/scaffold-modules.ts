@@ -32,10 +32,10 @@ export const SCAFFOLD_MODULE_OPTIONS: ScaffoldModuleOption[] = [
   },
   {
     id: "ai",
-    label: "AI",
-    description: "Provider SDK integration, chat flows, and AI-specific platform helpers.",
-    creditsCost: 15,
-    available: false,
+    label: "AI Platform",
+    description: "Chat UI, prompt management, multi-provider abstraction, speech (TTS/STT), and token-aware credit metering.",
+    creditsCost: 20,
+    available: true,
   },
   {
     id: "api_keys",
@@ -71,4 +71,3 @@ export function calculateScaffoldCredits(selectedModules: ScaffoldModuleId[]) {
       moduleCredits.reduce((sum, entry) => sum + entry.credits, 0),
   };
 }
-

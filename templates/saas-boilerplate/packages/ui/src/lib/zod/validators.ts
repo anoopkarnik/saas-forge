@@ -229,8 +229,34 @@ export const validateObservability = (data: any, ctx: z.RefinementCtx) => {
       });
     }
   }
+
+  if (observabilityFeatures.includes("ga4_reports")) {
+    (["GA4_PROPERTY_ID", "GA4_CREDENTIALS_JSON"] as const).forEach((field) => {
+      if (!data[field] || data[field]!.trim() === "") {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Required for in-app GA4 reports",
+          path: [field],
+        });
+      }
+    });
+  }
+
+  if (
+    observabilityFeatures.includes("pagespeed_insights") &&
+    (!data.GOOGLE_PAGESPEED_API_KEY || data.GOOGLE_PAGESPEED_API_KEY.trim() === "")
+  ) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Required for PageSpeed Insights",
+      path: ["GOOGLE_PAGESPEED_API_KEY"],
+    });
+  }
   
-  if (data.NEXT_PUBLIC_ALLOW_RATE_LIMIT === "upstash") {
+  if (
+    observabilityFeatures.includes("rate_limiting") &&
+    data.NEXT_PUBLIC_ALLOW_RATE_LIMIT === "upstash"
+  ) {
     const upstashFields = [
       "UPSTASH_REDIS_REST_URL",
       "UPSTASH_REDIS_REST_TOKEN",
@@ -245,6 +271,31 @@ export const validateObservability = (data: any, ctx: z.RefinementCtx) => {
         });
       }
     });
+  }
+};
+
+export const validateAI = (data: any, ctx: z.RefinementCtx) => {
+  if (!hasSelectedModule(data, "ai")) {
+    return;
+  }
+
+  if (data.NEXT_PUBLIC_AI_ENABLED === "true") {
+    const hasAnyProvider =
+      (data.OPENAI_API_KEY && data.OPENAI_API_KEY.trim() !== "") ||
+      (data.ANTHROPIC_API_KEY && data.ANTHROPIC_API_KEY.trim() !== "") ||
+      (data.GOOGLE_GENERATIVE_AI_API_KEY && data.GOOGLE_GENERATIVE_AI_API_KEY.trim() !== "") ||
+      (data.OPENROUTER_API_KEY && data.OPENROUTER_API_KEY.trim() !== "") ||
+      (data.OLLAMA_BASE_URL && data.OLLAMA_BASE_URL.trim() !== "") ||
+      (data.AI_GATEWAY_API_KEY && data.AI_GATEWAY_API_KEY.trim() !== "") ||
+      (data.OPENAI_COMPATIBLE_BASE_URL && data.OPENAI_COMPATIBLE_BASE_URL.trim() !== "");
+
+    if (!hasAnyProvider) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "At least one AI provider API key is required when AI is enabled.",
+        path: ["OPENAI_API_KEY"],
+      });
+    }
   }
 };
 

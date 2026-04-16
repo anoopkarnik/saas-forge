@@ -18,6 +18,10 @@ model User {
     accounts      Account[]
     sessions      Session[]
     transactions  Transaction[]
+    aiPromptVersions AiPromptVersion[] @relation("AiPromptVersionCreatedBy")
+    aiConversations  AiConversation[]  @relation("AiConversations")
+    aiMessages       AiMessage[]       @relation("AiMessages")
+    aiUsageEvents    AiUsageEvent[]    @relation("AiUsageEvents")
 
     createdAt  DateTime @default(now())
     updatedAt  DateTime @updatedAt

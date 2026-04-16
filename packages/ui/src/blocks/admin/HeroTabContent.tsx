@@ -7,13 +7,14 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@workspace/ui/components/shadcn/input";
 import { Textarea } from "@workspace/ui/components/shadcn/textarea";
 import { Button } from "@workspace/ui/components/shadcn/button";
-import { Home, Save, Loader2 } from "lucide-react";
+import { AIFillPromptDialog } from "@workspace/ui/components/admin/AIFillPromptDialog";
+import { Home, Save, Loader2, WandSparkles } from "lucide-react";
 import { SectionHeader } from "@workspace/ui/components/admin/SectionHeader";
 import { ImageUploadField } from "@workspace/ui/components/admin/ImageUploadField";
 import { ArrayEditor } from "@workspace/ui/components/admin/ArrayEditor";
 import { heroFormSchema, type HeroFormValues, type SectionTabProps } from "@workspace/ui/lib/zod/cms";
 
-export function HeroTabContent({ initialData, onSave, isSaving, uploadUrl }: SectionTabProps) {
+export function HeroTabContent({ initialData, onSave, isSaving, uploadUrl, aiDraft, isAiFilling, onAIFill }: SectionTabProps) {
     const form = useForm<HeroFormValues>({
         resolver: zodResolver(heroFormSchema),
         defaultValues: {
@@ -34,6 +35,17 @@ export function HeroTabContent({ initialData, onSave, isSaving, uploadUrl }: Sec
             });
         }
     }, [initialData, form]);
+
+    useEffect(() => {
+        if (aiDraft?.section !== "hero") return;
+
+        Object.entries(aiDraft.values).forEach(([key, value]) => {
+            form.setValue(key as keyof HeroFormValues, value as never, {
+                shouldDirty: true,
+                shouldTouch: true,
+            });
+        });
+    }, [aiDraft?.nonce, aiDraft?.section, aiDraft?.values, form]);
 
     const onSubmit = (values: HeroFormValues) => {
         onSave(values);
@@ -85,9 +97,12 @@ export function HeroTabContent({ initialData, onSave, isSaving, uploadUrl }: Sec
                     <p className="text-xs text-muted-foreground">
                         {form.formState.isDirty ? "You have unsaved changes." : "All changes are saved."}
                     </p>
-                    <Button type="submit" disabled={isSaving || !form.formState.isDirty} size="sm">
-                        {isSaving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</> : <><Save className="mr-2 h-4 w-4" />Save Hero</>}
-                    </Button>
+                    <div className="flex items-center gap-2">
+                        <AIFillPromptDialog isPending={Boolean(isAiFilling)} disabled={!onAIFill} onFill={(instruction) => onAIFill?.("hero", form.getValues(), instruction)} buttonSize="sm" />
+                        <Button type="submit" disabled={isSaving || !form.formState.isDirty} size="sm">
+                            {isSaving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</> : <><Save className="mr-2 h-4 w-4" />Save Hero</>}
+                        </Button>
+                    </div>
                 </div>
             </form>
         </Form>

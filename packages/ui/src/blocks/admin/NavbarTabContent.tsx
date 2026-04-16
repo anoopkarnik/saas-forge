@@ -7,12 +7,13 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@workspace/ui/components/shadcn/input";
 import { Separator } from "@workspace/ui/components/shadcn/separator";
 import { Button } from "@workspace/ui/components/shadcn/button";
-import { LayoutPanelTop, Github, Save, Loader2 } from "lucide-react";
+import { AIFillPromptDialog } from "@workspace/ui/components/admin/AIFillPromptDialog";
+import { LayoutPanelTop, Github, Save, Loader2, WandSparkles } from "lucide-react";
 import { SectionHeader } from "@workspace/ui/components/admin/SectionHeader";
 import { ImageUploadField } from "@workspace/ui/components/admin/ImageUploadField";
 import { navbarFormSchema, type NavbarFormValues, type SectionTabProps } from "@workspace/ui/lib/zod/cms";
 
-export function NavbarTabContent({ initialData, onSave, isSaving, uploadUrl }: SectionTabProps) {
+export function NavbarTabContent({ initialData, onSave, isSaving, uploadUrl, aiDraft, isAiFilling, onAIFill }: SectionTabProps) {
     const form = useForm<NavbarFormValues>({
         resolver: zodResolver(navbarFormSchema),
         defaultValues: {
@@ -34,6 +35,17 @@ export function NavbarTabContent({ initialData, onSave, isSaving, uploadUrl }: S
             });
         }
     }, [initialData, form]);
+
+    useEffect(() => {
+        if (aiDraft?.section !== "navbar") return;
+
+        Object.entries(aiDraft.values).forEach(([key, value]) => {
+            form.setValue(key as keyof NavbarFormValues, value as never, {
+                shouldDirty: true,
+                shouldTouch: true,
+            });
+        });
+    }, [aiDraft?.nonce, aiDraft?.section, aiDraft?.values, form]);
 
     const onSubmit = (values: NavbarFormValues) => {
         onSave(values);
@@ -80,9 +92,12 @@ export function NavbarTabContent({ initialData, onSave, isSaving, uploadUrl }: S
                     <p className="text-xs text-muted-foreground">
                         {form.formState.isDirty ? "You have unsaved changes." : "All changes are saved."}
                     </p>
-                    <Button type="submit" disabled={isSaving || !form.formState.isDirty} size="sm">
-                        {isSaving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</> : <><Save className="mr-2 h-4 w-4" />Save Navbar</>}
-                    </Button>
+                    <div className="flex items-center gap-2">
+                        <AIFillPromptDialog isPending={Boolean(isAiFilling)} disabled={!onAIFill} onFill={(instruction) => onAIFill?.("navbar", form.getValues(), instruction)} buttonSize="sm" />
+                        <Button type="submit" disabled={isSaving || !form.formState.isDirty} size="sm">
+                            {isSaving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</> : <><Save className="mr-2 h-4 w-4" />Save Navbar</>}
+                        </Button>
+                    </div>
                 </div>
             </form>
         </Form>

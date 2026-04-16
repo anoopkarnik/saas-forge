@@ -57,6 +57,9 @@ function createValues(
     BETTERSTACK_TELEMETRY_SOURCE_TOKEN: "",
     BETTERSTACK_TELEMETRY_INGESTING_HOST: "",
     NEXT_PUBLIC_GOOGLE_ANALYTICS_MEASUREMENT_ID: "",
+    GA4_PROPERTY_ID: "",
+    GA4_CREDENTIALS_JSON: "",
+    GOOGLE_PAGESPEED_API_KEY: "",
     NEXT_PUBLIC_ALLOW_RATE_LIMIT: "upstash",
     NEXT_PUBLIC_PAYMENT_GATEWAY: "none",
     DODO_PAYMENTS_API_KEY: "",
@@ -65,6 +68,14 @@ function createValues(
     DODO_PAYMENTS_ENVIRONMENT: "",
     DODO_CREDITS_PRODUCT_ID: "",
     NEXT_PUBLIC_DODO_PAYMENTS_URL: "",
+    NEXT_PUBLIC_AI_ENABLED: "false",
+    AI_GATEWAY_API_KEY: "",
+    OPENAI_API_KEY: "",
+    ANTHROPIC_API_KEY: "",
+    GOOGLE_GENERATIVE_AI_API_KEY: "",
+    OPENROUTER_API_KEY: "",
+    OLLAMA_BASE_URL: "",
+    OPENAI_COMPATIBLE_BASE_URL: "",
     STRIPE_SECRET_KEY: "",
     STRIPE_WEBHOOK_SECRET: "",
     ...overrides,
@@ -120,10 +131,101 @@ describe("scaffold wizard helpers", () => {
     ]);
   });
 
+  it("adds GA4 report and PageSpeed fields when those monitoring features are enabled", () => {
+    const groups = getAccountsProviderGroups(
+      createValues({
+        NEXT_PUBLIC_OBSERVABILITY_FEATURES: [
+          "google_analytics",
+          "ga4_reports",
+          "pagespeed_insights",
+        ],
+      }),
+    );
+
+    expect(groups.find((group) => group.id === "analytics")?.fields).toEqual([
+      "NEXT_PUBLIC_GOOGLE_ANALYTICS_MEASUREMENT_ID",
+      "GA4_PROPERTY_ID",
+      "GA4_CREDENTIALS_JSON",
+      "GOOGLE_PAGESPEED_API_KEY",
+    ]);
+  });
+
   it("summarizes billing as not included when the billing module is off", () => {
     const review = getReviewSummaryItems(createValues());
     expect(review.find((item) => item.label === "Payments")?.value).toBe(
       "Not included",
+    );
+  });
+
+  it("shows AI provider group when AI module is selected and enabled", () => {
+    const groups = getAccountsProviderGroups(
+      createValues({
+        SELECTED_MODULES: ["ai"],
+        NEXT_PUBLIC_AI_ENABLED: "true",
+      }),
+    );
+
+    const aiGroup = groups.find((group) => group.id === "ai");
+    expect(aiGroup).toBeDefined();
+    expect(aiGroup?.fields).toEqual([
+      "NEXT_PUBLIC_AI_ENABLED",
+      "OPENAI_API_KEY",
+      "ANTHROPIC_API_KEY",
+      "GOOGLE_GENERATIVE_AI_API_KEY",
+      "OPENROUTER_API_KEY",
+      "AI_GATEWAY_API_KEY",
+      "OLLAMA_BASE_URL",
+      "OPENAI_COMPATIBLE_BASE_URL",
+    ]);
+  });
+
+  it("shows only NEXT_PUBLIC_AI_ENABLED when AI module is selected but not enabled", () => {
+    const groups = getAccountsProviderGroups(
+      createValues({
+        SELECTED_MODULES: ["ai"],
+        NEXT_PUBLIC_AI_ENABLED: "false",
+      }),
+    );
+
+    const aiGroup = groups.find((group) => group.id === "ai");
+    expect(aiGroup).toBeDefined();
+    expect(aiGroup?.fields).toEqual(["NEXT_PUBLIC_AI_ENABLED"]);
+  });
+
+  it("hides AI provider group when AI module is not selected", () => {
+    const groups = getAccountsProviderGroups(
+      createValues({ SELECTED_MODULES: [] }),
+    );
+
+    expect(groups.find((group) => group.id === "ai")).toBeUndefined();
+  });
+
+  it("summarizes AI as not included when the AI module is off", () => {
+    const review = getReviewSummaryItems(createValues());
+    expect(review.find((item) => item.label === "AI")?.value).toBe(
+      "Not included",
+    );
+  });
+
+  it("summarizes AI as enabled when the AI module is selected and enabled", () => {
+    const review = getReviewSummaryItems(
+      createValues({
+        SELECTED_MODULES: ["ai"],
+        NEXT_PUBLIC_AI_ENABLED: "true",
+      }),
+    );
+    expect(review.find((item) => item.label === "AI")?.value).toBe("Enabled");
+  });
+
+  it("summarizes AI as included but not enabled when module selected with AI disabled", () => {
+    const review = getReviewSummaryItems(
+      createValues({
+        SELECTED_MODULES: ["ai"],
+        NEXT_PUBLIC_AI_ENABLED: "false",
+      }),
+    );
+    expect(review.find((item) => item.label === "AI")?.value).toBe(
+      "Module included, not enabled yet",
     );
   });
 });

@@ -22,6 +22,8 @@ const AI_ENV_FIELDS = new Set([
     "OPENROUTER_API_KEY",
     "OLLAMA_BASE_URL",
     "OPENAI_COMPATIBLE_BASE_URL",
+    "N8N_WEBHOOK_URL",
+    "N8N_WEBHOOK_JWT_KEY",
 ]);
 
 const TEMPLATE_REPO_URL = "https://github.com/anoopkarnik/saas-forge";

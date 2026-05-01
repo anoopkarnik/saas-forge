@@ -1,7 +1,8 @@
 import { PrismaClient } from "@prisma/client"
+import { withAccelerate } from "@prisma/extension-accelerate"
 
 const prismaClientSingleton = () => {
-  return new PrismaClient()
+  return new PrismaClient().$extends(withAccelerate())
 }
 
 declare global {
@@ -12,4 +13,4 @@ const prisma: ReturnType<typeof prismaClientSingleton> = globalThis.prismaGlobal
 
 export default prisma
 
-if (process.env.NODE_ENV !== 'production') globalThis.prismaGlobal = prisma 
+if (process.env.NODE_ENV !== 'production') globalThis.prismaGlobal = prisma

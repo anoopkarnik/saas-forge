@@ -76,6 +76,8 @@ function createValues(
     OPENROUTER_API_KEY: "",
     OLLAMA_BASE_URL: "",
     OPENAI_COMPATIBLE_BASE_URL: "",
+    N8N_WEBHOOK_URL: "",
+    N8N_WEBHOOK_JWT_KEY: "",
     STRIPE_SECRET_KEY: "",
     STRIPE_WEBHOOK_SECRET: "",
     ...overrides,
@@ -176,6 +178,8 @@ describe("scaffold wizard helpers", () => {
       "AI_GATEWAY_API_KEY",
       "OLLAMA_BASE_URL",
       "OPENAI_COMPATIBLE_BASE_URL",
+      "N8N_WEBHOOK_URL",
+      "N8N_WEBHOOK_JWT_KEY",
     ]);
   });
 

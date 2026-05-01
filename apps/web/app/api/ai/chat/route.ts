@@ -9,6 +9,19 @@ import {
   resolveAIModel,
   starterAssistantTools,
 } from "@workspace/ai";
+import {
+  AI_WEBHOOK_MODEL,
+  AI_WEBHOOK_PROVIDER,
+  DEFAULT_N8N_WEBHOOK_TEMPLATE,
+} from "@/lib/ts-types/ai";
+import {
+  callAIWebhook,
+  createTextUIMessageStreamResponse,
+} from "@/lib/functions/aiWebhook";
+import {
+  getN8nWebhookEnvConfig,
+  isN8nWebhookProvider,
+} from "@/lib/helper/aiWebhook";
 import { convertToModelMessages, streamText, type UIMessage } from "ai";
 import { z } from "zod";
 
@@ -37,6 +50,15 @@ function sanitizeError(error: unknown) {
     code: "AI_PROVIDER_ERROR",
     message: "The AI provider failed to respond.",
   };
+}
+
+function toWebhookMessages(messages: unknown[]) {
+  return messages
+    .map((message: any) => ({
+      role: typeof message?.role === "string" ? message.role : "user",
+      content: getMessageText(message),
+    }))
+    .filter((message) => message.content);
 }
 
 async function recordFailure({
@@ -97,11 +119,6 @@ export async function POST(req: Request) {
     return jsonError("You must be logged in to use AI chat.", 401);
   }
 
-  const status = getAIConfigStatus();
-  if (!status.configured) {
-    return jsonError(status.reason ?? "AI is not configured.", 412);
-  }
-
   const parsed = chatRequestSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) {
     return jsonError("Invalid AI chat request.", 400);
@@ -129,15 +146,23 @@ export async function POST(req: Request) {
     return jsonError("AI prompt is not configured.", 404);
   }
 
-  let resolvedModel: ReturnType<typeof resolveAIModel>;
+  let resolvedModel: ReturnType<typeof resolveAIModel> | null = null;
+  const activeProvider = prompt.activeVersion.provider;
 
-  try {
-    resolvedModel = resolveAIModel(process.env, {
-      provider: prompt.activeVersion.provider as any,
-      model: prompt.activeVersion.model ?? undefined,
-    });
-  } catch (error) {
-    return jsonError(error instanceof Error ? error.message : "AI prompt model is not configured.", 412);
+  if (!isN8nWebhookProvider(activeProvider)) {
+    const status = getAIConfigStatus();
+    if (!status.configured) {
+      return jsonError(status.reason ?? "AI is not configured.", 412);
+    }
+
+    try {
+      resolvedModel = resolveAIModel(process.env, {
+        provider: activeProvider as any,
+        model: prompt.activeVersion.model ?? undefined,
+      });
+    } catch (error) {
+      return jsonError(error instanceof Error ? error.message : "AI prompt model is not configured.", 412);
+    }
   }
 
   const latestUserText = getLastUserMessageText(messages);
@@ -163,6 +188,105 @@ export async function POST(req: Request) {
 
   if (persistedMessages.length) {
     await (db as any).aiMessage.createMany({ data: persistedMessages });
+  }
+
+  if (isN8nWebhookProvider(activeProvider)) {
+    logAIEvent({
+      userId,
+      promptKey,
+      promptVersionId: prompt.activeVersion.id,
+      provider: AI_WEBHOOK_PROVIDER,
+      model: AI_WEBHOOK_MODEL,
+      status: "started",
+    });
+
+    try {
+      const text = await callAIWebhook({
+        config: getN8nWebhookEnvConfig(),
+        path: prompt.activeVersion.model ?? "",
+        template: prompt.activeVersion.content ?? DEFAULT_N8N_WEBHOOK_TEMPLATE,
+        payload: {
+          promptKey,
+          system: null,
+          messages: toWebhookMessages(messages),
+          input: latestUserText,
+          context: {
+            flow: "chat",
+            userId,
+            conversationId: conversation.id,
+          },
+        },
+      });
+      const usage = calculateAIUsageCredits(null);
+      const latencyMs = Date.now() - startedAt;
+
+      await db.$transaction(async (tx) => {
+        await (tx as any).aiMessage.create({
+          data: {
+            conversationId: conversation.id,
+            userId,
+            role: "assistant",
+            content: text,
+            parts: [{ type: "text", text }],
+          },
+        });
+
+        await tx.user.update({
+          where: { id: userId },
+          data: { creditsUsed: { increment: usage.creditsCharged } },
+        });
+
+        await (tx as any).aiUsageEvent.create({
+          data: {
+            userId,
+            conversationId: conversation.id,
+            promptKey,
+            promptVersionId: prompt.activeVersion.id,
+            provider: AI_WEBHOOK_PROVIDER,
+            model: AI_WEBHOOK_MODEL,
+            requestTokens: usage.requestTokens,
+            responseTokens: usage.responseTokens,
+            totalTokens: usage.totalTokens,
+            creditsCharged: usage.creditsCharged,
+            latencyMs,
+            status: "success",
+          },
+        });
+      });
+
+      logAIEvent({
+        userId,
+        promptKey,
+        promptVersionId: prompt.activeVersion.id,
+        provider: AI_WEBHOOK_PROVIDER,
+        model: AI_WEBHOOK_MODEL,
+        requestTokens: usage.requestTokens,
+        responseTokens: usage.responseTokens,
+        totalTokens: usage.totalTokens,
+        creditsCharged: usage.creditsCharged,
+        latencyMs,
+        status: "success",
+      });
+
+      return createTextUIMessageStreamResponse(text, messages as UIMessage[]);
+    } catch (error) {
+      await recordFailure({
+        userId,
+        conversationId: conversation.id,
+        promptKey,
+        promptVersionId: prompt.activeVersion.id,
+        provider: AI_WEBHOOK_PROVIDER,
+        model: AI_WEBHOOK_MODEL,
+        latencyMs: Date.now() - startedAt,
+        error,
+      });
+
+      return jsonError("The assistant could not start a response.", 502);
+    }
+  }
+
+  if (!resolvedModel) {
+    return jsonError("AI prompt model is not configured.", 412);
   }
 
   logAIEvent({

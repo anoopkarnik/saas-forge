@@ -9,9 +9,14 @@ import {
   type SpeechCapability,
   type SpeechProvider,
 } from "@/lib/aiSpeech";
+import {
+  AI_LEGACY_WEBHOOK_PROVIDER,
+  AI_N8N_WEBHOOK_PROVIDER,
+  DEFAULT_N8N_WEBHOOK_TEMPLATE,
+} from "@/lib/ts-types/ai";
 import { useTRPC } from "@/trpc/client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Bot, Check, Loader2, Mic, Pencil, Plus, RadioTower, Save, Trash2, Volume2, X } from "lucide-react";
+import { Bot, Check, Loader2, Mic, Pencil, Plus, RadioTower, Save, Trash2, Volume2, Webhook, X } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@workspace/ui/components/shadcn/badge";
 import { Button } from "@workspace/ui/components/shadcn/button";
@@ -46,7 +51,20 @@ const providerLabels: Record<string, string> = {
   openrouter: "OpenRouter",
   ollama: "Ollama",
   "openai-compatible": "OpenAI Compatible",
+  "n8n-webhook": "n8n webhook provider",
+  webhook: "n8n webhook provider",
 };
+
+const N8N_WEBHOOK_PROVIDER = AI_N8N_WEBHOOK_PROVIDER;
+const LEGACY_WEBHOOK_PROVIDER = AI_LEGACY_WEBHOOK_PROVIDER;
+
+function isN8nWebhookProvider(provider: string | null | undefined) {
+  return provider === N8N_WEBHOOK_PROVIDER || provider === LEGACY_WEBHOOK_PROVIDER;
+}
+
+function normalizePromptProvider(provider: string | null | undefined) {
+  return provider === LEGACY_WEBHOOK_PROVIDER ? N8N_WEBHOOK_PROVIDER : provider ?? "";
+}
 
 function createDefaultSpeechForm(capability: SpeechCapability): SpeechForm {
   const config = getDefaultSpeechConfig(capability);
@@ -203,7 +221,6 @@ export default function AIAdminPage() {
   const [speechForms, setSpeechForms] = React.useState<Record<SpeechCapability, SpeechForm>>(() =>
     createSpeechForms(),
   );
-
   const statusQuery = useQuery({
     ...trpc.ai.getStatus.queryOptions(),
     enabled: isAdmin,
@@ -225,10 +242,18 @@ export default function AIAdminPage() {
   const speechConfigsQuery = useQuery({
     ...trpc.ai.getSpeechConfigs.queryOptions(undefined, { enabled: isAdmin }),
   });
+  const webhookConfigQuery = useQuery({
+    ...trpc.ai.getWebhookConfig.queryOptions(undefined, { enabled: isAdmin }),
+  });
   const modelsQuery = useQuery({
     ...trpc.ai.getAvailableModels.queryOptions(
       { provider: formState.provider },
-      { enabled: isAdmin && configuredProviders.includes(formState.provider) },
+      {
+        enabled:
+          isAdmin &&
+          !isN8nWebhookProvider(formState.provider) &&
+          configuredProviders.includes(formState.provider),
+      },
     ),
   });
 
@@ -241,7 +266,7 @@ export default function AIAdminPage() {
     setFormState({
       name: prompt.name ?? "",
       description: prompt.description ?? "",
-      provider: prompt.activeVersion?.provider ?? "",
+      provider: normalizePromptProvider(prompt.activeVersion?.provider),
       model: prompt.activeVersion?.model ?? "",
       content: prompt.activeVersion?.content ?? "",
     });
@@ -353,11 +378,19 @@ export default function AIAdminPage() {
   const prompts = (promptsQuery.data ?? []) as any[];
   const usageEvents = (usageQuery.data ?? []) as any[];
   const savingSpeechCapability = (saveSpeechMutation.variables as any)?.capability;
-  const providerOptions =
-    formState.provider && !configuredProviders.includes(formState.provider)
-      ? [formState.provider, ...configuredProviders]
-      : configuredProviders;
+  const isCurrentProviderN8nWebhook = isN8nWebhookProvider(formState.provider);
+  const providerOptions = Array.from(
+    new Set([
+      ...configuredProviders,
+      N8N_WEBHOOK_PROVIDER,
+      ...(formState.provider ? [formState.provider] : []),
+    ]),
+  );
   const isPromptSaving = createVersionMutation.isPending || updateVersionMutation.isPending;
+  const isSelectedProviderConfigured =
+    configuredProviders.includes(
+      isCurrentProviderN8nWebhook ? N8N_WEBHOOK_PROVIDER : formState.provider,
+    );
 
   const resetFormToActiveVersion = () => {
     const currentPrompt = versionsQuery.data as any;
@@ -365,7 +398,7 @@ export default function AIAdminPage() {
     setFormState({
       name: currentPrompt?.name ?? "",
       description: currentPrompt?.description ?? "",
-      provider: currentPrompt?.activeVersion?.provider ?? "",
+      provider: normalizePromptProvider(currentPrompt?.activeVersion?.provider),
       model: currentPrompt?.activeVersion?.model ?? "",
       content: currentPrompt?.activeVersion?.content ?? "",
     });
@@ -377,7 +410,7 @@ export default function AIAdminPage() {
     setFormState({
       name: currentPrompt?.name ?? "",
       description: currentPrompt?.description ?? "",
-      provider: version.provider ?? "",
+      provider: normalizePromptProvider(version.provider),
       model: version.model ?? "",
       content: version.content ?? "",
     });
@@ -433,6 +466,9 @@ export default function AIAdminPage() {
               <TabsTrigger value="usage" className="flex items-center gap-1.5 text-xs">
                 <RadioTower className="h-3.5 w-3.5" /> Usage
               </TabsTrigger>
+              <TabsTrigger value="webhook" className="flex items-center gap-1.5 text-xs">
+                <Webhook className="h-3.5 w-3.5" /> Webhook
+              </TabsTrigger>
               <TabsTrigger value="speech" className="flex items-center gap-1.5 text-xs">
                 <Volume2 className="h-3.5 w-3.5" /> Speech
               </TabsTrigger>
@@ -458,7 +494,7 @@ export default function AIAdminPage() {
                   <p className="mt-2 text-sm text-muted-foreground">{status?.reason}</p>
                 ) : (
                   <p className="mt-2 text-sm text-muted-foreground">
-                    Providers are detected from server environment variables. Models are set per prompt version.
+                    Model providers and n8n webhook provider are detected from server environment variables.
                   </p>
                 )}
               </div>
@@ -507,7 +543,12 @@ export default function AIAdminPage() {
                           setFormState((current) => ({
                             ...current,
                             provider: value,
-                            model: "", // Reset model when provider changes
+                            model: "",
+                            content:
+                              isN8nWebhookProvider(value) &&
+                                !isN8nWebhookProvider(current.provider)
+                                ? DEFAULT_N8N_WEBHOOK_TEMPLATE
+                                : current.content,
                           }))
                         }
                       >
@@ -518,55 +559,72 @@ export default function AIAdminPage() {
                           {providerOptions.map((provider: string) => (
                             <SelectItem key={provider} value={provider}>
                               {providerLabels[provider] ?? provider}
-                              {!configuredProviders.includes(provider) ? " (not configured)" : ""}
+                              {!configuredProviders.includes(
+                                isN8nWebhookProvider(provider) ? N8N_WEBHOOK_PROVIDER : provider,
+                              )
+                                ? " (not configured)"
+                                : ""}
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
                       {!configuredProviders.length ? (
                         <p className="text-xs text-muted-foreground">
-                          Add an AI provider key in the server environment to choose a provider.
+                          Add a model provider key or the n8n webhook env vars in the server environment.
                         </p>
                       ) : null}
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="prompt-model">Model</Label>
-                    <div className="flex gap-2">
-                      <Select
-                        value={formState.model}
-                        onValueChange={(value) =>
-                          setFormState((current) => ({
-                            ...current,
-                            model: value,
-                          }))
-                        }
-                        disabled={!formState.provider || modelsQuery.isPending}
-                      >
-                        <SelectTrigger id="prompt-model" className="flex-1">
-                          <SelectValue
-                            placeholder={
-                              modelsQuery.isPending ? "Loading models..." : "Select model"
-                            }
-                          />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {(modelsQuery.data ?? []).map((model: string) => (
-                            <SelectItem key={model} value={model}>
-                              {model}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                    <Label htmlFor="prompt-model">
+                      {isCurrentProviderN8nWebhook ? "Path" : "Model"}
+                    </Label>
+                    {isCurrentProviderN8nWebhook ? (
                       <Input
-                        placeholder="Or type custom model ID"
-                        className="w-[240px]"
+                        id="prompt-model"
                         value={formState.model}
-                        onChange={(e) =>
-                          setFormState((current) => ({ ...current, model: e.target.value }))
+                        placeholder="webhook/get-summary"
+                        onChange={(event) =>
+                          setFormState((current) => ({ ...current, model: event.target.value }))
                         }
                       />
-                    </div>
+                    ) : (
+                      <div className="flex gap-2">
+                        <Select
+                          value={formState.model}
+                          onValueChange={(value) =>
+                            setFormState((current) => ({
+                              ...current,
+                              model: value,
+                            }))
+                          }
+                          disabled={!formState.provider || modelsQuery.isPending}
+                        >
+                          <SelectTrigger id="prompt-model" className="flex-1">
+                            <SelectValue
+                              placeholder={
+                                modelsQuery.isPending ? "Loading models..." : "Select model"
+                              }
+                            />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {(modelsQuery.data ?? []).map((model: string) => (
+                              <SelectItem key={model} value={model}>
+                                {model}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Input
+                          placeholder="Or type custom model ID"
+                          className="w-[240px]"
+                          value={formState.model}
+                          onChange={(e) =>
+                            setFormState((current) => ({ ...current, model: e.target.value }))
+                          }
+                        />
+                      </div>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="prompt-description">Description</Label>
@@ -582,11 +640,18 @@ export default function AIAdminPage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="prompt-content">Prompt</Label>
+                    <Label htmlFor="prompt-content">
+                      {isCurrentProviderN8nWebhook ? "JSON format" : "Prompt"}
+                    </Label>
                     <Textarea
                       id="prompt-content"
                       rows={10}
                       value={formState.content}
+                      placeholder={
+                        isCurrentProviderN8nWebhook
+                          ? DEFAULT_N8N_WEBHOOK_TEMPLATE
+                          : undefined
+                      }
                       onChange={(event) =>
                         setFormState((current) => ({
                           ...current,
@@ -599,17 +664,21 @@ export default function AIAdminPage() {
                     disabled={
                       isPromptSaving ||
                       !formState.provider ||
-                      !configuredProviders.includes(formState.provider) ||
+                      !isSelectedProviderConfigured ||
                       !formState.model.trim() ||
                       !formState.content.trim()
                     }
                     onClick={() => {
+                      const normalizedProvider = isCurrentProviderN8nWebhook
+                        ? N8N_WEBHOOK_PROVIDER
+                        : formState.provider;
+
                       if (editingVersionId) {
                         updateVersionMutation.mutate({
                           promptKey: selectedPromptKey,
                           versionId: editingVersionId,
                           content: formState.content,
-                          provider: formState.provider || undefined,
+                          provider: normalizedProvider,
                           model: formState.model.trim() || undefined,
                         });
                         return;
@@ -620,7 +689,7 @@ export default function AIAdminPage() {
                         name: formState.name,
                         description: formState.description,
                         content: formState.content,
-                        provider: formState.provider || undefined,
+                        provider: normalizedProvider,
                         model: formState.model.trim() || undefined,
                         activate: true,
                       });
@@ -732,6 +801,65 @@ export default function AIAdminPage() {
                   </div>
                 ))}
               </div>
+            </TabsContent>
+
+            <TabsContent value="webhook" className="space-y-4">
+              <div className="rounded-md border p-4">
+                <div className="flex flex-wrap items-center gap-3">
+                  <Badge variant={webhookConfigQuery.data?.configured ? "default" : "secondary"}>
+                    {webhookConfigQuery.data?.configured ? "Configured" : "Missing env"}
+                  </Badge>
+                  <span className="text-sm text-muted-foreground">
+                    Route text AI calls to an n8n webhook.
+                  </span>
+                </div>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  The n8n webhook provider is available when N8N_WEBHOOK_URL and N8N_WEBHOOK_JWT_KEY are set.
+                </p>
+              </div>
+
+              {webhookConfigQuery.isPending ? (
+                <div className="flex min-h-40 items-center justify-center rounded-md border">
+                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                </div>
+              ) : (
+                <div className="rounded-md border p-4">
+                  <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <h2 className="text-sm font-semibold">n8n webhook provider</h2>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Prompt versions use their saved path with the base URL from the server environment.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="webhook-url">N8N_WEBHOOK_URL</Label>
+                      <Input
+                        id="webhook-url"
+                        value={webhookConfigQuery.data?.baseUrl ?? ""}
+                        placeholder="Not set"
+                        readOnly
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="webhook-jwt">N8N_WEBHOOK_JWT_KEY</Label>
+                      <Input
+                        id="webhook-jwt"
+                        value={webhookConfigQuery.data?.hasJwtKey ? "Set" : "Not set"}
+                        readOnly
+                      />
+                    </div>
+                  </div>
+
+                  {!webhookConfigQuery.data?.configured ? (
+                    <p className="mt-4 text-xs text-muted-foreground">
+                      Set both variables and restart the web app to enable this provider.
+                    </p>
+                  ) : null}
+                </div>
+              )}
             </TabsContent>
 
             <TabsContent value="speech" className="space-y-4">

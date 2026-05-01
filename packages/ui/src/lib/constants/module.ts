@@ -343,6 +343,8 @@ export const MODULE_CONFIG: ModuleSection[] = [
       { name: "AI_GATEWAY_API_KEY", description: "API Key for AI Gateway.", showIf: { field: "NEXT_PUBLIC_AI_ENABLED", value: "true" } },
       { name: "OLLAMA_BASE_URL", description: "Base URL for local Ollama instance (e.g. http://localhost:11434).", showIf: { field: "NEXT_PUBLIC_AI_ENABLED", value: "true" } },
       { name: "OPENAI_COMPATIBLE_BASE_URL", description: "Base URL for any OpenAI-compatible API.", showIf: { field: "NEXT_PUBLIC_AI_ENABLED", value: "true" } },
+      { name: "N8N_WEBHOOK_URL", description: "Base URL for n8n webhook calls.", showIf: { field: "NEXT_PUBLIC_AI_ENABLED", value: "true" } },
+      { name: "N8N_WEBHOOK_JWT_KEY", description: "Bearer token for n8n webhook calls.", showIf: { field: "NEXT_PUBLIC_AI_ENABLED", value: "true" } },
     ],
   },
 ];

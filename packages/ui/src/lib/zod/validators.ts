@@ -287,7 +287,13 @@ export const validateAI = (data: any, ctx: z.RefinementCtx) => {
       (data.OPENROUTER_API_KEY && data.OPENROUTER_API_KEY.trim() !== "") ||
       (data.OLLAMA_BASE_URL && data.OLLAMA_BASE_URL.trim() !== "") ||
       (data.AI_GATEWAY_API_KEY && data.AI_GATEWAY_API_KEY.trim() !== "") ||
-      (data.OPENAI_COMPATIBLE_BASE_URL && data.OPENAI_COMPATIBLE_BASE_URL.trim() !== "");
+      (data.OPENAI_COMPATIBLE_BASE_URL && data.OPENAI_COMPATIBLE_BASE_URL.trim() !== "") ||
+      (
+        data.N8N_WEBHOOK_URL &&
+        data.N8N_WEBHOOK_URL.trim() !== "" &&
+        data.N8N_WEBHOOK_JWT_KEY &&
+        data.N8N_WEBHOOK_JWT_KEY.trim() !== ""
+      );
 
     if (!hasAnyProvider) {
       ctx.addIssue({

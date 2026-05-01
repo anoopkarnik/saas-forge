@@ -83,6 +83,8 @@ export const formSchema = z.object({
   OPENROUTER_API_KEY: z.string().optional(),
   OLLAMA_BASE_URL: z.string().optional(),
   OPENAI_COMPATIBLE_BASE_URL: z.string().optional(),
+  N8N_WEBHOOK_URL: z.string().optional(),
+  N8N_WEBHOOK_JWT_KEY: z.string().optional(),
 
   // Payment Module Variables
   NEXT_PUBLIC_PAYMENT_GATEWAY: z.enum(['none', 'dodo', 'stripe']),

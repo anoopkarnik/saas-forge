@@ -14,13 +14,29 @@ import {
   parseSpeechSampleBody,
   type SpeechCapability,
 } from "@/lib/aiSpeech";
+import {
+  getN8nWebhookEnvConfig,
+  isN8nWebhookProvider,
+  normalizeN8nWebhookProvider,
+  toPublicN8nWebhookConfig,
+} from "@/lib/helper/aiWebhook";
+import { callAIWebhook } from "@/lib/functions/aiWebhook";
+import {
+  AI_N8N_WEBHOOK_PROVIDER,
+  AI_WEBHOOK_PROVIDER,
+  DEFAULT_N8N_WEBHOOK_TEMPLATE,
+} from "@/lib/ts-types/ai";
+import {
+  createPromptVersionInputSchema,
+  promptKeySchema,
+  updatePromptVersionInputSchema,
+} from "@/lib/zod/ai";
 import { getAIConfigStatus, resolveAIModel } from "@workspace/ai";
 import db from "@workspace/database/client";
 import { TRPCError } from "@trpc/server";
 import { generateText } from "ai";
 import { z } from "zod";
 
-const promptKeySchema = z.string().min(1).max(120);
 const speechCapabilitySchema = z.enum(["tts", "stt"]);
 const speechProviderSchema = z.enum(["custom", "openai"]);
 const speechCapabilities: SpeechCapability[] = ["tts", "stt"];
@@ -118,12 +134,18 @@ function buildAdminDraftPrompt({
 export const aiRouter = createTRPCRouter({
   getStatus: protectedProcedure.query(async () => {
     const status = getAIConfigStatus();
+    const webhookConfig = getN8nWebhookEnvConfig();
+    const webhookConfigured = status.enabled && webhookConfig.configured;
+    const providers = webhookConfigured
+      ? Array.from(new Set([...status.providers, AI_WEBHOOK_PROVIDER]))
+      : status.providers;
+
     return {
       enabled: status.enabled,
-      configured: status.configured,
-      reason: status.reason,
-      provider: status.provider,
-      providers: status.providers,
+      configured: status.configured || webhookConfigured,
+      reason: status.configured || webhookConfigured ? null : status.reason,
+      provider: status.provider ?? (webhookConfigured ? AI_N8N_WEBHOOK_PROVIDER : null),
+      providers,
       model: status.model,
     };
   }),
@@ -187,17 +209,7 @@ export const aiRouter = createTRPCRouter({
     }),
 
   createPromptVersion: adminProcedure
-    .input(
-      z.object({
-        promptKey: promptKeySchema,
-        name: z.string().min(1).max(120),
-        description: z.string().max(500).optional(),
-        content: z.string().min(1),
-        provider: z.string().min(1).optional(),
-        model: z.string().min(1).optional(),
-        activate: z.boolean().default(true),
-      }),
-    )
+    .input(createPromptVersionInputSchema)
     .mutation(async ({ ctx, input }) => {
       return db.$transaction(async (tx) => {
         const prompt = await (tx as any).aiPrompt.upsert({
@@ -223,9 +235,9 @@ export const aiRouter = createTRPCRouter({
           data: {
             promptId: prompt.id,
             version: (latest?.version ?? 0) + 1,
-            content: input.content,
-            provider: input.provider,
-            model: input.model,
+            content: input.content?.trim() || null,
+            provider: normalizeN8nWebhookProvider(input.provider),
+            model: input.model?.trim(),
             createdByUserId: ctx.session.user.id,
           },
         });
@@ -242,15 +254,7 @@ export const aiRouter = createTRPCRouter({
     }),
 
   updatePromptVersion: adminProcedure
-    .input(
-      z.object({
-        promptKey: promptKeySchema,
-        versionId: z.string().min(1),
-        content: z.string().min(1),
-        provider: z.string().min(1).optional(),
-        model: z.string().min(1).optional(),
-      }),
-    )
+    .input(updatePromptVersionInputSchema)
     .mutation(async ({ input }) => {
       const prompt = await (db as any).aiPrompt.findUnique({
         where: { key: input.promptKey },
@@ -271,9 +275,9 @@ export const aiRouter = createTRPCRouter({
       return (db as any).aiPromptVersion.update({
         where: { id: version.id },
         data: {
-          content: input.content,
-          provider: input.provider,
-          model: input.model,
+          content: input.content?.trim() || null,
+          provider: normalizeN8nWebhookProvider(input.provider),
+          model: input.model?.trim(),
         },
       });
     }),
@@ -345,21 +349,42 @@ export const aiRouter = createTRPCRouter({
         });
       }
 
-      const resolvedModel = resolveAIModel(process.env, {
-        provider: prompt.activeVersion.provider as any,
-        model: prompt.activeVersion.model ?? undefined,
+      const draftPrompt = buildAdminDraftPrompt({
+        kind: input.kind,
+        section: input.section,
+        current: input.current,
+        instruction: input.instruction,
       });
-      const result = await generateText({
-        model: resolvedModel.model,
-        system: prompt.activeVersion.content,
-        prompt: buildAdminDraftPrompt({
-          kind: input.kind,
-          section: input.section,
-          current: input.current,
-          instruction: input.instruction,
-        }),
-      });
-      const parsed = parseJsonObject(result.text);
+      const provider = prompt.activeVersion.provider;
+      const text =
+        isN8nWebhookProvider(provider)
+          ? await callAIWebhook({
+              config: getN8nWebhookEnvConfig(),
+              path: prompt.activeVersion.model ?? "",
+              template: prompt.activeVersion.content ?? DEFAULT_N8N_WEBHOOK_TEMPLATE,
+              payload: {
+                promptKey,
+                system: null,
+                messages: [],
+                input: draftPrompt,
+                context: {
+                  flow: input.kind,
+                  kind: input.kind,
+                  section: input.section ?? null,
+                },
+              },
+            })
+          : (
+              await generateText({
+                model: resolveAIModel(process.env, {
+                  provider: provider as any,
+                  model: prompt.activeVersion.model ?? undefined,
+                }).model,
+                system: prompt.activeVersion.content,
+                prompt: draftPrompt,
+              })
+            ).text;
+      const parsed = parseJsonObject(text);
 
       if (input.kind === "documentation") {
         const values = z
@@ -387,6 +412,10 @@ export const aiRouter = createTRPCRouter({
       const { listModels } = await import("@workspace/ai");
       return listModels(input.provider as any);
     }),
+
+  getWebhookConfig: adminProcedure.query(async () => {
+    return toPublicN8nWebhookConfig(getN8nWebhookEnvConfig());
+  }),
 
   getSpeechConfigs: adminProcedure.query(async () => {
     const records = await (db as any).aiSpeechConfig.findMany({

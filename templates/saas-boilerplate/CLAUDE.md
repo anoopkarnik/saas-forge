@@ -219,9 +219,11 @@ Validate input, keep auth on the server, and follow the webhook idempotency patt
 
 1. Edit the relevant Prisma files under `packages/database/prisma/`.
 2. Common split points include `user.prisma` for auth models and `billing.prisma` for payment models.
-3. Run `pnpm generate`.
-4. Run `pnpm migrate`.
-5. Do not use `pnpm reset` outside destructive local reset scenarios.
+3. Never create or edit files under `packages/database/prisma/migrations/**/migration.sql` manually.
+4. Do not run `pnpm migrate` or `prisma migrate dev` to create migration files unless the user explicitly asks; the project owner will run `pnpm migrate` to generate migrations.
+5. Run `pnpm generate`, `prisma validate`, type checks, or tests as needed to verify schema-related code.
+6. If a migration is needed, say so in your final response and leave the migration file uncreated.
+7. Do not use `pnpm reset` outside destructive local reset scenarios.
 
 ### Adding shadcn UI Components
 

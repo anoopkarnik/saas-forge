@@ -21,7 +21,7 @@ model AiPromptVersion {
   conversations   AiConversation[]
   usageEvents     AiUsageEvent[]
   version         Int
-  content         String
+  content         String?
   provider        String?
   model           String?
   createdByUserId String?
@@ -108,6 +108,19 @@ model AiSpeechConfig {
   enabled    Boolean @default(false)
   url        String
   sampleBody Json
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@schema("ai_schema")
+}
+
+model AiWebhookConfig {
+  id        String  @id @default(cuid())
+  key       String  @unique @default("default")
+  enabled   Boolean @default(false)
+  url       String
+  apiKey    String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

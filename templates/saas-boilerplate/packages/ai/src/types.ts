@@ -5,7 +5,9 @@ export type AIProviderKind =
   | "ollama"
   | "openrouter"
   | "gateway"
-  | "openai-compatible";
+  | "openai-compatible"
+  | "n8n-webhook"
+  | "webhook";
 
 export type AIConfigStatus = {
   enabled: boolean;

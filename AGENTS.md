@@ -1,9 +1,9 @@
-# CLAUDE.md
+# AGENTS.md
 
 This file guides coding agents working in this repository.
 
 `README.md` is the human-facing setup and product document.
-`CLAUDE.md` is the operational handbook for making safe, repo-aligned changes.
+`AGENTS.md` is the operational handbook for making safe, repo-aligned changes.
 
 ## Quick Bootstrap
 

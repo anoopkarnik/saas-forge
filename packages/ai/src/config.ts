@@ -117,6 +117,10 @@ export function resolveAIModel(
   const modelId = stripProviderPrefix(model, provider);
 
   switch (provider) {
+    case "n8n-webhook":
+    case "webhook":
+      throw new Error("n8n webhook provider does not use an AI SDK model.");
+
     case "openai":
       return {
         provider,
@@ -314,6 +318,10 @@ export async function listModels(
         return [];
       }
     }
+
+    case "n8n-webhook":
+    case "webhook":
+      return [];
 
     default:
       return [];

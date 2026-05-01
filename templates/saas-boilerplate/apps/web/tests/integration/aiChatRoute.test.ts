@@ -6,6 +6,13 @@ import { getAIConfigStatus, resolveAIModel } from "@workspace/ai";
 import { streamText } from "ai";
 
 let finishPromise: Promise<void> | undefined;
+const N8N_WEBHOOK_TEMPLATE = `{
+  "promptKey": {{promptKey}},
+  "input": {{input}},
+  "system": {{system}},
+  "messages": {{messages}},
+  "context": {{context}}
+}`;
 
 vi.mock("@workspace/auth/better-auth/auth", () => ({
   auth: {
@@ -38,6 +45,15 @@ vi.mock("@workspace/ai", () => ({
 }));
 
 vi.mock("ai", () => ({
+  createUIMessageStream: vi.fn((options: any) => {
+    void options.execute({
+      writer: {
+        write: vi.fn(),
+      },
+    });
+    return "mock-ui-stream";
+  }),
+  createUIMessageStreamResponse: vi.fn(() => new Response("webhook stream", { status: 200 })),
   convertToModelMessages: vi.fn(async (messages) => messages),
   streamText: vi.fn(),
 }));
@@ -74,6 +90,8 @@ function request(body: unknown) {
 describe("AI chat route", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
     finishPromise = undefined;
     vi.mocked(auth.api.getSession).mockResolvedValue({
       user: { id: "user_1", email: "test@example.com" },
@@ -186,6 +204,69 @@ describe("AI chat route", () => {
       expect.objectContaining({
         model: "mock-model",
         system: "Be useful.",
+      }),
+    );
+    expect(db.$transaction).toHaveBeenCalled();
+  });
+
+  it("calls webhook provider with bearer auth and skips streamText", async () => {
+    vi.stubEnv("N8N_WEBHOOK_URL", "https://n8n.example/");
+    vi.stubEnv("N8N_WEBHOOK_JWT_KEY", "secret-key");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(JSON.stringify({ answer: "Hello from webhook" }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+      ),
+    );
+    vi.mocked((db as any).aiPrompt.findUnique).mockResolvedValue({
+      id: "prompt_1",
+      key: "chat.assistant",
+      activeVersion: {
+        id: "version_1",
+        content: N8N_WEBHOOK_TEMPLATE,
+        provider: "n8n-webhook",
+        model: "webhook/ai",
+      },
+    });
+
+    const response = await POST(
+      request({
+        messages: [
+          {
+            id: "message_1",
+            role: "user",
+            parts: [{ type: "text", text: "Hello" }],
+          },
+        ],
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(await response.text()).toBe("webhook stream");
+    expect(streamText).not.toHaveBeenCalled();
+    expect(fetch).toHaveBeenCalledWith(
+      "https://n8n.example/webhook/ai",
+      expect.objectContaining({
+        method: "POST",
+        headers: expect.objectContaining({
+          Authorization: "Bearer secret-key",
+          "Content-Type": "application/json",
+        }),
+        body: expect.any(String),
+      }),
+    );
+    expect(JSON.parse((fetch as any).mock.calls[0][1].body)).toEqual(
+      expect.objectContaining({
+        promptKey: "chat.assistant",
+        input: "Hello",
+        messages: [{ role: "user", content: "Hello" }],
+        context: expect.objectContaining({
+          flow: "chat",
+          conversationId: "conversation_1",
+        }),
       }),
     );
     expect(db.$transaction).toHaveBeenCalled();

@@ -345,6 +345,14 @@ export const WIZARD_FIELD_META: Partial<Record<WizardFieldName, WizardFieldMeta>
     label: "OpenAI-Compatible Base URL",
     helper: "Base URL for any OpenAI-compatible endpoint.",
   },
+  N8N_WEBHOOK_URL: {
+    label: "n8n Webhook URL",
+    helper: "Base URL for n8n webhook calls.",
+  },
+  N8N_WEBHOOK_JWT_KEY: {
+    label: "n8n Webhook JWT Key",
+    helper: "Bearer token sent to n8n webhook calls.",
+  },
 };
 
 const BILLING_MODULE_ID: ScaffoldModuleId = "billing";
@@ -576,6 +584,8 @@ export function getAccountsProviderGroups(values: FormValues): ProviderGroup[] {
               "AI_GATEWAY_API_KEY",
               "OLLAMA_BASE_URL",
               "OPENAI_COMPATIBLE_BASE_URL",
+              "N8N_WEBHOOK_URL",
+              "N8N_WEBHOOK_JWT_KEY",
             ] as WizardFieldName[])
           : []),
       ]),

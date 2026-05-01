@@ -64,6 +64,8 @@ export type FormState = {
     OPENROUTER_API_KEY: string;
     OLLAMA_BASE_URL: string;
     OPENAI_COMPATIBLE_BASE_URL: string;
+    N8N_WEBHOOK_URL: string;
+    N8N_WEBHOOK_JWT_KEY: string;
     // Payment
     NEXT_PUBLIC_PAYMENT_GATEWAY: string;
     DODO_PAYMENTS_API_KEY: string;
@@ -135,6 +137,8 @@ export const DEFAULT_FORM: FormState = {
     OPENROUTER_API_KEY: "",
     OLLAMA_BASE_URL: "",
     OPENAI_COMPATIBLE_BASE_URL: "",
+    N8N_WEBHOOK_URL: "",
+    N8N_WEBHOOK_JWT_KEY: "",
     NEXT_PUBLIC_PAYMENT_GATEWAY: "none",
     DODO_PAYMENTS_API_KEY: "",
     DODO_PAYMENTS_WEBHOOK_KEY: "",
@@ -248,6 +252,8 @@ export const AI_ENV_KEYS: (keyof FormState)[] = [
     "OPENROUTER_API_KEY",
     "OLLAMA_BASE_URL",
     "OPENAI_COMPATIBLE_BASE_URL",
+    "N8N_WEBHOOK_URL",
+    "N8N_WEBHOOK_JWT_KEY",
 ];
 
 export const AI_ENABLED_OPTIONS = [

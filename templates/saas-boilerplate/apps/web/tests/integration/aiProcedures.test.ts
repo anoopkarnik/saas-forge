@@ -4,6 +4,14 @@ import db from "@workspace/database/client";
 import { getAIConfigStatus, resolveAIModel } from "@workspace/ai";
 import { generateText } from "ai";
 
+const N8N_WEBHOOK_TEMPLATE = `{
+  "promptKey": {{promptKey}},
+  "input": {{input}},
+  "system": {{system}},
+  "messages": {{messages}},
+  "context": {{context}}
+}`;
+
 vi.mock("@workspace/ai", () => ({
   getAIConfigStatus: vi.fn(),
   resolveAIModel: vi.fn(),
@@ -61,6 +69,8 @@ function createContext(role: "admin" | "user" = "admin") {
 describe("AI router", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
     vi.mocked(getAIConfigStatus).mockReturnValue({
       enabled: true,
       configured: true,
@@ -118,6 +128,8 @@ describe("AI router", () => {
       promptKey: "chat.assistant",
       name: "Assistant",
       content: "Be useful.",
+      provider: "gateway",
+      model: "openai/gpt-5.4",
       activate: true,
     });
 
@@ -127,12 +139,119 @@ describe("AI router", () => {
         promptId: "prompt_1",
         version: 3,
         content: "Be useful.",
+        provider: "gateway",
+        model: "openai/gpt-5.4",
         createdByUserId: "user_1",
       }),
     });
     expect(tx.aiPrompt.update).toHaveBeenCalledWith({
       where: { id: "prompt_1" },
       data: { activeVersionId: "version_3" },
+    });
+  });
+
+  it("adds n8n webhook to status when both env vars are set", async () => {
+    vi.stubEnv("N8N_WEBHOOK_URL", "https://n8n.example/");
+    vi.stubEnv("N8N_WEBHOOK_JWT_KEY", "secret");
+
+    const caller = aiRouter.createCaller(createContext());
+
+    await expect(caller.getStatus()).resolves.toEqual({
+      enabled: true,
+      configured: true,
+      reason: null,
+      provider: "gateway",
+      providers: ["gateway", "n8n-webhook"],
+      model: null,
+    });
+  });
+
+  it("does not configure n8n webhook when one env var is missing", async () => {
+    vi.stubEnv("N8N_WEBHOOK_URL", "https://n8n.example/");
+    vi.mocked(getAIConfigStatus).mockReturnValue({
+      enabled: true,
+      configured: false,
+      reason: "No AI provider credentials are configured.",
+      provider: null,
+      providers: [],
+      model: null,
+    });
+
+    const caller = aiRouter.createCaller(createContext());
+
+    await expect(caller.getStatus()).resolves.toEqual({
+      enabled: true,
+      configured: false,
+      reason: "No AI provider credentials are configured.",
+      provider: null,
+      providers: [],
+      model: null,
+    });
+  });
+
+  it("creates an n8n webhook prompt version with path and JSON format", async () => {
+    const tx = {
+      aiPrompt: {
+        upsert: vi.fn().mockResolvedValue({ id: "prompt_1" }),
+        update: vi.fn().mockResolvedValue({ id: "prompt_1" }),
+      },
+      aiPromptVersion: {
+        findFirst: vi.fn().mockResolvedValue(null),
+        create: vi.fn().mockResolvedValue({ id: "version_1", version: 1 }),
+      },
+    };
+    vi.mocked(db.$transaction).mockImplementation(async (callback: any) =>
+      callback(tx),
+    );
+
+    const caller = aiRouter.createCaller(createContext());
+    await caller.createPromptVersion({
+      promptKey: "chat.assistant",
+      name: "Assistant",
+      content: N8N_WEBHOOK_TEMPLATE,
+      provider: "n8n-webhook",
+      model: "webhook/get-summary",
+      activate: true,
+    });
+
+    expect(tx.aiPromptVersion.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        content: N8N_WEBHOOK_TEMPLATE,
+        provider: "n8n-webhook",
+        model: "webhook/get-summary",
+      }),
+    });
+  });
+
+  it("normalizes legacy webhook prompt saves to n8n-webhook", async () => {
+    const tx = {
+      aiPrompt: {
+        upsert: vi.fn().mockResolvedValue({ id: "prompt_1" }),
+        update: vi.fn().mockResolvedValue({ id: "prompt_1" }),
+      },
+      aiPromptVersion: {
+        findFirst: vi.fn().mockResolvedValue(null),
+        create: vi.fn().mockResolvedValue({ id: "version_1", version: 1 }),
+      },
+    };
+    vi.mocked(db.$transaction).mockImplementation(async (callback: any) =>
+      callback(tx),
+    );
+
+    const caller = aiRouter.createCaller(createContext());
+    await caller.createPromptVersion({
+      promptKey: "chat.assistant",
+      name: "Assistant",
+      content: N8N_WEBHOOK_TEMPLATE,
+      provider: "webhook",
+      model: "webhook/get-summary",
+      activate: true,
+    });
+
+    expect(tx.aiPromptVersion.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        provider: "n8n-webhook",
+      }),
     });
   });
 
@@ -202,6 +321,8 @@ describe("AI router", () => {
         promptKey: "chat.assistant",
         versionId: "version_1",
         content: "Updated",
+        provider: "gateway",
+        model: "openai/gpt-5.4",
       }),
     ).rejects.toThrow("Admin access is required");
 
@@ -224,8 +345,49 @@ describe("AI router", () => {
         promptKey: "chat.assistant",
         versionId: "other_prompt_version",
         content: "Updated",
+        provider: "gateway",
+        model: "openai/gpt-5.4",
       }),
     ).rejects.toThrow("Prompt version not found");
+  });
+
+  it("requires model and prompt content for non-webhook prompt versions", async () => {
+    const caller = aiRouter.createCaller(createContext());
+
+    await expect(
+      caller.createPromptVersion({
+        promptKey: "chat.assistant",
+        name: "Assistant",
+        provider: "gateway",
+        activate: true,
+      }),
+    ).rejects.toThrow();
+  });
+
+  it("requires path and JSON format for n8n webhook prompt versions", async () => {
+    const caller = aiRouter.createCaller(createContext());
+
+    await expect(
+      caller.createPromptVersion({
+        promptKey: "chat.assistant",
+        name: "Assistant",
+        content: "",
+        provider: "n8n-webhook",
+        model: "",
+        activate: true,
+      }),
+    ).rejects.toThrow("Path is required for n8n webhook provider.");
+
+    await expect(
+      caller.createPromptVersion({
+        promptKey: "chat.assistant",
+        name: "Assistant",
+        content: "{",
+        provider: "n8n-webhook",
+        model: "webhook/get-summary",
+        activate: true,
+      }),
+    ).rejects.toThrow("n8n webhook JSON format must render to valid JSON.");
   });
 
   it("deletes an inactive prompt version", async () => {
@@ -314,6 +476,62 @@ describe("AI router", () => {
     );
   });
 
+  it("generates a CMS assistant draft through webhook provider", async () => {
+    vi.stubEnv("N8N_WEBHOOK_URL", "https://n8n.example/");
+    vi.stubEnv("N8N_WEBHOOK_JWT_KEY", "secret-key");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            output: JSON.stringify({
+              heading: "Features",
+              subheading: "Built fast",
+              features: [],
+            }),
+          }),
+          {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          },
+        ),
+      ),
+    );
+    vi.mocked((db as any).aiPrompt.findUnique).mockResolvedValue({
+      id: "prompt_1",
+      activeVersion: {
+        id: "version_1",
+        content: N8N_WEBHOOK_TEMPLATE,
+        provider: "n8n-webhook",
+        model: "webhook/ai",
+      },
+    });
+
+    const caller = aiRouter.createCaller(createContext());
+    const result = await caller.generateAdminDraft({
+      kind: "cms",
+      section: "features",
+      current: { heading: "" },
+    });
+
+    expect(fetch).toHaveBeenCalledWith(
+      "https://n8n.example/webhook/ai",
+      expect.objectContaining({
+        headers: expect.objectContaining({ Authorization: "Bearer secret-key" }),
+      }),
+    );
+    expect(JSON.parse((fetch as any).mock.calls[0][1].body)).toEqual(
+      expect.objectContaining({
+        promptKey: "cms.assistant",
+        input: expect.stringContaining("Fill the features CMS form"),
+        messages: [],
+        context: expect.objectContaining({ flow: "cms", section: "features" }),
+      }),
+    );
+    expect(generateText).not.toHaveBeenCalled();
+    expect(result.kind).toBe("cms");
+  });
+
   it("returns default speech configs when none are saved", async () => {
     vi.mocked((db as any).aiSpeechConfig.findMany).mockResolvedValue([]);
 
@@ -375,6 +593,19 @@ describe("AI router", () => {
         url: "{your tts endpoint}",
       }),
     );
+  });
+
+  it("reads public n8n webhook env status without returning the JWT", async () => {
+    vi.stubEnv("N8N_WEBHOOK_URL", "https://n8n.example/");
+    vi.stubEnv("N8N_WEBHOOK_JWT_KEY", "secret");
+
+    const caller = aiRouter.createCaller(createContext());
+    await expect(caller.getWebhookConfig()).resolves.toEqual({
+      configured: true,
+      baseUrl: "https://n8n.example/",
+      hasBaseUrl: true,
+      hasJwtKey: true,
+    });
   });
 
   it("requires admin access for saving speech config", async () => {

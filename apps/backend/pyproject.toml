@@ -19,6 +19,7 @@ dependencies = [
   "langchain-anthropic>=0.2",
   "langchain-ollama>=0.2",
   "langchain-postgres>=0.0.12",
+  "psycopg[binary]>=3.2",
   "langchain-text-splitters>=0.3",
   "httpx>=0.27",
   "pypdf>=5.0",

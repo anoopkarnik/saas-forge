@@ -24,6 +24,7 @@ dependencies = [
   "pypdf>=5.0",
   "structlog>=24.4",
   "tenacity>=9.0",
+  "cuid2>=2.0.1",
 ]
 
 [dependency-groups]

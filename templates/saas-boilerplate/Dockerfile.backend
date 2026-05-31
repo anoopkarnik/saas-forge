@@ -1,0 +1,31 @@
+# syntax=docker/dockerfile:1
+FROM python:3.12-slim AS base
+ENV PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    UV_LINK_MODE=copy \
+    UV_PROJECT_ENVIRONMENT=/app/apps/backend/.venv
+WORKDIR /app
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends ca-certificates curl \
+ && rm -rf /var/lib/apt/lists/* \
+ && pip install --no-cache-dir uv
+
+# --- Dependency layer (cache-friendly) ---
+FROM base AS deps
+COPY apps/backend/pyproject.toml apps/backend/uv.lock /app/apps/backend/
+RUN cd /app/apps/backend && uv sync --frozen --no-dev
+
+# --- Application layer ---
+FROM deps AS app
+COPY apps/backend/src /app/apps/backend/src
+
+# --- API runtime ---
+FROM app AS api
+WORKDIR /app/apps/backend
+EXPOSE 8000
+CMD ["uv","run","--no-sync","uvicorn","saas_forge_backend.main:app","--host","0.0.0.0","--port","8000","--workers","2"]
+
+# --- Worker runtime ---
+FROM app AS worker
+WORKDIR /app/apps/backend
+CMD ["uv","run","--no-sync","arq","saas_forge_backend.jobs.worker.WorkerSettings"]

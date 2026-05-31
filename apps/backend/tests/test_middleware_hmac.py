@@ -27,8 +27,9 @@ def test_unsigned_request_to_signed_route_returns_401():
 
 
 def test_signed_request_passes_signature_check():
+    # HMAC passes; agent not in registry → 404
     client = _client()
-    payload = {"user_id": "u1", "agent_id": "noop", "input": {}}
+    payload = {"user_id": "u1", "agent_id": "definitely_not_an_agent_zzz", "input": {}}
     ts, sig = sign_payload("test-secret-32-bytes-padding-xxxxx", payload)
     resp = client.post(
         "/agents/stream",
@@ -39,7 +40,7 @@ def test_signed_request_passes_signature_check():
             "X-Saas-Forge-Req-Id": "req-1",
         },
     )
-    # Phase-1 stub removed; HMAC passes but route is not found
+    # HMAC passes; agent not in registry → 404
     assert resp.status_code == 404
 
 

@@ -7,6 +7,7 @@ from saas_forge_backend.api.middleware import HmacMiddleware
 from saas_forge_backend.api.routes import agents, health, jobs
 from saas_forge_backend.db.engine import get_engine
 from saas_forge_backend.db.schema_check import SchemaDriftError, assert_schema_agreement
+from saas_forge_backend.observability import metrics as metrics_route
 
 log = logging.getLogger(__name__)
 
@@ -28,6 +29,7 @@ def create_app() -> FastAPI:
     app.include_router(health.router)
     app.include_router(jobs.router)
     app.include_router(agents.router)
+    app.include_router(metrics_route.router)
     return app
 
 

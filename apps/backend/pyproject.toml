@@ -26,6 +26,7 @@ dependencies = [
   "structlog>=24.4",
   "tenacity>=9.0",
   "cuid2>=2.0.1",
+  "prometheus-client>=0.21",
 ]
 
 [dependency-groups]

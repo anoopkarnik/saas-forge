@@ -9,6 +9,7 @@ from saas_forge_backend.db.models import AiJobStatus
 from saas_forge_backend.db.repositories import jobs as jobs_repo
 from saas_forge_backend.jobs import redis_status
 from saas_forge_backend.jobs.event_emitter import EventEmitter
+from saas_forge_backend.observability.metrics import JOB_COUNTER
 
 log = logging.getLogger(__name__)
 
@@ -51,12 +52,14 @@ async def run_agent_job(ctx: dict[str, Any], job_id: str) -> dict[str, Any]:
             await jobs_repo.mark_terminal(
                 s, job_id, status=AiJobStatus.SUCCEEDED, result=final_payload or {}
             )
+        JOB_COUNTER.labels(status="SUCCEEDED", agent_id=row.agentId).inc()
         await redis_status.write_terminal(job_id, status="SUCCEEDED")
         return {"ok": True}
 
     except JobCancelled:
         async with sm() as s, s.begin():
             await jobs_repo.mark_terminal(s, job_id, status=AiJobStatus.CANCELLED)
+        JOB_COUNTER.labels(status="CANCELLED", agent_id=row.agentId).inc()
         await redis_status.write_terminal(job_id, status="CANCELLED")
         return {"cancelled": True}
 
@@ -68,6 +71,7 @@ async def run_agent_job(ctx: dict[str, Any], job_id: str) -> dict[str, Any]:
                 error_code="UNKNOWN_AGENT",
                 error_message=str(exc),
             )
+        JOB_COUNTER.labels(status="FAILED", agent_id=row.agentId).inc()
         await redis_status.write_terminal(job_id, status="FAILED", error_code="UNKNOWN_AGENT")
         raise
 
@@ -80,5 +84,6 @@ async def run_agent_job(ctx: dict[str, Any], job_id: str) -> dict[str, Any]:
                 error_code="AGENT_ERROR",
                 error_message=str(exc),
             )
+        JOB_COUNTER.labels(status="FAILED", agent_id=row.agentId).inc()
         await redis_status.write_terminal(job_id, status="FAILED", error_code="AGENT_ERROR")
         raise

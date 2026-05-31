@@ -112,3 +112,65 @@ jobs:
           node-version: 20
       - name: Build web image
         run: pnpm docker:build:web
+
+  backend-lint:
+    name: Backend Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+      - name: Set up Python
+        run: uv python install 3.12
+      - name: Sync deps
+        working-directory: apps/backend
+        run: uv sync --frozen
+      - name: Ruff
+        working-directory: apps/backend
+        run: uv run ruff check src tests
+
+  backend-typecheck:
+    name: Backend Typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+      - name: Set up Python
+        run: uv python install 3.12
+      - name: Sync deps
+        working-directory: apps/backend
+        run: uv sync --frozen
+      - name: Pyright
+        working-directory: apps/backend
+        run: uv run pyright
+
+  backend-test:
+    name: Backend Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+      - name: Set up Python
+        run: uv python install 3.12
+      - name: Sync deps
+        working-directory: apps/backend
+        run: uv sync --frozen
+      - name: Pytest
+        working-directory: apps/backend
+        run: uv run pytest -q
+
+  docker-backend-build:
+    name: Docker Backend Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build api image
+        run: docker build -f Dockerfile.backend --target api -t saas-forge-backend:api .
+      - name: Build worker image
+        run: docker build -f Dockerfile.backend --target worker -t saas-forge-backend:worker .
+

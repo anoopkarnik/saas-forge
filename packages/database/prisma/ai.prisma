@@ -127,3 +127,117 @@ model AiWebhookConfig {
 
   @@schema("ai_schema")
 }
+
+// ============================================================================
+// Backend job runner + RAG (added by FastAPI backend integration; see
+// docs/superpowers/specs/2026-05-31-21-fastapi-ai-backend-langgraph-design.mdx)
+// ============================================================================
+
+enum AiJobStatus {
+  PENDING
+  RUNNING
+  SUCCEEDED
+  FAILED
+  CANCELLED
+
+  @@schema("ai_schema")
+}
+
+model AiJobRun {
+  id              String       @id @default(cuid())
+  userId          String
+  orgId           String?
+  agentId         String
+  status          AiJobStatus  @default(PENDING)
+  input           Json
+  result          Json?
+  errorCode       String?
+  errorMessage    String?
+  createdAt       DateTime     @default(now())
+  startedAt       DateTime?
+  finishedAt      DateTime?
+  lastHeartbeatAt DateTime?
+  events          AiJobEvent[]
+  user            User         @relation("AiJobRuns", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([status, createdAt])
+  @@index([orgId, createdAt(sort: Desc)])
+  @@schema("ai_schema")
+}
+
+model AiJobEvent {
+  id      BigInt   @id @default(autoincrement())
+  jobId   String
+  seq     Int
+  type    String
+  payload Json
+  at      DateTime @default(now())
+  job     AiJobRun @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@unique([jobId, seq])
+  @@index([jobId, seq])
+  @@schema("ai_schema")
+}
+
+enum AiDocumentStatus {
+  INGESTING
+  READY
+  FAILED
+
+  @@schema("ai_schema")
+}
+
+model AiCollection {
+  id            String       @id @default(cuid())
+  userId        String
+  orgId         String?
+  name          String
+  description   String?
+  embedder      String
+  embeddingDims Int
+  createdAt     DateTime     @default(now())
+  documents     AiDocument[]
+  user          User         @relation("AiCollections", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, orgId, name])
+  @@index([orgId])
+  @@schema("ai_schema")
+}
+
+model AiDocument {
+  id           String            @id @default(cuid())
+  collectionId String
+  userId       String
+  orgId        String?
+  sourceType   String
+  sourceUri    String?
+  title        String
+  status       AiDocumentStatus  @default(INGESTING)
+  chunkCount   Int               @default(0)
+  byteSize     Int?
+  errorMessage String?
+  createdAt    DateTime          @default(now())
+  indexedAt    DateTime?
+  collection   AiCollection      @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  chunks       AiDocumentChunk[]
+
+  @@index([collectionId, createdAt(sort: Desc)])
+  @@index([userId])
+  @@schema("ai_schema")
+}
+
+model AiDocumentChunk {
+  id           String     @id @default(cuid())
+  documentId   String
+  collectionId String
+  seq          Int
+  text         String
+  metadata     Json
+  createdAt    DateTime   @default(now())
+  document     AiDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@unique([documentId, seq])
+  @@index([collectionId])
+  @@schema("ai_schema")
+}

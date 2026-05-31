@@ -22,6 +22,8 @@ model User {
     aiConversations  AiConversation[]  @relation("AiConversations")
     aiMessages       AiMessage[]       @relation("AiMessages")
     aiUsageEvents    AiUsageEvent[]    @relation("AiUsageEvents")
+    aiJobRuns        AiJobRun[]        @relation("AiJobRuns")
+    aiCollections    AiCollection[]    @relation("AiCollections")
 
     createdAt  DateTime @default(now())
     updatedAt  DateTime @updatedAt

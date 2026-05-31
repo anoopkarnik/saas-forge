@@ -40,10 +40,13 @@ REGISTRY = AgentRegistry()
 def register_default_agents() -> None:
     from saas_forge_backend.agents.noop import run as noop_run
     from saas_forge_backend.agents.echo_llm import run as echo_run
+    from saas_forge_backend.agents.rag_chat import run as rag_chat_run
     if "noop" not in REGISTRY.ids():
         REGISTRY.register("noop", noop_run)
     if "echo_llm" not in REGISTRY.ids():
         REGISTRY.register("echo_llm", echo_run)
+    if "rag_chat" not in REGISTRY.ids():
+        REGISTRY.register("rag_chat", rag_chat_run)
     # Note: rag_ingest runs in `ingest_document_job` (ARQ task), not through the agent
     # registry, because ingestion is exclusively asynchronous and does not stream events
     # via the agent contract.

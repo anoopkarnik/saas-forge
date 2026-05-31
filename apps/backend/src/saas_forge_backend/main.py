@@ -13,6 +13,8 @@ log = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    from saas_forge_backend.observability.logging import configure_logging
+    configure_logging()
     try:
         await assert_schema_agreement(get_engine())
     except SchemaDriftError as exc:

@@ -12,7 +12,8 @@
   "author": "",
   "exports": {
     "./ai-logger": "./src/ai-logger.ts",
-    "./winston-logger": "./src/winston-logger.ts"
+    "./winston-logger": "./src/winston-logger.ts",
+    "./signed-fetch": "./src/signed-fetch.ts"
   },
   "license": "ISC",
   "dependencies": {

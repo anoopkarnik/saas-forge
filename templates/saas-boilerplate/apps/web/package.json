@@ -26,7 +26,7 @@
     "@trpc/server": "^11.7.2",
     "@trpc/tanstack-react-query": "^11.7.2",
     "@upstash/ratelimit": "^2.0.8",
-    "@upstash/redis": "^1.35.8",
+    "@upstash/redis": "^1.36.1",
     "@vercel/analytics": "^1.6.1",
     "@vercel/speed-insights": "^1.3.1",
     "@workspace/ai": "workspace:*",

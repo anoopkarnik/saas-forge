@@ -39,6 +39,11 @@ Choose this if you want the scaffold/download system, all three apps, and the sh
 
 Choose this if you want to validate or inspect the clean SaaS starter that the scaffold flow packages from `templates/saas-boilerplate`.
 
+## 📋 Prerequisites
+
+- **Node.js >= 20 and [pnpm](https://pnpm.io) 10.4.1** — required by the monorepo workspace.
+- **Python 3.12+ and [uv](https://github.com/astral-sh/uv)** — required by `apps/backend` (FastAPI service for long-running AI workloads). Install uv with `pipx install uv` or `curl -LsSf https://astral.sh/uv/install.sh | sh`.
+
 ## 🚀 Quick Start
 
 ### Bootstrap the full repo with the CLI
@@ -229,6 +234,7 @@ docker compose --profile redis up --build
 saas-forge/
 ├── apps/
 │   ├── web/                  # Next.js app + scaffold/download API
+│   ├── backend/              # FastAPI AI service
 │   ├── desktop/              # Electron app
 │   └── mobile/               # Expo app
 ├── packages/

@@ -39,8 +39,8 @@ def test_signed_request_passes_signature_check():
             "X-Saas-Forge-Req-Id": "req-1",
         },
     )
-    # Phase-1 stub: signed route accepts and returns 501 (no agent yet)
-    assert resp.status_code == 501
+    # Phase-1 stub removed; HMAC passes but route is not found
+    assert resp.status_code == 404
 
 
 def test_healthz_does_not_require_signature():

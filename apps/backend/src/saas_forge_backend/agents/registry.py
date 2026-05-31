@@ -44,3 +44,6 @@ def register_default_agents() -> None:
         REGISTRY.register("noop", noop_run)
     if "echo_llm" not in REGISTRY.ids():
         REGISTRY.register("echo_llm", echo_run)
+    # Note: rag_ingest runs in `ingest_document_job` (ARQ task), not through the agent
+    # registry, because ingestion is exclusively asynchronous and does not stream events
+    # via the agent contract.

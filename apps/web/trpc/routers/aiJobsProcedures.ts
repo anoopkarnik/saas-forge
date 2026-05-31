@@ -35,12 +35,14 @@ export const aiJobsRouter = createTRPCRouter({
         select: { id: true },
       });
       try {
+        const kind = input.agentId === "rag_ingest" ? "ingest" : "agent";
         await enqueueJob({
           jobId: row.id,
           userId: ctx.session.user.id,
           orgId: null,
           agentId: input.agentId,
           input: input.input,
+          kind,
         });
       } catch (err) {
         console.error("[aiJobs.create] enqueue failed; row stays PENDING for reaper", err);

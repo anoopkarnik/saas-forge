@@ -7,17 +7,21 @@ if (!BACKEND_HMAC_SECRET) {
   console.warn("[backend/client] BACKEND_HMAC_SECRET is not set");
 }
 
+export type JobKind = "agent" | "ingest";
+
 export type EnqueueJobInput = {
   jobId: string;
   userId: string;
   orgId: string | null;
   agentId: string;
   input: Record<string, unknown>;
+  kind?: JobKind;
 };
 
 export async function enqueueJob(input: EnqueueJobInput): Promise<void> {
+  const path = input.kind === "ingest" ? "/jobs/ingest" : "/jobs";
   const resp = await signedFetch({
-    url: `${BACKEND_URL}/jobs`,
+    url: `${BACKEND_URL}${path}`,
     secret: BACKEND_HMAC_SECRET,
     payload: {
       job_id: input.jobId,

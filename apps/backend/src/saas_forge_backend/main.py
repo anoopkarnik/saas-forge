@@ -24,7 +24,10 @@ async def lifespan(app: FastAPI):
 
 
 def create_app() -> FastAPI:
+    from saas_forge_backend.observability.otel import configure_otel
+
     app = FastAPI(title="saas-forge-backend", version="0.1.0", lifespan=lifespan)
+    configure_otel(app)
     app.add_middleware(HmacMiddleware)
     app.include_router(health.router)
     app.include_router(jobs.router)

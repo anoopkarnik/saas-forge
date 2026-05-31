@@ -174,3 +174,54 @@ jobs:
       - name: Build worker image
         run: docker build -f Dockerfile.backend --target worker -t saas-forge-backend:worker .
 
+  backend-integration:
+    name: Backend Integration
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_DB: saas_forge
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 10s --health-timeout 5s --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+    env:
+      BACKEND_INTEGRATION: "1"
+      BACKEND_HMAC_SECRET: "ci-secret-32-bytes-padding-xxxxxxx"
+      BACKEND_DATABASE_URL: "postgresql+asyncpg://postgres:postgres@localhost:5432/saas_forge"
+      DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/saas_forge"
+      DIRECT_URL: "postgresql://postgres:postgres@localhost:5432/saas_forge"
+      REDIS_URL: "redis://localhost:6379/0"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.4.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+      - name: Set up Python
+        run: uv python install 3.12
+      - name: Install JS deps
+        run: pnpm install --frozen-lockfile
+      - name: Apply Prisma migrations
+        working-directory: packages/database
+        run: pnpm exec prisma migrate deploy --schema prisma
+      - name: Sync Python deps
+        working-directory: apps/backend
+        run: uv sync --frozen
+      - name: Run integration tests
+        working-directory: apps/backend
+        run: uv run pytest tests/integration -q
+

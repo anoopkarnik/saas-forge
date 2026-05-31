@@ -39,5 +39,8 @@ REGISTRY = AgentRegistry()
 
 def register_default_agents() -> None:
     from saas_forge_backend.agents.noop import run as noop_run
+    from saas_forge_backend.agents.echo_llm import run as echo_run
     if "noop" not in REGISTRY.ids():
         REGISTRY.register("noop", noop_run)
+    if "echo_llm" not in REGISTRY.ids():
+        REGISTRY.register("echo_llm", echo_run)

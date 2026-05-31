@@ -1,0 +1,606 @@
+# FastAPI AI Backend with LangGraph + LangChain
+
+## Context
+
+SaaS Forge today has a working JavaScript AI layer in `packages/ai` (Vercel AI SDK, multi-provider) and a set of edge/server routes under `apps/web/app/api/ai/` (chat, TTS, STT). This layer is excellent for synchronous, streaming, in-request AI work and should stay.
+
+What it does not cover well:
+
+- Multi-step agentic workflows where the model decides what to do next (tool use, branching, conditional retries).
+- Long-running graph executions that may take 30 seconds to many minutes and must survive page reload, network blip, or browser close.
+- Retrieval-Augmented Generation (RAG) with first-class ingestion pipelines, vector stores, and reusable retriever abstractions.
+- Workloads that need to run on a worker process independent of the Next.js request lifecycle.
+
+The Python ecosystem (LangChain, LangGraph) is the dominant home for these patterns. Rather than reimplement a graph runtime and retriever framework in JavaScript, we introduce a Python service that handles only the workloads it is genuinely better at.
+
+This spec specializes the more general work outlined in [`2026-04-07-06-background-jobs-task-queue-design.mdx`](./2026-04-07-06-background-jobs-task-queue-design.mdx) for the AI-specific path, and intentionally defers the browser-facing realtime push surface described in [`2026-04-07-18-real-time-infrastructure-sse-websockets-design.mdx`](./2026-04-07-18-real-time-infrastructure-sse-websockets-design.mdx) to Phase 2.
+
+## Overview
+
+Add `apps/backend/`, a FastAPI service written in Python 3.12, that runs:
+
+- A streaming HTTP API for synchronous LangGraph agent executions.
+- An ARQ worker (redis-backed async job queue) for long-running agentic and RAG jobs.
+- A RAG layer with a swappable `VectorStore` (pgvector by default, Qdrant as alternate) and a `KnowledgeSource` abstraction agents compose.
+
+The boundary is drawn by **workload shape, not by AI vs non-AI**:
+
+- JS keeps: simple synchronous streaming chat, TTS/STT proxies, and any in-request AI work.
+- Python takes: anything multi-step, graph-orchestrated, retrieval-heavy, or long-running.
+
+Browsers never talk to Python directly. Web (Next.js) is the single trust boundary; it proxies streaming responses through to the browser and exposes a tRPC control plane for async jobs. Service-to-service auth between web and Python is HMAC-signed requests with a shared secret.
+
+The backend ships as part of `templates/saas-boilerplate`, so scaffolded users get an AI-native stack out of the box.
+
+## Main Approach
+
+### Architectural decisions (locked)
+
+| # | Decision | Choice | Rejected alternatives |
+|---|---|---|---|
+| 1 | Division between JS and Python | Split by workload shape | "Python handles all AI" (too disruptive); "Python is new default, JS untouched" (two stacks indefinitely) |
+| 2 | Workload patterns supported | Both sync-streaming and async-job | Sync-only (insufficient for ingestion); async-only (kills interactive UX) |
+| 3 | Redis provider | Upstash (TCP, persistent tier, NOT eviction) | Self-hosted (operational burden in prod); Upstash REST API (wrong fit for ARQ workers) |
+| 4 | Public surface for backend | Internal-only; web proxies everything | Browser-direct with signed tokens (more attack surface for marginal latency gain) |
+| 5 | Postgres access from Python | Reads everywhere via SQLAlchemy; writes only to Python-owned tables | Stateless Python via HTTP-only (too chatty); Python owns separate DB (lose cross-domain queries) |
+| 6 | Vector store | pgvector default, Qdrant adapter (experimental in Phase 1), behind langchain's existing `VectorStore` interface | Pure pgvector (no escape hatch); Qdrant default (extra infra in template) |
+| 7 | Job queue library | ARQ | Celery (sync-first, heavyweight); RQ (sync workers); Dramatiq (less ecosystem) |
+| 8 | Python packaging | uv + pyproject.toml | Poetry (slower, weaker lockfile); pip-tools (no integrated runner) |
+| 9 | ORM | SQLAlchemy 2.x async + asyncpg | Tortoise (smaller ecosystem); raw asyncpg (loses model layer) |
+| 10 | Schema source of truth | Prisma owns all migrations; SQLAlchemy mirrors hand-written | Two migration tools (coordination hell); reflection only (loses type safety) |
+| 11 | Auth between web ↔ backend | HMAC-SHA256 with shared secret + signed user context | JWT pass-through (entangles better-auth with backend); mTLS (overkill) |
+| 12 | Job-status delivery to browser | tRPC polling at 1.5s, status hash in Upstash + terminal state in Postgres | SSE/WebSocket push (deferred to spec #18 Phase 2) |
+| 13 | Template story | Ships in `templates/saas-boilerplate` | Root-only (loses "AI-native SaaS" positioning); scaffold-time toggle (added complexity) |
+
+### System architecture
+
+```
+                            ┌──────────────────────────┐
+                            │       Browser            │
+                            └────────────┬─────────────┘
+                                         │  HTTPS (cookies, tRPC, SSE)
+                                         ▼
+            ┌────────────────────────────────────────────────────────┐
+            │            apps/web (Next.js, public)                  │
+            │  ─ better-auth (user trust boundary)                   │
+            │  ─ Prisma + Prisma Accelerate                          │
+            │  ─ tRPC: aiProcedures (existing) + aiJobs (new)        │
+            │  ─ /api/ai/chat (existing JS streaming via Vercel SDK) │
+            │  ─ /api/ai/agents/:agentId/stream (new, proxies)       │
+            └────────────┬──────────────────────────┬────────────────┘
+                         │ HMAC-signed HTTP         │
+                         ▼                          │
+            ┌──────────────────────────┐            │
+            │   apps/backend (FastAPI) │            │
+            │   PRIVATE — no public DNS│            │
+            │  ┌────────────────────┐  │            │
+            │  │ HTTP API (uvicorn) │  │            │
+            │  │  /agents/stream    │  │            │
+            │  │  /jobs (enqueue)   │  │            │
+            │  │  /healthz, /readyz │  │            │
+            │  └─────────┬──────────┘  │            │
+            │  ┌─────────▼──────────┐  │            │
+            │  │ LangGraph runtime  │  │            │
+            │  │ + KnowledgeSources │  │            │
+            │  └─────────┬──────────┘  │            │
+            │  ┌─────────▼──────────┐  │            │
+            │  │ ARQ worker process │  │            │
+            │  └────────────────────┘  │            │
+            └──────┬───────┬───────────┘            │
+                   │       │                        │
+        ┌──────────▼─┐   ┌─▼────────────┐    ┌──────▼──────────┐
+        │  Upstash   │   │  Postgres    │    │ LLM providers   │
+        │  (Redis)   │   │  + pgvector  │    │ OpenAI/Anthropic│
+        │ ARQ queue  │   │  Prisma owns │    │ OpenRouter/Olla │
+        │ + status   │   │  schema      │    │                 │
+        └────────────┘   └──────────────┘    └─────────────────┘
+```
+
+### Two execution flows
+
+**Flow A — Sync-streaming agent.** Browser POSTs to `/api/ai/agents/:agentId/stream`. Web validates user via better-auth, builds an HMAC-signed payload, opens a streaming POST to `backend:8000/agents/stream`, pipes SSE events straight through to the browser (no buffering). Python runs the LangGraph and emits typed SSE events. Browser disconnect propagates as asyncio cancellation; LangGraph halts at the next `await`.
+
+**Flow B — Async job.** Browser calls `trpc.aiJobs.create.mutate({ agentId, input })`. Web inserts an `AiJobRun` row in `PENDING` state, then HMAC-POSTs to `backend:8000/jobs` to enqueue. Returns `{ jobId }`. ARQ worker picks up, transitions to `RUNNING`, executes the LangGraph, writes events to `AiJobEvent` and live status to Upstash, finishes with `SUCCEEDED | FAILED | CANCELLED`. Browser polls `trpc.aiJobs.status.query({ jobId })` every 1.5s.
+
+### API contracts
+
+**Sync-streaming wire format (backend → web → browser SSE):**
+
+| Event | Payload | Meaning |
+|---|---|---|
+| `step`        | `{ node, status: "start"\|"end", at }` | LangGraph node lifecycle |
+| `token`       | `{ delta }`                            | LLM token stream chunk |
+| `tool_call`   | `{ name, args, call_id }`              | Agent invoked a tool/retriever |
+| `tool_result` | `{ call_id, result_summary }`          | Tool returned (summary; full via separate fetch) |
+| `citation`    | `{ doc_id, chunk_id, score, snippet }` | RAG retrieval hit (for sources UI) |
+| `final`       | `{ output: <agent JSON> }`             | Terminal payload |
+| `error`       | `{ code, message }`                    | Stream-terminating error |
+| `end`         | `{}`                                   | Last frame; client closes |
+
+The wire format is our own narrow schema, not raw langchain `AIMessageChunk` objects, so the contract is stable across LangChain version bumps.
+
+**Async job state machine:**
+
+```
+PENDING ──► RUNNING ──► SUCCEEDED
+   │           │    └──► FAILED
+   │           └──► CANCELLED  (cancel requested while running; honored at next node boundary)
+   └─────────────► CANCELLED  (cancel requested before pickup)
+```
+
+**tRPC procedures (web side, new):**
+
+| Procedure | Returns |
+|---|---|
+| `aiJobs.create({ agentId, input })`     | `{ jobId }` |
+| `aiJobs.status({ jobId })`              | `{ id, status, agent_id, created_at, started_at?, finished_at?, latest_event?, result?, error? }` |
+| `aiJobs.events({ jobId, sinceSeq?, limit? })` | `Array<{ seq, type, payload, at }>` (from `AiJobEvent`) |
+| `aiJobs.cancel({ jobId })`              | `{ ok: true }` |
+
+**Web-side status read order** (cheapest first):
+1. `HGETALL job:{id}` from Upstash — sub-ms, has live progress (status hash refreshed with `EXPIRE 600` on every worker write; terminal-state hashes get `EXPIRE 300` and rely on Postgres after that).
+2. On miss or terminal status, `SELECT … FROM "AiJobRun" WHERE id=$1`.
+
+### Reliability mechanisms
+
+**PENDING reaper.** ARQ worker runs at startup and on a 30s schedule:
+
+```sql
+SELECT id FROM "AiJobRun"
+WHERE status = 'PENDING' AND created_at < now() - interval '60 seconds'
+ORDER BY created_at LIMIT 100;
+```
+
+Each row is re-enqueued. ARQ deduplicates via `_job_id = ai_job_run.id`. After 5 minutes still `PENDING`, mark `FAILED` with `error_code = "ENQUEUE_TIMEOUT"`.
+
+**Stale-heartbeat sweep.** ARQ worker on 60s schedule marks any `RUNNING` row whose `last_heartbeat_at > 5 minutes ago` as `FAILED` with `error_code = "STALE_HEARTBEAT"`. Worker writes `last_heartbeat_at` every ~30s during a job.
+
+**Retries.** LLM transient errors (5xx, rate limit) retry inside the langchain call via `tenacity` (3 attempts, exponential backoff). ARQ task crashes retry once (`max_tries=2`). LLM non-retryable (4xx auth, invalid request) propagates as `FAILED`.
+
+### RAG layer
+
+**Concept hierarchy:**
+
+```
+Collection            ← user/org-owned logical container
+  └── Document        ← something ingested (text blob, uploaded file)
+        └── Chunk     ← split piece, embedded and retrieved
+              └── Embedding   ← lives in the configured vector store
+```
+
+**Two Python abstractions:**
+
+- `VectorStore` (low-level adapter). We use langchain's existing `VectorStore` interface, not a new one. Factory `get_vector_store(collection_id, embedder)` returns `PGVector` (default) or `QdrantVectorStore` based on `RAG_VECTOR_STORE` env.
+- `KnowledgeSource` (high-level, what agents use). Binds a vector store + collection + retrieval policy. Method `async retrieve(query) -> list[RetrievedChunk]`. Emits `citation` SSE events.
+
+**Embedding providers:**
+
+| `RAG_EMBEDDER` env | Implementation | Notes |
+|---|---|---|
+| `openai:text-embedding-3-small` *(default)* | `OpenAIEmbeddings` | 1536 dims |
+| `openai:text-embedding-3-large` | `OpenAIEmbeddings` | 3072 dims |
+| `ollama:<model>` | `OllamaEmbeddings` | Local / offline |
+
+Dimensions are locked per collection in `AiCollection.embeddingDims`; switching embedder requires re-ingestion. The `embedding` column is sized to the largest supported dimension (3072) with explicit `::vector(N)` casts at query time.
+
+OpenRouter is intentionally NOT an embedder (it's a chat-completion router). It IS supported for chat via `langchain-openai` with `base_url="https://openrouter.ai/api/v1"`.
+
+**Ingestion pipeline (worker-side, 5 named steps, each emits a `step` event):**
+
+```
+load    → fetch/read source bytes
+extract → bytes → plain text
+split   → text → chunks (RecursiveCharacterTextSplitter, 1000/200 default, override per input)
+embed   → chunks → embeddings (batched with tenacity retries)
+upsert  → (chunk_text + embedding) → Postgres + vector store
+```
+
+Chunk text **always** lives in Postgres (`AiDocumentChunk.text`), even when embeddings are in Qdrant. This makes re-indexing trivial: re-embed from `SELECT text FROM AiDocumentChunk` without needing the original source.
+
+**Phase 1 source types:** `text` (raw content in payload) and `uploaded_file` (web uploads via existing storage flow, passes URL; backend supports `.txt`, `.md`, `.pdf` via `pypdf`). URL fetching, GitHub, Notion, Drive are Phase 2.
+
+**Phase 1 canonical agent — `rag_chat`:**
+
+```python
+async def retrieve_node(state: RagChatState) -> dict:
+    chunks = await state.knowledge.retrieve(state.query)
+    return {"chunks": chunks}
+
+async def answer_node(state: RagChatState) -> dict:
+    answer = await llm_with_chunks(state.llm, state.query, state.chunks)
+    return {"answer": answer}
+
+def build_rag_chat_graph() -> StateGraph:
+    g = StateGraph(RagChatState)
+    g.add_node("retrieve", retrieve_node)
+    g.add_node("answer", answer_node)
+    g.add_edge(START, "retrieve")
+    g.add_edge("retrieve", "answer")
+    g.add_edge("answer", END)
+    return g.compile()
+```
+
+Registered in `agents/registry.py` as `"rag_chat"`. Same graph drives both sync-stream and async-job entry points.
+
+### Data model (new Prisma schema)
+
+All additions live in `packages/database/prisma/ai.prisma` (or appended to existing files if multi-file isn't enabled — implementation plan decides). Migrations are NOT generated by automation per the repo's CLAUDE.md rule; the implementation plan will instruct the project owner to run `pnpm migrate`.
+
+```prisma
+enum AiJobStatus { PENDING RUNNING SUCCEEDED FAILED CANCELLED }
+
+model AiJobRun {
+  id              String      @id @default(uuid()) @db.Uuid
+  userId          String      @db.Uuid
+  orgId           String?     @db.Uuid
+  agentId         String
+  status          AiJobStatus @default(PENDING)
+  input           Json
+  result          Json?
+  errorCode       String?
+  errorMessage    String?
+  createdAt       DateTime    @default(now())
+  startedAt       DateTime?
+  finishedAt      DateTime?
+  lastHeartbeatAt DateTime?
+  events          AiJobEvent[]
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([status, createdAt])
+  @@index([orgId, createdAt(sort: Desc)])
+}
+
+model AiJobEvent {
+  id      BigInt    @id @default(autoincrement())
+  jobId   String    @db.Uuid
+  seq     Int
+  type    String
+  payload Json
+  at      DateTime  @default(now())
+  job     AiJobRun  @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@unique([jobId, seq])
+  @@index([jobId, seq])
+}
+
+model AiCollection {
+  id            String       @id @default(uuid()) @db.Uuid
+  userId        String       @db.Uuid
+  orgId         String?      @db.Uuid
+  name          String
+  description   String?
+  embedder      String
+  embeddingDims Int
+  createdAt     DateTime     @default(now())
+  documents     AiDocument[]
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, orgId, name])
+  @@index([orgId])
+}
+
+enum AiDocumentStatus { INGESTING READY FAILED }
+
+model AiDocument {
+  id           String            @id @default(uuid()) @db.Uuid
+  collectionId String            @db.Uuid
+  userId       String            @db.Uuid
+  orgId        String?           @db.Uuid
+  sourceType   String
+  sourceUri    String?
+  title        String
+  status       AiDocumentStatus  @default(INGESTING)
+  chunkCount   Int               @default(0)
+  byteSize     Int?
+  errorMessage String?
+  createdAt    DateTime          @default(now())
+  indexedAt    DateTime?
+  collection   AiCollection      @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  chunks       AiDocumentChunk[]
+
+  @@index([collectionId, createdAt(sort: Desc)])
+  @@index([userId])
+}
+
+model AiDocumentChunk {
+  id           String     @id @default(uuid()) @db.Uuid
+  documentId   String     @db.Uuid
+  collectionId String     @db.Uuid
+  seq          Int
+  text         String
+  metadata     Json
+  createdAt    DateTime   @default(now())
+  document     AiDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@unique([documentId, seq])
+  @@index([collectionId])
+}
+```
+
+**pgvector — hand-edited migration tail.** Prisma cannot express `vector(N)`. After `pnpm migrate` generates the migration, the operator appends:
+
+```sql
+CREATE EXTENSION IF NOT EXISTS vector;
+ALTER TABLE "AiDocumentChunk" ADD COLUMN "embedding" vector(3072);
+CREATE INDEX "AiDocumentChunk_embedding_idx"
+  ON "AiDocumentChunk" USING hnsw ("embedding" vector_cosine_ops);
+```
+
+This is the one place the design knowingly hand-edits SQL. The implementation plan documents it explicitly as a Prisma limitation.
+
+**SQLAlchemy mirroring.** Hand-written async models in `apps/backend/src/saas_forge_backend/db/models.py` mirror the Prisma tables (same column names, types, indexes). A backend unit test introspects the live DB at startup and asserts model/schema agreement — prevents silent drift.
+
+**Connection pooling caveat.** Python must connect directly to Postgres with its own pool (`asyncpg`), NOT through Prisma Accelerate. Accelerate is a JS-side proxy for serverless cold starts and adds a hop Python doesn't need.
+
+### Repository layout
+
+```
+apps/backend/
+├── package.json              # thin turbo wrapper (dev/build/lint/test/typecheck)
+├── pyproject.toml            # uv project, Python 3.12+
+├── uv.lock                   # committed
+├── .python-version           # 3.12
+├── .env.example
+├── README.md
+├── src/saas_forge_backend/
+│   ├── main.py               # FastAPI app factory + uvicorn entrypoint
+│   ├── config.py             # pydantic-settings, env-driven
+│   ├── security/hmac.py      # request signature middleware
+│   ├── db/
+│   │   ├── engine.py
+│   │   ├── models.py
+│   │   └── repositories/     # jobs.py, documents.py, chunks.py
+│   ├── api/
+│   │   ├── routes/           # agents.py, jobs.py, ingest.py, health.py
+│   │   └── schemas/          # pydantic request/response
+│   ├── llm/
+│   │   ├── providers.py      # openai/anthropic/openrouter/ollama registry
+│   │   └── factory.py        # ChatModel factory ("provider:model" → langchain)
+│   ├── rag/
+│   │   ├── vector_store.py   # factory selecting pgvector | qdrant
+│   │   ├── pgvector_store.py
+│   │   ├── qdrant_store.py
+│   │   ├── embedders.py
+│   │   ├── splitters.py
+│   │   └── ingestion.py
+│   ├── agents/
+│   │   ├── registry.py       # agent_id → graph factory
+│   │   └── rag_chat.py       # Phase 1 canonical agent
+│   ├── jobs/
+│   │   ├── worker.py         # ARQ WorkerSettings
+│   │   ├── queue.py
+│   │   └── tasks/
+│   │       ├── run_agent_job.py
+│   │       └── ingest_document_job.py
+│   └── observability/
+│       ├── logging.py        # structlog (JSON in prod, pretty in dev)
+│       └── otel.py           # OTEL hooks, behind OTEL_EXPORTER_OTLP_ENDPOINT
+└── tests/
+    ├── conftest.py
+    ├── test_security_hmac.py
+    ├── test_agents_stream.py
+    ├── test_jobs_lifecycle.py
+    ├── test_rag_pgvector.py
+    └── test_providers.py
+```
+
+`apps/backend/package.json` plugs into existing turbo tasks:
+
+```jsonc
+{
+  "name": "@workspace/backend",
+  "private": true,
+  "scripts": {
+    "dev":          "uv run uvicorn saas_forge_backend.main:app --reload --host 0.0.0.0 --port 8000",
+    "dev:worker":   "uv run arq saas_forge_backend.jobs.worker.WorkerSettings --watch src",
+    "build":        "uv sync --frozen",
+    "lint":         "uv run ruff check src tests",
+    "typecheck":    "uv run pyright",
+    "test":         "uv run pytest",
+    "test:coverage":"uv run pytest --cov=src --cov-report=term-missing"
+  }
+}
+```
+
+`pnpm dev` (root) starts web AND backend API in parallel via turbo. The ARQ worker is opt-in (`pnpm --filter @workspace/backend dev:worker`) so front-end-only dev sessions don't pay for a Python worker process.
+
+### Python dependencies (initial `pyproject.toml`)
+
+```toml
+[project]
+name = "saas-forge-backend"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+  "fastapi>=0.115",
+  "uvicorn[standard]>=0.32",
+  "pydantic>=2.9",
+  "pydantic-settings>=2.6",
+  "sqlalchemy[asyncio]>=2.0",
+  "asyncpg>=0.30",
+  "pgvector>=0.3",
+  "arq>=0.26",
+  "redis>=5.2",
+  "langgraph>=0.2",
+  "langchain-core>=0.3",
+  "langchain-openai>=0.2",      # also OpenRouter via base_url override
+  "langchain-anthropic>=0.2",
+  "langchain-ollama>=0.2",
+  "langchain-postgres>=0.0.12", # PGVector
+  "langchain-text-splitters>=0.3",
+  "httpx>=0.27",
+  "pypdf>=5.0",
+  "structlog>=24.4",
+  "tenacity>=9.0",
+]
+
+[dependency-groups]
+dev = [
+  "pytest>=8.3",
+  "pytest-asyncio>=0.24",
+  "pytest-cov>=5.0",
+  "pytest-httpx>=0.32",
+  "ruff>=0.7",
+  "pyright>=1.1.385",
+  "qdrant-client>=1.12",
+  "langchain-qdrant>=0.2",
+]
+```
+
+### Auth implementation (HMAC)
+
+- Algorithm: HMAC-SHA256.
+- Secret: 32+ bytes hex/base64 in `BACKEND_HMAC_SECRET` env (set identically on both sides).
+- Canonical body: `json.dumps(payload, sort_keys=True, separators=(",", ":"))`.
+- Signed string: `f"{timestamp}\n{canonical_body}"`.
+- Headers: `X-Saas-Forge-Ts`, `X-Saas-Forge-Sig`, `X-Saas-Forge-Req-Id`.
+- Server rejects timestamps older than ±60s (replay defense). Optional Redis replay-set deferred to Phase 2.
+- Rotation: set `BACKEND_HMAC_SECRET_NEXT`; backend accepts both for the rotation window.
+- Signed payload always includes `{user_id, org_id, request_id}` which backend treats as proven.
+
+Web-side helper lives in `packages/observability` as a thin signed-fetch wrapper, giving web ↔ backend calls consistent log context.
+
+### Deployment
+
+- **`Dockerfile.backend`** at repo root (mirrors `Dockerfile.web` placement). Multi-stage, two final targets: `api` and `worker` — same image, different `CMD`. Build context is the monorepo root so `apps/backend/` is at the expected path.
+- **`docker-compose.yml`** gains:
+  - `backend-api` service (`expose: ["8000"]`, no public port).
+  - `backend-worker` service (no exposed ports).
+  - `redis` graduates out of `profiles: [redis]` — it is now required.
+  - `web` gains `BACKEND_URL=http://backend-api:8000` and `BACKEND_HMAC_SECRET` envs.
+- **Production:** same Dockerfile, two services per environment. Recommended targets: Fly.io (two `fly.toml`), Railway (two services from one repo), Render. K8s users deploy two Deployments from one image. Documented in backend README.
+
+### Observability
+
+| Concern | Approach |
+|---|---|
+| Logging | `structlog` — JSON in prod, pretty console in dev. `req_id`, `user_id`, `job_id` bound to log context per-request. |
+| Metrics | Prometheus `/metrics` endpoint, behind `METRICS_ENABLED`. Counters for job outcomes; histograms for job duration and LLM latency. |
+| Tracing | OpenTelemetry OTLP, behind `OTEL_EXPORTER_OTLP_ENDPOINT`. Auto-instrumented: FastAPI, httpx, SQLAlchemy. LangGraph spans manual. |
+
+### Testing strategy
+
+| Layer | What | How |
+|---|---|---|
+| Python unit | HMAC, providers factory, chunker, retriever filters, repos with mocks | pytest, no network |
+| Python integration | DB roundtrip, pgvector retrieval, ARQ job lifecycle, FastAPI endpoint contracts | pytest with real Postgres (`pgvector/pgvector:pg16` image) + real redis via docker-compose services |
+| Python "LLM mocked" e2e | Full streaming agent run with `FakeListChatModel` | pytest; verifies graph nodes + SSE event emission without burning tokens |
+| Web unit | tRPC procedures with backend mocked | existing vitest setup; mock signed-fetch helper |
+| Web integration | tRPC → real backend smoke test | optional CI lane that boots compose and runs an end-to-end assertion |
+
+CI lanes (added to the existing GH Actions workflow):
+
+- `backend-lint` (ruff + pyright)
+- `backend-test` (pytest, no network)
+- `backend-integration` (postgres+pgvector+redis services)
+- existing `web-*` lanes unchanged
+
+### Template integration
+
+- **`pnpm template:sync`** copies `apps/backend/` into `templates/saas-boilerplate/apps/backend/`. The implementation plan inspects `scripts/sync-template.mjs` and updates any filename-extension allowlist to include `.py`, `.toml`, `.lock`, `.python-version`.
+- **`template-overrides/saas-boilerplate/apps/backend/`** holds starter-only divergence: `.env.example` placeholder phrasing, README written for end-users.
+- **`template-sync.manifest.json`** entries for any file that diverges between root and template.
+- **`Dockerfile.backend`** and the updated **`docker-compose.yml`** sync identically — scaffolded users get the same dev experience.
+- Template README is updated to require Python 3.12 + uv at the top. `pnpm dev` will fail loudly (turbo prints the failed task) if `uv` is missing.
+
+### Phasing
+
+**Phase 1 — this spec:**
+
+| Component |
+|---|
+| `apps/backend/` skeleton, uv project, turbo wiring |
+| `Dockerfile.backend` (api + worker targets) |
+| `docker-compose.yml` updates (backend services, redis un-profiled) |
+| HMAC middleware + `packages/observability` signed-fetch helper |
+| `/agents/stream` endpoint + web proxy route + SSE event schema |
+| `/jobs` enqueue + `/jobs/:id/status` + tRPC `aiJobs.{create,status,events,cancel}` |
+| ARQ worker + PENDING reaper + stale-heartbeat sweep |
+| Prisma schema additions (`AiJobRun`, `AiJobEvent`, `AiCollection`, `AiDocument`, `AiDocumentChunk`) — migration generated by project owner |
+| pgvector extension + hand-edited migration tail |
+| SQLAlchemy mirrored models + startup schema-agreement check |
+| LLM provider factory: OpenAI, Anthropic, OpenRouter, Ollama |
+| Embedder factory: OpenAI, Ollama |
+| `VectorStore` factory: pgvector default GA; Qdrant adapter experimental (unit-tested only) |
+| `KnowledgeSource` abstraction + citation events |
+| `rag_chat` agent + `rag_ingest` task |
+| Ingestion sources: `text` + `uploaded_file` (txt/md/pdf) |
+| Health/readiness endpoints |
+| Logging (structlog), optional Prometheus, optional OTEL |
+| Python tests (unit + LLM-mocked e2e) + integration CI lane |
+| Template sync wiring + overrides + manifest |
+| Backend README + root README update |
+| `.env.example` updates (web and backend) |
+
+**Phase 2 — deferred (separate specs):**
+
+- Realtime push for async job progress — depends on [`#18 real-time-infrastructure`](./2026-04-07-18-real-time-infrastructure-sse-websockets-design.mdx).
+- URL / Notion / GitHub / GDrive ingestion sources.
+- Format-aware chunkers, hybrid search (BM25 + vector), rerankers (Cohere or local cross-encoder).
+- Qdrant promoted to GA with full e2e tests.
+- Per-collection vector-dimension partitioning.
+- Multi-hop / agentic-RAG example agents (documentation + reference implementations).
+- Per-tenant rate limiting inside backend (web already rate-limits).
+- Mid-token cancellation guarantees (Phase 1 is best-effort at node boundaries).
+
+### What is intentionally excluded from Phase 1
+
+- Browsers calling backend directly (web always proxies).
+- Python writing to user/auth/billing tables.
+- Prisma running inside Python.
+- Streaming async-job output (async = poll for terminal state; streaming is sync-only).
+- Multi-region replication of jobs.
+- A scaffold-time `--with-backend` toggle (every scaffold includes backend; rationale: "AI-native SaaS" positioning).
+
+## Deliverables
+
+1. `apps/backend/` Python workspace with uv, FastAPI, ARQ worker, LangGraph + LangChain, SQLAlchemy + asyncpg, structlog.
+2. `Dockerfile.backend` at repo root with multi-stage `api` and `worker` targets.
+3. `docker-compose.yml` extensions for `backend-api`, `backend-worker`, and an un-profiled `redis` service.
+4. HMAC service-to-service auth middleware and a `packages/observability` signed-fetch helper for web-side callers.
+5. `/agents/stream`, `/jobs`, `/jobs/:id/status`, `/healthz`, `/readyz` endpoints with the documented SSE schema.
+6. tRPC `aiJobs` router (`create`, `status`, `events`, `cancel`) wired to the Upstash-first / Postgres-fallback read order.
+7. Prisma schema additions covering job lifecycle and RAG state, plus a documented hand-edited migration tail for pgvector.
+8. SQLAlchemy mirrored models with a startup schema-agreement check.
+9. LLM provider factory covering OpenAI, Anthropic, OpenRouter (via OpenAI-compatible base URL), and Ollama.
+10. Embedder factory covering OpenAI and Ollama.
+11. `VectorStore` factory with pgvector (default, GA) and Qdrant (experimental adapter).
+12. `KnowledgeSource` abstraction with retrieval-time metadata filtering and citation-event emission.
+13. `rag_chat` agent and `rag_ingest` task as Phase 1 canonical implementations.
+14. Ingestion pipeline supporting `text` and `uploaded_file` (txt, md, pdf via pypdf).
+15. PENDING reaper and stale-heartbeat sweep for job reliability.
+16. Test suite (Python unit + integration + LLM-mocked e2e) and new CI lanes.
+17. Template sync coverage so the backend ships inside `templates/saas-boilerplate`.
+18. Updated `.env.example` files (web + backend) and README updates documenting prerequisites and dev commands.
+
+## Likely Files / Systems Affected
+
+**New:**
+
+- `apps/backend/` (entire workspace)
+- `Dockerfile.backend` (repo root)
+- `packages/database/prisma/ai.prisma` (or appended to existing schema files)
+- `templates/saas-boilerplate/apps/backend/` (synced)
+- `template-overrides/saas-boilerplate/apps/backend/` (starter-specific differences)
+
+**Modified:**
+
+- `docker-compose.yml`
+- `apps/web/.env.example`
+- `apps/web/trpc/routers/_app.ts` (register new `aiJobs` router)
+- `apps/web/trpc/routers/aiJobs.ts` (new file under existing routers dir)
+- `apps/web/app/api/ai/agents/[agentId]/stream/route.ts` (new file)
+- `packages/observability/src/**/*` (add signed-fetch helper)
+- `scripts/sync-template.mjs` (extension allowlist for Python files)
+- `template-sync.manifest.json`
+- `turbo.json` (verify backend's tasks slot into existing graph; no new task names expected)
+- `README.md` (prerequisites section)
+- `.github/workflows/*.yml` (new backend CI lanes)
+
+## Open Questions / Risks
+
+- **Prisma schema folder mode**: spec assumes `prismaSchemaFolder` preview feature; implementation plan must verify and fall back to appending to an existing schema file if not enabled.
+- **Vector dimension strategy**: Phase 1 uses a single `vector(3072)` column with explicit casts. If a deployment exclusively uses 1536-dim embeddings, the wider column wastes ~16KB per row. Acceptable for v1; Phase 2 may partition by dim.
+- **Template scaffolding burden**: every scaffolded user now needs Python 3.12 + uv. If user feedback signals this is a barrier, a `--without-backend` scaffold flag becomes a Phase 1.5 add.
+- **OpenRouter via langchain-openai**: relies on OpenRouter staying OpenAI-API-compatible; if they diverge meaningfully, a dedicated provider package will be needed.

@@ -18,6 +18,8 @@ RUN cd /app/apps/backend && uv sync --frozen --no-dev
 # --- Application layer ---
 FROM deps AS app
 COPY apps/backend/src /app/apps/backend/src
+# Re-sync so the local package (saas_forge_backend) is discoverable after src is present.
+RUN cd /app/apps/backend && uv sync --frozen --no-dev
 
 # --- API runtime ---
 FROM app AS api

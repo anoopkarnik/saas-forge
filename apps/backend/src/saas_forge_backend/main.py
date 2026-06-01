@@ -19,7 +19,16 @@ async def lifespan(app: FastAPI):
     try:
         await assert_schema_agreement(get_engine())
     except SchemaDriftError as exc:
-        log.error("Schema drift detected: %s", exc)
+        log.error("Schema drift detected — /readyz will report unhealthy: %s", exc)
+    except Exception as exc:  # noqa: BLE001
+        # Most commonly: Postgres unreachable in dev (no docker compose up), or
+        # DNS/SSL hiccup in prod. The app still boots so /healthz and the HMAC
+        # smoke path work; /readyz will return 503 with details.
+        log.warning(
+            "Startup schema check skipped (db_unreachable): %s. The service is up but "
+            "the DB-backed routes will fail until Postgres is reachable.",
+            exc,
+        )
     yield
 
 

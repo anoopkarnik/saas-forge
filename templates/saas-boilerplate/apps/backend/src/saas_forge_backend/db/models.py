@@ -165,7 +165,12 @@ class AiDocumentChunk(Base):
     seq: Mapped[int] = mapped_column(Integer, nullable=False)
     text: Mapped[str] = mapped_column(String, nullable=False)
     chunk_metadata: Mapped[dict] = mapped_column("metadata", JSONB, nullable=False)
-    embedding: Mapped[list[float] | None] = mapped_column(Vector(3072), nullable=True)
+    # Phase 1: 1536 dims (matches openai:text-embedding-3-small, the default
+    # RAG_EMBEDDER). pgvector's HNSW index is hard-capped at 2000 dims, so the
+    # spec's original vector(3072) cannot be indexed. Users wanting 3-large
+    # need a follow-up migration to widen this column and switch the index
+    # type to ivfflat (or partition by dim per collection).
+    embedding: Mapped[list[float] | None] = mapped_column(Vector(1536), nullable=True)
     createdAt: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=sa_text("now()")
     )

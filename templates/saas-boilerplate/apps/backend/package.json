@@ -3,12 +3,12 @@
   "private": true,
   "version": "0.1.0",
   "scripts": {
-    "dev":            "uv run uvicorn saas_forge_backend.main:app --reload --host 0.0.0.0 --port 8000",
-    "dev:worker":     "uv run arq saas_forge_backend.jobs.worker.WorkerSettings --watch src",
-    "build":          "uv sync --frozen",
-    "lint":           "uv run ruff check src tests",
-    "typecheck":      "uv run pyright",
-    "test":           "uv run pytest -q",
-    "test:coverage":  "uv run pytest --cov=src --cov-report=term-missing"
+    "dev": "uv run uvicorn saas_forge_backend.main:app --reload --host 0.0.0.0 --port 8400",
+    "dev:worker": "uv run arq saas_forge_backend.jobs.worker.WorkerSettings --watch src",
+    "build": "uv sync --frozen",
+    "lint": "uv run ruff check src tests",
+    "typecheck": "uv run pyright",
+    "test": "uv run pytest -q",
+    "test:coverage": "uv run pytest --cov=src --cov-report=term-missing"
   }
 }

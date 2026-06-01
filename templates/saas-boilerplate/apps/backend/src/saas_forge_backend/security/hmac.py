@@ -12,8 +12,15 @@ class InvalidSignature(Exception):
 
 
 def canonical_body(payload: dict) -> str:
-    """Deterministic JSON encoding used for signing."""
-    return json.dumps(payload, sort_keys=True, separators=(",", ":"))
+    """Deterministic JSON encoding used for signing.
+
+    `ensure_ascii=False` is required to match Node's `JSON.stringify`, which
+    leaves non-ASCII characters unescaped. Without this, the web client signs
+    raw UTF-8 but Python re-canonicalizes to `\\uXXXX` escapes — breaking HMAC
+    verification for any payload with non-ASCII content (Unicode names,
+    non-English queries, emoji).
+    """
+    return json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
 
 
 def _compute(secret: str, ts: str, body: str) -> str:

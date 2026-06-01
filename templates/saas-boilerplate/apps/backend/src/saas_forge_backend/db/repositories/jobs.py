@@ -55,6 +55,13 @@ async def heartbeat(session: AsyncSession, job_id: str) -> None:
     )
 
 
+_TERMINAL_STATUSES = (
+    AiJobStatus.SUCCEEDED,
+    AiJobStatus.FAILED,
+    AiJobStatus.CANCELLED,
+)
+
+
 async def mark_terminal(
     session: AsyncSession,
     job_id: str,
@@ -64,9 +71,16 @@ async def mark_terminal(
     error_code: str | None = None,
     error_message: str | None = None,
 ) -> None:
+    """Transition a job to a terminal state.
+
+    Refuses to overwrite an already-terminal row. This guards the cancel-vs-success
+    race where the worker completes after web has set status=CANCELLED. Idempotent:
+    re-calling with the same terminal status is a no-op (zero rows updated).
+    """
     await session.execute(
         update(AiJobRun)
         .where(AiJobRun.id == job_id)
+        .where(AiJobRun.status.notin_(_TERMINAL_STATUSES))
         .values(
             status=status,
             result=result,

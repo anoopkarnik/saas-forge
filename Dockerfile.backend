@@ -11,14 +11,19 @@ RUN apt-get update \
  && pip install --no-cache-dir uv
 
 # --- Dependency layer (cache-friendly) ---
+# `--no-install-project` resolves and installs only the dependency tree without
+# trying to build the local saas_forge_backend wheel — the src/ tree isn't
+# present yet, so attempting the wheel would warn or fail. This layer is cached
+# until pyproject.toml or uv.lock changes.
 FROM base AS deps
 COPY apps/backend/pyproject.toml apps/backend/uv.lock /app/apps/backend/
-RUN cd /app/apps/backend && uv sync --frozen --no-dev
+RUN cd /app/apps/backend && uv sync --frozen --no-dev --no-install-project
 
 # --- Application layer ---
+# Now copy src/ and install JUST the local package. Dependencies remain cached
+# in the deps layer; only the project-install step re-runs on src changes.
 FROM deps AS app
 COPY apps/backend/src /app/apps/backend/src
-# Re-sync so the local package (saas_forge_backend) is discoverable after src is present.
 RUN cd /app/apps/backend && uv sync --frozen --no-dev
 
 # --- API runtime ---

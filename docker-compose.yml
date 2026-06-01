@@ -70,8 +70,11 @@ services:
       OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-}
     expose:
       - "8000"
-    ports:
-      - "${BACKEND_PORT:-8000}:8000"
+    # NOTE: backend-api is internal-only per spec decision #4 — no `ports:` here.
+    # For local smoke testing against /healthz, exec `curl` inside the container
+    # (e.g. `docker compose exec backend-api curl localhost:8000/healthz`) or
+    # use web's proxy at /api/ai/agents/.../stream. Do not re-add a host-port
+    # mapping; the backend's only legitimate ingress is `web`.
 
   backend-worker:
     build:

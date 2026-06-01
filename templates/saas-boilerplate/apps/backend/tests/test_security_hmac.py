@@ -50,3 +50,15 @@ def test_verify_accepts_secondary_secret_during_rotation():
     payload = {"user_id": "u1"}
     ts, sig = sign_payload(secondary, payload)
     verify_request(primary, ts, sig, payload, accepted_secrets=[secondary])
+
+
+def test_canonical_body_preserves_non_ascii():
+    """Regression for C2: ensure_ascii=False keeps unicode bytes identical to
+    Node's JSON.stringify so cross-runtime HMAC signatures match."""
+    body = canonical_body({"name": "François", "query": "東京", "emoji": "🚀"})
+    assert "François" in body
+    assert "東京" in body
+    assert "🚀" in body
+    # And the signed signature round-trips for a unicode payload.
+    ts, sig = sign_payload("test-secret", {"q": "東京"})
+    verify_request("test-secret", ts, sig, {"q": "東京"}, accepted_secrets=None)

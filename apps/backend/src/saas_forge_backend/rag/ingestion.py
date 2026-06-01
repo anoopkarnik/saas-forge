@@ -10,6 +10,8 @@ from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
 from tenacity import retry, stop_after_attempt, wait_exponential
 
+from saas_forge_backend.db.engine import get_sessionmaker
+from saas_forge_backend.db.repositories import chunks as chunks_repo
 from saas_forge_backend.rag.splitters import ChunkingConfig, split_text
 from saas_forge_backend.rag.vector_store import get_vector_store
 
@@ -80,7 +82,21 @@ async def ingest(
     if not chunks:
         return IngestionResult(chunk_count=0, byte_size=byte_size)
 
-    embeddings = await _embed_batch(embedder, chunks)
+    # Persist chunk text in Postgres first so re-indexing is possible without
+    # the original source. This is the load-bearing invariant of the RAG layer:
+    # AiDocumentChunk.text owns the canonical chunk content regardless of where
+    # embeddings end up living (pgvector, qdrant, future stores).
+    sm = get_sessionmaker()
+    async with sm() as s, s.begin():
+        await chunks_repo.bulk_insert(
+            s,
+            document_id=document_id,
+            collection_id=collection_id,
+            rows=[
+                (i, t, {"document_id": document_id, "collection_id": collection_id, "seq": i})
+                for i, t in enumerate(chunks)
+            ],
+        )
 
     store = get_vector_store(collection_id, embedder)
     docs = [
@@ -90,8 +106,10 @@ async def ingest(
         )
         for i, t in enumerate(chunks)
     ]
-    # `aadd_documents` calls the embedder again unless we pass IDs only.
-    # For control, we go through `aadd_texts` with explicit embeddings.
+    # Pre-embedded via _embed_batch; aadd_texts accepts only texts/metadatas/ids,
+    # but langchain-postgres's PGVector will re-embed unless we use the lower-level
+    # API. For Phase 1 we accept the re-embed cost to keep the code straightforward;
+    # Phase 2 can optimize.
     await store.aadd_texts(
         texts=chunks,
         metadatas=[d.metadata for d in docs],

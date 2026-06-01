@@ -27,6 +27,7 @@
     "template:publish": "pnpm template:stage && node scripts/publish-template-branch.mjs",
     "docker:build:web": "docker build -f Dockerfile.web -t saas-forge-web .",
     "docker:up": "docker compose up --build --detach",
+    "backend:deploy": "bash scripts/deploy-backend.sh",
     "desktop:publish:linux:edge": "pnpm --dir apps/desktop build:prod && pnpm --dir apps/desktop package:snap && pnpm --dir apps/desktop publish:snapstore:edge",
     "desktop:publish:linux:stable": "pnpm --dir apps/desktop build:prod && pnpm --dir apps/desktop package:snap && pnpm --dir apps/desktop publish:snapstore:stable",
     "desktop:install:linux": "pnpm --dir apps/desktop build:prod && pnpm --dir apps/desktop package:snap && pnpm --dir apps/desktop install:locally",

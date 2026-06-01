@@ -1,0 +1,33 @@
+# Production overlay for the GCE VM deploy. Applied on top of
+# docker-compose.yml via:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml ...
+#
+# What this changes:
+#   - Removes postgres / redis / web services from the active set by giving
+#     them a "deploy: none" profile. (They are managed externally: Postgres
+#     on Cloud SQL, Redis on Upstash, web on Vercel/Cloudflare.)
+#   - Adds a host port mapping on backend-api so the web app (deployed off-VM)
+#     can reach it. HMAC middleware protects every signed route; only
+#     /healthz, /readyz, /docs, /openapi.json bypass it (set METRICS_ENABLED=
+#     false to keep /metrics 404-only, which is the default).
+#
+# If you front the VM with Caddy/nginx for TLS later, drop the public port
+# and bind the upstream to backend-api on the compose network instead.
+
+services:
+  postgres:
+    profiles: ["disabled"]
+
+  redis:
+    profiles: ["disabled"]
+
+  web:
+    profiles: ["disabled"]
+
+  backend-api:
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    restart: always
+
+  backend-worker:
+    restart: always

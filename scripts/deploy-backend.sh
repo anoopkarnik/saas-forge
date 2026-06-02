@@ -1,24 +1,23 @@
 #!/usr/bin/env bash
 #
-# Deploys apps/backend (api + worker) to a Google Compute Engine VM.
-#
-# Mechanism: package code -> gcloud compute scp -> remote tar -xz ->
-# `docker compose build && docker compose up -d`. No registry; the VM builds
-# the image. Cheapest deploy path; suitable for small/medium fleets.
+# Builds the backend api + worker images, tags them with a git-SHA pin AND
+# `:latest`, pushes both to Docker Hub, and (optionally) triggers Coolify
+# webhooks so the running server pulls and restarts immediately.
 #
 # Prereqs on YOUR machine:
-#   - gcloud CLI installed and authenticated (`gcloud auth login`)
+#   - docker buildx available (default in modern Docker)
+#   - `docker login` already done for the Docker Hub namespace in deploy.env
 #   - scripts/deploy.env populated (copy from scripts/deploy.env.example)
 #
-# Prereqs on the VM (one-time setup):
-#   - Docker + docker compose v2 installed
-#   - The .env file already at $REMOTE_DIR/apps/backend/.env (NOT shipped by
-#     this script — secrets must be set on the VM out of band)
-#   - User running the deploy can run docker without sudo (i.e., in the
-#     `docker` group), or the script needs editing to prefix with `sudo`
+# Prereqs on the server side:
+#   - Coolify running and a resource configured per image. Each resource
+#     points at `<NAMESPACE>/<IMAGE>:latest`. The matching env vars
+#     (BACKEND_HMAC_SECRET, BACKEND_DATABASE_URL, REDIS_URL, OPENAI_API_KEY,
+#     etc.) are set in the Coolify resource's Environment tab — secrets are
+#     NOT shipped through this script.
 #
-# This script does NOT run database migrations. Apply Prisma migrations
-# separately per docs/superpowers/notes/2026-05-31-ai-backend-migration.md.
+# Does NOT run database migrations. Apply Prisma migrations separately per
+# docs/superpowers/notes/2026-05-31-ai-backend-migration.md.
 
 set -euo pipefail
 
@@ -32,109 +31,93 @@ if [[ -f scripts/deploy.env ]]; then
   source scripts/deploy.env
 fi
 
-: "${GCP_PROJECT:?GCP_PROJECT is required (set in scripts/deploy.env or shell env)}"
-: "${GCP_ZONE:?GCP_ZONE is required}"
-: "${GCP_INSTANCE:?GCP_INSTANCE is required}"
-REMOTE_DIR="${REMOTE_DIR:-~/saas-forge}"
-COMPOSE_SERVICES="${COMPOSE_SERVICES:-backend-api backend-worker}"
+: "${DOCKERHUB_NAMESPACE:?DOCKERHUB_NAMESPACE is required (set in scripts/deploy.env)}"
+: "${DOCKERHUB_API_IMAGE:?DOCKERHUB_API_IMAGE is required}"
+: "${DOCKERHUB_WORKER_IMAGE:?DOCKERHUB_WORKER_IMAGE is required}"
+BUILD_PLATFORM="${BUILD_PLATFORM:-linux/amd64}"
+IMAGE_TAG="${IMAGE_TAG:-$(git rev-parse --short HEAD)}"
+
+API_REPO="${DOCKERHUB_NAMESPACE}/${DOCKERHUB_API_IMAGE}"
+WORKER_REPO="${DOCKERHUB_NAMESPACE}/${DOCKERHUB_WORKER_IMAGE}"
 
 # --- Sanity checks -----------------------------------------------------------
 
-command -v gcloud >/dev/null || { echo "✗ gcloud CLI not found on PATH"; exit 1; }
-command -v tar >/dev/null    || { echo "✗ tar not found";                exit 1; }
+command -v docker >/dev/null || { echo "✗ docker not found on PATH"; exit 1; }
+docker buildx version >/dev/null || { echo "✗ docker buildx unavailable"; exit 1; }
 
 if [[ ! -f Dockerfile.backend ]]; then
-  echo "✗ Run this from the saas-forge repo root (Dockerfile.backend not found)"
-  exit 1
-fi
-if [[ ! -f docker-compose.prod.yml ]]; then
-  echo "✗ docker-compose.prod.yml not found"
+  echo "✗ Run from the saas-forge repo root (Dockerfile.backend not found)"
   exit 1
 fi
 
-echo "→ Project:   $GCP_PROJECT"
-echo "→ Zone:      $GCP_ZONE"
-echo "→ Instance:  $GCP_INSTANCE"
-echo "→ Remote:    $REMOTE_DIR"
-echo "→ Services:  $COMPOSE_SERVICES"
+echo "→ Platform:  $BUILD_PLATFORM"
+echo "→ Tag:       $IMAGE_TAG (plus :latest)"
+echo "→ API repo:  $API_REPO"
+echo "→ Worker:    $WORKER_REPO"
 echo
 
-# --- Package -----------------------------------------------------------------
+# --- Build api ---------------------------------------------------------------
 
-TARBALL="$(mktemp -t saas-forge-backend-XXXXXX.tar.gz)"
-trap 'rm -f "$TARBALL"' EXIT
+echo "→ Building $API_REPO …"
+docker buildx build \
+  --platform "$BUILD_PLATFORM" \
+  -f Dockerfile.backend \
+  --target api \
+  -t "${API_REPO}:${IMAGE_TAG}" \
+  -t "${API_REPO}:latest" \
+  --load \
+  .
 
-echo "→ Packaging backend source (excluding .venv, __pycache__, caches)…"
-tar -czf "$TARBALL" \
-  --exclude='.venv' \
-  --exclude='__pycache__' \
-  --exclude='*.pyc' \
-  --exclude='.pytest_cache' \
-  --exclude='.ruff_cache' \
-  --exclude='.coverage' \
-  --exclude='htmlcov' \
-  --exclude='dist' \
-  --exclude='build' \
-  --exclude='node_modules' \
-  Dockerfile.backend \
-  docker-compose.yml \
-  docker-compose.prod.yml \
-  apps/backend
+# --- Build worker ------------------------------------------------------------
 
-ARCHIVE_BYTES=$(stat -c '%s' "$TARBALL" 2>/dev/null || stat -f '%z' "$TARBALL")
-echo "→ Packaged $((ARCHIVE_BYTES / 1024)) KB"
+echo "→ Building $WORKER_REPO …"
+docker buildx build \
+  --platform "$BUILD_PLATFORM" \
+  -f Dockerfile.backend \
+  --target worker \
+  -t "${WORKER_REPO}:${IMAGE_TAG}" \
+  -t "${WORKER_REPO}:latest" \
+  --load \
+  .
 
-# --- Upload ------------------------------------------------------------------
+# --- Push --------------------------------------------------------------------
 
-REMOTE_TARBALL="/tmp/saas-forge-backend-$$.tar.gz"
+echo "→ Pushing ${API_REPO}:${IMAGE_TAG}"
+docker push "${API_REPO}:${IMAGE_TAG}"
+echo "→ Pushing ${API_REPO}:latest"
+docker push "${API_REPO}:latest"
 
-echo "→ Uploading to ${GCP_INSTANCE}:${REMOTE_TARBALL}…"
-gcloud compute scp \
-  --project="$GCP_PROJECT" \
-  --zone="$GCP_ZONE" \
-  "$TARBALL" \
-  "${GCP_INSTANCE}:${REMOTE_TARBALL}"
+echo "→ Pushing ${WORKER_REPO}:${IMAGE_TAG}"
+docker push "${WORKER_REPO}:${IMAGE_TAG}"
+echo "→ Pushing ${WORKER_REPO}:latest"
+docker push "${WORKER_REPO}:latest"
 
-# --- Remote extract + build + restart ----------------------------------------
+# --- Trigger Coolify ---------------------------------------------------------
 
-echo "→ Extracting and (re)starting services on the VM…"
-
-# Quote-escape the remote script. REMOTE_DIR is intentionally expanded on the
-# remote (tilde resolution), so we wrap it in single quotes there.
-REMOTE_SCRIPT="$(cat <<EOF
-set -euo pipefail
-
-REMOTE_DIR='${REMOTE_DIR}'
-mkdir -p "\$REMOTE_DIR"
-tar -xzf '${REMOTE_TARBALL}' -C "\$REMOTE_DIR"
-rm -f '${REMOTE_TARBALL}'
-
-cd "\$REMOTE_DIR"
-
-if [[ ! -f apps/backend/.env ]]; then
-  echo "✗ apps/backend/.env missing on VM. Create it once and re-run." >&2
-  exit 1
-fi
-
-echo "→ docker compose build ${COMPOSE_SERVICES}"
-docker compose -f docker-compose.yml -f docker-compose.prod.yml build ${COMPOSE_SERVICES}
-
-echo "→ docker compose up -d ${COMPOSE_SERVICES}"
-docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d ${COMPOSE_SERVICES}
+trigger_coolify() {
+  local label="$1"
+  local url="$2"
+  if [[ -z "$url" ]]; then
+    echo "→ $label webhook not set; skipping. Coolify's watcher will catch :latest on its own cycle."
+    return
+  fi
+  echo "→ Triggering Coolify redeploy: $label"
+  local response
+  response="$(curl -sS -o /dev/null -w '%{http_code}' -X POST "$url" \
+      ${COOLIFY_TOKEN:+-H "Authorization: Bearer $COOLIFY_TOKEN"})"
+  if [[ "$response" =~ ^2[0-9][0-9]$ ]]; then
+    echo "  ✓ HTTP $response"
+  else
+    echo "  ✗ HTTP $response — check the webhook URL / token"
+    return 1
+  fi
+}
 
 echo
-echo "→ Container status:"
-docker compose -f docker-compose.yml -f docker-compose.prod.yml ps ${COMPOSE_SERVICES}
-EOF
-)"
-
-gcloud compute ssh \
-  --project="$GCP_PROJECT" \
-  --zone="$GCP_ZONE" \
-  "$GCP_INSTANCE" \
-  --command="$REMOTE_SCRIPT"
+trigger_coolify "api"    "${COOLIFY_WEBHOOK_API:-}"
+trigger_coolify "worker" "${COOLIFY_WEBHOOK_WORKER:-}"
 
 echo
 echo "✓ Deploy complete."
-echo "  Test reachability from your machine (HMAC will reject without signed body):"
-echo "    curl -i http://<VM-EXTERNAL-IP>:8000/healthz"
+echo "  api    → ${API_REPO}:${IMAGE_TAG}"
+echo "  worker → ${WORKER_REPO}:${IMAGE_TAG}"

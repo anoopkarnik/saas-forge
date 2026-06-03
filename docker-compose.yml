@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: postgres:16-alpine
+    image: pgvector/pgvector:pg16
     restart: unless-stopped
     environment:
       POSTGRES_DB: saas_forge
@@ -16,6 +16,15 @@ services:
     volumes:
       - postgres-data:/var/lib/postgresql/data
 
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis-data:/data
+
   web:
     build:
       context: .
@@ -24,22 +33,72 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      backend-api:
+        condition: service_started
     environment:
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/saas_forge
+      DIRECT_URL: postgresql://postgres:postgres@postgres:5432/saas_forge
       NEXT_PUBLIC_URL: http://localhost:3000
       BETTER_AUTH_SECRET: change-me-before-production
+      BACKEND_URL: http://backend-api:8000
+      BACKEND_HMAC_SECRET: ${BACKEND_HMAC_SECRET:-dev-only-change-me-32bytes-hex0000}
     ports:
       - "${WEB_PORT:-3000}:3000"
 
-  redis:
-    image: redis:7-alpine
+  backend-api:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+      target: api
     restart: unless-stopped
-    profiles:
-      - redis
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis-data:/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    environment:
+      BACKEND_DATABASE_URL: postgresql+asyncpg://postgres:postgres@postgres:5432/saas_forge
+      REDIS_URL: redis://redis:6379/0
+      BACKEND_HMAC_SECRET: ${BACKEND_HMAC_SECRET:-dev-only-change-me-32bytes-hex0000}
+      LOG_FORMAT: ${LOG_FORMAT:-pretty}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      RAG_VECTOR_STORE: ${RAG_VECTOR_STORE:-pgvector}
+      RAG_EMBEDDER: ${RAG_EMBEDDER:-openai:text-embedding-3-small}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-}
+    expose:
+      - "8000"
+    # NOTE: backend-api is internal-only per spec decision #4 — no `ports:` here.
+    # For local smoke testing against /healthz, exec `curl` inside the container
+    # (e.g. `docker compose exec backend-api curl localhost:8000/healthz`) or
+    # use web's proxy at /api/ai/agents/.../stream. Do not re-add a host-port
+    # mapping; the backend's only legitimate ingress is `web`.
+
+  backend-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+      target: worker
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    environment:
+      BACKEND_DATABASE_URL: postgresql+asyncpg://postgres:postgres@postgres:5432/saas_forge
+      REDIS_URL: redis://redis:6379/0
+      BACKEND_HMAC_SECRET: ${BACKEND_HMAC_SECRET:-dev-only-change-me-32bytes-hex0000}
+      LOG_FORMAT: ${LOG_FORMAT:-pretty}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      RAG_VECTOR_STORE: ${RAG_VECTOR_STORE:-pgvector}
+      RAG_EMBEDDER: ${RAG_EMBEDDER:-openai:text-embedding-3-small}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-}
 
 volumes:
   postgres-data:

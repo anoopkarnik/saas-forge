@@ -42,6 +42,13 @@ Dockerfile*
 docker-compose*.yml
 docker-compose*.yaml
 
+# Python artifacts
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.ruff_cache/
+
 # Misc
 .DS_Store
 *.log

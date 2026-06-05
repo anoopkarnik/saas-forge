@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(COREPACK_ENABLE_STRICT=0 npx pnpm@10.4.1 --dir apps/web test -- stream)",
+      "Bash(COREPACK_ENABLE_STRICT=0 npx pnpm@10.4.1 --dir /home/anoop/Downloads/TechnicalWork/MyProjects/full-stack-2026v2/saas-forge/apps/web test -- aiJobs)",
+      "Bash(BACKEND_HMAC_SECRET=test ~/.local/bin/uv run python -c \"from saas_forge_backend.observability.logging import configure_logging; configure_logging\\(\\); print\\('ok'\\)\")",
+      "Bash(BACKEND_HMAC_SECRET=test DATABASE_URL=postgresql+asyncpg://x:x@localhost/x REDIS_URL=redis://localhost ~/.local/bin/uv run python -c \"from saas_forge_backend.main import create_app; create_app\\(\\); print\\('ok'\\)\")",
+      "Bash(COREPACK_ENABLE_STRICT=0 npx pnpm@10.4.1 template:stage)",
+      "Bash(netstat -tlnp)",
+      "Bash(awk '{print $NF}')",
+      "Bash(REDIS_PORT=6380 BACKEND_PORT=8001 POSTGRES_PORT=5434 docker compose up --detach postgres redis backend-api)",
+      "Bash(REDIS_PORT=6380 BACKEND_PORT=8001 POSTGRES_PORT=5434 docker compose logs backend-api)",
+      "Bash(REDIS_PORT=6380 BACKEND_PORT=8001 POSTGRES_PORT=5434 docker compose run --rm --entrypoint \"\" backend-api bash -c \"cd /app/apps/backend && ls -la && ls .venv/lib/python3.12/site-packages/ | grep saas\")",
+      "Bash(REDIS_PORT=6380 BACKEND_PORT=8001 POSTGRES_PORT=5434 docker compose run --rm --entrypoint \"\" backend-api bash -c \"ls /app/apps/backend/.venv/lib/python3.12/site-packages/saas_forge_backend/ 2>/dev/null || echo 'NOT FOUND'\")"
+    ],
+    "additionalDirectories": [
+      "/home/anoop/Downloads/TechnicalWork/MyProjects/full-stack-2026v2/saas-forge/apps/web/app/api/ai/agents/[agentId]"
+    ]
+  }
+}

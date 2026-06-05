@@ -1,9 +1,11 @@
 {
-  "templateVersion": "1.2.11",
+  "templateVersion": "1.2.12",
   "templateRoot": "templates/saas-boilerplate",
   "stageRoot": ".generated/saas-boilerplate",
   "overrideRoot": "template-overrides/saas-boilerplate",
   "include": [
+    ".codex",
+    ".claude",
     ".eslintrc.js",
     ".dockerignore",
     ".gitignore",
@@ -16,6 +18,7 @@
     "Dockerfile.backend",
     "Dockerfile.web",
     "docker-compose.yml",
+    "docker-compose.backend.yml",
     "packages",
     "pnpm-lock.yaml",
     "pnpm-workspace.yaml",
@@ -26,6 +29,7 @@
     "scripts/bump-version.mjs"
   ],
   "exclude": [
+    ".claude/settings.local.json",
     "apps/mobile/components/downloads",
     "apps/web/vitest-coverage-output.txt",
     "apps/web/app/api/scaffold",

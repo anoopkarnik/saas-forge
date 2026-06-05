@@ -1,0 +1,81 @@
+# Paste this into a Coolify "Docker Compose" resource. The variables in
+# ${...} are substituted from the resource's Environment tab — set them
+# there so secrets stay out of git.
+#
+# Required Coolify environment variables:
+#   DOCKERHUB_NAMESPACE          (e.g. anoopkarnik)
+#   BACKEND_DATABASE_URL         (postgresql+asyncpg://...@host:5432/db?ssl=require)
+#   REDIS_URL                    (rediss://default:<TCP-PASSWORD>@<host>:6379)
+#   BACKEND_HMAC_SECRET          (must match apps/web/.env on the Next.js side)
+#   OPENAI_API_KEY               (or ANTHROPIC_API_KEY / OLLAMA_BASE_URL — whichever you use)
+#
+# Optional Coolify environment variables (defaults shown):
+#   IMAGE_TAG=latest             (pin a specific tag if you want, e.g. abc1234)
+#   RAG_VECTOR_STORE=pgvector
+#   RAG_EMBEDDER=openai:text-embedding-3-small
+#   BACKEND_HMAC_SECRET_NEXT=    (set during HMAC rotation only)
+#   ANTHROPIC_API_KEY=
+#   OPENROUTER_API_KEY=
+#   OLLAMA_BASE_URL=
+#   QDRANT_URL=
+#   QDRANT_API_KEY=
+#   LOG_LEVEL=INFO
+#   LOG_FORMAT=json
+#   METRICS_ENABLED=false
+#   OTEL_EXPORTER_OTLP_ENDPOINT=
+#
+# Postgres + Redis are intentionally NOT defined here — they're external
+# (Cloud SQL Postgres + Upstash Redis). Don't add them.
+#
+# In Coolify: attach a domain to the backend-api service. Coolify's proxy
+# (Traefik) terminates TLS and forwards to container port 8000. The worker
+# has no inbound traffic so no domain.
+
+services:
+  backend-api:
+    image: ${DOCKERHUB_NAMESPACE}/saas-forge-backend-api:${IMAGE_TAG:-latest}
+    restart: always
+    environment:
+      BACKEND_DATABASE_URL: ${BACKEND_DATABASE_URL}
+      REDIS_URL: ${REDIS_URL}
+      BACKEND_HMAC_SECRET: ${BACKEND_HMAC_SECRET}
+      BACKEND_HMAC_SECRET_NEXT: ${BACKEND_HMAC_SECRET_NEXT:-}
+      RAG_VECTOR_STORE: ${RAG_VECTOR_STORE:-pgvector}
+      RAG_EMBEDDER: ${RAG_EMBEDDER:-openai:text-embedding-3-small}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-}
+      QDRANT_URL: ${QDRANT_URL:-}
+      QDRANT_API_KEY: ${QDRANT_API_KEY:-}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      LOG_FORMAT: ${LOG_FORMAT:-json}
+      METRICS_ENABLED: ${METRICS_ENABLED:-false}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
+    expose:
+      - "8000"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8000/healthz || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+  backend-worker:
+    image: ${DOCKERHUB_NAMESPACE}/saas-forge-backend-worker:${IMAGE_TAG:-latest}
+    restart: always
+    environment:
+      BACKEND_DATABASE_URL: ${BACKEND_DATABASE_URL}
+      REDIS_URL: ${REDIS_URL}
+      BACKEND_HMAC_SECRET: ${BACKEND_HMAC_SECRET}
+      RAG_VECTOR_STORE: ${RAG_VECTOR_STORE:-pgvector}
+      RAG_EMBEDDER: ${RAG_EMBEDDER:-openai:text-embedding-3-small}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-}
+      QDRANT_URL: ${QDRANT_URL:-}
+      QDRANT_API_KEY: ${QDRANT_API_KEY:-}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      LOG_FORMAT: ${LOG_FORMAT:-json}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}

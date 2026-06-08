@@ -1,6 +1,6 @@
 {
   "name": "saas-forge",
-  "version": "1.2.12",
+  "version": "1.2.13",
   "description": "Full-stack SaaS boilerplate with Next.js, Electron, Expo, and tRPC. Ship your SaaS faster with a pre-built scaffold and shared platform modules.",
   "scripts": {
     "build": "pnpm template:stage && turbo build",
@@ -81,6 +81,7 @@
     "node": ">=20"
   },
   "dependencies": {
+    "@prisma/extension-accelerate": "^1.3.0",
     "archiver": "^7.0.1",
     "tsconfig-paths": "^4.2.0"
   },

@@ -13,6 +13,8 @@
   "license": "ISC",
   "packageManager": "pnpm@10.4.1",
   "exports": {
+    "./api-keys": "./src/api-keys/index.ts",
+    "./api-keys/scopes": "./src/api-keys/scopes.ts",
     "./*": "./src/*.ts"
   },
   "dependencies": {

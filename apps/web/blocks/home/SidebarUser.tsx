@@ -6,6 +6,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useSession } from "@workspace/auth/better-auth/auth-client";
 import UISidebarUser from "@workspace/ui/components/home/SidebarUser"
 import ProgressWithCredits from "@workspace/ui/components/home/ProgressWithCredits"
+import { ApiKeysScreen } from "@/components/api-keys/ApiKeysScreen"
 
 const SidebarUser = () => {
   const router = useRouter();
@@ -128,6 +129,7 @@ const SidebarUser = () => {
         purchases={purchases as any}
         isBillingLoading={isCreditsLoading || isPurchasesLoading}
         onCreateCheckoutSession={onCreateCheckoutSession}
+        apiKeysContent={<ApiKeysScreen />}
       />
     </>
   )

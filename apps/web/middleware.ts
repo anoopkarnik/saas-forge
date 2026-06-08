@@ -10,6 +10,7 @@ const publicRoutes = [
   "/api/payments/dodo/webhook",
   "/api/payments/stripe/webhook",
   "/api/trpc",
+  "/api/v1",
   "/auth-callback",
 ];
 

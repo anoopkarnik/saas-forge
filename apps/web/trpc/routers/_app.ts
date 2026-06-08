@@ -7,6 +7,7 @@ import { billingRouter } from './billingProcedures';
 import { seoRouter } from './seoProcedures';
 import { aiRouter } from './aiProcedures';
 import { aiJobsRouter } from './aiJobsProcedures';
+import { apiKeyRouter } from './apiKeyProcedures';
 
 export const appRouter = createTRPCRouter({
     support: supportRouter,
@@ -16,7 +17,8 @@ export const appRouter = createTRPCRouter({
     billing: billingRouter,
     seo: seoRouter,
     ai: aiRouter,
-    aiJobs: aiJobsRouter
+    aiJobs: aiJobsRouter,
+    apiKey: apiKeyRouter,
 });
 // export type definition of API
 export type AppRouter = typeof appRouter;

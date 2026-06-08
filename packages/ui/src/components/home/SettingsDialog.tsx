@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react"
 import {
-  BadgeCheck, Bell, CircleUserIcon, Globe, Link, Lock, RadioIcon, ReceiptIcon, Settings,
+  BadgeCheck, Bell, CircleUserIcon, Globe, KeyRound, Link, Lock, RadioIcon, ReceiptIcon, Settings,
 } from "lucide-react"
 
 import {
@@ -35,6 +35,7 @@ const data = {
     { name: "My Account", icon: CircleUserIcon },
     { name: "Sessions", icon: RadioIcon },
     { name: "Plans & Billing", icon: ReceiptIcon },
+    { name: "API Keys", icon: KeyRound },
     // { name: "Notifications", icon: Bell },
     // { name: "Language & Region", icon: Globe },
     // { name: "Privacy & Visibility", icon: Lock },
@@ -57,6 +58,7 @@ export interface SettingsDialogProps {
   purchases?: any[];
   isBillingLoading?: boolean;
   onCreateCheckoutSession?: (credits: number) => Promise<{ checkoutUrl?: string }>;
+  apiKeysContent?: React.ReactNode;
 }
 
 export function SettingsDialog({
@@ -73,7 +75,8 @@ export function SettingsDialog({
   creditsData,
   purchases,
   isBillingLoading,
-  onCreateCheckoutSession
+  onCreateCheckoutSession,
+  apiKeysContent,
 }: SettingsDialogProps) {
 
   const { data: session, status } = useSession();
@@ -164,6 +167,15 @@ export function SettingsDialog({
                 onCreateCheckoutSession={onCreateCheckoutSession}
                 paymentGateway={paymentGateway}
               />}
+            {currentOpenedTab === "API Keys" && (
+              <div className="p-6">
+                {apiKeysContent ?? (
+                  <p className="text-sm text-muted-foreground">
+                    API keys are not available in this context.
+                  </p>
+                )}
+              </div>
+            )}
 
           </main>
         </SidebarProvider>

@@ -25,6 +25,7 @@ model User {
     aiJobRuns        AiJobRun[]        @relation("AiJobRuns")
     aiCollections    AiCollection[]    @relation("AiCollections")
     apiKeys          ApiKey[]
+    sentInvitations  Invitation[]     @relation("InvitationInvitedBy")
 
     createdAt  DateTime @default(now())
     updatedAt  DateTime @updatedAt
@@ -133,6 +134,41 @@ model ApiKey {
 enum API_KEY_STATUS {
     active
     revoked
+
+    @@schema("user_schema")
+}
+
+enum INVITATION_STATUS {
+    PENDING
+    ACCEPTED
+    REVOKED
+
+    @@schema("user_schema")
+}
+
+model Invitation {
+    id          String            @id @default(cuid())
+    email       String
+    token       String            @unique
+    status      INVITATION_STATUS @default(PENDING)
+    invitedById String
+    expiresAt   DateTime
+    acceptedAt  DateTime?
+
+    createdAt   DateTime          @default(now())
+    updatedAt   DateTime          @updatedAt
+
+    invitedBy   User              @relation("InvitationInvitedBy", fields: [invitedById], references: [id], onDelete: Cascade)
+
+    @@index([email])
+    @@index([status])
+    @@schema("user_schema")
+}
+
+model AppSetting {
+    key       String   @id
+    value     String
+    updatedAt DateTime @updatedAt
 
     @@schema("user_schema")
 }

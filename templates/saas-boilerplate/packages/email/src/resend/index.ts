@@ -1,6 +1,7 @@
 import {Resend} from 'resend';
 import EmailVerification from '../templates/EmailVerification';
 import ResetPassword from '../templates/ResetPassword';
+import Invitation from '../templates/Invitation';
 import { render } from "@react-email/render";
 
 export const sendVerificationEmail = async (email: string, verificationUrl: string) => {
@@ -29,6 +30,19 @@ export const sendResetEmail = async (email: string, resetUrl: string) => {
     to: email,
     subject,
     html: html,
+  });
+}
+
+export const sendInvitationEmail = async (email: string, inviteUrl: string, company: string) => {
+  const resend = new Resend(process.env.RESEND_API_KEY)
+  const from = process.env.NEXT_PUBLIC_SUPPORT_MAIL!;
+  const subject = `You're invited to ${company}`;
+  const html = await render(Invitation({ inviteLink: inviteUrl, company }))
+  return resend.emails.send({
+    from,
+    to: email,
+    subject,
+    html,
   });
 }
 

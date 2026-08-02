@@ -6,11 +6,54 @@ import { Button } from "@workspace/ui/components/shadcn/button";
 import { toast } from "sonner";
 import { useAdminGuard } from "@/hooks/useAdminGuard";
 import { UsersTable } from "@/components/admin/UsersTable";
+import { useTRPC } from "@/trpc/client";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { RegistrationModeToggle } from "@workspace/ui/components/admin/RegistrationModeToggle";
+import { InviteUserDialog } from "@workspace/ui/components/admin/InviteUserDialog";
+import { InvitationsTable } from "@workspace/ui/components/admin/InvitationsTable";
 
 export default function UserManagementPage() {
     const { session, isPending, isAdmin } = useAdminGuard();
     const [users, setUsers] = useState<any[]>([]);
     const [isLoadingUsers, setIsLoadingUsers] = useState(true);
+
+    const trpc = useTRPC();
+    const qc = useQueryClient();
+
+    const modeQuery = useQuery(trpc.admin.settings.registrationMode.queryOptions());
+    const invitesQuery = useQuery(trpc.admin.invites.list.queryOptions(undefined, { enabled: isAdmin }));
+
+    const setMode = useMutation(trpc.admin.settings.setRegistrationMode.mutationOptions({
+        onSuccess: async () => {
+            await qc.invalidateQueries({ queryKey: trpc.admin.settings.registrationMode.queryKey() });
+            toast.success("Registration mode updated");
+        },
+        onError: (e: any) => toast.error(e.message || "Failed to update mode"),
+    }));
+
+    const createInvite = useMutation(trpc.admin.invites.create.mutationOptions({
+        onSuccess: async () => {
+            await qc.invalidateQueries({ queryKey: trpc.admin.invites.list.queryKey() });
+            toast.success("Invitation sent");
+        },
+        onError: (e: any) => toast.error(e.message || "Failed to send invite"),
+    }));
+
+    const revokeInvite = useMutation(trpc.admin.invites.revoke.mutationOptions({
+        onSuccess: async () => {
+            await qc.invalidateQueries({ queryKey: trpc.admin.invites.list.queryKey() });
+            toast.success("Invitation revoked");
+        },
+        onError: (e: any) => toast.error(e.message || "Failed to revoke"),
+    }));
+
+    const resendInvite = useMutation(trpc.admin.invites.resend.mutationOptions({
+        onSuccess: async () => {
+            await qc.invalidateQueries({ queryKey: trpc.admin.invites.list.queryKey() });
+            toast.success("Invitation resent");
+        },
+        onError: (e: any) => toast.error(e.message || "Failed to resend"),
+    }));
 
     const fetchUsers = async () => {
         setIsLoadingUsers(true);
@@ -97,6 +140,27 @@ export default function UserManagementPage() {
                 <Button onClick={fetchUsers} variant="outline" disabled={isLoadingUsers}>
                     {isLoadingUsers ? "Refreshing..." : "Refresh"}
                 </Button>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+                <RegistrationModeToggle
+                    mode={(modeQuery.data as "OPEN" | "INVITE_ONLY") ?? "OPEN"}
+                    onChange={(mode) => setMode.mutate({ mode })}
+                    disabled={setMode.isPending || modeQuery.isLoading}
+                />
+                <InviteUserDialog
+                    onInvite={(email) => createInvite.mutate({ email })}
+                    isInviting={createInvite.isPending}
+                />
+            </div>
+
+            <div className="mb-10">
+                <h2 className="text-xl font-semibold mb-3">Invitations</h2>
+                <InvitationsTable
+                    invitations={invitesQuery.data ?? []}
+                    onRevoke={(id) => revokeInvite.mutate({ id })}
+                    onResend={(id) => resendInvite.mutate({ id })}
+                />
             </div>
 
             <UsersTable

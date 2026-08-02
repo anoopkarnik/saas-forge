@@ -5,6 +5,8 @@ import { admin,  openAPI, jwt } from "better-auth/plugins";
 import { expo } from "@better-auth/expo";
 import { sendResetEmail, sendVerificationEmail } from "@workspace/email/resend/index"
 import { authCookiePrefix } from "./cookies";
+import { isEmailAllowedToRegister, type RegistrationMode } from "./registration";
+import { APIError } from "better-auth/api";
 
 type DeleteQueryCallbackArgs = {
     args: any;
@@ -32,6 +34,13 @@ const authDb = db.$extends({
 });
 
 const appUrl = process.env.NEXT_PUBLIC_URL || "http://localhost:3000";
+
+const getRegistrationMode = async (): Promise<RegistrationMode> => {
+    const setting = await db.appSetting.findUnique({
+        where: { key: "registration_mode" },
+    });
+    return setting?.value === "INVITE_ONLY" ? "INVITE_ONLY" : "OPEN";
+};
 
 const options = {
     basePath: "/api/auth",
@@ -151,6 +160,24 @@ const options = {
     databaseHooks: {
         user: {
             create: {
+                before: async (user: { email: string }) => {
+                    const mode = await getRegistrationMode();
+                    if (mode === "OPEN") return;
+                    const invite = await db.invitation.findFirst({
+                        where: { email: user.email, status: "PENDING" },
+                        orderBy: { createdAt: "desc" },
+                    });
+                    const allowed = isEmailAllowedToRegister(
+                        mode,
+                        invite ? { status: invite.status, expiresAt: invite.expiresAt } : null,
+                        new Date(),
+                    );
+                    if (!allowed) {
+                        throw new APIError("FORBIDDEN", {
+                            message: "Sign-ups are invite-only. Please use your invitation link.",
+                        });
+                    }
+                },
                 after: async (user) => {
                     const userCount = await db.user.count();
                     if (userCount === 1) {
@@ -159,6 +186,10 @@ const options = {
                             data: { role: "admin" },
                         });
                     }
+                    await db.invitation.updateMany({
+                        where: { email: user.email, status: "PENDING" },
+                        data: { status: "ACCEPTED", acceptedAt: new Date() },
+                    });
                 },
             },
         },

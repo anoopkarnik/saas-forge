@@ -38,7 +38,7 @@ const RegisterCard = ({ showEmail, showGoogleProvider, showGithubProvider, showL
   const [success, setSuccess] = useState<string | null>(null);
 
   useEffect(() => {
-    if (prefillEmail) {
+    if (prefillEmail && !form.formState.dirtyFields.email) {
       form.setValue('email', prefillEmail)
     }
   }, [prefillEmail, form])
@@ -63,6 +63,10 @@ const RegisterCard = ({ showEmail, showGoogleProvider, showGithubProvider, showL
           Enter your information to get started
         </p>
       </CardHeader>
+      {errorMessage &&
+        <CardContent className="pb-0">
+          <FormResult type="error" message={errorMessage} />
+        </CardContent>}
       {showEmail &&
         <CardContent className="pb-6">
           <Form {...form}>

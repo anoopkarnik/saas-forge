@@ -5,7 +5,6 @@ import { RegisterCardProps, QuoteProps } from '@workspace/auth/utils/typescript'
 
 interface RegisterPageProps extends RegisterCardProps {
     quote?: QuoteProps;
-    prefillEmail?: string;
 }
 
 const RegisterPage = ({ quote, ...registerProps }: RegisterPageProps) => {

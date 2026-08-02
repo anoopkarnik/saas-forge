@@ -16,11 +16,11 @@ import {
 } from '@workspace/ui/components/shadcn/form'
 import { Input } from '@workspace/ui/components/shadcn/input';
 import { FormResult } from './FormResult';
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { RegisterSchema } from "@workspace/auth/utils/zod";
 import { RegisterCardProps } from "@workspace/auth/utils/typescript";
 
-const RegisterCard = ({ showEmail, showGoogleProvider, showGithubProvider, showLinkedinProvider,
+const RegisterCard = ({ showEmail, showGoogleProvider, showGithubProvider, showLinkedinProvider, prefillEmail,
   onEmailSubmit, onGoogleProviderSubmit, onGithubProviderSubmit, onLinkedinProviderSubmit, errorMessage,
   onSignInClick, onTermsOfServiceClick, onPrivacyPolicyClick }: RegisterCardProps
 ) => {
@@ -28,7 +28,7 @@ const RegisterCard = ({ showEmail, showGoogleProvider, showGithubProvider, showL
     resolver: zodResolver(RegisterSchema),
     defaultValues: {
       name: '',
-      email: '',
+      email: prefillEmail ?? '',
       password: '',
       confirmPassword: ''
     },
@@ -36,6 +36,12 @@ const RegisterCard = ({ showEmail, showGoogleProvider, showGithubProvider, showL
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (prefillEmail) {
+      form.setValue('email', prefillEmail)
+    }
+  }, [prefillEmail, form])
 
   async function handleSubmit(data: z.infer<typeof RegisterSchema>) {
     setIsPending(true)

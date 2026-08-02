@@ -86,6 +86,7 @@ const RegisterCard = ({ showEmail, showGoogleProvider, showGithubProvider, showL
                           placeholder={field === 'confirmPassword' ? '******' : `Enter your ${field}`}
                           autoComplete='off'
                           className="h-10"
+                          readOnly={field === 'email' && !!prefillEmail}
                           {...fieldProps}
                         />
                       </FormControl>

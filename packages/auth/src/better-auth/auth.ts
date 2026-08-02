@@ -163,8 +163,9 @@ const options = {
                 before: async (user: { email: string }) => {
                     const mode = await getRegistrationMode();
                     if (mode === "OPEN") return;
+                    const email = user.email.toLowerCase();
                     const invite = await db.invitation.findFirst({
-                        where: { email: user.email, status: "PENDING" },
+                        where: { email, status: "PENDING" },
                         orderBy: { createdAt: "desc" },
                     });
                     const allowed = isEmailAllowedToRegister(
@@ -186,8 +187,9 @@ const options = {
                             data: { role: "admin" },
                         });
                     }
+                    const email = user.email.toLowerCase();
                     await db.invitation.updateMany({
-                        where: { email: user.email, status: "PENDING" },
+                        where: { email, status: "PENDING" },
                         data: { status: "ACCEPTED", acceptedAt: new Date() },
                     });
                 },

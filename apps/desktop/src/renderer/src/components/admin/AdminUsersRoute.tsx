@@ -44,7 +44,7 @@ export default function AdminUsersRoute() {
         if (isAdmin) fetchUsers();
     }, [isAdmin]);
 
-    const handleSetRole = async (userId: string, newRole: "admin" | "user") => {
+    const handleSetRole = async (userId: string, newRole: "admin" | "user" | "guest") => {
         try {
             const { error } = await authClient.admin.setRole({ userId, role: newRole });
             if (error) throw error;

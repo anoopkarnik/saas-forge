@@ -4,7 +4,7 @@ import {
     secureAuthSessionCookieName,
 } from "@workspace/auth/better-auth/cookies"
 
-const publicRoutes = ["/landing","/public","/api/payments/dodo/webhook","/api/payments/stripe/webhook","/api/trpc", "/auth-callback"]
+const publicRoutes = ["/landing","/public","/api/payments/dodo/webhook","/api/payments/stripe/webhook","/api/trpc", "/auth-callback", "/api/demo-login"]
 
 const authRoutes =["/sign-in","/sign-up","/error","/forgot-password","/reset-password",'/email-verified',"/api/auth"]
 

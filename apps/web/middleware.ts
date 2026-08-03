@@ -12,6 +12,7 @@ const publicRoutes = [
   "/api/trpc",
   "/api/v1",
   "/auth-callback",
+  "/api/demo-login",
 ];
 
 const authRoutes = [

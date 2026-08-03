@@ -127,6 +127,16 @@ const HeroSection = ({ heroSection }: { heroSection: HeroSectionProps }): ReactE
             <BookIcon size={15} />
             <p className="text-sm">Documentation</p>
           </Button>
+          <form method="post" action="/api/demo-login">
+            <Button
+              type="submit"
+              className="flex items-center gap-1"
+              variant="outline"
+              size="sm"
+            >
+              <p className="text-sm">Try demo</p>
+            </Button>
+          </form>
           <Button
             className="flex items-center gap-1"
             variant="default"

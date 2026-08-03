@@ -20,11 +20,22 @@ export async function POST(req: Request) {
     );
   }
 
-  const result = await auth.api.signInEmail({
-    body: { email, password },
-    returnHeaders: true,
-    headers: req.headers,
-  });
+  let result: any;
+  try {
+    result = await auth.api.signInEmail({
+      body: { email, password },
+      returnHeaders: true,
+      headers: req.headers,
+    });
+  } catch {
+    // signInEmail throws (APIError) for an unverified, banned, or otherwise
+    // unusable demo account, or stale/rotated credentials. Return a graceful
+    // error in the same style as the 503/403 branches rather than a 500.
+    return NextResponse.json(
+      { error: "Demo login failed. The demo guest account may be unavailable or its credentials are stale." },
+      { status: 502 },
+    );
+  }
 
   // Mandatory safety guard: never hand a visitor a session unless the
   // signed-in account is actually the read-only guest role. If the env
@@ -40,7 +51,11 @@ export async function POST(req: Request) {
 
   const appUrl = process.env.NEXT_PUBLIC_URL || "http://localhost:3000";
   const res = NextResponse.redirect(new URL("/", appUrl), 303);
-  const setCookie = (result as any)?.headers?.get?.("set-cookie");
-  if (setCookie) res.headers.set("set-cookie", setCookie);
+  // better-auth emits MULTIPLE Set-Cookie headers on sign-in (session token +
+  // session-data cache, since session.cookieCache is enabled). Forward each
+  // one as its own header line — never collapse them with .get()/.set(),
+  // which comma-joins into a single malformed Set-Cookie.
+  const cookies: string[] = result?.headers?.getSetCookie?.() ?? [];
+  for (const cookie of cookies) res.headers.append("set-cookie", cookie);
   return res;
 }

@@ -20,9 +20,15 @@ describe("POST /api/demo-login", () => {
     expect(res.status).toBe(503);
   });
 
-  it("signs in the demo guest and redirects", async () => {
+  it("signs in the demo guest, redirects, and forwards every Set-Cookie separately", async () => {
+    // better-auth emits TWO Set-Cookie headers on sign-in when cookieCache is
+    // enabled: the session token and the session-data cache. Both must survive
+    // as separate header entries on the redirect response.
+    const h = new Headers();
+    h.append("set-cookie", "better-auth.session_token=abc; Path=/; HttpOnly");
+    h.append("set-cookie", "better-auth.session_data=xyz; Path=/; Max-Age=300; HttpOnly");
     signInEmail.mockResolvedValue({
-      headers: new Headers({ "set-cookie": "better-auth.session_token=abc; Path=/" }),
+      headers: h,
       response: { user: { role: "guest" } },
     });
     const res = await POST(new Request("http://localhost/api/demo-login", { method: "POST" }) as any);
@@ -30,7 +36,10 @@ describe("POST /api/demo-login", () => {
       expect.objectContaining({ body: { email: "demo@saas-forge.dev", password: "demo-pass" } }),
     );
     expect([302, 303, 307]).toContain(res.status);
-    expect(res.headers.get("set-cookie")).toContain("better-auth.session_token");
+    const cookies = res.headers.getSetCookie();
+    expect(cookies).toHaveLength(2);
+    expect(cookies).toContainEqual("better-auth.session_token=abc; Path=/; HttpOnly");
+    expect(cookies).toContainEqual("better-auth.session_data=xyz; Path=/; Max-Age=300; HttpOnly");
   });
 
   it("refuses to sign in and drops the cookie when the account is not a guest", async () => {

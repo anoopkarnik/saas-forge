@@ -16,7 +16,7 @@ The saas-forge admin panel currently has two pages (User Management, CMS). There
 ```
 ┌─ Sidebar ─────────────────┐    ┌─ /admin/seo ────────────────────────┐
 │ Application                │    │ ┌─ Tabs ────────────────────────┐   │
-│   Download SaaS Boilerplate│    │ │ [SEO Audit] [Analytics]       │   │
+│   Scaffolds│    │ │ [SEO Audit] [Analytics]       │   │
 │   ...                      │    │ ├────────────────────────────────┤   │
 │ Admin                      │    │ │                                │   │
 │   User Management          │    │ │  Tab content component         │   │

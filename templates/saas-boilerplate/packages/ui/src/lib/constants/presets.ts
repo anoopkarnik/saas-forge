@@ -1,12 +1,100 @@
 import {
-  Zap, DollarSign, Rocket, Crown, Smartphone, FileText, Shield, Code, Sparkles, ShoppingCart,
-  type LucideIcon
+  Activity,
+  AudioLines,
+  BriefcaseBusiness,
+  CalendarDays,
+  Code2,
+  FileSpreadsheet,
+  Film,
+  GraduationCap,
+  Handshake,
+  Headphones,
+  ListChecks,
+  MessageCircle,
+  Newspaper,
+  PenTool,
+  Route,
+  ShoppingBag,
+  Store,
+  Truck,
+  Users,
+  WalletCards,
+  WandSparkles,
+  Workflow,
+  type LucideIcon,
 } from "lucide-react";
-import { FormValues } from "../zod/download";
 
-export interface PresetStep {
-  title: string;
-  details: string[];
+import type { ScaffoldModuleId } from "./scaffold-modules";
+import type { FormValues } from "../zod/download";
+
+export type ProductTypeId =
+  | "media-streaming"
+  | "logistics-dispatch"
+  | "document-sheet-collaboration"
+  | "design-collaboration"
+  | "crm-sales"
+  | "project-task-management"
+  | "customer-support"
+  | "e-commerce"
+  | "multi-vendor-marketplace"
+  | "learning-platform"
+  | "booking-events"
+  | "content-membership"
+  | "community-social"
+  | "listings"
+  | "financial-ledger"
+  | "ai-content-generation"
+  | "voice-agent-platform"
+  | "ai-coding-platform"
+  | "ai-chatbot"
+  | "ai-rag-agentic"
+  | "workflow-automation"
+  | "developer-helping-platforms";
+
+export type TierId =
+  | "tier-1"
+  | "tier-2"
+  | "tier-3"
+  | "tier-4"
+  | "tier-5"
+  | "tier-6";
+
+export type VersionId = "lean" | "balanced" | "advanced";
+
+export type StageEstimate =
+  | { kind: "mvp" }
+  | { kind: "beta" }
+  | { kind: "mau"; value: number };
+
+export interface ArchitectureNode {
+  id: string;
+  label: string;
+  detail: string;
+  kind: "client" | "application" | "data" | "service";
+}
+
+export interface CostComponent {
+  name: string;
+  low: number;
+  high: number;
+  covers: string;
+}
+
+export interface CostEstimate {
+  currency: "USD";
+  cadence: "month";
+  low: number;
+  high: number;
+  components: CostComponent[];
+  exclusions: string[];
+  variableDrivers: string[];
+  lastReviewed: string;
+}
+
+export interface DeliveryEstimate {
+  starterSetup: string;
+  workingLaunch: string;
+  assumption: string;
 }
 
 export interface ServiceLimit {
@@ -15,1327 +103,1488 @@ export interface ServiceLimit {
   bottleneck?: boolean;
 }
 
-export interface CapacityInfo {
-  estimatedMAU: string;
-  firstBottleneck: string;
-  serviceLimits: ServiceLimit[];
-  upgradeGuide: string[];
+export interface PresetStep {
+  title: string;
+  details: string[];
 }
 
-export interface PresetInfo {
+export interface ProductTypeBlueprint {
+  id: ProductTypeId;
+  name: string;
+  icon: LucideIcon;
+  examples: string[];
+  summary: string;
+  capabilities: string[];
+  architecture: ArchitectureNode[];
+  includedInScaffold: string[];
+  addNext: string[];
+  firstBottleneck: string;
+  upgradeTrigger: string;
+  variableCostDrivers: string[];
+  costMultiplier: number;
+  deliveryMultiplier: number;
+  scaffoldValues?: Partial<FormValues>;
+  scaffoldModules?: ScaffoldModuleId[];
+}
+
+interface VersionMetrics {
+  lean: { low: number; high: number };
+  balanced: { low: number; high: number };
+  advanced: { low: number; high: number };
+}
+
+export interface TierBlueprint {
+  id: TierId;
+  order: number;
+  name: string;
+  versionNoun: string;
+  mauLabel: string;
+  goal: string;
+  setupTime: Record<VersionId, string>;
+  launchWeeks: VersionMetrics;
+  baseMonthlyCost: VersionMetrics;
+  architectureAdditions: ArchitectureNode[];
+  serviceLimits: ServiceLimit[];
+  upgradeTrigger: string;
+  scaffoldValues?: Partial<FormValues>;
+}
+
+export interface VersionProfile {
+  id: VersionId;
+  label: string;
+  description: string;
+  tradeoff: string;
+  scaffoldValues: Partial<FormValues>;
+}
+
+export interface ResolvedPreset {
   id: string;
+  productType: ProductTypeBlueprint;
+  tier: TierBlueprint;
+  version: VersionProfile;
   name: string;
   tagline: string;
-  icon: LucideIcon;
-  color: string;
-  bgColor: string;
-  estimatedCost: string;
-  setupTime: string;
+  architecture: ArchitectureNode[];
+  includedInScaffold: string[];
+  addNext: string[];
+  firstBottleneck: string;
+  upgradeTrigger: string;
+  capacityLabel: string;
+  serviceLimits: ServiceLimit[];
   accountsNeeded: string[];
   secretsToFill: string[];
-  capacity: CapacityInfo;
   steps: PresetStep[];
-  highlights: string[];
+  cost: CostEstimate;
+  delivery: DeliveryEstimate;
   values: Partial<FormValues>;
+  modules: ScaffoldModuleId[];
 }
 
-export const PRESETS: PresetInfo[] = [
+const CORE_ARCHITECTURE: ArchitectureNode[] = [
   {
-    id: "fastest",
-    name: "Fastest Launch",
-    tagline: "Fewest accounts to create. Ship in under 30 minutes.",
-    icon: Zap,
-    color: "text-yellow-500",
-    bgColor: "border-yellow-500/50 bg-yellow-500/10",
-    estimatedCost: "$0/mo + ~$10-15/yr domain",
-    setupTime: "~20 min",
-    accountsNeeded: ["PostgreSQL (Neon/Supabase/AWS RDS)", "Vercel (Blob storage + hosting)", "GitHub (OAuth app)"],
-    secretsToFill: ["DATABASE_URL", "BETTER_AUTH_SECRET", "BLOB_READ_WRITE_TOKEN", "AUTH_GITHUB_CLIENT_ID", "AUTH_GITHUB_CLIENT_SECRET"],
-    capacity: {
-      estimatedMAU: "~5,000",
-      firstBottleneck: "Neon free tier compute hours (190 hrs/mo) — database suspends after inactivity, cold starts add ~1s latency",
-      serviceLimits: [
-        { service: "Neon Postgres", limit: "Free: 0.5 GB storage, 190 compute-hrs/mo, auto-suspend after 5 min idle", bottleneck: true },
-        { service: "Alt: AWS RDS", limit: "Free tier: 750 hrs/mo for 12 months (db.t3.micro), 20 GB storage. AWS Activate startups get $1,000 credits" },
-        { service: "Alt: GCP Cloud SQL", limit: "Free tier: db-f1-micro always free. Google for Startups credits: up to $100k (typically $2k–$25k)" },
-        { service: "Alt: Supabase", limit: "Free: 500 MB, 50k MAU auth, no cold starts — more headroom than Neon for small apps" },
-        { service: "Vercel Blob", limit: "Free: 1 GB storage (images/uploads)" },
-        { service: "Vercel Hosting", limit: "Hobby (free): 100 GB bandwidth/mo (~500k page views)" },
-        { service: "GitHub OAuth", limit: "Unlimited (no rate limit on auth)" },
-        { service: "Domain", limit: "~$10-15/yr (.com) via Namecheap, Cloudflare, or Google Domains" },
-      ],
-      upgradeGuide: [
-        "Startup credits: AWS Activate ($1k), GCP for Startups ($2k-$100k), Azure for Startups ($1k-$150k) — apply before you need them",
-        "Neon → Launch ($19/mo) for 10 GB, 300 compute-hrs, no auto-suspend. Or switch to AWS RDS free tier for 12 months",
-        "Vercel Blob → Pro ($20/mo) for 100 GB storage",
-        "Switch to Supabase free tier (500 MB, 50k MAU auth, no cold starts) for more headroom without paying",
-        "At ~10k+ MAU: add Upstash Redis for caching to reduce database load",
-        "Deployment: Vercel Pro ($20/mo) for custom domains with SSL, preview deployments, analytics",
-      ],
+    id: "client",
+    label: "Browser / App",
+    detail: "Responsive product UI",
+    kind: "client",
+  },
+  {
+    id: "api",
+    label: "Next.js API",
+    detail: "Routes, auth, and business logic",
+    kind: "application",
+  },
+  {
+    id: "database",
+    label: "Postgres",
+    detail: "Primary product data",
+    kind: "data",
+  },
+];
+
+function product(
+  blueprint: Omit<
+    ProductTypeBlueprint,
+    | "includedInScaffold"
+    | "architecture"
+    | "costMultiplier"
+    | "deliveryMultiplier"
+  > &
+    Partial<
+      Pick<
+        ProductTypeBlueprint,
+        | "includedInScaffold"
+        | "architecture"
+        | "costMultiplier"
+        | "deliveryMultiplier"
+      >
+    >,
+): ProductTypeBlueprint {
+  return {
+    includedInScaffold: [
+      "Authentication and user accounts",
+      "Postgres data model and API foundation",
+      "Responsive web UI and admin surfaces",
+      "Email, storage, payments, and observability options",
+    ],
+    architecture: [],
+    costMultiplier: 1,
+    deliveryMultiplier: 1,
+    ...blueprint,
+  };
+}
+
+export const PRODUCT_TYPE_BLUEPRINTS: ProductTypeBlueprint[] = [
+  product({
+    id: "media-streaming",
+    name: "Media & Streaming",
+    icon: Film,
+    examples: [
+      "Netflix",
+      "YouTube",
+      "Twitch",
+      "Spotify",
+      "Audible",
+      "Vimeo",
+      "Cloudinary",
+    ],
+    summary:
+      "Upload, process, protect, and stream video or audio at variable traffic levels.",
+    capabilities: [
+      "media catalog",
+      "playback",
+      "subscriptions",
+      "creator uploads",
+    ],
+    architecture: [
+      {
+        id: "media-pipeline",
+        label: "Media pipeline",
+        detail: "Upload, transcode, and package",
+        kind: "service",
+      },
+      {
+        id: "cdn",
+        label: "Object storage + CDN",
+        detail: "Origin storage and global delivery",
+        kind: "service",
+      },
+    ],
+    addNext: [
+      "Managed transcoding and adaptive bitrate playback",
+      "Media CDN, DRM, and content moderation",
+      "Playback analytics and recommendation jobs",
+    ],
+    firstBottleneck:
+      "Video processing concurrency and CDN egress grow much faster than normal web traffic.",
+    upgradeTrigger:
+      "Move media work to queued workers when uploads wait or playback start time degrades.",
+    variableCostDrivers: ["transcoding minutes", "stored media", "CDN egress"],
+    costMultiplier: 3,
+    deliveryMultiplier: 2,
+    scaffoldModules: ["billing"],
+  }),
+  product({
+    id: "logistics-dispatch",
+    name: "Logistics & Dispatch",
+    icon: Truck,
+    examples: ["Uber", "Swiggy", "Porter", "Shiprocket"],
+    summary:
+      "Coordinate orders, agents, routes, live status, and operational exceptions.",
+    capabilities: ["dispatch", "live location", "order state", "notifications"],
+    architecture: [
+      {
+        id: "realtime",
+        label: "Realtime gateway",
+        detail: "Location and status events",
+        kind: "service",
+      },
+      {
+        id: "geo",
+        label: "Maps + geospatial",
+        detail: "Routes, distance, and service areas",
+        kind: "service",
+      },
+    ],
+    addNext: [
+      "Maps, geocoding, and route optimization",
+      "Realtime driver location and dispatch engine",
+      "Background jobs for notifications and reconciliation",
+    ],
+    firstBottleneck:
+      "High-frequency location writes and fan-out overwhelm a request-only API design.",
+    upgradeTrigger:
+      "Add an event stream and dedicated dispatch workers when concurrent active jobs climb.",
+    variableCostDrivers: [
+      "map requests",
+      "location events",
+      "SMS and push delivery",
+    ],
+    costMultiplier: 2,
+    deliveryMultiplier: 1.8,
+  }),
+  product({
+    id: "document-sheet-collaboration",
+    name: "Document/Sheet Collaboration",
+    icon: FileSpreadsheet,
+    examples: ["Notion", "Google Docs", "Google Sheets", "Airtable"],
+    summary:
+      "Create structured documents or tables with sharing, presence, and collaborative editing.",
+    capabilities: [
+      "documents",
+      "permissions",
+      "version history",
+      "collaboration",
+    ],
+    architecture: [
+      {
+        id: "collaboration",
+        label: "Collaboration service",
+        detail: "Presence, changes, and history",
+        kind: "service",
+      },
+    ],
+    addNext: [
+      "CRDT or operational-transform collaboration engine",
+      "Presence, cursor, and document snapshot storage",
+      "Fine-grained sharing and export pipelines",
+    ],
+    firstBottleneck:
+      "Concurrent document updates create conflicts and large revision histories.",
+    upgradeTrigger:
+      "Introduce durable collaboration rooms when simultaneous editors become common.",
+    variableCostDrivers: [
+      "realtime connections",
+      "revision storage",
+      "exports",
+    ],
+    costMultiplier: 1.6,
+    deliveryMultiplier: 1.8,
+  }),
+  product({
+    id: "design-collaboration",
+    name: "Design Collaboration",
+    icon: PenTool,
+    examples: ["Figma", "Canva", "Lucidchart"],
+    summary:
+      "Build a shared visual canvas with assets, multiplayer state, comments, and exports.",
+    capabilities: ["canvas", "assets", "multiplayer", "exports"],
+    architecture: [
+      {
+        id: "canvas-sync",
+        label: "Canvas sync",
+        detail: "Multiplayer state and presence",
+        kind: "service",
+      },
+      {
+        id: "render-workers",
+        label: "Render workers",
+        detail: "Thumbnails and exports",
+        kind: "service",
+      },
+    ],
+    addNext: [
+      "Canvas rendering and CRDT synchronization",
+      "Asset transformation and export workers",
+      "Presence, comments, and version history",
+    ],
+    firstBottleneck:
+      "Large documents and multiplayer patches stress both browser memory and realtime fan-out.",
+    upgradeTrigger:
+      "Split rendering from collaboration when exports or large files block interactive work.",
+    variableCostDrivers: [
+      "asset storage",
+      "realtime messages",
+      "render minutes",
+    ],
+    costMultiplier: 2,
+    deliveryMultiplier: 2,
+  }),
+  product({
+    id: "crm-sales",
+    name: "CRM & Sales",
+    icon: Handshake,
+    examples: ["Salesforge", "HubSpot", "Zoho CRM"],
+    summary:
+      "Manage contacts, pipelines, activities, automation, and revenue reporting.",
+    capabilities: ["contacts", "pipelines", "tasks", "reporting"],
+    architecture: [
+      {
+        id: "jobs",
+        label: "Automation jobs",
+        detail: "Sequences, reminders, and sync",
+        kind: "service",
+      },
+    ],
+    addNext: [
+      "Pipeline and activity domain models",
+      "Email/calendar synchronization",
+      "Workflow automation and reporting aggregates",
+    ],
+    firstBottleneck:
+      "Timeline queries and third-party synchronization jobs become slow and failure-prone.",
+    upgradeTrigger:
+      "Add a queue and precomputed reports when imports or dashboards time out.",
+    variableCostDrivers: [
+      "email delivery",
+      "data enrichment",
+      "integration sync",
+    ],
+  }),
+  product({
+    id: "project-task-management",
+    name: "Project & Task Management",
+    icon: ListChecks,
+    examples: ["Asana", "Trello", "ClickUp"],
+    summary:
+      "Organize projects, tasks, assignments, comments, and team workflows.",
+    capabilities: ["projects", "tasks", "teams", "activity"],
+    architecture: [
+      {
+        id: "notifications",
+        label: "Event jobs",
+        detail: "Activity and notifications",
+        kind: "service",
+      },
+    ],
+    addNext: [
+      "Project, task, and dependency models",
+      "Activity feeds and notification delivery",
+      "Realtime board updates and search",
+    ],
+    firstBottleneck:
+      "Activity feeds and notification fan-out generate far more writes than core tasks.",
+    upgradeTrigger:
+      "Queue fan-out work when task updates slow down because of secondary notifications.",
+    variableCostDrivers: [
+      "notification delivery",
+      "file storage",
+      "search indexing",
+    ],
+  }),
+  product({
+    id: "customer-support",
+    name: "Customer Support",
+    icon: Headphones,
+    examples: ["Zendesk", "Freshdesk"],
+    summary:
+      "Centralize tickets, customer conversations, help content, and service reporting.",
+    capabilities: ["tickets", "inbox", "knowledge base", "SLAs"],
+    architecture: [
+      {
+        id: "inbox",
+        label: "Message ingestion",
+        detail: "Email, chat, and webhook events",
+        kind: "service",
+      },
+    ],
+    addNext: [
+      "Omnichannel message ingestion",
+      "Ticket routing, SLAs, and agent assignment",
+      "Knowledge search and satisfaction reporting",
+    ],
+    firstBottleneck:
+      "Inbound email and webhook bursts compete with interactive agent requests.",
+    upgradeTrigger:
+      "Separate message ingestion into queued workers when backlog or duplicate delivery appears.",
+    variableCostDrivers: ["email volume", "chat sessions", "knowledge search"],
+  }),
+  product({
+    id: "e-commerce",
+    name: "E-commerce",
+    icon: ShoppingBag,
+    examples: ["Blinkit", "Instacart", "boAt"],
+    summary:
+      "Sell products through catalog, cart, checkout, inventory, and fulfillment workflows.",
+    capabilities: ["catalog", "cart", "checkout", "inventory"],
+    architecture: [
+      {
+        id: "commerce-jobs",
+        label: "Commerce jobs",
+        detail: "Inventory, orders, and webhooks",
+        kind: "service",
+      },
+    ],
+    addNext: [
+      "Catalog, inventory, cart, and order models",
+      "Tax, shipping, and payment reconciliation",
+      "Search and transactional notification jobs",
+    ],
+    firstBottleneck:
+      "Inventory races and webhook retries can create overselling or duplicate fulfillment.",
+    upgradeTrigger:
+      "Add reserved inventory and durable order jobs before high-volume campaigns.",
+    variableCostDrivers: [
+      "payment fees",
+      "image delivery",
+      "search operations",
+    ],
+    costMultiplier: 1.5,
+    deliveryMultiplier: 1.35,
+    scaffoldModules: ["billing"],
+  }),
+  product({
+    id: "multi-vendor-marketplace",
+    name: "Multi-vendor Marketplace",
+    icon: Store,
+    examples: ["Amazon", "Flipkart", "eBay", "Etsy", "Upwork", "Patreon"],
+    summary:
+      "Connect buyers and sellers with listings, transactions, payouts, and trust controls.",
+    capabilities: ["vendors", "listings", "orders", "payouts"],
+    architecture: [
+      {
+        id: "ledger",
+        label: "Order + payout ledger",
+        detail: "Transactions and reconciliation",
+        kind: "data",
+      },
+    ],
+    addNext: [
+      "Vendor onboarding and scoped administration",
+      "Marketplace payouts, commissions, and reconciliation",
+      "Search, reviews, disputes, and moderation",
+    ],
+    firstBottleneck:
+      "Payout and inventory consistency become risky across independent sellers.",
+    upgradeTrigger:
+      "Introduce a durable transaction ledger before automated multi-party payouts.",
+    variableCostDrivers: ["payment and payout fees", "search", "moderation"],
+    costMultiplier: 1.8,
+    deliveryMultiplier: 1.6,
+    scaffoldModules: ["billing"],
+  }),
+  product({
+    id: "learning-platform",
+    name: "Learning Platform",
+    icon: GraduationCap,
+    examples: ["Udemy", "Coursera", "Teachable", "Duolingo", "Brilliant"],
+    summary:
+      "Deliver courses, exercises, progress tracking, credentials, and paid learning.",
+    capabilities: ["courses", "progress", "assessments", "payments"],
+    architecture: [
+      {
+        id: "learning-content",
+        label: "Content delivery",
+        detail: "Lessons, media, and progress events",
+        kind: "service",
+      },
+    ],
+    addNext: [
+      "Course, enrollment, progress, and assessment models",
+      "Media delivery and completion tracking",
+      "Certificates, cohorts, and instructor reporting",
+    ],
+    firstBottleneck:
+      "Media traffic and high-frequency progress events grow independently of user count.",
+    upgradeTrigger:
+      "Batch progress writes and move media to a CDN when lessons become media-heavy.",
+    variableCostDrivers: ["video delivery", "assessment runs", "email"],
+    costMultiplier: 1.4,
+    deliveryMultiplier: 1.4,
+    scaffoldModules: ["billing"],
+  }),
+  product({
+    id: "booking-events",
+    name: "Booking & Events",
+    icon: CalendarDays,
+    examples: ["Calendly", "Cal.com", "Practo", "Airbnb"],
+    summary:
+      "Publish availability and safely coordinate bookings, reminders, and payments.",
+    capabilities: ["availability", "bookings", "calendar sync", "reminders"],
+    architecture: [
+      {
+        id: "scheduling",
+        label: "Scheduling engine",
+        detail: "Availability and conflict checks",
+        kind: "service",
+      },
+    ],
+    addNext: [
+      "Availability, timezone, and booking models",
+      "Calendar provider synchronization",
+      "Reminder jobs and payment policies",
+    ],
+    firstBottleneck:
+      "Concurrent slot selection and calendar sync delays create double bookings.",
+    upgradeTrigger:
+      "Use database locks and durable sync jobs before opening high-demand inventory.",
+    variableCostDrivers: ["calendar sync", "reminders", "payment fees"],
+    costMultiplier: 1.2,
+    deliveryMultiplier: 1.2,
+    scaffoldModules: ["billing"],
+  }),
+  product({
+    id: "content-membership",
+    name: "Content & Membership",
+    icon: Newspaper,
+    examples: ["Medium", "Ghost", "Substack"],
+    summary: "Publish content, grow an audience, and monetize member access.",
+    capabilities: ["publishing", "memberships", "newsletters", "paywalls"],
+    architecture: [
+      {
+        id: "publishing",
+        label: "Publishing cache",
+        detail: "Fast public content delivery",
+        kind: "service",
+      },
+    ],
+    addNext: [
+      "Editorial workflow and content models",
+      "Membership entitlements and paywalls",
+      "Newsletter delivery and audience analytics",
+    ],
+    firstBottleneck:
+      "Newsletter sends and uncached public traffic spike far above normal member activity.",
+    upgradeTrigger:
+      "Pre-render and cache public content before audience-driven traffic spikes.",
+    variableCostDrivers: [
+      "email subscribers",
+      "public bandwidth",
+      "media storage",
+    ],
+    scaffoldModules: ["billing"],
+  }),
+  product({
+    id: "community-social",
+    name: "Community & Social",
+    icon: Users,
+    examples: ["X", "Facebook", "LinkedIn", "Quora", "Reddit", "Skool"],
+    summary:
+      "Support profiles, follows, feeds, conversations, groups, and moderation.",
+    capabilities: ["profiles", "social graph", "feeds", "moderation"],
+    architecture: [
+      {
+        id: "feed",
+        label: "Feed + fan-out workers",
+        detail: "Rank and distribute activity",
+        kind: "service",
+      },
+    ],
+    addNext: [
+      "Social graph and feed ranking",
+      "Realtime conversations and notification fan-out",
+      "Moderation, abuse reporting, and media processing",
+    ],
+    firstBottleneck:
+      "Feed generation and notification fan-out grow faster than primary content writes.",
+    upgradeTrigger:
+      "Move feed assembly to cache and workers when timelines become slow or repetitive.",
+    variableCostDrivers: ["feed reads", "media delivery", "moderation"],
+    costMultiplier: 1.7,
+    deliveryMultiplier: 1.7,
+  }),
+  product({
+    id: "listings",
+    name: "Listings",
+    icon: BriefcaseBusiness,
+    examples: ["Naukri", "Glassdoor", "Remote OK"],
+    summary:
+      "Publish and discover structured listings with search, applications, and alerts.",
+    capabilities: ["listings", "search", "applications", "alerts"],
+    architecture: [
+      {
+        id: "listing-search",
+        label: "Search index",
+        detail: "Filters, relevance, and alerts",
+        kind: "service",
+      },
+    ],
+    addNext: [
+      "Listing, application, and employer models",
+      "Faceted search and saved alerts",
+      "Moderation and expiry workflows",
+    ],
+    firstBottleneck:
+      "Complex filters and keyword search become expensive in transactional queries.",
+    upgradeTrigger:
+      "Add a search index when database filtering misses latency targets.",
+    variableCostDrivers: [
+      "search operations",
+      "email alerts",
+      "document storage",
+    ],
+    costMultiplier: 1.2,
+    deliveryMultiplier: 1.15,
+  }),
+  product({
+    id: "financial-ledger",
+    name: "Financial & Ledger Platforms",
+    icon: WalletCards,
+    examples: ["Stripe", "Razorpay", "PayPal", "Paytm", "Google Pay", "Groww"],
+    summary:
+      "Track monetary events through auditable ledgers, reconciliation, and controlled workflows.",
+    capabilities: ["ledger", "transactions", "reconciliation", "risk"],
+    architecture: [
+      {
+        id: "financial-ledger",
+        label: "Immutable ledger",
+        detail: "Balanced entries and audit history",
+        kind: "data",
+      },
+    ],
+    addNext: [
+      "Double-entry ledger and idempotent money movement",
+      "Provider reconciliation and immutable audit trail",
+      "KYC, AML, fraud, and jurisdiction-specific compliance",
+    ],
+    firstBottleneck:
+      "Correctness and auditability fail before raw infrastructure capacity does.",
+    upgradeTrigger:
+      "Require ledger invariants, reconciliation, and security review before handling real funds.",
+    variableCostDrivers: ["payment fees", "identity checks", "fraud tooling"],
+    costMultiplier: 2.2,
+    deliveryMultiplier: 2,
+    scaffoldModules: ["billing"],
+  }),
+  product({
+    id: "ai-content-generation",
+    name: "AI Content Generation",
+    icon: WandSparkles,
+    examples: ["Jasper", "Midjourney", "Runway", "HeyGen"],
+    summary:
+      "Generate text, image, audio, or video with metering, history, and asynchronous jobs.",
+    capabilities: [
+      "generation",
+      "prompting",
+      "usage metering",
+      "asset history",
+    ],
+    architecture: [
+      {
+        id: "generation-workers",
+        label: "Generation workers",
+        detail: "Queued long-running model calls",
+        kind: "service",
+      },
+    ],
+    addNext: [
+      "Provider-specific generation workflows",
+      "Durable jobs, retries, and asset lifecycle",
+      "Safety filters and per-model cost controls",
+    ],
+    firstBottleneck:
+      "Long-running model calls exhaust request timeouts and create unpredictable spend.",
+    upgradeTrigger:
+      "Queue generation when requests exceed interactive response windows.",
+    variableCostDrivers: ["model tokens", "generated media", "GPU time"],
+    costMultiplier: 1.7,
+    deliveryMultiplier: 1.7,
+    scaffoldModules: ["ai", "billing"],
+    scaffoldValues: { NEXT_PUBLIC_AI_ENABLED: "true" },
+  }),
+  product({
+    id: "voice-agent-platform",
+    name: "Voice Agent Platform",
+    icon: AudioLines,
+    examples: ["ElevenLabs", "Vapi"],
+    summary:
+      "Run low-latency speech agents with telephony, streaming audio, tools, and call records.",
+    capabilities: ["speech", "telephony", "agents", "call analytics"],
+    architecture: [
+      {
+        id: "voice-runtime",
+        label: "Realtime voice runtime",
+        detail: "Streaming STT, agent, and TTS",
+        kind: "service",
+      },
+    ],
+    addNext: [
+      "Telephony and bidirectional audio streaming",
+      "Low-latency STT, model, and TTS orchestration",
+      "Call recording, consent, and quality analytics",
+    ],
+    firstBottleneck:
+      "End-to-end latency and concurrent audio sessions dominate product quality.",
+    upgradeTrigger:
+      "Use dedicated realtime infrastructure when call latency or disconnects become visible.",
+    variableCostDrivers: [
+      "telephony minutes",
+      "speech minutes",
+      "model tokens",
+    ],
+    costMultiplier: 2,
+    deliveryMultiplier: 2,
+    scaffoldModules: ["ai", "billing"],
+    scaffoldValues: { NEXT_PUBLIC_AI_ENABLED: "true" },
+  }),
+  product({
+    id: "ai-coding-platform",
+    name: "AI Coding Platform",
+    icon: Code2,
+    examples: ["Claude Code", "GitHub Copilot", "Cursor"],
+    summary:
+      "Understand repositories and assist coding through tools, context, and controlled execution.",
+    capabilities: [
+      "code context",
+      "agents",
+      "tool execution",
+      "usage metering",
+    ],
+    architecture: [
+      {
+        id: "code-sandbox",
+        label: "Sandbox + index",
+        detail: "Repository context and safe execution",
+        kind: "service",
+      },
+    ],
+    addNext: [
+      "Repository ingestion and code-aware indexing",
+      "Sandboxed tool execution and permission controls",
+      "Agent traces, patch review, and evaluation",
+    ],
+    firstBottleneck:
+      "Large repository context and untrusted execution pressure both cost and security.",
+    upgradeTrigger:
+      "Isolate execution before agents can run user-provided code or commands.",
+    variableCostDrivers: ["model tokens", "sandbox compute", "code indexing"],
+    costMultiplier: 1.8,
+    deliveryMultiplier: 2,
+    scaffoldModules: ["ai", "billing"],
+    scaffoldValues: { NEXT_PUBLIC_AI_ENABLED: "true" },
+  }),
+  product({
+    id: "ai-chatbot",
+    name: "AI Chatbot",
+    icon: MessageCircle,
+    examples: ["ChatGPT", "Claude"],
+    summary:
+      "Deliver multi-model chat with streaming, conversation history, and usage controls.",
+    capabilities: ["chat", "streaming", "history", "credits"],
+    architecture: [
+      {
+        id: "ai-provider",
+        label: "AI provider",
+        detail: "Streaming model responses",
+        kind: "service",
+      },
+    ],
+    addNext: [
+      "Product-specific prompts, tools, and guardrails",
+      "Conversation retention and user controls",
+      "Evaluation and model-routing policy",
+    ],
+    firstBottleneck:
+      "Model throughput, context size, and concurrent streams drive latency and spend.",
+    upgradeTrigger:
+      "Add caching, routing, and async tools when sustained usage reaches the model rate limit.",
+    variableCostDrivers: ["model tokens", "tool calls", "conversation storage"],
+    costMultiplier: 1.5,
+    deliveryMultiplier: 1.4,
+    scaffoldModules: ["ai", "billing"],
+    scaffoldValues: { NEXT_PUBLIC_AI_ENABLED: "true" },
+  }),
+  product({
+    id: "ai-rag-agentic",
+    name: "AI RAG & Agentic Apps",
+    icon: Route,
+    examples: ["Kickresume", "Glean"],
+    summary:
+      "Ground agents in private knowledge with ingestion, retrieval, tools, and traceable execution.",
+    capabilities: ["ingestion", "retrieval", "agents", "evaluations"],
+    architecture: [
+      {
+        id: "vector-index",
+        label: "Vector index",
+        detail: "Embeddings and retrieval",
+        kind: "data",
+      },
+      {
+        id: "agent-workers",
+        label: "Agent workers",
+        detail: "Durable tools and steps",
+        kind: "service",
+      },
+    ],
+    addNext: [
+      "Document ingestion, chunking, and embedding pipelines",
+      "Vector search with tenant-aware access",
+      "Durable agent tools, traces, and evaluations",
+    ],
+    firstBottleneck:
+      "Retrieval quality and ingestion freshness fail before simple request capacity.",
+    upgradeTrigger:
+      "Separate ingestion and agent jobs when documents or tool chains outlive a request.",
+    variableCostDrivers: [
+      "embedding tokens",
+      "vector storage",
+      "agent tool calls",
+    ],
+    costMultiplier: 1.8,
+    deliveryMultiplier: 1.8,
+    scaffoldModules: ["ai", "billing"],
+    scaffoldValues: { NEXT_PUBLIC_AI_ENABLED: "true" },
+  }),
+  product({
+    id: "workflow-automation",
+    name: "Workflow Automation",
+    icon: Workflow,
+    examples: ["Dify", "Flowise", "Zapier", "n8n"],
+    summary:
+      "Design and execute reliable multi-step workflows across external systems.",
+    capabilities: ["workflow builder", "connectors", "execution", "retries"],
+    architecture: [
+      {
+        id: "workflow-engine",
+        label: "Workflow engine",
+        detail: "Durable steps, waits, and retries",
+        kind: "service",
+      },
+    ],
+    addNext: [
+      "Workflow graph and execution state models",
+      "Durable steps, schedules, retries, and secrets",
+      "Connector SDK, rate controls, and execution logs",
+    ],
+    firstBottleneck:
+      "Long-running workflows cannot safely live inside normal HTTP requests.",
+    upgradeTrigger:
+      "Adopt durable execution before workflows need waits, schedules, or multi-step retries.",
+    variableCostDrivers: [
+      "workflow operations",
+      "connector API calls",
+      "worker compute",
+    ],
+    costMultiplier: 1.5,
+    deliveryMultiplier: 1.7,
+    scaffoldModules: ["ai"],
+    scaffoldValues: { NEXT_PUBLIC_AI_ENABLED: "true" },
+  }),
+  product({
+    id: "developer-helping-platforms",
+    name: "Developer Helping Platforms",
+    icon: Activity,
+    examples: ["Plausible", "Better Stack"],
+    summary:
+      "Collect, process, and explain telemetry or operational data for developers.",
+    capabilities: ["ingestion", "dashboards", "alerts", "retention"],
+    architecture: [
+      {
+        id: "telemetry",
+        label: "Telemetry pipeline",
+        detail: "Ingest, aggregate, and retain events",
+        kind: "service",
+      },
+    ],
+    addNext: [
+      "High-volume event ingestion and retention policies",
+      "Aggregation, dashboards, and alert evaluation",
+      "Tenant quotas, sampling, and export controls",
+    ],
+    firstBottleneck:
+      "Write-heavy telemetry workloads overwhelm a general transactional database.",
+    upgradeTrigger:
+      "Move events to an analytical store when ingestion competes with dashboard queries.",
+    variableCostDrivers: ["events ingested", "retention", "alert evaluations"],
+    costMultiplier: 1.2,
+    deliveryMultiplier: 1.4,
+  }),
+];
+
+const baseValues = (tier: TierId): Partial<FormValues> => {
+  const tierNumber = Number(tier.split("-")[1]);
+  const established = tierNumber >= 3;
+  const scaled = tierNumber >= 4;
+
+  return {
+    NEXT_PUBLIC_PLATFORM: ["web"],
+    NEXT_PUBLIC_CMS: tierNumber === 1 ? "constant" : "postgres",
+    NEXT_PUBLIC_AUTH_FRAMEWORK: "better-auth",
+    NEXT_PUBLIC_AUTH_PROVIDERS: established
+      ? ["email_verification", "google", "github"]
+      : ["email_verification", "github"],
+    NEXT_PUBLIC_EMAIL_CLIENT: "resend",
+    NEXT_PUBLIC_PAYMENT_GATEWAY: "none",
+    NEXT_PUBLIC_IMAGE_STORAGE: scaled ? "cloudflare_r2" : "vercel_blob",
+    NEXT_PUBLIC_OBSERVABILITY_FEATURES: established
+      ? ["logging", "google_analytics", "rate_limiting"]
+      : ["google_analytics"],
+    NEXT_PUBLIC_ALLOW_RATE_LIMIT: "upstash",
+    NEXT_PUBLIC_SUPPORT_FEATURES: [],
+  };
+};
+
+export const TIER_BLUEPRINTS: TierBlueprint[] = [
+  {
+    id: "tier-1",
+    order: 1,
+    name: "MVP",
+    versionNoun: "MVP",
+    mauLabel: "Validate before scaling",
+    goal: "Prove the core problem with the smallest credible product.",
+    setupTime: { lean: "45–90 min", balanced: "2–4 hrs", advanced: "1–2 days" },
+    launchWeeks: {
+      lean: { low: 1, high: 2 },
+      balanced: { low: 2, high: 4 },
+      advanced: { low: 4, high: 8 },
     },
-    steps: [
+    baseMonthlyCost: {
+      lean: { low: 0, high: 20 },
+      balanced: { low: 10, high: 50 },
+      advanced: { low: 40, high: 150 },
+    },
+    architectureAdditions: [],
+    serviceLimits: [
       {
-        title: "Create a PostgreSQL database",
-        details: [
-          "Sign up at neon.tech or supabase.com (both have free tiers)",
-          "Create a new project and database",
-          "Copy the connection string (postgresql://user:pass@host:5432/db)",
-          "Paste it into the DATABASE_URL field below",
-        ],
+        service: "Managed free tiers",
+        limit:
+          "Suitable for validation traffic; expect sleeping instances and small quotas",
+        bottleneck: true,
       },
       {
-        title: "Generate a BetterAuth secret",
-        details: [
-          "Run: openssl rand -base64 32 in your terminal",
-          "Or use any random string generator (min 32 characters)",
-          "Paste into BETTER_AUTH_SECRET field",
-        ],
-      },
-      {
-        title: "Set up Vercel Blob storage",
-        details: [
-          "Go to your Vercel dashboard → Storage → Create Blob Store",
-          "Copy the BLOB_READ_WRITE_TOKEN from the store settings",
-          "Paste into the BLOB_READ_WRITE_TOKEN field below",
-        ],
-      },
-      {
-        title: "Create a GitHub OAuth app",
-        details: [
-          "Go to GitHub → Settings → Developer Settings → OAuth Apps → New",
-          "Set Homepage URL to your app URL (e.g. http://localhost:3000)",
-          "Set Authorization callback URL to {your_url}/api/auth/callback/github",
-          "Copy the Client ID and generate a Client Secret",
-          "Paste both into the AUTH_GITHUB fields below",
-        ],
-      },
-      {
-        title: "Download, install & run",
-        details: [
-          "Click 'Download Boilerplate' above",
-          "Run: pnpm install && pnpm generate && pnpm migrate",
-          "Run: pnpm dev → visit http://localhost:3000",
-        ],
+        service: "Single application region",
+        limit: "Keep deployment simple until usage proves geographic demand",
       },
     ],
-    highlights: [
-      "Hardcoded CMS (no Notion/Redis setup)",
-      "GitHub-only auth (no email service needed)",
-      "No payment integration",
-      "Vercel Blob for images",
-      "Only 3 accounts to create",
+    upgradeTrigger:
+      "Move to Beta when real users need repeat access, support, and safer operations.",
+    scaffoldValues: baseValues("tier-1"),
+  },
+  {
+    id: "tier-2",
+    order: 2,
+    name: "Beta Testing",
+    versionNoun: "Beta",
+    mauLabel: "Invite-only or early public users",
+    goal: "Invite users, gather evidence, and make failures observable.",
+    setupTime: { lean: "1–2 hrs", balanced: "3–5 hrs", advanced: "1–2 days" },
+    launchWeeks: {
+      lean: { low: 2, high: 4 },
+      balanced: { low: 3, high: 6 },
+      advanced: { low: 6, high: 10 },
+    },
+    baseMonthlyCost: {
+      lean: { low: 10, high: 50 },
+      balanced: { low: 25, high: 100 },
+      advanced: { low: 100, high: 400 },
+    },
+    architectureAdditions: [
+      {
+        id: "cache-queue",
+        label: "Redis / Queue",
+        detail: "Rate limits, cache, and background work",
+        kind: "service",
+      },
     ],
-    values: {
-      NEXT_PUBLIC_PLATFORM: ["web"],
-      NEXT_PUBLIC_CMS: "constant",
-      NEXT_PUBLIC_AUTH_FRAMEWORK: "better-auth",
+    serviceLimits: [
+      {
+        service: "Postgres",
+        limit:
+          "Use managed backups and connection pooling before public launch",
+        bottleneck: true,
+      },
+      {
+        service: "Email + logs",
+        limit: "Track verification, support, and errors during feedback cycles",
+      },
+    ],
+    upgradeTrigger:
+      "Move to Launch when acquisition is public and reliability affects conversion.",
+    scaffoldValues: baseValues("tier-2"),
+  },
+  {
+    id: "tier-3",
+    order: 3,
+    name: "Launch",
+    versionNoun: "Launch",
+    mauLabel: "0–10k MAU",
+    goal: "Operate a public product with measurable reliability and conversion.",
+    setupTime: { lean: "3–6 hrs", balanced: "1–2 days", advanced: "3–5 days" },
+    launchWeeks: {
+      lean: { low: 3, high: 6 },
+      balanced: { low: 5, high: 9 },
+      advanced: { low: 8, high: 14 },
+    },
+    baseMonthlyCost: {
+      lean: { low: 25, high: 100 },
+      balanced: { low: 75, high: 300 },
+      advanced: { low: 250, high: 900 },
+    },
+    architectureAdditions: [
+      {
+        id: "cache-queue",
+        label: "Redis / Queue",
+        detail: "Caching, protection, and jobs",
+        kind: "service",
+      },
+    ],
+    serviceLimits: [
+      {
+        service: "Application + database",
+        limit: "Monitor latency, connection count, and slow queries",
+        bottleneck: true,
+      },
+      {
+        service: "Observability",
+        limit: "Logs, analytics, and rate limiting are part of the baseline",
+      },
+    ],
+    upgradeTrigger:
+      "Move to Growth when sustained MAU reaches 10k or queues and queries miss targets.",
+    scaffoldValues: baseValues("tier-3"),
+  },
+  {
+    id: "tier-4",
+    order: 4,
+    name: "Growth",
+    versionNoun: "Growth",
+    mauLabel: "10k–50k MAU",
+    goal: "Increase throughput and operational safety without creating a platform team.",
+    setupTime: {
+      lean: "1–2 days",
+      balanced: "3–5 days",
+      advanced: "1–2 weeks",
+    },
+    launchWeeks: {
+      lean: { low: 5, high: 9 },
+      balanced: { low: 8, high: 14 },
+      advanced: { low: 12, high: 22 },
+    },
+    baseMonthlyCost: {
+      lean: { low: 100, high: 400 },
+      balanced: { low: 300, high: 1200 },
+      advanced: { low: 900, high: 3500 },
+    },
+    architectureAdditions: [
+      {
+        id: "cache-queue",
+        label: "Redis + Queue",
+        detail: "Hot data and durable jobs",
+        kind: "service",
+      },
+      {
+        id: "cdn",
+        label: "Object storage + CDN",
+        detail: "Global asset delivery",
+        kind: "service",
+      },
+    ],
+    serviceLimits: [
+      {
+        service: "Postgres connections",
+        limit: "Pool connections and remove repeated expensive queries",
+        bottleneck: true,
+      },
+      {
+        service: "Background jobs",
+        limit: "Retry external work away from interactive requests",
+      },
+    ],
+    upgradeTrigger:
+      "Move to Scale at 50k MAU or when one database/region limits planned growth.",
+    scaffoldValues: baseValues("tier-4"),
+  },
+  {
+    id: "tier-5",
+    order: 5,
+    name: "Scale",
+    versionNoun: "Scale",
+    mauLabel: "50k–250k MAU",
+    goal: "Separate critical workloads and remove single-service capacity ceilings.",
+    setupTime: {
+      lean: "3–5 days",
+      balanced: "1–2 weeks",
+      advanced: "2–4 weeks",
+    },
+    launchWeeks: {
+      lean: { low: 8, high: 14 },
+      balanced: { low: 12, high: 22 },
+      advanced: { low: 20, high: 36 },
+    },
+    baseMonthlyCost: {
+      lean: { low: 400, high: 1500 },
+      balanced: { low: 1000, high: 5000 },
+      advanced: { low: 3500, high: 15000 },
+    },
+    architectureAdditions: [
+      {
+        id: "cache-queue",
+        label: "Dedicated cache + queue",
+        detail: "Isolated hot paths and workers",
+        kind: "service",
+      },
+      {
+        id: "read-models",
+        label: "Read replicas / indexes",
+        detail: "Independent query capacity",
+        kind: "data",
+      },
+    ],
+    serviceLimits: [
+      {
+        service: "Data architecture",
+        limit: "Profile workload-specific stores, indexes, and retention",
+        bottleneck: true,
+      },
+      {
+        service: "Deployment",
+        limit: "Use autoscaling workers and tested recovery procedures",
+      },
+    ],
+    upgradeTrigger:
+      "Move to Enterprise when 250k MAU, contractual controls, or multi-region recovery are required.",
+    scaffoldValues: baseValues("tier-5"),
+  },
+  {
+    id: "tier-6",
+    order: 6,
+    name: "Enterprise",
+    versionNoun: "Enterprise",
+    mauLabel: "250k+ MAU",
+    goal: "Meet high-scale, compliance, recovery, and organizational requirements.",
+    setupTime: {
+      lean: "1–2 weeks",
+      balanced: "2–4 weeks",
+      advanced: "4–8 weeks",
+    },
+    launchWeeks: {
+      lean: { low: 12, high: 22 },
+      balanced: { low: 20, high: 36 },
+      advanced: { low: 32, high: 52 },
+    },
+    baseMonthlyCost: {
+      lean: { low: 1500, high: 6000 },
+      balanced: { low: 5000, high: 20000 },
+      advanced: { low: 15000, high: 60000 },
+    },
+    architectureAdditions: [
+      {
+        id: "regional-data",
+        label: "Regional data tier",
+        detail: "Replicas, recovery, and isolation",
+        kind: "data",
+      },
+      {
+        id: "platform-ops",
+        label: "Platform operations",
+        detail: "SLOs, security, and incident response",
+        kind: "service",
+      },
+    ],
+    serviceLimits: [
+      {
+        service: "Reliability + compliance",
+        limit: "Capacity, recovery, access, and audit controls must be tested",
+        bottleneck: true,
+      },
+      {
+        service: "Organization",
+        limit:
+          "Ownership and incident response matter as much as infrastructure",
+      },
+    ],
+    upgradeTrigger:
+      "Revisit the architecture when geography, regulation, or workload shape changes materially.",
+    scaffoldValues: baseValues("tier-6"),
+  },
+];
+
+export const VERSION_PROFILES: VersionProfile[] = [
+  {
+    id: "lean",
+    label: "Lean",
+    description: "Fewest services and fastest path to evidence.",
+    tradeoff: "More manual operations and less capacity headroom.",
+    scaffoldValues: {
       NEXT_PUBLIC_AUTH_PROVIDERS: ["github"],
       NEXT_PUBLIC_EMAIL_CLIENT: "none",
-      NEXT_PUBLIC_PAYMENT_GATEWAY: "none",
-      NEXT_PUBLIC_IMAGE_STORAGE: "vercel_blob",
       NEXT_PUBLIC_OBSERVABILITY_FEATURES: [],
       NEXT_PUBLIC_SUPPORT_FEATURES: [],
     },
   },
   {
-    id: "free-tier",
-    name: "100% Free Stack",
-    tagline: "Every service on a free tier. $0 until you outgrow them.",
-    icon: DollarSign,
-    color: "text-emerald-500",
-    bgColor: "border-emerald-500/50 bg-emerald-500/10",
-    estimatedCost: "$0/mo + ~$10-15/yr domain",
-    setupTime: "~45 min",
-    accountsNeeded: ["PostgreSQL (Neon/Supabase/AWS RDS)", "Notion", "Upstash Redis", "Resend", "GitHub (OAuth app)", "Vercel (Blob + hosting)", "Google Analytics"],
-    secretsToFill: [
-      "DATABASE_URL", "BETTER_AUTH_SECRET", "BLOB_READ_WRITE_TOKEN",
-      "NOTION_API_TOKEN", "LANDING_DATABASE_ID", "HERO_DATABASE_ID", "FEATURE_DATABASE_ID",
-      "TESTIMONIAL_DATABASE_ID", "PRICING_DATABASE_ID", "FAQ_DATABASE_ID", "FOOTER_DATABASE_ID", "DOCUMENTATION_DATABASE_ID",
-      "UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN",
-      "RESEND_API_KEY",
-      "AUTH_GITHUB_CLIENT_ID", "AUTH_GITHUB_CLIENT_SECRET",
-      "NEXT_PUBLIC_GOOGLE_ANALYTICS_MEASUREMENT_ID",
-    ],
-    capacity: {
-      estimatedMAU: "~3,000",
-      firstBottleneck: "Resend email — 3,000 emails/month caps how many new users can verify via email",
-      serviceLimits: [
-        { service: "Resend Email", limit: "Free: 100 emails/day, 3,000/month — one email per signup + transactional", bottleneck: true },
-        { service: "Neon Postgres", limit: "Free: 0.5 GB storage, 190 compute-hrs/mo" },
-        { service: "Alt: AWS RDS", limit: "Free tier: 750 hrs/mo for 12 months (db.t3.micro), 20 GB. Startups: AWS Activate gives $1,000 credits" },
-        { service: "Alt: GCP Cloud SQL", limit: "Free: db-f1-micro always free. Google for Startups: $2k–$100k credits (typically $25k for YC/accelerator backed)" },
-        { service: "Upstash Redis", limit: "Free: 10k commands/day (300k/mo) — CMS caching + rate limiting" },
-        { service: "Notion API", limit: "Free forever — 3 requests/second, cached by Upstash" },
-        { service: "Vercel Blob", limit: "Free: 1 GB storage" },
-        { service: "Vercel Hosting", limit: "Hobby (free): 100 GB bandwidth/mo, custom domain with SSL" },
-        { service: "Google Analytics", limit: "Free forever — unlimited" },
-        { service: "Domain", limit: "~$10-15/yr (.com). Cloudflare Registrar offers at-cost pricing (~$9-10/yr)" },
-      ],
-      upgradeGuide: [
-        "Startup credits (apply early!): AWS Activate ($1k), GCP for Startups ($2k-$100k), Azure for Startups ($1k-$150k)",
-        "Resend → Pro ($20/mo, 50k emails) — this is your first paid upgrade when signups grow",
-        "Upstash → Pay-as-you-go ($0.2/100k commands) when cache + rate limiting exceed 10k/day",
-        "Neon → Launch ($19/mo) for 10 GB + no auto-suspend. Or switch to AWS RDS free tier for 12 months headroom",
-        "At ~10k MAU: switch Notion CMS → Postgres CMS to remove 3 req/sec API limit",
-        "Deployment: Vercel Pro ($20/mo) for 1 TB bandwidth, team features, analytics. Or self-host on AWS/GCP using startup credits",
-        "At ~50k MAU: Supabase Pro ($25/mo) or AWS RDS + Cloudflare R2 for storage",
-      ],
-    },
-    steps: [
-      {
-        title: "Create a PostgreSQL database",
-        details: [
-          "Sign up at neon.tech (free: 0.5 GB, 190 compute hrs/mo) or supabase.com (free: 500 MB, 2 projects)",
-          "Create a new project → copy the connection string",
-          "Paste into DATABASE_URL field",
-        ],
-      },
-      {
-        title: "Generate a BetterAuth secret",
-        details: [
-          "Run: openssl rand -base64 32",
-          "Paste into BETTER_AUTH_SECRET field",
-        ],
-      },
-      {
-        title: "Set up Notion CMS",
-        details: [
-          "Go to notion.so/my-integrations → Create new integration",
-          "Copy the Internal Integration Token → paste into NOTION_API_TOKEN",
-          "Duplicate the SaaS Forge CMS template databases into your workspace",
-          "Share each database with your integration",
-          "Copy each database ID from the URL (the 32-char hex string after the workspace name)",
-          "Paste IDs into the corresponding fields (LANDING_DATABASE_ID, HERO_DATABASE_ID, etc.)",
-        ],
-      },
-      {
-        title: "Set up Upstash Redis (CMS caching + rate limiting)",
-        details: [
-          "Sign up at upstash.com (free: 10k requests/day)",
-          "Create a new Redis database",
-          "Copy REST URL and REST Token from the dashboard",
-          "Paste into UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN fields",
-        ],
-      },
-      {
-        title: "Set up Resend email",
-        details: [
-          "Sign up at resend.com (free: 100 emails/day, 3000/month)",
-          "Go to API Keys → Create a new key",
-          "Paste into RESEND_API_KEY field",
-        ],
-      },
-      {
-        title: "Create a GitHub OAuth app",
-        details: [
-          "GitHub → Settings → Developer Settings → OAuth Apps → New",
-          "Homepage URL: your app URL",
-          "Callback URL: {your_url}/api/auth/callback/github",
-          "Copy Client ID and generate Client Secret",
-          "Paste into AUTH_GITHUB fields",
-        ],
-      },
-      {
-        title: "Set up Vercel Blob storage",
-        details: [
-          "Vercel dashboard → Storage → Create Blob Store",
-          "Copy BLOB_READ_WRITE_TOKEN → paste into field",
-        ],
-      },
-      {
-        title: "Set up Google Analytics",
-        details: [
-          "Go to analytics.google.com → Create property",
-          "Set up a Web data stream for your domain",
-          "Copy the Measurement ID (starts with G-)",
-          "Paste into NEXT_PUBLIC_GOOGLE_ANALYTICS_MEASUREMENT_ID field",
-        ],
-      },
-      {
-        title: "Download, install & run",
-        details: [
-          "Click 'Download Boilerplate'",
-          "Run: pnpm install && pnpm generate && pnpm migrate",
-          "Run: pnpm dev → visit http://localhost:3000",
-        ],
-      },
-    ],
-    highlights: [
-      "Notion CMS (free)",
-      "Email + GitHub auth (via Resend)",
-      "Upstash Redis caching + rate limiting",
-      "Vercel Blob (1 GB free)",
-      "Google Analytics tracking",
-      "All services on free tier",
-    ],
-    values: {
-      NEXT_PUBLIC_PLATFORM: ["web"],
-      NEXT_PUBLIC_CMS: "notion",
-      NEXT_PUBLIC_AUTH_FRAMEWORK: "better-auth",
-      NEXT_PUBLIC_AUTH_PROVIDERS: ["email_verification", "github"],
-      NEXT_PUBLIC_EMAIL_CLIENT: "resend",
-      NEXT_PUBLIC_PAYMENT_GATEWAY: "none",
-      NEXT_PUBLIC_IMAGE_STORAGE: "vercel_blob",
-      NEXT_PUBLIC_OBSERVABILITY_FEATURES: ["google_analytics", "rate_limiting"],
-      NEXT_PUBLIC_ALLOW_RATE_LIMIT: "upstash",
-      NEXT_PUBLIC_SUPPORT_FEATURES: [],
-    },
+    id: "balanced",
+    label: "Balanced",
+    description: "A reliable managed baseline without premature platform work.",
+    tradeoff: "A few more accounts in exchange for safer operations.",
+    scaffoldValues: {},
   },
   {
-    id: "solo-founder",
-    name: "Solo Founder MVP",
-    tagline: "Validate and monetize. Everything a solo dev needs.",
-    icon: Rocket,
-    color: "text-blue-500",
-    bgColor: "border-blue-500/50 bg-blue-500/10",
-    estimatedCost: "$0/mo + Stripe fees + ~$10-15/yr domain",
-    setupTime: "~1 hr",
-    accountsNeeded: [
-      "PostgreSQL (Neon/Supabase/AWS RDS)", "Notion", "Upstash Redis", "Resend",
-      "Google (OAuth)", "GitHub (OAuth)", "Stripe", "Vercel (Blob + hosting)",
-      "Google Analytics", "BetterStack",
-    ],
-    secretsToFill: [
-      "DATABASE_URL", "BETTER_AUTH_SECRET", "BLOB_READ_WRITE_TOKEN",
-      "NOTION_API_TOKEN", "LANDING_DATABASE_ID", "HERO_DATABASE_ID", "FEATURE_DATABASE_ID",
-      "TESTIMONIAL_DATABASE_ID", "PRICING_DATABASE_ID", "FAQ_DATABASE_ID", "FOOTER_DATABASE_ID", "DOCUMENTATION_DATABASE_ID",
-      "UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN",
-      "RESEND_API_KEY",
-      "AUTH_GOOGLE_CLIENT_ID", "AUTH_GOOGLE_CLIENT_SECRET",
-      "AUTH_GITHUB_CLIENT_ID", "AUTH_GITHUB_CLIENT_SECRET",
-      "STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET",
-      "BETTERSTACK_TELEMETRY_SOURCE_TOKEN", "BETTERSTACK_TELEMETRY_INGESTING_HOST",
-      "NEXT_PUBLIC_GOOGLE_ANALYTICS_MEASUREMENT_ID",
-    ],
-    capacity: {
-      estimatedMAU: "~3,000–5,000",
-      firstBottleneck: "Resend email — 3,000 emails/month limits signups + transactional emails (password resets, receipts)",
-      serviceLimits: [
-        { service: "Resend Email", limit: "Free: 100/day, 3,000/month — signups + Stripe receipts share this pool", bottleneck: true },
-        { service: "Neon Postgres", limit: "Free: 0.5 GB storage, 190 compute-hrs/mo" },
-        { service: "Alt: AWS RDS", limit: "Free tier: 750 hrs/mo x 12 months, 20 GB. AWS Activate: $1,000 credits for startups" },
-        { service: "Alt: GCP Cloud SQL", limit: "Free: db-f1-micro. Google for Startups: $2k–$100k credits" },
-        { service: "Upstash Redis", limit: "Free: 10k commands/day — CMS cache + rate limiting + session store" },
-        { service: "Notion API", limit: "Free: 3 req/sec — cached by Upstash, rarely hit" },
-        { service: "Stripe", limit: "No monthly fee — 2.9% + 30¢ per tx. Volume discounts at $1M+/yr" },
-        { service: "Vercel Blob", limit: "Free: 1 GB storage" },
-        { service: "BetterStack Logs", limit: "Free: 1 GB logs/month" },
-        { service: "Google Analytics", limit: "Free: unlimited" },
-        { service: "Deployment", limit: "Vercel Hobby (free) + custom domain (~$10-15/yr). SSL included. Preview deployments on PRs" },
+    id: "advanced",
+    label: "Advanced",
+    description:
+      "More automation, visibility, and capacity for the selected stage.",
+    tradeoff: "Higher setup time, cost, and operational surface area.",
+    scaffoldValues: {
+      NEXT_PUBLIC_AUTH_PROVIDERS: [
+        "email_verification",
+        "google",
+        "github",
+        "linkedin",
       ],
-      upgradeGuide: [
-        "Startup credits (apply before you need them!): AWS Activate ($1k), GCP for Startups ($2k-$100k), Azure ($1k-$150k)",
-        "Resend → Pro ($20/mo, 50k emails) — first paid upgrade when signups grow past 3k/mo",
-        "Upstash → Pay-as-you-go ($0.2/100k commands) when CMS cache + rate limiter exceed 10k/day",
-        "Neon → Launch ($19/mo) or switch to AWS RDS free tier (12-month runway) when storage/latency matters",
-        "At ~10k MAU: switch Notion CMS → Postgres CMS to remove API rate limit dependency",
-        "Deployment: Vercel Pro ($20/mo) for 1 TB bandwidth + team features. Or deploy on AWS/GCP using startup credits",
-      ],
-    },
-    steps: [
-      {
-        title: "Create a PostgreSQL database",
-        details: [
-          "Sign up at neon.tech or supabase.com (free tier)",
-          "Create a project → copy the connection string → paste into DATABASE_URL",
-        ],
-      },
-      {
-        title: "Generate a BetterAuth secret",
-        details: ["Run: openssl rand -base64 32 → paste into BETTER_AUTH_SECRET"],
-      },
-      {
-        title: "Set up Notion CMS",
-        details: [
-          "Create Notion integration at notion.so/my-integrations",
-          "Duplicate CMS template databases, share with integration",
-          "Copy each database ID → paste into the corresponding fields",
-          "Copy integration token → paste into NOTION_API_TOKEN",
-        ],
-      },
-      {
-        title: "Set up Upstash Redis",
-        details: [
-          "Sign up at upstash.com → create Redis database",
-          "Copy REST URL + Token → paste into Upstash fields",
-        ],
-      },
-      {
-        title: "Set up Resend + Google + GitHub auth",
-        details: [
-          "Resend: resend.com → create API key → paste into RESEND_API_KEY",
-          "Google: console.cloud.google.com → Credentials → OAuth 2.0 Client ID → set callback to {url}/api/auth/callback/google",
-          "GitHub: Settings → Developer Settings → OAuth Apps → set callback to {url}/api/auth/callback/github",
-          "Paste all Client IDs and Secrets into corresponding fields",
-        ],
-      },
-      {
-        title: "Set up Stripe payments",
-        details: [
-          "Sign up at stripe.com → activate your account",
-          "Dashboard → Developers → API keys → copy Secret Key",
-          "Dashboard → Developers → Webhooks → add endpoint: {url}/api/payments/stripe/webhook",
-          "Select events: checkout.session.completed, invoice.payment_succeeded",
-          "Copy the Webhook Signing Secret",
-          "Paste Secret Key and Webhook Secret into fields below",
-        ],
-      },
-      {
-        title: "Set up Vercel Blob + observability",
-        details: [
-          "Vercel → Storage → Create Blob Store → copy token",
-          "BetterStack: betterstack.com → create source → copy token + ingesting host",
-          "Google Analytics: analytics.google.com → create property → copy Measurement ID",
-        ],
-      },
-      {
-        title: "Download, install & run",
-        details: [
-          "Click 'Download Boilerplate'",
-          "Run: pnpm install && pnpm generate && pnpm migrate",
-          "Run: pnpm dev → visit http://localhost:3000",
-          "Test Stripe with test mode keys first, then switch to live",
-        ],
-      },
-    ],
-    highlights: [
-      "Notion CMS",
-      "Email + Google + GitHub auth",
-      "Stripe payments",
-      "Full logging + analytics + rate limiting",
-      "Vercel Blob storage",
-    ],
-    values: {
-      NEXT_PUBLIC_PLATFORM: ["web"],
-      NEXT_PUBLIC_CMS: "notion",
-      NEXT_PUBLIC_AUTH_FRAMEWORK: "better-auth",
-      NEXT_PUBLIC_AUTH_PROVIDERS: ["email_verification", "google", "github"],
       NEXT_PUBLIC_EMAIL_CLIENT: "resend",
-      NEXT_PUBLIC_PAYMENT_GATEWAY: "stripe",
-      NEXT_PUBLIC_IMAGE_STORAGE: "vercel_blob",
-      NEXT_PUBLIC_OBSERVABILITY_FEATURES: ["logging", "google_analytics", "rate_limiting"],
-      NEXT_PUBLIC_ALLOW_RATE_LIMIT: "upstash",
-      NEXT_PUBLIC_SUPPORT_FEATURES: [],
-    },
-  },
-  {
-    id: "production",
-    name: "Production Grade",
-    tagline: "Full-featured stack for serious products. All platforms.",
-    icon: Crown,
-    color: "text-purple-500",
-    bgColor: "border-purple-500/50 bg-purple-500/10",
-    estimatedCost: "~$15-25/mo (or $0 with startup credits) + ~$10-15/yr domain",
-    setupTime: "~2 hrs",
-    accountsNeeded: [
-      "PostgreSQL (dedicated instance)", "Upstash Redis", "Resend",
-      "Google (OAuth)", "GitHub (OAuth)", "LinkedIn (OAuth)",
-      "Stripe", "Cloudflare R2", "BetterStack", "Google Analytics", "Calendly",
-    ],
-    secretsToFill: [
-      "DATABASE_URL", "BETTER_AUTH_SECRET",
-      "UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN",
-      "RESEND_API_KEY",
-      "AUTH_GOOGLE_CLIENT_ID", "AUTH_GOOGLE_CLIENT_SECRET",
-      "AUTH_GITHUB_CLIENT_ID", "AUTH_GITHUB_CLIENT_SECRET",
-      "AUTH_LINKEDIN_CLIENT_ID", "AUTH_LINKEDIN_CLIENT_SECRET",
-      "STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET",
-      "R2_ACCOUNT_ID", "R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY", "R2_BUCKET_NAME", "NEXT_PUBLIC_R2_PUBLIC_URL",
-      "BETTERSTACK_TELEMETRY_SOURCE_TOKEN", "BETTERSTACK_TELEMETRY_INGESTING_HOST",
-      "NEXT_PUBLIC_GOOGLE_ANALYTICS_MEASUREMENT_ID",
-      "NEXT_PUBLIC_SUPPORT_MAIL", "NEXT_PUBLIC_CALENDLY_BOOKING_URL",
-    ],
-    capacity: {
-      estimatedMAU: "~50,000–100,000",
-      firstBottleneck: "Postgres connections & compute — at this scale, connection pooling and query optimization matter most",
-      serviceLimits: [
-        { service: "Postgres (dedicated)", limit: "Supabase Pro ($25/mo, 8 GB), Neon Scale ($69/mo), or AWS RDS (use startup credits)", bottleneck: true },
-        { service: "Alt: AWS RDS", limit: "Free tier for 12 months, then ~$15-50/mo. AWS Activate: $1,000 credits. Great for production workloads" },
-        { service: "Alt: GCP Cloud SQL", limit: "Pay-as-you-go ~$10-40/mo. Google for Startups: $2k–$100k credits — can run production free for 1-2 years" },
-        { service: "Upstash Redis Pro", limit: "Pay-as-you-go, ~1M commands/day at $0.2/100k" },
-        { service: "Resend Pro", limit: "$20/mo for 50k emails — upgrade to Business ($80/mo) for 200k" },
-        { service: "Cloudflare R2", limit: "10 GB free, no egress fees, 10M class A ops/mo. Scales to TBs at $0.015/GB" },
-        { service: "Stripe", limit: "No cap — 2.9% + 30¢ per tx. Volume discounts at $1M+/yr" },
-        { service: "BetterStack", limit: "Free: 1 GB logs. Pro ($25/mo): 5 GB + alerting" },
-        { service: "Deployment", limit: "Vercel Pro ($20/mo): 1 TB bandwidth, 1000 GB-hrs. Or self-host on AWS/GCP using startup credits" },
-        { service: "Domain", limit: "~$10-15/yr (.com). Add $10-20/yr for business email (Google Workspace or Zoho)" },
-        { service: "Calendly Pro", limit: "$10/mo per seat — unlimited event types + team scheduling" },
+      NEXT_PUBLIC_OBSERVABILITY_FEATURES: [
+        "logging",
+        "google_analytics",
+        "rate_limiting",
       ],
-      upgradeGuide: [
-        "Startup credits stretch far here: AWS Activate ($1k) + GCP for Startups ($2k-$100k) can cover 1-2 years of production infra",
-        "This preset is already production-grade — upgrades are about scaling, not unblocking",
-        "At ~100k MAU: add PgBouncer or Supabase connection pooling for concurrent query load",
-        "At ~100k MAU: Resend → Business ($80/mo, 200k emails) or switch to AWS SES ($0.10/1000 emails)",
-        "At ~250k MAU: Vercel Enterprise or self-host on AWS/GCP with CloudFront/Cloud CDN",
-        "At ~500k MAU: multi-region Postgres replicas + dedicated Redis (Upstash Enterprise)",
-        "Cost optimization: move from Vercel to AWS/GCP self-hosting when startup credits are available — saves $20-100/mo",
-      ],
-    },
-    steps: [
-      {
-        title: "Set up PostgreSQL + Upstash Redis",
-        details: [
-          "Use a production-grade provider: Supabase Pro ($25/mo), Neon Scale, Railway ($5/mo), or AWS RDS",
-          "Create database → copy connection string → paste into DATABASE_URL",
-          "Upstash: create Redis database → copy REST URL + Token",
-          "Upstash handles both CMS caching and API rate limiting",
-        ],
-      },
-      {
-        title: "Generate a BetterAuth secret",
-        details: ["Run: openssl rand -base64 32 → paste into BETTER_AUTH_SECRET"],
-      },
-      {
-        title: "Set up all 4 auth providers",
-        details: [
-          "Resend: resend.com → API key → RESEND_API_KEY",
-          "Google: console.cloud.google.com → OAuth 2.0 → callback: {url}/api/auth/callback/google",
-          "GitHub: Settings → Developer Settings → OAuth Apps → callback: {url}/api/auth/callback/github",
-          "LinkedIn: linkedin.com/developers → Create App → Auth tab → callback: {url}/api/auth/callback/linkedin",
-          "Paste all Client IDs and Secrets into corresponding fields",
-        ],
-      },
-      {
-        title: "Set up Stripe payments",
-        details: [
-          "stripe.com → activate account → copy API Secret Key",
-          "Create webhook endpoint: {url}/api/payments/stripe/webhook",
-          "Select events: checkout.session.completed, invoice.payment_succeeded",
-          "Copy Webhook Signing Secret → paste into fields",
-        ],
-      },
-      {
-        title: "Set up Cloudflare R2 storage",
-        details: [
-          "Cloudflare dashboard → R2 → Create bucket",
-          "Settings → R2 API Tokens → Create token with read/write permissions",
-          "Copy Account ID, Access Key ID, Secret Access Key, Bucket Name",
-          "Set up a public custom domain for the bucket → paste as NEXT_PUBLIC_R2_PUBLIC_URL",
-          "Paste all values into R2 fields below",
-        ],
-      },
-      {
-        title: "Set up observability",
-        details: [
-          "BetterStack: betterstack.com → Telemetry → Create source → copy token + host",
-          "Google Analytics: analytics.google.com → create property → copy Measurement ID (G-...)",
-          "Rate limiting is auto-configured via the Upstash Redis you set up in step 1",
-        ],
-      },
-      {
-        title: "Set up support channels",
-        details: [
-          "Enter your support email address in NEXT_PUBLIC_SUPPORT_MAIL",
-          "Calendly: calendly.com → create event type → copy the booking URL",
-          "Paste into NEXT_PUBLIC_CALENDLY_BOOKING_URL",
-        ],
-      },
-      {
-        title: "Seed CMS & deploy",
-        details: [
-          "Run: pnpm install && pnpm generate && pnpm migrate",
-          "Seed the Postgres CMS tables with your landing page content",
-          "Run: pnpm dev to test all platforms locally",
-          "Deploy web to Vercel, build mobile with EAS, package desktop with electron-vite",
-        ],
-      },
-    ],
-    highlights: [
-      "Postgres CMS (full DB control)",
-      "All 4 auth providers (Email, Google, GitHub, LinkedIn)",
-      "Stripe payments with webhooks",
-      "Cloudflare R2 (100 GB free tier)",
-      "Full observability (logs + analytics + rate limiting)",
-      "Support mail + Calendly booking",
-      "Web + Mobile + Desktop",
-    ],
-    values: {
-      NEXT_PUBLIC_PLATFORM: ["web", "mobile", "desktop"],
-      NEXT_PUBLIC_CMS: "postgres",
-      NEXT_PUBLIC_AUTH_FRAMEWORK: "better-auth",
-      NEXT_PUBLIC_AUTH_PROVIDERS: ["email_verification", "google", "github", "linkedin"],
-      NEXT_PUBLIC_EMAIL_CLIENT: "resend",
-      NEXT_PUBLIC_PAYMENT_GATEWAY: "stripe",
-      NEXT_PUBLIC_IMAGE_STORAGE: "cloudflare_r2",
-      NEXT_PUBLIC_OBSERVABILITY_FEATURES: ["logging", "google_analytics", "rate_limiting"],
-      NEXT_PUBLIC_ALLOW_RATE_LIMIT: "upstash",
-      NEXT_PUBLIC_SUPPORT_FEATURES: ["support_mail", "calendly"],
-    },
-  },
-  {
-    id: "mobile-first",
-    name: "Mobile-First",
-    tagline: "Web backend + native mobile app. Postgres API-ready.",
-    icon: Smartphone,
-    color: "text-green-500",
-    bgColor: "border-green-500/50 bg-green-500/10",
-    estimatedCost: "$0/mo + Stripe fees + ~$10-15/yr domain",
-    setupTime: "~1.5 hrs",
-    accountsNeeded: [
-      "PostgreSQL (Neon/Supabase/AWS RDS)", "Upstash Redis", "Resend",
-      "Google (OAuth)", "GitHub (OAuth)", "Stripe", "Vercel (Blob + hosting)",
-      "BetterStack", "Google Analytics", "Expo (EAS Build)",
-    ],
-    secretsToFill: [
-      "DATABASE_URL", "BETTER_AUTH_SECRET", "BLOB_READ_WRITE_TOKEN",
-      "UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN",
-      "RESEND_API_KEY",
-      "AUTH_GOOGLE_CLIENT_ID", "AUTH_GOOGLE_CLIENT_SECRET",
-      "AUTH_GITHUB_CLIENT_ID", "AUTH_GITHUB_CLIENT_SECRET",
-      "STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET",
-      "BETTERSTACK_TELEMETRY_SOURCE_TOKEN", "BETTERSTACK_TELEMETRY_INGESTING_HOST",
-      "NEXT_PUBLIC_GOOGLE_ANALYTICS_MEASUREMENT_ID",
-      "NEXT_PUBLIC_SUPPORT_MAIL",
-    ],
-    capacity: {
-      estimatedMAU: "~3,000–5,000",
-      firstBottleneck: "Resend email (3,000/month) — both web and mobile signups share the same email verification pool",
-      serviceLimits: [
-        { service: "Resend Email", limit: "Free: 3,000/month — web + mobile signups share this", bottleneck: true },
-        { service: "Neon Postgres", limit: "Free: 0.5 GB, 190 compute-hrs — mobile API calls increase DB load vs web-only" },
-        { service: "Alt: AWS RDS", limit: "Free tier: 750 hrs/mo x 12 months, 20 GB. AWS Activate: $1,000 credits for startups" },
-        { service: "Alt: GCP Cloud SQL", limit: "Free: db-f1-micro. Google for Startups: $2k–$100k credits" },
-        { service: "Upstash Redis", limit: "Free: 10k commands/day — CMS cache for both web + mobile" },
-        { service: "Stripe", limit: "No cap — 2.9% + 30¢ per tx" },
-        { service: "Vercel Blob", limit: "Free: 1 GB — shared across web + mobile uploads" },
-        { service: "Vercel Hosting (API)", limit: "Hobby (free): 100 GB bandwidth — mobile app hits API more frequently than web" },
-        { service: "BetterStack Logs", limit: "Free: 1 GB/month" },
-        { service: "EAS Build (Expo)", limit: "Free: 30 builds/month. Enough for dev, tight for CI/CD" },
-        { service: "Deployment", limit: "Web: Vercel (free). Mobile: App Store ($99/yr Apple) + Play Store ($25 one-time). Domain ~$10-15/yr" },
-      ],
-      upgradeGuide: [
-        "Startup credits: AWS Activate ($1k), GCP for Startups ($2k-$100k) — can cover DB + hosting for 1-2 years",
-        "Resend → Pro ($20/mo, 50k emails) — first upgrade, shared across both platforms",
-        "Neon → Launch ($19/mo) or AWS RDS free tier — mobile apps burn compute hours faster with frequent API calls",
-        "Upstash → Pay-as-you-go — mobile polling/sync can spike Redis usage above 10k/day",
-        "EAS Build → Pro ($99/mo) for priority builds + unlimited builds when shipping frequently",
-        "At ~10k MAU: add API response caching to reduce Postgres load from mobile clients",
-        "At ~50k MAU: consider dedicated API server (separate from Next.js) for mobile traffic",
-        "App store costs: Apple Developer Program ($99/yr), Google Play ($25 one-time) — required for publishing",
-      ],
-    },
-    steps: [
-      {
-        title: "Set up PostgreSQL + Upstash Redis",
-        details: [
-          "Postgres: neon.tech or supabase.com → create database → copy connection string",
-          "Upstash: upstash.com → create Redis → copy REST URL + Token",
-          "Postgres CMS is used here (better for mobile API consumption than Notion)",
-        ],
-      },
-      {
-        title: "Generate a BetterAuth secret",
-        details: ["Run: openssl rand -base64 32 → paste into BETTER_AUTH_SECRET"],
-      },
-      {
-        title: "Set up auth providers + Resend",
-        details: [
-          "Resend: resend.com → create API key",
-          "Google: console.cloud.google.com → OAuth 2.0 → callback: {url}/api/auth/callback/google",
-          "GitHub: Settings → Developer Settings → OAuth Apps → callback: {url}/api/auth/callback/github",
-        ],
-      },
-      {
-        title: "Set up Stripe payments",
-        details: [
-          "stripe.com → API keys → copy Secret Key",
-          "Create webhook: {url}/api/payments/stripe/webhook",
-          "Copy Signing Secret → paste into fields",
-        ],
-      },
-      {
-        title: "Set up storage + observability",
-        details: [
-          "Vercel Blob: dashboard → Storage → Create Blob Store → copy token",
-          "BetterStack: betterstack.com → create source → copy token + host",
-          "Google Analytics: create property → copy Measurement ID",
-        ],
-      },
-      {
-        title: "Install Expo and test mobile",
-        details: [
-          "Install Expo Go on your phone (iOS/Android)",
-          "Run: pnpm install && pnpm generate && pnpm migrate",
-          "Run: pnpm dev → web on :3000, mobile on :8081",
-          "Scan the QR code from Metro bundler with Expo Go",
-          "For production: set up EAS Build for app store deployment",
-        ],
-      },
-    ],
-    highlights: [
-      "Web + Mobile platforms",
-      "Postgres CMS (API-friendly for mobile)",
-      "Email + Google + GitHub auth",
-      "Stripe payments",
-      "Logging + Analytics",
-      "Support mail",
-    ],
-    values: {
-      NEXT_PUBLIC_PLATFORM: ["web", "mobile"],
-      NEXT_PUBLIC_CMS: "postgres",
-      NEXT_PUBLIC_AUTH_FRAMEWORK: "better-auth",
-      NEXT_PUBLIC_AUTH_PROVIDERS: ["email_verification", "google", "github"],
-      NEXT_PUBLIC_EMAIL_CLIENT: "resend",
-      NEXT_PUBLIC_PAYMENT_GATEWAY: "stripe",
-      NEXT_PUBLIC_IMAGE_STORAGE: "vercel_blob",
-      NEXT_PUBLIC_OBSERVABILITY_FEATURES: ["logging", "google_analytics"],
       NEXT_PUBLIC_SUPPORT_FEATURES: ["support_mail"],
     },
   },
-  {
-    id: "content-heavy",
-    name: "Content / Blog SaaS",
-    tagline: "Notion-powered CMS. Rich content editing without code.",
-    icon: FileText,
-    color: "text-orange-500",
-    bgColor: "border-orange-500/50 bg-orange-500/10",
-    estimatedCost: "$0/mo + ~$10-15/yr domain",
-    setupTime: "~40 min",
-    accountsNeeded: [
-      "PostgreSQL (Neon/Supabase/AWS RDS)", "Notion", "Upstash Redis",
-      "Resend", "Google (OAuth)", "Vercel (Blob + hosting)", "Google Analytics",
-    ],
-    secretsToFill: [
-      "DATABASE_URL", "BETTER_AUTH_SECRET", "BLOB_READ_WRITE_TOKEN",
-      "NOTION_API_TOKEN", "LANDING_DATABASE_ID", "HERO_DATABASE_ID", "FEATURE_DATABASE_ID",
-      "TESTIMONIAL_DATABASE_ID", "PRICING_DATABASE_ID", "FAQ_DATABASE_ID", "FOOTER_DATABASE_ID", "DOCUMENTATION_DATABASE_ID",
-      "UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN",
-      "RESEND_API_KEY",
-      "AUTH_GOOGLE_CLIENT_ID", "AUTH_GOOGLE_CLIENT_SECRET",
-      "NEXT_PUBLIC_GOOGLE_ANALYTICS_MEASUREMENT_ID",
-    ],
-    capacity: {
-      estimatedMAU: "~3,000 (registered), ~100,000+ (visitors)",
-      firstBottleneck: "Notion API rate limit (3 req/sec) — Upstash cache absorbs most reads, but cache misses during content updates can spike",
-      serviceLimits: [
-        { service: "Notion API", limit: "Free forever — 3 req/sec, but cold cache after content edits hits this", bottleneck: true },
-        { service: "Upstash Redis", limit: "Free: 10k commands/day — each uncached page view = 1-3 Notion reads via Redis" },
-        { service: "Resend Email", limit: "Free: 3,000/month — only for registered user signups, visitors don't need email" },
-        { service: "Neon Postgres", limit: "Free: 0.5 GB — only user data, content is in Notion" },
-        { service: "Alt: AWS RDS", limit: "Free tier: 750 hrs/mo x 12 months, 20 GB. AWS Activate: $1,000 credits" },
-        { service: "Alt: GCP Cloud SQL", limit: "Free: db-f1-micro. Google for Startups: $2k–$100k credits" },
-        { service: "Vercel Blob", limit: "Free: 1 GB — blog images, media assets" },
-        { service: "Vercel Hosting", limit: "Hobby (free): 100 GB bandwidth — content-heavy sites use more per visit" },
-        { service: "Google Analytics", limit: "Free: unlimited" },
-        { service: "Deployment", limit: "Vercel (free) + domain (~$10-15/yr). SSL included. Content sites benefit from edge caching" },
-      ],
-      upgradeGuide: [
-        "Upstash → Pay-as-you-go when hitting 10k/day — content sites have high cache-read volume",
-        "At ~200k visitors/mo: increase Upstash cache TTL to reduce Notion API calls",
-        "At ~500k visitors/mo: switch Notion CMS → Postgres CMS to remove the 3 req/sec limit entirely",
-        "Vercel → Pro ($20/mo) at ~100k visitors for 1 TB bandwidth",
-        "Resend only matters for registered users — most content visitors are anonymous, so 3k/mo goes far",
-        "Consider Vercel ISR (Incremental Static Regeneration) for popular content pages to reduce API/DB load",
-        "If using startup credits: host on AWS/GCP instead of Vercel for even more free bandwidth via CloudFront/Cloud CDN",
-      ],
-    },
-    steps: [
-      {
-        title: "Create a PostgreSQL database",
-        details: [
-          "neon.tech or supabase.com → free tier → copy connection string",
-          "This stores user data; your content lives in Notion",
-        ],
-      },
-      {
-        title: "Generate a BetterAuth secret",
-        details: ["Run: openssl rand -base64 32 → paste into BETTER_AUTH_SECRET"],
-      },
-      {
-        title: "Set up Notion CMS (the core of this preset)",
-        details: [
-          "notion.so/my-integrations → Create new integration → copy token",
-          "Duplicate the SaaS Forge CMS template databases into your workspace",
-          "Each database becomes a section: Hero, Features, Testimonials, Pricing, FAQ, Footer, Docs",
-          "Share each database with your integration (... menu → Connections → Add)",
-          "Copy each database ID from the URL → paste into corresponding fields",
-          "Notion lets non-technical team members edit content without touching code",
-        ],
-      },
-      {
-        title: "Set up Upstash Redis (CMS caching)",
-        details: [
-          "upstash.com → create Redis database → copy REST URL + Token",
-          "Caches Notion API responses so your landing page loads fast",
-          "Free tier: 10k requests/day (plenty for CMS reads)",
-        ],
-      },
-      {
-        title: "Set up auth + storage",
-        details: [
-          "Resend: resend.com → API key for email verification",
-          "Google: console.cloud.google.com → OAuth 2.0 Client ID",
-          "Vercel Blob: dashboard → Storage → Create Blob Store → copy token",
-        ],
-      },
-      {
-        title: "Set up Google Analytics",
-        details: [
-          "analytics.google.com → create property → copy Measurement ID (G-...)",
-          "Track which content pages drive the most engagement",
-        ],
-      },
-      {
-        title: "Download & run",
-        details: [
-          "Click 'Download Boilerplate'",
-          "Run: pnpm install && pnpm generate && pnpm migrate && pnpm dev",
-          "Edit content in Notion → changes reflect on your site (after cache TTL)",
-        ],
-      },
-    ],
-    highlights: [
-      "Notion CMS (non-technical content editing)",
-      "Upstash Redis caching for fast page loads",
-      "Email + Google auth",
-      "Google Analytics for content tracking",
-      "Vercel Blob for media",
-      "No payment setup needed",
-      "All free tier services",
-    ],
-    values: {
-      NEXT_PUBLIC_PLATFORM: ["web"],
-      NEXT_PUBLIC_CMS: "notion",
-      NEXT_PUBLIC_AUTH_FRAMEWORK: "better-auth",
-      NEXT_PUBLIC_AUTH_PROVIDERS: ["email_verification", "google"],
-      NEXT_PUBLIC_EMAIL_CLIENT: "resend",
-      NEXT_PUBLIC_PAYMENT_GATEWAY: "none",
-      NEXT_PUBLIC_IMAGE_STORAGE: "vercel_blob",
-      NEXT_PUBLIC_OBSERVABILITY_FEATURES: ["google_analytics"],
-      NEXT_PUBLIC_SUPPORT_FEATURES: [],
-    },
-  },
-  {
-    id: "enterprise-secure",
-    name: "Enterprise / B2B",
-    tagline: "Maximum auth options + observability for B2B SaaS.",
-    icon: Shield,
-    color: "text-red-500",
-    bgColor: "border-red-500/50 bg-red-500/10",
-    estimatedCost: "~$20-30/mo (or $0 with startup credits) + ~$10-15/yr domain",
-    setupTime: "~2.5 hrs",
-    accountsNeeded: [
-      "PostgreSQL (AWS RDS/GCP Cloud SQL/Supabase Pro)", "Upstash Redis", "Resend",
-      "Google (OAuth)", "GitHub (OAuth)", "LinkedIn (OAuth)",
-      "Stripe", "Cloudflare R2", "BetterStack", "Google Analytics", "Calendly",
-    ],
-    secretsToFill: [
-      "DATABASE_URL", "BETTER_AUTH_SECRET",
-      "UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN",
-      "RESEND_API_KEY",
-      "AUTH_GOOGLE_CLIENT_ID", "AUTH_GOOGLE_CLIENT_SECRET",
-      "AUTH_GITHUB_CLIENT_ID", "AUTH_GITHUB_CLIENT_SECRET",
-      "AUTH_LINKEDIN_CLIENT_ID", "AUTH_LINKEDIN_CLIENT_SECRET",
-      "STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET",
-      "R2_ACCOUNT_ID", "R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY", "R2_BUCKET_NAME", "NEXT_PUBLIC_R2_PUBLIC_URL",
-      "BETTERSTACK_TELEMETRY_SOURCE_TOKEN", "BETTERSTACK_TELEMETRY_INGESTING_HOST",
-      "NEXT_PUBLIC_GOOGLE_ANALYTICS_MEASUREMENT_ID",
-      "NEXT_PUBLIC_SUPPORT_MAIL", "NEXT_PUBLIC_CALENDLY_BOOKING_URL",
-    ],
-    capacity: {
-      estimatedMAU: "~50,000–200,000",
-      firstBottleneck: "Postgres connections — B2B apps often have complex queries (dashboards, reports, multi-tenant data) that stress connection pools",
-      serviceLimits: [
-        { service: "AWS RDS", limit: "Free tier: 750 hrs/mo x 12 months, 20 GB. Then ~$15-50/mo. AWS Activate: $1,000 credits", bottleneck: true },
-        { service: "Alt: GCP Cloud SQL", limit: "Free: db-f1-micro. Google for Startups: $2k–$100k credits — run enterprise DB free for 1-2 years" },
-        { service: "Alt: Supabase Pro", limit: "$25/mo: 8 GB storage, dedicated compute, connection pooling, 100k MAU auth" },
-        { service: "Upstash Redis Pro", limit: "Pay-as-you-go — rate limiting on every API call can spike to 100k+ commands/day" },
-        { service: "Resend Pro", limit: "$20/mo for 50k emails — transactional + marketing" },
-        { service: "Cloudflare R2", limit: "Free: 10 GB, no egress fees. Then $0.015/GB/month — no surprise bills" },
-        { service: "Stripe", limit: "No cap — 2.9% + 30¢ per tx. Volume discounts at $1M+/yr" },
-        { service: "BetterStack Pro", limit: "$25/mo: 5 GB logs + alerting. Enterprise needs more log retention" },
-        { service: "Deployment", limit: "Vercel Pro ($20/mo): 1 TB bandwidth. Or self-host on AWS/GCP using startup credits" },
-        { service: "Domain + Email", limit: "~$10-15/yr domain + ~$6-12/mo business email (Google Workspace or Zoho)" },
-        { service: "Calendly Pro", limit: "$10/mo per seat — unlimited event types + team scheduling" },
-      ],
-      upgradeGuide: [
-        "Startup credits are huge here: AWS Activate ($1k) + GCP for Startups ($2k-$100k) can cover 1-2 years of enterprise-grade infra at $0",
-        "B2B scales differently: fewer users but heavier per-user load (dashboards, API usage, file uploads)",
-        "At ~50k MAU: add PgBouncer or Supabase connection pooling for concurrent dashboard queries",
-        "At ~100k MAU: multi-region Postgres replicas (AWS RDS Multi-AZ or GCP regional) for global B2B customers",
-        "Resend → Business ($80/mo, 200k emails) or AWS SES ($0.10/1000 emails) for high volume",
-        "Cloudflare R2 scales linearly — no egress fees unlike S3. Enterprise-safe for large file storage",
-        "At enterprise scale: evaluate SOC 2 compliance requirements for each provider",
-        "Cost optimization: with GCP $25k credits, you can run production for 1-2 years before paying anything for infra",
-      ],
-    },
-    steps: [
-      {
-        title: "Set up production PostgreSQL + Redis",
-        details: [
-          "Use Supabase Pro, AWS RDS, or Railway for production-grade Postgres",
-          "Upstash Redis for caching + rate limiting (protects your API from abuse)",
-          "Postgres CMS gives you full SQL control over landing page content",
-        ],
-      },
-      {
-        title: "Generate a BetterAuth secret",
-        details: ["Run: openssl rand -base64 32 → paste into BETTER_AUTH_SECRET"],
-      },
-      {
-        title: "Set up all 4 auth providers (LinkedIn is key for B2B)",
-        details: [
-          "Resend: resend.com → API key for transactional emails",
-          "Google: console.cloud.google.com → OAuth 2.0 Client ID",
-          "GitHub: Settings → Developer Settings → OAuth Apps",
-          "LinkedIn: linkedin.com/developers → Create App → Auth settings",
-          "LinkedIn OAuth is especially valuable for B2B — users can sign in with their work identity",
-          "Set callback URLs for each: {url}/api/auth/callback/{provider}",
-        ],
-      },
-      {
-        title: "Set up Stripe payments",
-        details: [
-          "stripe.com → activate account → copy Secret Key",
-          "Create webhook: {url}/api/payments/stripe/webhook",
-          "For B2B, consider Stripe Billing for recurring subscriptions",
-        ],
-      },
-      {
-        title: "Set up Cloudflare R2 (enterprise-scale storage)",
-        details: [
-          "Cloudflare dashboard → R2 → Create bucket",
-          "Create API token with read/write permissions",
-          "Set up custom public domain for the bucket",
-          "R2 offers 10 GB/mo free storage + no egress fees (unlike S3)",
-        ],
-      },
-      {
-        title: "Set up full observability stack",
-        details: [
-          "BetterStack: create log source → copy token + ingesting host",
-          "Google Analytics: create property → copy Measurement ID",
-          "Rate limiting auto-configured via Upstash (set up in step 1)",
-          "Monitor API usage, track errors, and alert on anomalies",
-        ],
-      },
-      {
-        title: "Set up support channels",
-        details: [
-          "Enter your support email in NEXT_PUBLIC_SUPPORT_MAIL",
-          "Calendly: create event type for demo/sales calls → copy booking URL",
-          "Both channels give enterprise customers ways to reach you directly",
-        ],
-      },
-      {
-        title: "Seed Postgres CMS, test & deploy",
-        details: [
-          "Run: pnpm install && pnpm generate && pnpm migrate",
-          "Seed landing page content into Postgres CMS tables",
-          "Test auth flows with all 4 providers",
-          "Deploy to Vercel + build desktop app with electron-vite",
-        ],
-      },
-    ],
-    highlights: [
-      "All 4 auth providers (LinkedIn for B2B)",
-      "Postgres CMS (full SQL control)",
-      "Stripe payments",
-      "Cloudflare R2 (enterprise storage, no egress fees)",
-      "Full observability + rate limiting",
-      "Support mail + Calendly booking",
-      "Web + Desktop",
-    ],
-    values: {
-      NEXT_PUBLIC_PLATFORM: ["web", "desktop"],
-      NEXT_PUBLIC_CMS: "postgres",
-      NEXT_PUBLIC_AUTH_FRAMEWORK: "better-auth",
-      NEXT_PUBLIC_AUTH_PROVIDERS: ["email_verification", "google", "github", "linkedin"],
-      NEXT_PUBLIC_EMAIL_CLIENT: "resend",
-      NEXT_PUBLIC_PAYMENT_GATEWAY: "stripe",
-      NEXT_PUBLIC_IMAGE_STORAGE: "cloudflare_r2",
-      NEXT_PUBLIC_OBSERVABILITY_FEATURES: ["logging", "google_analytics", "rate_limiting"],
-      NEXT_PUBLIC_ALLOW_RATE_LIMIT: "upstash",
-      NEXT_PUBLIC_SUPPORT_FEATURES: ["support_mail", "calendly"],
-    },
-  },
-  {
-    id: "developer-portfolio",
-    name: "Developer Portfolio",
-    tagline: "Showcase projects with Notion CMS. GitHub auth for devs.",
-    icon: Code,
-    color: "text-indigo-500",
-    bgColor: "border-indigo-500/50 bg-indigo-500/10",
-    estimatedCost: "$0/mo + ~$10-15/yr domain",
-    setupTime: "~30 min",
-    accountsNeeded: [
-      "PostgreSQL (Neon/Supabase/AWS RDS)", "Notion", "Upstash Redis",
-      "GitHub (OAuth)", "Vercel (Blob + hosting)", "Google Analytics",
-    ],
-    secretsToFill: [
-      "DATABASE_URL", "BETTER_AUTH_SECRET", "BLOB_READ_WRITE_TOKEN",
-      "NOTION_API_TOKEN", "LANDING_DATABASE_ID", "HERO_DATABASE_ID", "FEATURE_DATABASE_ID",
-      "TESTIMONIAL_DATABASE_ID", "PRICING_DATABASE_ID", "FAQ_DATABASE_ID", "FOOTER_DATABASE_ID", "DOCUMENTATION_DATABASE_ID",
-      "UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN",
-      "AUTH_GITHUB_CLIENT_ID", "AUTH_GITHUB_CLIENT_SECRET",
-      "NEXT_PUBLIC_GOOGLE_ANALYTICS_MEASUREMENT_ID",
-    ],
-    capacity: {
-      estimatedMAU: "~500 (registered), ~50,000+ (visitors)",
-      firstBottleneck: "Upstash Redis (10k commands/day) — portfolio sites are read-heavy, every page view hits the Notion cache",
-      serviceLimits: [
-        { service: "Upstash Redis", limit: "Free: 10k commands/day — each visitor page view reads 1-3 cached Notion entries", bottleneck: true },
-        { service: "Notion API", limit: "Free forever — 3 req/sec, cached by Upstash" },
-        { service: "Neon Postgres", limit: "Free: 0.5 GB — minimal usage (few registered users for a portfolio)" },
-        { service: "Alt: AWS RDS", limit: "Free tier: 750 hrs/mo x 12 months, 20 GB — overkill for a portfolio but free" },
-        { service: "Vercel Blob", limit: "Free: 1 GB — project screenshots, resume PDF, etc." },
-        { service: "Vercel Hosting", limit: "Hobby (free): 100 GB bandwidth/mo + custom domain with SSL" },
-        { service: "Google Analytics", limit: "Free: unlimited" },
-        { service: "Domain", limit: "~$10-15/yr (.com) or ~$3-5/yr (.dev, .me). Cloudflare Registrar has at-cost pricing" },
-      ],
-      upgradeGuide: [
-        "Upstash → Pay-as-you-go ($0.2/100k) when visitors spike (e.g. HN front page, viral tweet)",
-        "Increase Upstash cache TTL to 24hrs+ since portfolio content rarely changes",
-        "Vercel → Pro ($20/mo) if portfolio goes viral and exceeds 100 GB bandwidth",
-        "For portfolios, you likely won't outgrow Neon free tier (very few registered users)",
-        "If adding a blog with high traffic: switch to Postgres CMS + ISR for static generation",
-        "Consider .dev or .me domains for developer portfolios — cheaper and on-brand ($3-5/yr)",
-      ],
-    },
-    steps: [
-      {
-        title: "Create PostgreSQL + Upstash Redis",
-        details: [
-          "neon.tech → free tier → copy connection string",
-          "upstash.com → create Redis → copy REST URL + Token",
-        ],
-      },
-      {
-        title: "Generate a BetterAuth secret",
-        details: ["Run: openssl rand -base64 32 → paste into BETTER_AUTH_SECRET"],
-      },
-      {
-        title: "Set up Notion CMS for portfolio content",
-        details: [
-          "notion.so/my-integrations → create integration → copy token",
-          "Duplicate CMS templates → share with integration",
-          "Use Feature database for project showcases",
-          "Use Documentation database for blog posts / write-ups",
-          "Copy all database IDs → paste into fields",
-        ],
-      },
-      {
-        title: "Create GitHub OAuth app",
-        details: [
-          "GitHub → Settings → Developer Settings → OAuth Apps → New",
-          "Callback: {url}/api/auth/callback/github",
-          "GitHub-only auth keeps it simple — your audience is developers",
-        ],
-      },
-      {
-        title: "Set up Vercel Blob + Google Analytics",
-        details: [
-          "Vercel → Storage → Blob Store → copy token",
-          "Google Analytics → create property → copy Measurement ID",
-        ],
-      },
-      {
-        title: "Download & deploy",
-        details: [
-          "Click 'Download Boilerplate'",
-          "Run: pnpm install && pnpm generate && pnpm migrate && pnpm dev",
-          "Customize the theme color and content in Notion",
-          "Deploy to Vercel with a custom domain",
-        ],
-      },
-    ],
-    highlights: [
-      "Notion CMS for easy content updates",
-      "GitHub-only auth (perfect for dev audience)",
-      "No payment or email setup needed",
-      "Vercel Blob for project screenshots",
-      "Google Analytics for visitor tracking",
-      "All free tier",
-    ],
-    values: {
-      NEXT_PUBLIC_PLATFORM: ["web"],
-      NEXT_PUBLIC_CMS: "notion",
-      NEXT_PUBLIC_AUTH_FRAMEWORK: "better-auth",
-      NEXT_PUBLIC_AUTH_PROVIDERS: ["github"],
-      NEXT_PUBLIC_EMAIL_CLIENT: "none",
-      NEXT_PUBLIC_PAYMENT_GATEWAY: "none",
-      NEXT_PUBLIC_IMAGE_STORAGE: "vercel_blob",
-      NEXT_PUBLIC_OBSERVABILITY_FEATURES: ["google_analytics"],
-      NEXT_PUBLIC_SUPPORT_FEATURES: [],
-    },
-  },
-  {
-    id: "ai-saas",
-    name: "AI SaaS / API Wrapper",
-    tagline: "Credits-based billing + rate limiting for AI endpoints.",
-    icon: Sparkles,
-    color: "text-violet-500",
-    bgColor: "border-violet-500/50 bg-violet-500/10",
-    estimatedCost: "$0/mo + Stripe fees + AI API costs + ~$10-15/yr domain",
-    setupTime: "~1.5 hrs",
-    accountsNeeded: [
-      "PostgreSQL (Neon/Supabase/AWS RDS)", "Upstash Redis", "Resend",
-      "Google (OAuth)", "GitHub (OAuth)", "Stripe",
-      "Vercel (Blob + hosting)", "BetterStack", "Google Analytics", "Calendly",
-    ],
-    secretsToFill: [
-      "DATABASE_URL", "BETTER_AUTH_SECRET", "BLOB_READ_WRITE_TOKEN",
-      "UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN",
-      "RESEND_API_KEY",
-      "AUTH_GOOGLE_CLIENT_ID", "AUTH_GOOGLE_CLIENT_SECRET",
-      "AUTH_GITHUB_CLIENT_ID", "AUTH_GITHUB_CLIENT_SECRET",
-      "STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET",
-      "BETTERSTACK_TELEMETRY_SOURCE_TOKEN", "BETTERSTACK_TELEMETRY_INGESTING_HOST",
-      "NEXT_PUBLIC_GOOGLE_ANALYTICS_MEASUREMENT_ID",
-      "NEXT_PUBLIC_SUPPORT_MAIL", "NEXT_PUBLIC_CALENDLY_BOOKING_URL",
-    ],
-    capacity: {
-      estimatedMAU: "~2,000–3,000",
-      firstBottleneck: "Upstash Redis (10k commands/day) — every AI API call triggers rate limit check + credit validation = 2-3 Redis commands per request",
-      serviceLimits: [
-        { service: "Upstash Redis", limit: "Free: 10k commands/day — rate limiting + credit checks consume 2-3 commands per AI call", bottleneck: true },
-        { service: "Resend Email", limit: "Free: 3,000/month — signups + credit purchase receipts" },
-        { service: "Neon Postgres", limit: "Free: 0.5 GB — user data + credit balances + usage logs fill faster with per-call tracking" },
-        { service: "Alt: AWS RDS", limit: "Free tier: 750 hrs/mo x 12 months, 20 GB. AWS Activate: $1,000 credits — AI startups often qualify" },
-        { service: "Alt: GCP Cloud SQL", limit: "Free: db-f1-micro. Google for Startups: $2k–$100k credits — great for AI startups using Vertex AI too" },
-        { service: "Stripe", limit: "No cap — 2.9% + 30¢ per credit purchase" },
-        { service: "Vercel Blob", limit: "Free: 1 GB — user uploads for AI processing" },
-        { service: "Vercel Serverless", limit: "Hobby: 10s function timeout — long AI calls may hit this" },
-        { service: "BetterStack Logs", limit: "Free: 1 GB/month — AI call logs are verbose (prompt, response, latency)" },
-        { service: "AI Provider", limit: "OpenAI: $0.01-0.10/1k tokens. Anthropic: $0.003-0.075/1k tokens. This becomes your biggest cost" },
-        { service: "Deployment", limit: "Vercel (free) + domain (~$10-15/yr). Pro ($20/mo) needed for 60s function timeout" },
-      ],
-      upgradeGuide: [
-        "Startup credits are critical for AI SaaS: AWS Activate ($1k) + GCP for Startups ($2k-$100k) + Azure for Startups ($1k-$150k)",
-        "Many AI provider startup programs too: OpenAI Startup Program, Anthropic credits, Google Cloud AI credits via Startups program",
-        "Upstash → Pay-as-you-go immediately — AI apps hit 10k/day fast with rate limiting",
-        "Vercel → Pro ($20/mo) for 60s function timeout — essential for longer AI completions",
-        "Neon → Launch ($19/mo) or use AWS RDS free tier — usage tracking tables grow fast at scale",
-        "Resend → Pro ($20/mo) when credit purchase receipts + signups exceed 3k/month",
-        "At ~5k MAU: add background job queue (Inngest/Trigger.dev) to move AI calls off serverless",
-        "At ~10k MAU: streaming responses to avoid function timeouts + improve UX",
-        "Cost warning: AI provider costs will likely exceed all infrastructure costs combined at ~1k+ MAU",
-      ],
-    },
-    steps: [
-      {
-        title: "Set up PostgreSQL + Upstash Redis",
-        details: [
-          "Postgres stores users, credits, and usage history",
-          "neon.tech or supabase.com → create database → copy connection string",
-          "Upstash Redis is critical here: rate limiting protects expensive AI API calls",
-          "upstash.com → create Redis → copy REST URL + Token",
-        ],
-      },
-      {
-        title: "Generate a BetterAuth secret",
-        details: ["Run: openssl rand -base64 32 → paste into BETTER_AUTH_SECRET"],
-      },
-      {
-        title: "Set up auth providers",
-        details: [
-          "Resend: resend.com → API key (for email verification + transactional emails)",
-          "Google OAuth: console.cloud.google.com → callback: {url}/api/auth/callback/google",
-          "GitHub OAuth: Settings → Developer Settings → callback: {url}/api/auth/callback/github",
-          "Both Google + GitHub appeal to AI/developer audiences",
-        ],
-      },
-      {
-        title: "Set up Stripe for credit purchases",
-        details: [
-          "stripe.com → copy Secret Key",
-          "Create webhook: {url}/api/payments/stripe/webhook",
-          "Copy Signing Secret",
-          "Create products for credit packages (e.g., 100 credits, 500 credits, 1000 credits)",
-          "Users purchase credits → credits decrement per AI API call",
-        ],
-      },
-      {
-        title: "Set up storage + full observability",
-        details: [
-          "Vercel Blob: for user-uploaded images/files → copy token",
-          "BetterStack logging: track AI API usage, latency, error rates → copy token + host",
-          "Google Analytics: track conversion funnels → copy Measurement ID",
-          "Rate limiting (via Upstash): prevent credit-less users from hitting AI endpoints",
-        ],
-      },
-      {
-        title: "Set up support (important for AI products)",
-        details: [
-          "Enter support email in NEXT_PUBLIC_SUPPORT_MAIL",
-          "Calendly: create event type for demo calls → copy booking URL",
-          "AI users often need onboarding help — Calendly helps convert free → paid",
-        ],
-      },
-      {
-        title: "Download, build & integrate your AI",
-        details: [
-          "Click 'Download Boilerplate'",
-          "Run: pnpm install && pnpm generate && pnpm migrate && pnpm dev",
-          "Add your AI API integration (OpenAI, Anthropic, etc.) to the tRPC routes",
-          "Implement credit deduction logic in your AI endpoint procedures",
-          "Test with Stripe test mode before going live",
-        ],
-      },
-    ],
-    highlights: [
-      "Stripe for credit-based billing",
-      "Rate limiting (protect expensive AI calls)",
-      "Full logging (monitor AI API usage)",
-      "Email + Google + GitHub auth",
-      "Support mail + Calendly for onboarding",
-      "Hardcoded CMS (fast iteration on landing page)",
-    ],
-    values: {
-      NEXT_PUBLIC_PLATFORM: ["web"],
-      NEXT_PUBLIC_CMS: "constant",
-      NEXT_PUBLIC_AUTH_FRAMEWORK: "better-auth",
-      NEXT_PUBLIC_AUTH_PROVIDERS: ["email_verification", "google", "github"],
-      NEXT_PUBLIC_EMAIL_CLIENT: "resend",
-      NEXT_PUBLIC_PAYMENT_GATEWAY: "stripe",
-      NEXT_PUBLIC_IMAGE_STORAGE: "vercel_blob",
-      NEXT_PUBLIC_OBSERVABILITY_FEATURES: ["logging", "google_analytics", "rate_limiting"],
-      NEXT_PUBLIC_ALLOW_RATE_LIMIT: "upstash",
-      NEXT_PUBLIC_SUPPORT_FEATURES: ["support_mail", "calendly"],
-    },
-  },
-  {
-    id: "marketplace",
-    name: "Marketplace / E-Commerce",
-    tagline: "Multi-provider auth + payments + full support stack.",
-    icon: ShoppingCart,
-    color: "text-pink-500",
-    bgColor: "border-pink-500/50 bg-pink-500/10",
-    estimatedCost: "$0/mo + Stripe fees + ~$10-15/yr domain",
-    setupTime: "~1.5 hrs",
-    accountsNeeded: [
-      "PostgreSQL (Neon/Supabase/AWS RDS)", "Notion", "Upstash Redis", "Resend",
-      "Google (OAuth)", "GitHub (OAuth)", "LinkedIn (OAuth)",
-      "Stripe", "Vercel (Blob + hosting)", "BetterStack", "Google Analytics", "Calendly",
-    ],
-    secretsToFill: [
-      "DATABASE_URL", "BETTER_AUTH_SECRET", "BLOB_READ_WRITE_TOKEN",
-      "NOTION_API_TOKEN", "LANDING_DATABASE_ID", "HERO_DATABASE_ID", "FEATURE_DATABASE_ID",
-      "TESTIMONIAL_DATABASE_ID", "PRICING_DATABASE_ID", "FAQ_DATABASE_ID", "FOOTER_DATABASE_ID", "DOCUMENTATION_DATABASE_ID",
-      "UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN",
-      "RESEND_API_KEY",
-      "AUTH_GOOGLE_CLIENT_ID", "AUTH_GOOGLE_CLIENT_SECRET",
-      "AUTH_GITHUB_CLIENT_ID", "AUTH_GITHUB_CLIENT_SECRET",
-      "AUTH_LINKEDIN_CLIENT_ID", "AUTH_LINKEDIN_CLIENT_SECRET",
-      "STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET",
-      "BETTERSTACK_TELEMETRY_SOURCE_TOKEN", "BETTERSTACK_TELEMETRY_INGESTING_HOST",
-      "NEXT_PUBLIC_GOOGLE_ANALYTICS_MEASUREMENT_ID",
-      "NEXT_PUBLIC_SUPPORT_MAIL", "NEXT_PUBLIC_CALENDLY_BOOKING_URL",
-    ],
-    capacity: {
-      estimatedMAU: "~1,000 (due to email-per-transaction ratio)",
-      firstBottleneck: "Resend email (3,000/month) — marketplaces send ~3 emails per transaction (signup + order confirmation + seller notification)",
-      serviceLimits: [
-        { service: "Resend Email", limit: "Free: 3,000/month — ~3 emails per transaction drastically reduces effective user cap", bottleneck: true },
-        { service: "Upstash Redis", limit: "Free: 10k commands/day — CMS cache + rate limiting + session validation" },
-        { service: "Neon Postgres", limit: "Free: 0.5 GB — products, users, transactions, reviews fill storage fast" },
-        { service: "Alt: AWS RDS", limit: "Free tier: 750 hrs/mo x 12 months, 20 GB. AWS Activate: $1,000 credits — great for growing catalogs" },
-        { service: "Alt: GCP Cloud SQL", limit: "Free: db-f1-micro. Google for Startups: $2k–$100k credits" },
-        { service: "Notion API", limit: "Free: 3 req/sec — storefront content cached by Upstash" },
-        { service: "Stripe", limit: "No cap — 2.9% + 30¢ per tx. Stripe Connect available for marketplace payouts" },
-        { service: "Vercel Blob", limit: "Free: 1 GB — product images are the biggest consumer" },
-        { service: "BetterStack Logs", limit: "Free: 1 GB/month" },
-        { service: "Calendly", limit: "Free: 1 event type — enough for initial seller onboarding" },
-        { service: "Deployment", limit: "Vercel (free) + domain (~$10-15/yr). Marketplace domains benefit from .shop ($2-5/yr) or .store ($3-5/yr)" },
-      ],
-      upgradeGuide: [
-        "Startup credits: AWS Activate ($1k) + GCP for Startups ($2k-$100k) — apply early, marketplaces grow storage fast",
-        "Resend → Pro ($20/mo, 50k emails) — first upgrade, marketplaces are email-heavy (3 emails per transaction)",
-        "Neon → Launch ($19/mo, 10 GB) or AWS RDS free tier — product catalogs + transaction history grow fast",
-        "Upstash → Pay-as-you-go — marketplace search + filtering increases Redis usage",
-        "Vercel Blob → Cloudflare R2 ($0.015/GB, no egress) for product images at scale",
-        "At ~10k MAU: switch Notion CMS → Postgres CMS (single DB, simpler ops, faster queries)",
-        "At ~25k MAU: add Stripe Connect for direct seller payouts, consider Algolia/Meilisearch for product search",
-        "At ~50k MAU: Vercel Pro ($20/mo) or self-host on AWS/GCP using startup credits + CDN for product images",
-      ],
-    },
-    steps: [
-      {
-        title: "Set up PostgreSQL + Upstash Redis",
-        details: [
-          "Postgres stores users, products, transactions, and marketplace data",
-          "neon.tech or supabase.com → create database → copy connection string",
-          "Upstash: caching for Notion CMS + API rate limiting → copy REST URL + Token",
-        ],
-      },
-      {
-        title: "Generate a BetterAuth secret",
-        details: ["Run: openssl rand -base64 32 → paste into BETTER_AUTH_SECRET"],
-      },
-      {
-        title: "Set up Notion CMS for marketplace content",
-        details: [
-          "notion.so/my-integrations → create integration → copy token",
-          "Duplicate CMS templates for landing, features, pricing, testimonials, FAQ",
-          "Notion lets marketing update the storefront without code deploys",
-          "Copy all database IDs → paste into fields",
-        ],
-      },
-      {
-        title: "Set up all 4 auth providers (maximize conversion)",
-        details: [
-          "Resend: resend.com → API key",
-          "Google OAuth: most users prefer this → console.cloud.google.com",
-          "GitHub OAuth: for developer marketplaces",
-          "LinkedIn OAuth: for professional/B2B marketplaces",
-          "More sign-in options = higher conversion rate for marketplaces",
-        ],
-      },
-      {
-        title: "Set up Stripe payments",
-        details: [
-          "stripe.com → activate account → copy Secret Key",
-          "Create webhook: {url}/api/payments/stripe/webhook",
-          "Copy Signing Secret",
-          "Create products for your marketplace listings / subscription tiers",
-        ],
-      },
-      {
-        title: "Set up storage + observability",
-        details: [
-          "Vercel Blob: product images + user uploads → copy token",
-          "BetterStack: monitor transactions + errors → copy token + host",
-          "Google Analytics: track conversion funnels + purchase behavior → copy Measurement ID",
-        ],
-      },
-      {
-        title: "Set up all support channels",
-        details: [
-          "Support email: critical for marketplaces (disputes, questions)",
-          "Calendly: for premium sellers or buyer onboarding calls",
-          "Paste support email + Calendly URL into fields",
-        ],
-      },
-      {
-        title: "Download & launch",
-        details: [
-          "Click 'Download Boilerplate'",
-          "Run: pnpm install && pnpm generate && pnpm migrate && pnpm dev",
-          "Update Notion CMS with marketplace content",
-          "Deploy to Vercel with custom domain",
-        ],
-      },
-    ],
-    highlights: [
-      "All 4 auth providers (max conversion)",
-      "Notion CMS (marketing can edit storefront)",
-      "Stripe payments for products/subscriptions",
-      "Full observability (track transactions)",
-      "All support channels (mail + Calendly)",
-      "Vercel Blob for product images",
-      "Rate limiting for API protection",
-    ],
-    values: {
-      NEXT_PUBLIC_PLATFORM: ["web"],
-      NEXT_PUBLIC_CMS: "notion",
-      NEXT_PUBLIC_AUTH_FRAMEWORK: "better-auth",
-      NEXT_PUBLIC_AUTH_PROVIDERS: ["email_verification", "google", "github", "linkedin"],
-      NEXT_PUBLIC_EMAIL_CLIENT: "resend",
-      NEXT_PUBLIC_PAYMENT_GATEWAY: "stripe",
-      NEXT_PUBLIC_IMAGE_STORAGE: "vercel_blob",
-      NEXT_PUBLIC_OBSERVABILITY_FEATURES: ["logging", "google_analytics", "rate_limiting"],
-      NEXT_PUBLIC_ALLOW_RATE_LIMIT: "upstash",
-      NEXT_PUBLIC_SUPPORT_FEATURES: ["support_mail", "calendly"],
-    },
-  },
 ];
+
+const AVAILABLE_MODULES = new Set<ScaffoldModuleId>(["billing", "ai"]);
+
+function unique<T>(values: T[]): T[] {
+  return Array.from(new Set(values));
+}
+
+function roundMoney(value: number): number {
+  if (value === 0) return 0;
+  if (value < 25) return Math.max(5, Math.round(value / 5) * 5);
+  return Math.round(value / 25) * 25;
+}
+
+function buildCost(
+  productType: ProductTypeBlueprint,
+  tier: TierBlueprint,
+  version: VersionProfile,
+): CostEstimate {
+  const base = tier.baseMonthlyCost[version.id];
+  const low = roundMoney(base.low * productType.costMultiplier);
+  const high = roundMoney(base.high * productType.costMultiplier);
+  const shares = [
+    { name: "App compute", share: 0.3, covers: "Web/API runtime and workers" },
+    {
+      name: "Postgres",
+      share: 0.28,
+      covers: "Primary data, backups, and pooling",
+    },
+    {
+      name: "Cache / queue",
+      share: 0.16,
+      covers: "Caching, rate limits, and jobs",
+    },
+    {
+      name: "Storage / delivery",
+      share: 0.16,
+      covers: "Files, assets, and bandwidth baseline",
+    },
+    { name: "Monitoring", share: 0.1, covers: "Logs, metrics, and alerting" },
+  ];
+
+  return {
+    currency: "USD",
+    cadence: "month",
+    low,
+    high,
+    components: shares.map((component) => ({
+      name: component.name,
+      low: roundMoney(low * component.share),
+      high: roundMoney(high * component.share),
+      covers: component.covers,
+    })),
+    exclusions: [
+      "taxes",
+      "domain registration",
+      "payment processing",
+      "usage-based AI, SMS, and third-party API charges",
+    ],
+    variableDrivers: productType.variableCostDrivers,
+    lastReviewed: "2026-08-02",
+  };
+}
+
+function buildDelivery(
+  productType: ProductTypeBlueprint,
+  tier: TierBlueprint,
+  version: VersionProfile,
+): DeliveryEstimate {
+  const base = tier.launchWeeks[version.id];
+  const low = Math.max(
+    1,
+    Math.round(base.low * productType.deliveryMultiplier),
+  );
+  const high = Math.max(
+    low + 1,
+    Math.round(base.high * productType.deliveryMultiplier),
+  );
+
+  return {
+    starterSetup: tier.setupTime[version.id],
+    workingLaunch: `${low}–${high} weeks`,
+    assumption:
+      "One experienced full-time solo developer using SaaS Forge and managed services; excludes custom brand design, content production, data migration, and formal compliance certification.",
+  };
+}
+
+function getAccounts(
+  values: Partial<FormValues>,
+  modules: ScaffoldModuleId[],
+): string[] {
+  const accounts = ["PostgreSQL provider"];
+  const providers = values.NEXT_PUBLIC_AUTH_PROVIDERS ?? [];
+  const observability = values.NEXT_PUBLIC_OBSERVABILITY_FEATURES ?? [];
+
+  if (providers.includes("github")) accounts.push("GitHub OAuth app");
+  if (providers.includes("google")) accounts.push("Google OAuth app");
+  if (providers.includes("linkedin")) accounts.push("LinkedIn OAuth app");
+  if (values.NEXT_PUBLIC_EMAIL_CLIENT === "resend") accounts.push("Resend");
+  if (values.NEXT_PUBLIC_IMAGE_STORAGE === "vercel_blob")
+    accounts.push("Vercel Blob");
+  if (values.NEXT_PUBLIC_IMAGE_STORAGE === "cloudflare_r2")
+    accounts.push("Cloudflare R2");
+  if (observability.includes("rate_limiting")) accounts.push("Upstash Redis");
+  if (observability.includes("logging")) accounts.push("Better Stack");
+  if (observability.includes("google_analytics"))
+    accounts.push("Google Analytics");
+  if (modules.includes("billing")) accounts.push("Stripe or Dodo Payments");
+  if (modules.includes("ai")) accounts.push("AI model provider");
+
+  return unique(accounts);
+}
+
+function getSecrets(
+  values: Partial<FormValues>,
+  modules: ScaffoldModuleId[],
+): string[] {
+  const secrets = ["DATABASE_URL", "BETTER_AUTH_SECRET"];
+  const providers = values.NEXT_PUBLIC_AUTH_PROVIDERS ?? [];
+  const observability = values.NEXT_PUBLIC_OBSERVABILITY_FEATURES ?? [];
+
+  if (providers.includes("github"))
+    secrets.push("AUTH_GITHUB_CLIENT_ID", "AUTH_GITHUB_CLIENT_SECRET");
+  if (providers.includes("google"))
+    secrets.push("AUTH_GOOGLE_CLIENT_ID", "AUTH_GOOGLE_CLIENT_SECRET");
+  if (providers.includes("linkedin"))
+    secrets.push("AUTH_LINKEDIN_CLIENT_ID", "AUTH_LINKEDIN_CLIENT_SECRET");
+  if (values.NEXT_PUBLIC_EMAIL_CLIENT === "resend")
+    secrets.push("RESEND_API_KEY");
+  if (values.NEXT_PUBLIC_IMAGE_STORAGE === "vercel_blob")
+    secrets.push("BLOB_READ_WRITE_TOKEN");
+  if (values.NEXT_PUBLIC_IMAGE_STORAGE === "cloudflare_r2")
+    secrets.push(
+      "R2_ACCOUNT_ID",
+      "R2_ACCESS_KEY_ID",
+      "R2_SECRET_ACCESS_KEY",
+      "R2_BUCKET_NAME",
+      "NEXT_PUBLIC_R2_PUBLIC_URL",
+    );
+  if (observability.includes("rate_limiting"))
+    secrets.push("UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN");
+  if (observability.includes("logging"))
+    secrets.push(
+      "BETTERSTACK_TELEMETRY_SOURCE_TOKEN",
+      "BETTERSTACK_TELEMETRY_INGESTING_HOST",
+    );
+  if (observability.includes("google_analytics"))
+    secrets.push("NEXT_PUBLIC_GOOGLE_ANALYTICS_MEASUREMENT_ID");
+  if (modules.includes("billing"))
+    secrets.push("STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET");
+  if (modules.includes("ai")) secrets.push("OPENAI_API_KEY");
+
+  return unique(secrets);
+}
+
+function buildSteps(
+  productType: ProductTypeBlueprint,
+  accounts: string[],
+): PresetStep[] {
+  return [
+    {
+      title: "Connect the managed foundation",
+      details: accounts.map(
+        (account) =>
+          `Create or connect ${account}, then add its keys in Accounts & Keys.`,
+      ),
+    },
+    {
+      title: `Model the ${productType.name.toLowerCase()} core`,
+      details: productType.capabilities.map(
+        (capability) =>
+          `Define the first ${capability} workflow and its success metric.`,
+      ),
+    },
+    {
+      title: "Deploy and test the critical path",
+      details: [
+        "Generate the scaffold and run database setup.",
+        "Deploy a preview environment and exercise auth, data, and billing paths.",
+        "Add the first product-specific component listed under You add next.",
+      ],
+    },
+  ];
+}
+
+export function resolvePreset(
+  productTypeId: ProductTypeId,
+  tierId: TierId,
+  versionId: VersionId,
+): ResolvedPreset {
+  const productType = PRODUCT_TYPE_BLUEPRINTS.find(
+    (entry) => entry.id === productTypeId,
+  );
+  const tier = TIER_BLUEPRINTS.find((entry) => entry.id === tierId);
+  const version = VERSION_PROFILES.find((entry) => entry.id === versionId);
+
+  if (!productType || !tier || !version) {
+    throw new Error(
+      `Unknown preset combination: ${productTypeId}/${tierId}/${versionId}`,
+    );
+  }
+
+  const requestedModules = productType.scaffoldModules ?? [];
+  const modules = requestedModules.filter((moduleId) =>
+    AVAILABLE_MODULES.has(moduleId),
+  );
+  const values: Partial<FormValues> = {
+    ...tier.scaffoldValues,
+    ...productType.scaffoldValues,
+    ...version.scaffoldValues,
+    SELECTED_MODULES: modules,
+  };
+
+  if (modules.includes("billing"))
+    values.NEXT_PUBLIC_PAYMENT_GATEWAY = "stripe";
+  if (modules.includes("ai")) values.NEXT_PUBLIC_AI_ENABLED = "true";
+
+  const accountsNeeded = getAccounts(values, modules);
+  const architecture = [
+    ...CORE_ARCHITECTURE,
+    ...tier.architectureAdditions,
+    ...productType.architecture,
+  ].filter(
+    (node, index, nodes) =>
+      nodes.findIndex((candidate) => candidate.id === node.id) === index,
+  );
+
+  return {
+    id: `${productType.id}:${tier.id}:${version.id}`,
+    productType,
+    tier,
+    version,
+    name: `${version.label} ${tier.versionNoun}`,
+    tagline: `${productType.name}: ${version.description}`,
+    architecture,
+    includedInScaffold: productType.includedInScaffold,
+    addNext: productType.addNext,
+    firstBottleneck: productType.firstBottleneck,
+    upgradeTrigger:
+      tier.order >= 3
+        ? `${productType.upgradeTrigger} ${tier.upgradeTrigger}`
+        : tier.upgradeTrigger,
+    capacityLabel: tier.mauLabel,
+    serviceLimits: tier.serviceLimits,
+    accountsNeeded,
+    secretsToFill: getSecrets(values, modules),
+    steps: buildSteps(productType, accountsNeeded),
+    cost: buildCost(productType, tier, version),
+    delivery: buildDelivery(productType, tier, version),
+    values,
+    modules,
+  };
+}
+
+export function recommendTier(stage: StageEstimate): TierId {
+  if (stage.kind === "mvp") return "tier-1";
+  if (stage.kind === "beta") return "tier-2";
+  if (stage.value < 10_000) return "tier-3";
+  if (stage.value < 50_000) return "tier-4";
+  if (stage.value < 250_000) return "tier-5";
+  return "tier-6";
+}
+
+export function getTier(tierId: TierId): TierBlueprint {
+  const tier = TIER_BLUEPRINTS.find((entry) => entry.id === tierId);
+  if (!tier) throw new Error(`Unknown tier: ${tierId}`);
+  return tier;
+}

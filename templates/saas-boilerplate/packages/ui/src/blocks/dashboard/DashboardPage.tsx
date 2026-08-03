@@ -7,8 +7,6 @@ import {
   AlertTriangle,
   ArrowRight,
   Check,
-  ChevronDown,
-  ChevronUp,
   CircleDot,
   Download,
   ExternalLink,
@@ -19,7 +17,6 @@ import {
   Sparkles,
   Upload,
 } from "lucide-react";
-import { AnimatePresence, motion } from "framer-motion";
 
 import { Button } from "@workspace/ui/components/shadcn/button";
 import {
@@ -38,7 +35,6 @@ import {
 } from "@workspace/ui/components/shadcn/form";
 import { Badge } from "@workspace/ui/components/shadcn/badge";
 import { Progress } from "@workspace/ui/components/shadcn/progress";
-import { Separator } from "@workspace/ui/components/shadcn/separator";
 import { Switch } from "@workspace/ui/components/shadcn/switch";
 import { FloatingLabelInput } from "@workspace/ui/components/misc/floating-label-input";
 
@@ -51,7 +47,13 @@ import {
   type ScaffoldModuleId,
   SCAFFOLD_MODULE_OPTIONS,
 } from "../../lib/constants/scaffold-modules";
-import { PRESETS, PresetInfo } from "../../lib/constants/presets";
+import {
+  type ProductTypeId,
+  type ResolvedPreset,
+  type StageEstimate,
+  type TierId,
+  type VersionId,
+} from "../../lib/constants/presets";
 import EnvField from "../../components/home/EnvField";
 import {
   buildEnvVarsFromForm,
@@ -142,6 +144,16 @@ const DEFAULT_FORM_VALUES: FormValues = {
   DODO_PAYMENTS_ENVIRONMENT: "",
   DODO_CREDITS_PRODUCT_ID: "",
   NEXT_PUBLIC_DODO_PAYMENTS_URL: "",
+  NEXT_PUBLIC_AI_ENABLED: "false",
+  AI_GATEWAY_API_KEY: "",
+  OPENAI_API_KEY: "",
+  ANTHROPIC_API_KEY: "",
+  GOOGLE_GENERATIVE_AI_API_KEY: "",
+  OPENROUTER_API_KEY: "",
+  OLLAMA_BASE_URL: "",
+  OPENAI_COMPATIBLE_BASE_URL: "",
+  N8N_WEBHOOK_URL: "",
+  N8N_WEBHOOK_JWT_KEY: "",
   STRIPE_SECRET_KEY: "",
   STRIPE_WEBHOOK_SECRET: "",
 };
@@ -153,7 +165,7 @@ const STEP_INDEX_BY_ID = new Map(
 import { FeaturePanel } from "@workspace/ui/components/dashboard/FeaturePanel";
 import { StepChip } from "@workspace/ui/components/dashboard/StepChip";
 import { StartChoiceCard } from "@workspace/ui/components/dashboard/StartChoiceCard";
-import { PresetCard } from "@workspace/ui/components/dashboard/PresetCard";
+import { PresetJourney } from "@workspace/ui/components/dashboard/PresetJourney";
 import { WizardSummary } from "@workspace/ui/components/dashboard/WizardSummary";
 
 export default function DashboardPage({
@@ -162,15 +174,20 @@ export default function DashboardPage({
   onNavigateDoc,
 }: DashboardPageProps) {
   const [isDownloading, setIsDownloading] = React.useState(false);
-  const [selectedPreset, setSelectedPreset] = React.useState<PresetInfo | null>(
-    null,
-  );
-  const [expandedSteps, setExpandedSteps] = React.useState<Set<number>>(new Set());
+  const [selectedPreset, setSelectedPreset] =
+    React.useState<ResolvedPreset | null>(null);
+  const [presetProductTypeId, setPresetProductTypeId] =
+    React.useState<ProductTypeId | null>(null);
+  const [presetTierId, setPresetTierId] = React.useState<TierId>("tier-2");
+  const [presetVersionId, setPresetVersionId] =
+    React.useState<VersionId>("balanced");
+  const [presetStage, setPresetStage] = React.useState<StageEstimate>({
+    kind: "beta",
+  });
   const [advancedMode, setAdvancedMode] = React.useState(false);
   const [currentStepIndex, setCurrentStepIndex] = React.useState(0);
   const [entryChoice, setEntryChoice] = React.useState<EntryChoice>("manual");
   const [importedFieldCount, setImportedFieldCount] = React.useState(0);
-  const [showTechnicalDetails, setShowTechnicalDetails] = React.useState(false);
   const importInputRef = React.useRef<HTMLInputElement | null>(null);
 
   const form = useForm<FormValues>({
@@ -181,7 +198,10 @@ export default function DashboardPage({
 
   const values = form.watch();
   const pricing = React.useMemo(
-    () => calculateScaffoldCredits((values.SELECTED_MODULES || []) as ScaffoldModuleId[]),
+    () =>
+      calculateScaffoldCredits(
+        (values.SELECTED_MODULES || []) as ScaffoldModuleId[],
+      ),
     [values.SELECTED_MODULES],
   );
   const accountGroups = React.useMemo(
@@ -194,7 +214,10 @@ export default function DashboardPage({
   );
 
   const fieldLookup = React.useMemo(() => {
-    const map = new Map<string, (typeof MODULE_CONFIG)[number]["fields"][number]>();
+    const map = new Map<
+      string,
+      (typeof MODULE_CONFIG)[number]["fields"][number]
+    >();
     for (const section of MODULE_CONFIG) {
       for (const field of section.fields) {
         map.set(field.name, field);
@@ -203,7 +226,10 @@ export default function DashboardPage({
     return map;
   }, []);
 
-  const validationSnapshot = React.useMemo(() => formSchema.safeParse(values), [values]);
+  const validationSnapshot = React.useMemo(
+    () => formSchema.safeParse(values),
+    [values],
+  );
   const issuePaths = React.useMemo(() => {
     if (validationSnapshot.success) return new Set<string>();
     return new Set(
@@ -214,25 +240,29 @@ export default function DashboardPage({
   }, [validationSnapshot]);
 
   const completionByStep = React.useMemo(() => {
-    return WIZARD_STEPS.reduce<Record<WizardStepId, boolean>>((acc, step) => {
-      if (step.id === "start") {
-        acc[step.id] = true;
-        return acc;
-      }
+    return WIZARD_STEPS.reduce<Record<WizardStepId, boolean>>(
+      (acc, step) => {
+        if (step.id === "start") {
+          acc[step.id] = true;
+          return acc;
+        }
 
-      const requiredFields = getWizardStepFields(step.id, values).filter((field) =>
-        isWizardFieldRequired(field, values),
-      );
-
-      acc[step.id] =
-        requiredFields.length === 0 ||
-        requiredFields.every(
-          (field) =>
-            isWizardFieldComplete(field, values) && !issuePaths.has(field as string),
+        const requiredFields = getWizardStepFields(step.id, values).filter(
+          (field) => isWizardFieldRequired(field, values),
         );
 
-      return acc;
-    }, {} as Record<WizardStepId, boolean>);
+        acc[step.id] =
+          requiredFields.length === 0 ||
+          requiredFields.every(
+            (field) =>
+              isWizardFieldComplete(field, values) &&
+              !issuePaths.has(field as string),
+          );
+
+        return acc;
+      },
+      {} as Record<WizardStepId, boolean>,
+    );
   }, [issuePaths, values]);
 
   const missingRequiredFields = React.useMemo(() => {
@@ -244,7 +274,8 @@ export default function DashboardPage({
 
     return Array.from(new Set(fields)).filter(
       (field) =>
-        !isWizardFieldComplete(field, values) || issuePaths.has(field as string),
+        !isWizardFieldComplete(field, values) ||
+        issuePaths.has(field as string),
     );
   }, [issuePaths, values]);
 
@@ -257,21 +288,9 @@ export default function DashboardPage({
   );
 
   const applyPreset = React.useCallback(
-    (preset: PresetInfo) => {
-      const isDeselecting = selectedPreset?.id === preset.id;
-
-      if (isDeselecting) {
-        setSelectedPreset(null);
-        setEntryChoice("manual");
-        setExpandedSteps(new Set());
-        setShowTechnicalDetails(false);
-        return;
-      }
-
+    (preset: ResolvedPreset) => {
       setSelectedPreset(preset);
       setEntryChoice("preset");
-      setExpandedSteps(new Set());
-      setShowTechnicalDetails(false);
 
       for (const [key, value] of Object.entries(preset.values)) {
         form.setValue(key as keyof FormValues, value as never, {
@@ -280,19 +299,15 @@ export default function DashboardPage({
         });
       }
 
-      form.setValue(
-        "SELECTED_MODULES",
-        preset.values.NEXT_PUBLIC_PAYMENT_GATEWAY &&
-          preset.values.NEXT_PUBLIC_PAYMENT_GATEWAY !== "none"
-          ? ["billing"]
-          : [],
-        {
-          shouldDirty: true,
-          shouldValidate: true,
-        },
-      );
+      form.setValue("SELECTED_MODULES", preset.modules, {
+        shouldDirty: true,
+        shouldValidate: true,
+      });
+
+      setAdvancedMode(false);
+      setCurrentStepIndex(STEP_INDEX_BY_ID.get("basics") ?? 1);
     },
-    [form, selectedPreset],
+    [form],
   );
 
   const toggleScaffoldModule = React.useCallback(
@@ -335,6 +350,7 @@ export default function DashboardPage({
         const count = parseEnvFile(content, form.setValue);
         setImportedFieldCount(count);
         setEntryChoice("import");
+        setSelectedPreset(null);
       };
       reader.readAsText(file);
     },
@@ -356,8 +372,8 @@ export default function DashboardPage({
   const validateStep = React.useCallback(
     async (stepId: WizardStepId) => {
       const currentValues = form.getValues();
-      const fields = getWizardStepFields(stepId, currentValues).filter((field) =>
-        isWizardFieldRequired(field, currentValues),
+      const fields = getWizardStepFields(stepId, currentValues).filter(
+        (field) => isWizardFieldRequired(field, currentValues),
       );
 
       if (fields.length === 0) return true;
@@ -486,158 +502,25 @@ export default function DashboardPage({
     [fieldLookup, form.control, values],
   );
 
-  const renderPresetDetails = selectedPreset ? (
-    <Card className="border-border/60 bg-muted/20 shadow-sm">
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center justify-between gap-3 text-base">
-          <span className="flex items-center gap-2">
-            <selectedPreset.icon className={cn("h-4 w-4", selectedPreset.color)} />
-            {selectedPreset.name}
-          </span>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowTechnicalDetails((prev) => !prev)}
-          >
-            {showTechnicalDetails ? "Hide Technical Details" : "See Technical Details"}
-          </Button>
-        </CardTitle>
-        <CardDescription>{selectedPreset.tagline}</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="flex flex-wrap gap-2">
-          <Badge variant="outline">{selectedPreset.setupTime}</Badge>
-          <Badge variant="outline">{selectedPreset.estimatedCost}</Badge>
-          <Badge variant="outline">
-            {selectedPreset.accountsNeeded.length} accounts needed
-          </Badge>
-        </div>
-
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            What this auto-selects
-          </p>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {selectedPreset.highlights.map((highlight) => (
-              <Badge key={highlight} className="bg-primary/10 text-primary">
-                {highlight}
-              </Badge>
-            ))}
-          </div>
-        </div>
-
-        <AnimatePresence initial={false}>
-          {showTechnicalDetails ? (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.2, ease: "easeOut" }}
-              className="space-y-4"
-            >
-              <Separator />
-
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  Accounts You&apos;ll Need
-                </p>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {selectedPreset.accountsNeeded.map((account) => (
-                    <Badge key={account} variant="outline">
-                      {account}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <div className="mb-3 flex items-center justify-between">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    Setup Guide
-                  </p>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      if (expandedSteps.size === selectedPreset.steps.length) {
-                        setExpandedSteps(new Set());
-                        return;
-                      }
-                      setExpandedSteps(
-                        new Set(selectedPreset.steps.map((_, index) => index)),
-                      );
-                    }}
-                  >
-                    {expandedSteps.size === selectedPreset.steps.length
-                      ? "Collapse All"
-                      : "Expand All"}
-                  </Button>
-                </div>
-                <div className="space-y-2">
-                  {selectedPreset.steps.map((step, index) => {
-                    const expanded = expandedSteps.has(index);
-
-                    return (
-                      <div
-                        key={step.title}
-                        className="overflow-hidden rounded-xl border border-border/60"
-                      >
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setExpandedSteps((prev) => {
-                              const next = new Set(prev);
-                              if (next.has(index)) next.delete(index);
-                              else next.add(index);
-                              return next;
-                            });
-                          }}
-                          className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-muted/40"
-                        >
-                          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
-                            {index + 1}
-                          </span>
-                          <span className="flex-1 text-sm font-medium">
-                            {step.title}
-                          </span>
-                          {expanded ? (
-                            <ChevronUp className="h-4 w-4 text-muted-foreground" />
-                          ) : (
-                            <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                          )}
-                        </button>
-                        <AnimatePresence initial={false}>
-                          {expanded ? (
-                            <motion.div
-                              initial={{ opacity: 0, height: 0 }}
-                              animate={{ opacity: 1, height: "auto" }}
-                              exit={{ opacity: 0, height: 0 }}
-                              transition={{ duration: 0.2, ease: "easeOut" }}
-                            >
-                              <ul className="space-y-2 px-4 pb-4 pl-14 text-sm text-muted-foreground">
-                                {step.details.map((detail) => (
-                                  <li key={detail} className="flex items-start gap-2">
-                                    <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-muted-foreground/40" />
-                                    <span>{detail}</span>
-                                  </li>
-                                ))}
-                              </ul>
-                            </motion.div>
-                          ) : null}
-                        </AnimatePresence>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </motion.div>
-          ) : null}
-        </AnimatePresence>
-      </CardContent>
-    </Card>
-  ) : null;
+  const renderPresetJourney = () => (
+    <PresetJourney
+      productTypeId={presetProductTypeId}
+      tierId={presetTierId}
+      versionId={presetVersionId}
+      stage={presetStage}
+      appliedPresetId={selectedPreset?.id}
+      onProductTypeChange={(productTypeId) => {
+        setPresetProductTypeId(productTypeId);
+        setPresetVersionId("balanced");
+        setEntryChoice("preset");
+      }}
+      onTierChange={setPresetTierId}
+      onVersionChange={setPresetVersionId}
+      onStageChange={setPresetStage}
+      onApply={applyPreset}
+      onBack={() => setEntryChoice("manual")}
+    />
+  );
 
   const renderAdvancedMode = () => (
     <div className="space-y-8">
@@ -695,7 +578,9 @@ export default function DashboardPage({
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
             {SCAFFOLD_MODULE_OPTIONS.map((module) => {
-              const isSelected = (values.SELECTED_MODULES || []).includes(module.id);
+              const isSelected = (values.SELECTED_MODULES || []).includes(
+                module.id,
+              );
 
               return (
                 <button
@@ -740,37 +625,22 @@ export default function DashboardPage({
                   Base starter costs {BASE_SCAFFOLD_CREDITS_COST} credits.
                 </p>
               </div>
-              <p className="text-lg font-semibold">{pricing.totalCredits} credits</p>
+              <p className="text-lg font-semibold">
+                {pricing.totalCredits} credits
+              </p>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      <Card className="border-border/60 shadow-sm">
-        <CardHeader>
-          <CardTitle>Quick Start Presets</CardTitle>
-          <CardDescription>
-            Pick a starter path to pre-fill the form before tweaking details.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
-            {PRESETS.map((preset) => (
-              <PresetCard
-                key={preset.id}
-                preset={preset}
-                active={selectedPreset?.id === preset.id}
-                onClick={() => applyPreset(preset)}
-              />
-            ))}
-          </div>
-          {renderPresetDetails}
-        </CardContent>
-      </Card>
+      {renderPresetJourney()}
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
         {MODULE_CONFIG.map((section) => {
-          if (section.id === "payment" && !(values.SELECTED_MODULES || []).includes("billing")) {
+          if (
+            section.id === "payment" &&
+            !(values.SELECTED_MODULES || []).includes("billing")
+          ) {
             return null;
           }
 
@@ -803,7 +673,13 @@ export default function DashboardPage({
                             <ExternalLink className="ml-1.5 h-3.5 w-3.5" />
                           </Button>
                         ) : (
-                          <Button key={doc.slug} type="button" variant="ghost" size="sm" asChild>
+                          <Button
+                            key={doc.slug}
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            asChild
+                          >
                             <a
                               href={`${docsBaseUrl}/landing/doc/${doc.slug}`}
                               target="_blank"
@@ -853,7 +729,9 @@ export default function DashboardPage({
                         field.showIf.field as keyof FormValues,
                       );
                       if (Array.isArray(field.showIf.value)) {
-                        return field.showIf.value.includes(dependencyValue as string);
+                        return field.showIf.value.includes(
+                          dependencyValue as string,
+                        );
                       }
                       return dependencyValue === field.showIf.value;
                     }
@@ -864,7 +742,9 @@ export default function DashboardPage({
                       );
                       return (
                         Array.isArray(dependencyValue) &&
-                        (dependencyValue as string[]).includes(field.showIfIncludes.value as string)
+                        (dependencyValue as string[]).includes(
+                          field.showIfIncludes.value as string,
+                        )
                       );
                     }
 
@@ -943,52 +823,18 @@ export default function DashboardPage({
                         onClick={() => {
                           setEntryChoice("manual");
                           setSelectedPreset(null);
-                          setShowTechnicalDetails(false);
                         }}
                       />
                     </div>
 
                     {importedFieldCount > 0 ? (
                       <div className="rounded-2xl border border-emerald-500/40 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-700 dark:text-emerald-300">
-                        Imported {importedFieldCount} fields from your `.env` file.
-                        You can still edit everything in the next steps.
+                        Imported {importedFieldCount} fields from your `.env`
+                        file. You can still edit everything in the next steps.
                       </div>
                     ) : null}
 
-                    <div className="rounded-2xl border border-dashed border-border/70 bg-muted/20 p-6">
-                      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                        <div>
-                          <h3 className="text-base font-semibold">
-                            Starter Presets
-                          </h3>
-                          <p className="text-sm text-muted-foreground">
-                            The fastest way to avoid scary setup choices is to begin
-                            from a setup path that already makes sensible tradeoffs.
-                          </p>
-                        </div>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={openImportPicker}
-                        >
-                          <Upload className="mr-2 h-4 w-4" />
-                          Upload `.env`
-                        </Button>
-                      </div>
-
-                      <div className="mt-5 grid grid-cols-1 gap-3 lg:grid-cols-2">
-                        {PRESETS.map((preset) => (
-                          <PresetCard
-                            key={preset.id}
-                            preset={preset}
-                            active={selectedPreset?.id === preset.id}
-                            onClick={() => applyPreset(preset)}
-                          />
-                        ))}
-                      </div>
-                    </div>
-
-                    {renderPresetDetails}
+                    {entryChoice === "preset" ? renderPresetJourney() : null}
                   </>
                 ) : null}
 
@@ -996,10 +842,12 @@ export default function DashboardPage({
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <Card className="border-border/60 md:col-span-2">
                       <CardHeader className="pb-3">
-                        <CardTitle className="text-base">Core Identity</CardTitle>
+                        <CardTitle className="text-base">
+                          Core Identity
+                        </CardTitle>
                         <CardDescription>
-                          These values shape the product name, URL, and visual theme
-                          across the starter.
+                          These values shape the product name, URL, and visual
+                          theme across the starter.
                         </CardDescription>
                       </CardHeader>
                       <CardContent className="grid gap-4 md:grid-cols-2">
@@ -1011,7 +859,10 @@ export default function DashboardPage({
                               <FormControl>
                                 <FloatingLabelInput
                                   id="wizard-project-name"
-                                  label={getWizardFieldMeta("name")?.label ?? "Project Name"}
+                                  label={
+                                    getWizardFieldMeta("name")?.label ??
+                                    "Project Name"
+                                  }
                                   className="bg-background"
                                   {...field}
                                 />
@@ -1024,7 +875,10 @@ export default function DashboardPage({
                           )}
                         />
                         {renderWizardField("NEXT_PUBLIC_SAAS_NAME", "basics")}
-                        {renderWizardField("NEXT_PUBLIC_COMPANY_NAME", "basics")}
+                        {renderWizardField(
+                          "NEXT_PUBLIC_COMPANY_NAME",
+                          "basics",
+                        )}
                         {renderWizardField("NEXT_PUBLIC_URL", "basics")}
                         {renderWizardField("NEXT_PUBLIC_THEME", "basics")}
                         {renderWizardField("NEXT_PUBLIC_THEME_TYPE", "basics")}
@@ -1095,42 +949,89 @@ export default function DashboardPage({
                       question="Should the scaffold include checkout, billing, and credits flows?"
                       description="Enable this only if you want payment UI, transaction history, and webhooks already wired in."
                     >
-                      {SCAFFOLD_MODULE_OPTIONS.filter((module) => module.id === "billing").map(
-                        (module) => {
-                          const selected = (values.SELECTED_MODULES || []).includes(
-                            module.id,
-                          );
+                      {SCAFFOLD_MODULE_OPTIONS.filter(
+                        (module) => module.id === "billing",
+                      ).map((module) => {
+                        const selected = (
+                          values.SELECTED_MODULES || []
+                        ).includes(module.id);
 
-                          return (
-                            <button
-                              key={module.id}
-                              type="button"
-                              onClick={() => toggleScaffoldModule(module.id)}
-                              className={cn(
-                                "w-full rounded-2xl border p-4 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
-                                selected
-                                  ? "border-primary bg-primary/10 shadow-sm"
-                                  : "border-border/60 bg-background hover:border-primary/40",
-                              )}
-                            >
-                              <div className="flex items-center justify-between gap-3">
-                                <div>
-                                  <div className="flex items-center gap-2 text-sm font-semibold">
-                                    <CircleDot className="h-4 w-4 text-primary" />
-                                    {module.label}
-                                  </div>
-                                  <p className="mt-2 text-sm text-muted-foreground">
-                                    {module.description}
-                                  </p>
+                        return (
+                          <button
+                            key={module.id}
+                            type="button"
+                            onClick={() => toggleScaffoldModule(module.id)}
+                            className={cn(
+                              "w-full rounded-2xl border p-4 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
+                              selected
+                                ? "border-primary bg-primary/10 shadow-sm"
+                                : "border-border/60 bg-background hover:border-primary/40",
+                            )}
+                          >
+                            <div className="flex items-center justify-between gap-3">
+                              <div>
+                                <div className="flex items-center gap-2 text-sm font-semibold">
+                                  <CircleDot className="h-4 w-4 text-primary" />
+                                  {module.label}
                                 </div>
-                                <Badge variant={selected ? "default" : "outline"}>
-                                  {selected ? "Included" : `+${module.creditsCost} credits`}
-                                </Badge>
+                                <p className="mt-2 text-sm text-muted-foreground">
+                                  {module.description}
+                                </p>
                               </div>
-                            </button>
-                          );
-                        },
-                      )}
+                              <Badge variant={selected ? "default" : "outline"}>
+                                {selected
+                                  ? "Included"
+                                  : `+${module.creditsCost} credits`}
+                              </Badge>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </FeaturePanel>
+
+                    <FeaturePanel
+                      title="AI Capabilities"
+                      question="Should the downloadable scaffold include the AI module?"
+                      description="Enable this for model integrations, streaming responses, and the starter AI workspace."
+                    >
+                      {SCAFFOLD_MODULE_OPTIONS.filter(
+                        (module) => module.id === "ai",
+                      ).map((module) => {
+                        const selected = (
+                          values.SELECTED_MODULES || []
+                        ).includes(module.id);
+
+                        return (
+                          <button
+                            key={module.id}
+                            type="button"
+                            onClick={() => toggleScaffoldModule(module.id)}
+                            className={cn(
+                              "w-full rounded-2xl border p-4 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
+                              selected
+                                ? "border-primary bg-primary/10 shadow-sm"
+                                : "border-border/60 bg-background hover:border-primary/40",
+                            )}
+                          >
+                            <div className="flex items-center justify-between gap-3">
+                              <div>
+                                <div className="flex items-center gap-2 text-sm font-semibold">
+                                  <CircleDot className="h-4 w-4 text-primary" />
+                                  {module.label}
+                                </div>
+                                <p className="mt-2 text-sm text-muted-foreground">
+                                  {module.description}
+                                </p>
+                              </div>
+                              <Badge variant={selected ? "default" : "outline"}>
+                                {selected
+                                  ? "Included"
+                                  : `+${module.creditsCost} credits`}
+                              </Badge>
+                            </div>
+                          </button>
+                        );
+                      })}
                     </FeaturePanel>
                   </div>
                 ) : null}
@@ -1138,9 +1039,14 @@ export default function DashboardPage({
                 {currentStep.id === "accounts" ? (
                   <div className="space-y-4">
                     {accountGroups.map((group: ProviderGroup) => (
-                      <Card key={group.id} className="border-border/60 shadow-sm">
+                      <Card
+                        key={group.id}
+                        className="border-border/60 shadow-sm"
+                      >
                         <CardHeader className="pb-3">
-                          <CardTitle className="text-base">{group.title}</CardTitle>
+                          <CardTitle className="text-base">
+                            {group.title}
+                          </CardTitle>
                           <CardDescription>{group.description}</CardDescription>
                         </CardHeader>
                         <CardContent className="grid gap-4 md:grid-cols-2">
@@ -1169,7 +1075,9 @@ export default function DashboardPage({
                   <div className="space-y-4">
                     <Card className="border-border/60 shadow-sm">
                       <CardHeader className="pb-3">
-                        <CardTitle className="text-base">What You&apos;re Building</CardTitle>
+                        <CardTitle className="text-base">
+                          What You&apos;re Building
+                        </CardTitle>
                         <CardDescription>
                           A quick, human-readable summary before download.
                         </CardDescription>
@@ -1181,13 +1089,18 @@ export default function DashboardPage({
                           </p>
                           <div className="mt-3 space-y-2 text-sm">
                             <div className="flex items-center justify-between gap-3">
-                              <span className="text-muted-foreground">Project</span>
+                              <span className="text-muted-foreground">
+                                Project
+                              </span>
                               <span className="font-medium">
-                                {values.NEXT_PUBLIC_SAAS_NAME || "Not named yet"}
+                                {values.NEXT_PUBLIC_SAAS_NAME ||
+                                  "Not named yet"}
                               </span>
                             </div>
                             <div className="flex items-center justify-between gap-3">
-                              <span className="text-muted-foreground">Company</span>
+                              <span className="text-muted-foreground">
+                                Company
+                              </span>
                               <span className="font-medium">
                                 {values.NEXT_PUBLIC_COMPANY_NAME || "Not set"}
                               </span>
@@ -1199,7 +1112,9 @@ export default function DashboardPage({
                               </span>
                             </div>
                             <div className="flex items-center justify-between gap-3">
-                              <span className="text-muted-foreground">Platforms</span>
+                              <span className="text-muted-foreground">
+                                Platforms
+                              </span>
                               <span className="font-medium">
                                 {formatList(values.NEXT_PUBLIC_PLATFORM || [])}
                               </span>
@@ -1213,23 +1128,32 @@ export default function DashboardPage({
                           </p>
                           <div className="mt-3 space-y-2 text-sm">
                             <div className="flex items-center justify-between gap-3">
-                              <span className="text-muted-foreground">Base starter</span>
+                              <span className="text-muted-foreground">
+                                Base starter
+                              </span>
                               <span className="font-medium">
                                 {pricing.baseCredits} credits
                               </span>
                             </div>
                             <div className="flex items-center justify-between gap-3">
-                              <span className="text-muted-foreground">Extra features</span>
+                              <span className="text-muted-foreground">
+                                Extra features
+                              </span>
                               <span className="font-medium">
                                 {pricing.moduleCredits.length > 0
                                   ? pricing.moduleCredits
-                                    .map((entry) => `${entry.label} (+${entry.credits})`)
-                                    .join(", ")
+                                      .map(
+                                        (entry) =>
+                                          `${entry.label} (+${entry.credits})`,
+                                      )
+                                      .join(", ")
                                   : "None"}
                               </span>
                             </div>
                             <div className="flex items-center justify-between gap-3">
-                              <span className="text-muted-foreground">Total</span>
+                              <span className="text-muted-foreground">
+                                Total
+                              </span>
                               <span className="text-lg font-semibold">
                                 {pricing.totalCredits}
                               </span>
@@ -1241,7 +1165,9 @@ export default function DashboardPage({
 
                     <Card className="border-border/60 shadow-sm">
                       <CardHeader className="pb-3">
-                        <CardTitle className="text-base">Chosen Capabilities</CardTitle>
+                        <CardTitle className="text-base">
+                          Chosen Capabilities
+                        </CardTitle>
                       </CardHeader>
                       <CardContent className="grid gap-3 md:grid-cols-2">
                         {reviewSummary.map((item) => (
@@ -1252,7 +1178,9 @@ export default function DashboardPage({
                             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                               {item.label}
                             </p>
-                            <p className="mt-2 text-sm font-medium">{item.value}</p>
+                            <p className="mt-2 text-sm font-medium">
+                              {item.value}
+                            </p>
                           </div>
                         ))}
                       </CardContent>
@@ -1260,9 +1188,12 @@ export default function DashboardPage({
 
                     <Card className="border-border/60 shadow-sm">
                       <CardHeader className="pb-3">
-                        <CardTitle className="text-base">Connected Services</CardTitle>
+                        <CardTitle className="text-base">
+                          Connected Services
+                        </CardTitle>
                         <CardDescription>
-                          These are the accounts and providers this setup currently depends on.
+                          These are the accounts and providers this setup
+                          currently depends on.
                         </CardDescription>
                       </CardHeader>
                       <CardContent className="flex flex-wrap gap-2">
@@ -1303,7 +1234,10 @@ export default function DashboardPage({
                         {missingLabels.length > 0 ? (
                           <ul className="space-y-2 text-sm text-muted-foreground">
                             {missingLabels.map((label) => (
-                              <li key={label} className="flex items-start gap-2">
+                              <li
+                                key={label}
+                                className="flex items-start gap-2"
+                              >
                                 <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-amber-500" />
                                 <span>{label}</span>
                               </li>
@@ -1311,7 +1245,8 @@ export default function DashboardPage({
                           </ul>
                         ) : (
                           <p className="text-sm text-emerald-700 dark:text-emerald-300">
-                            The wizard has enough information to generate your scaffold.
+                            The wizard has enough information to generate your
+                            scaffold.
                           </p>
                         )}
                       </CardContent>
@@ -1326,7 +1261,9 @@ export default function DashboardPage({
                         className="touch-manipulation"
                       >
                         <Download className="mr-2 h-4 w-4" />
-                        {isDownloading ? "Downloading…" : "Download Boilerplate"}
+                        {isDownloading
+                          ? "Downloading…"
+                          : "Download Boilerplate"}
                       </Button>
                       <Button
                         type="button"
@@ -1357,7 +1294,8 @@ export default function DashboardPage({
             >
               Back
             </Button>
-            {currentStep.id !== "review" ? (
+            {currentStep.id !== "review" &&
+            !(currentStep.id === "start" && entryChoice === "preset") ? (
               <Button type="button" onClick={handleNext}>
                 Next
                 <ArrowRight className="ml-2 h-4 w-4" />
@@ -1402,8 +1340,8 @@ export default function DashboardPage({
                 Beginner-Friendly Scaffold Setup
               </h1>
               <p className="mt-2 text-base text-muted-foreground">
-                Start with a preset, import an existing config, or walk through the
-                setup one understandable step at a time.
+                Start with a preset, import an existing config, or walk through
+                the setup one understandable step at a time.
               </p>
             </div>
 
@@ -1419,7 +1357,8 @@ export default function DashboardPage({
                 <div>
                   <p className="text-sm font-semibold">Advanced Setup</p>
                   <p className="text-xs text-muted-foreground">
-                    Toggle the dense power-user form when you want every setting visible.
+                    Toggle the dense power-user form when you want every setting
+                    visible.
                   </p>
                 </div>
                 <Switch

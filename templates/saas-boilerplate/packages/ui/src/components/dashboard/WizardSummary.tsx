@@ -15,7 +15,7 @@ import {
     BASE_SCAFFOLD_CREDITS_COST,
 } from "@workspace/ui/lib/constants/scaffold-modules";
 import { WIZARD_STEPS, WizardStepId } from "@workspace/ui/lib/scaffold-wizard";
-import { PresetInfo } from "@workspace/ui/lib/constants/presets";
+import { ResolvedPreset } from "@workspace/ui/lib/constants/presets";
 import { EntryChoice } from "../../blocks/dashboard/DashboardPage";
 import { FormValues } from "@workspace/ui/lib/zod/download";
 import { formatList } from "@workspace/ui/lib/utils/formatList";
@@ -31,7 +31,7 @@ export function WizardSummary({
 }: {
     currentStepIndex: number;
     completionByStep: Record<WizardStepId, boolean>;
-    selectedPreset: PresetInfo | null;
+    selectedPreset: ResolvedPreset | null;
     entryChoice: EntryChoice;
     pricing: ReturnType<typeof calculateScaffoldCredits>;
     values: FormValues;
@@ -84,7 +84,9 @@ export function WizardSummary({
                         <div className="flex items-center justify-between">
                             <span className="text-muted-foreground">Starting point</span>
                             <span className="font-medium capitalize">
-                                {selectedPreset?.name ?? entryChoice}
+                                {selectedPreset
+                                    ? `${selectedPreset.productType.name} · ${selectedPreset.name}`
+                                    : entryChoice}
                             </span>
                         </div>
                         <div className="flex items-center justify-between">

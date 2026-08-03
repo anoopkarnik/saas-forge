@@ -69,12 +69,12 @@ export function AppSidebar({ navbarConfig, pathname, onNavigateHome, onNavigate,
                     <SidebarGroupLabel className="px-2 text-xs font-medium text-muted-foreground/70 uppercase tracking-wider mb-2">Application</SidebarGroupLabel>
                     <SidebarMenu className="gap-1">
                         <SidebarMenuItem>
-                            <SidebarMenuButton asChild tooltip={"Download SaaS Boilerplate"}
+                            <SidebarMenuButton asChild tooltip={"Scaffolds"}
                                 className={cn("cursor-pointer transition-all duration-200 ease-in-out hover:pl-3 h-10", pathname === "/" && "bg-sidebar-accent text-sidebar-accent-foreground font-medium shadow-sm")}
                                 onClick={onNavigateHome}>
                                 <div className="flex items-center gap-3">
                                     <MdSaveAs className="w-5 h-5 text-violet-500" />
-                                    <div className="text-xs">{"Download SaaS Boilerplate"}</div>
+                                    <div className="text-xs">{"Scaffolds"}</div>
                                 </div>
                             </SidebarMenuButton>
                         </SidebarMenuItem>

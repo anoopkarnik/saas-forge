@@ -47,17 +47,27 @@ const t = initTRPC.context<TRPCContext>().create({
 export const createTRPCRouter = t.router;
 export const createCallerFactory = t.createCallerFactory;
 export const baseProcedure = t.procedure;
-export const protectedProcedure = baseProcedure.use(async ({ctx,next})=>{
-  if(!ctx.session){
-    throw new TRPCError({code:'UNAUTHORIZED',message:'You must be logged in to access this resource.'})
-  }
-  return next({
-    ctx:{
-      ...ctx,
-      session: ctx.session
+export const protectedProcedure = baseProcedure
+  .use(async ({ctx,next})=>{
+    if(!ctx.session){
+      throw new TRPCError({code:'UNAUTHORIZED',message:'You must be logged in to access this resource.'})
     }
+    return next({
+      ctx:{
+        ...ctx,
+        session: ctx.session
+      }
+    })
   })
-})
+  .use(({ ctx, type, next }) => {
+    if (type === 'mutation' && ctx.session.user.role === 'guest') {
+      throw new TRPCError({
+        code: 'FORBIDDEN',
+        message: 'This is a read-only demo account.',
+      })
+    }
+    return next()
+  })
 export const adminProcedure = protectedProcedure.use(async ({ ctx, next }) => {
   if (ctx.session.user.role !== 'admin') {
     throw new TRPCError({

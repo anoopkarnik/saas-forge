@@ -39,6 +39,7 @@ import { Switch } from "@workspace/ui/components/shadcn/switch";
 import { FloatingLabelInput } from "@workspace/ui/components/misc/floating-label-input";
 
 import { cn } from "../../lib/utils";
+import { useIsGuest } from "../../hooks/useIsGuest";
 import { formSchema, FormValues } from "../../lib/zod/download";
 import { MODULE_CONFIG } from "../../lib/constants/module";
 import {
@@ -173,6 +174,7 @@ export default function DashboardPage({
   docsBaseUrl = "",
   onNavigateDoc,
 }: DashboardPageProps) {
+  const isGuest = useIsGuest();
   const [isDownloading, setIsDownloading] = React.useState(false);
   const [selectedPreset, setSelectedPreset] =
     React.useState<ResolvedPreset | null>(null);
@@ -557,7 +559,7 @@ export default function DashboardPage({
             <Button
               type="button"
               onClick={handleFinalDownload}
-              disabled={isDownloading}
+              disabled={isDownloading || isGuest}
               className="touch-manipulation"
             >
               <Download className="mr-2 h-4 w-4" />
@@ -1256,7 +1258,9 @@ export default function DashboardPage({
                       <Button
                         type="button"
                         onClick={handleFinalDownload}
-                        disabled={isDownloading || missingLabels.length > 0}
+                        disabled={
+                          isDownloading || missingLabels.length > 0 || isGuest
+                        }
                         size="lg"
                         className="touch-manipulation"
                       >

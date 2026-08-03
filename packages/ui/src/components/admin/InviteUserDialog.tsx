@@ -7,6 +7,7 @@ import {
 import { Button } from "@workspace/ui/components/shadcn/button";
 import { Input } from "@workspace/ui/components/shadcn/input";
 import { Label } from "@workspace/ui/components/shadcn/label";
+import { useIsGuest } from "../../hooks/useIsGuest";
 
 interface Props {
   onInvite: (email: string) => void;
@@ -14,6 +15,7 @@ interface Props {
 }
 
 export function InviteUserDialog({ onInvite, isInviting }: Props) {
+  const isGuest = useIsGuest();
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState("");
 
@@ -27,7 +29,7 @@ export function InviteUserDialog({ onInvite, isInviting }: Props) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button>Invite user</Button>
+        <Button disabled={isGuest}>Invite user</Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>

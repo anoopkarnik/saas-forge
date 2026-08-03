@@ -1,6 +1,10 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
+vi.mock("@workspace/auth/better-auth/auth-client", () => ({
+  useSession: () => ({ data: { user: { role: "user" } } }),
+}));
+
 import DashboardPage from "./DashboardPage";
 
 describe("DashboardPage preset handoff", () => {

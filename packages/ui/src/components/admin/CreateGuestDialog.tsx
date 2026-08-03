@@ -5,8 +5,10 @@ import { Button } from "@workspace/ui/components/shadcn/button";
 import { Input } from "@workspace/ui/components/shadcn/input";
 import { Label } from "@workspace/ui/components/shadcn/label";
 import { UserPlus } from "lucide-react";
+import { useIsGuest } from "../../hooks/useIsGuest";
 
 export function CreateGuestDialog({ onCreate }: { onCreate: (email: string, password: string) => Promise<void> }) {
+  const isGuest = useIsGuest();
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -27,7 +29,7 @@ export function CreateGuestDialog({ onCreate }: { onCreate: (email: string, pass
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline"><UserPlus className="mr-2 h-4 w-4" />Create guest</Button>
+        <Button variant="outline" disabled={isGuest}><UserPlus className="mr-2 h-4 w-4" />Create guest</Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader><DialogTitle>Create guest account</DialogTitle></DialogHeader>

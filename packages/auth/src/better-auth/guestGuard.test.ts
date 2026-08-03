@@ -9,5 +9,7 @@ describe("isGuestAccountMutation", () => {
   it("ignores read/session paths", () => {
     expect(isGuestAccountMutation("/get-session")).toBe(false);
     expect(isGuestAccountMutation("/sign-out")).toBe(false);
+    expect(isGuestAccountMutation("/account-info")).toBe(false);
+    expect(isGuestAccountMutation("/list-accounts")).toBe(false);
   });
 });

@@ -4,6 +4,7 @@ import path from "node:path";
 import fs from "node:fs";
 import { auth } from "@workspace/auth/better-auth/auth";
 import { headers } from "next/headers";
+import { assertNotGuest } from "@/lib/auth/assertNotGuest";
 import db from "@workspace/database/client";
 import { revalidatePath } from "next/cache";
 import { ratelimit } from "@/server/ratelimit";
@@ -284,6 +285,15 @@ export async function POST(req: NextRequest) {
 
     if (!session?.user) {
       return jsonWithCors(req, { error: "Unauthorized" }, 401);
+    }
+
+    const guestBlocked = assertNotGuest(session);
+    if (guestBlocked) {
+      return jsonWithCors(
+        req,
+        { error: "This is a read-only demo account." },
+        403,
+      );
     }
 
     const { success } = await ratelimit.limit(session.user.id);

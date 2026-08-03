@@ -299,6 +299,36 @@ describe("Scaffold Route Integration Tests", () => {
       expect(data.error).toBe("Rate limit exceeded");
     });
 
+    it("should return 403 for guest sessions before deducting credits", async () => {
+      vi.mocked(auth.api.getSession).mockResolvedValue({
+        session: { id: "session_1" },
+        user: {
+          id: "guest_1",
+          role: "guest",
+          creditsTotal: 20,
+          creditsUsed: 0,
+        },
+      } as any);
+
+      const { POST } = await import("../../app/api/scaffold/route.js");
+
+      const request = createScaffoldRequest(
+        "http://localhost:3000/api/scaffold",
+        {
+          method: "POST",
+          body: JSON.stringify({ name: "my-project", envVars: {} }),
+        },
+      );
+
+      const response = await POST(request as any);
+      const data = await response.json();
+
+      expect(response.status).toBe(403);
+      expect(data.error).toBe("This is a read-only demo account.");
+      expect(ratelimit.limit).not.toHaveBeenCalled();
+      expect(mockUserUpdate).not.toHaveBeenCalled();
+    });
+
     it("should return 403 when user has insufficient credits", async () => {
       vi.mocked(auth.api.getSession).mockResolvedValue({
         session: { id: "session_1" },

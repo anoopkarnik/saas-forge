@@ -16,7 +16,7 @@ interface UsersTableProps {
     users: any[];
     isLoading: boolean;
     currentUserId: string;
-    onSetRole: (userId: string, newRole: "admin" | "user") => void;
+    onSetRole: (userId: string, newRole: "admin" | "user" | "guest") => void;
     onBanToggle: (userId: string, isBanned: boolean) => void;
     onRemove: (userId: string) => void;
 }
@@ -50,7 +50,7 @@ export function UsersTable({ users, isLoading, currentUserId, onSetRole, onBanTo
                                 <TableCell>{user.email}</TableCell>
                                 <TableCell>
                                     <Badge
-                                        variant={user.role === "admin" ? "default" : "secondary"}
+                                        variant={user.role === "admin" ? "default" : user.role === "guest" ? "outline" : "secondary"}
                                         className="capitalize tracking-wider"
                                     >
                                         {user.role || 'user'}

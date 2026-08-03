@@ -1,5 +1,6 @@
 import { Buffer } from "node:buffer";
 import { auth } from "@workspace/auth/better-auth/auth";
+import { assertNotGuest } from "@/lib/auth/assertNotGuest";
 import {
   OPENAI_STT_URL,
   applySpeechTemplate,
@@ -57,6 +58,9 @@ export async function POST(req: Request) {
   if (!session?.user?.id) {
     return jsonSpeechError("You must be logged in to use speech to text.", 401);
   }
+
+  const guestBlocked = assertNotGuest(session);
+  if (guestBlocked) return guestBlocked;
 
   const formData = await req.formData().catch(() => null);
   if (!formData) {

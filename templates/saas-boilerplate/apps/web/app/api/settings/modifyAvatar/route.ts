@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@workspace/auth/better-auth/auth";
+import { assertNotGuest } from "@/lib/auth/assertNotGuest";
 import { headers } from "next/headers";
 import { ratelimit } from "@/server/ratelimit";
 import {
@@ -17,6 +18,9 @@ export async function POST(req: Request) {
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  const guestBlocked = assertNotGuest(session);
+  if (guestBlocked) return guestBlocked;
 
   const { success } = await ratelimit.limit(session.user.id);
   if (!success) {

@@ -1,5 +1,6 @@
 import ErrorState from "@workspace/ui/components/misc/ErrorState";
 import LoadingState from "@workspace/ui/components/misc/LoadingState";
+import { GuestBanner } from "@workspace/ui/components/misc/GuestBanner";
 import { getQueryClient, trpc } from "@/trpc/server"
 import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
 import { Suspense } from "react";
@@ -25,6 +26,7 @@ export default async function Layout({ children }: { children: React.ReactNode }
           <SidebarProvider>
             <AppSidebar />
             <div className="flex flex-col flex-1 max-h-screen">
+              <GuestBanner />
               <div className="flex items-center gap-4 py-2">
                 <SidebarTrigger />
                 <BreadcrumbsHeader />

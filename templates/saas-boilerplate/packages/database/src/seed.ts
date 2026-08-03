@@ -3,6 +3,7 @@ import { fileURLToPath } from "node:url";
 import * as dotenv from "dotenv";
 import fs from "node:fs/promises";
 import prisma from "./client";
+import { buildGuestDemoData } from "./guestDemoData";
 
 function loadSeedEnv() {
   const currentFilePath = fileURLToPath(import.meta.url);
@@ -288,6 +289,24 @@ async function main() {
     }
     console.log(`Seeded ${documentationData.length} documentation files limits.`);
   }
+
+  // Guest demo user (read-only role). No credential/password is set here —
+  // sign-in for this account is provisioned by the demo-login route.
+  const guestDemoData = buildGuestDemoData();
+  await prisma.user.upsert({
+    where: { email: guestDemoData.user.email },
+    update: {
+      name: guestDemoData.user.name,
+      role: guestDemoData.user.role,
+    },
+    create: {
+      email: guestDemoData.user.email,
+      name: guestDemoData.user.name,
+      role: guestDemoData.user.role,
+      emailVerified: true,
+    },
+  });
+  console.log(`Seeded guest demo user: ${guestDemoData.user.email}`);
 
   console.log("Database seeded successfully!");
 }

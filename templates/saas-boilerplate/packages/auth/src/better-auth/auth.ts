@@ -6,7 +6,8 @@ import { expo } from "@better-auth/expo";
 import { sendResetEmail, sendVerificationEmail } from "@workspace/email/resend/index"
 import { authCookiePrefix } from "./cookies";
 import { isEmailAllowedToRegister, type RegistrationMode } from "./registration";
-import { APIError } from "better-auth/api";
+import { createAuthMiddleware, APIError, getSessionFromCtx } from "better-auth/api";
+import { isGuestAccountMutation } from "./guestGuard";
 
 type DeleteQueryCallbackArgs = {
     args: any;
@@ -207,7 +208,18 @@ const options = {
             sameSite: "none",
             secure: true,
         }
-    }
+    },
+    hooks: {
+        before: createAuthMiddleware(async (ctx) => {
+            if (!isGuestAccountMutation(ctx.path)) return;
+            const session = await getSessionFromCtx(ctx);
+            if (session?.user?.role === "guest") {
+                throw new APIError("FORBIDDEN", {
+                    message: "This is a read-only demo account.",
+                });
+            }
+        }),
+    },
 } satisfies BetterAuthOptions;
 
 import { toNextJsHandler } from "better-auth/next-js";

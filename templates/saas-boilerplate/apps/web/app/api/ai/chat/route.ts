@@ -1,4 +1,5 @@
 import { auth } from "@workspace/auth/better-auth/auth";
+import { assertNotGuest } from "@/lib/auth/assertNotGuest";
 import db from "@workspace/database/client";
 import { logAIEvent } from "@workspace/observability/ai-logger";
 import {
@@ -118,6 +119,9 @@ export async function POST(req: Request) {
   if (!session?.user?.id) {
     return jsonError("You must be logged in to use AI chat.", 401);
   }
+
+  const guestBlocked = assertNotGuest(session);
+  if (guestBlocked) return guestBlocked;
 
   const parsed = chatRequestSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) {

@@ -11,6 +11,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { RegistrationModeToggle } from "@workspace/ui/components/admin/RegistrationModeToggle";
 import { InviteUserDialog } from "@workspace/ui/components/admin/InviteUserDialog";
 import { InvitationsTable } from "@workspace/ui/components/admin/InvitationsTable";
+import { CreateGuestDialog } from "@workspace/ui/components/admin/CreateGuestDialog";
 
 export default function UserManagementPage() {
     const { session, isPending, isAdmin } = useAdminGuard();
@@ -78,7 +79,7 @@ export default function UserManagementPage() {
         if (isAdmin) fetchUsers();
     }, [isAdmin]);
 
-    const handleSetRole = async (userId: string, newRole: "admin" | "user") => {
+    const handleSetRole = async (userId: string, newRole: "admin" | "user" | "guest") => {
         try {
             const { error } = await authClient.admin.setRole({ userId, role: newRole });
             if (error) throw error;
@@ -87,6 +88,13 @@ export default function UserManagementPage() {
         } catch (e: any) {
             toast.error(e.message || "Failed to update role");
         }
+    };
+
+    const handleCreateGuest = async (email: string, password: string) => {
+        const { error } = await authClient.admin.createUser({ email, password, role: "guest", name: email.split("@")[0] });
+        if (error) { toast.error(error.message || "Failed to create guest"); return; }
+        toast.success("Guest account created");
+        fetchUsers();
     };
 
     const handleBanToggle = async (userId: string, isBanned: boolean) => {
@@ -148,10 +156,13 @@ export default function UserManagementPage() {
                     onChange={(mode) => setMode.mutate({ mode })}
                     disabled={setMode.isPending || modeQuery.isLoading}
                 />
-                <InviteUserDialog
-                    onInvite={(email) => createInvite.mutate({ email })}
-                    isInviting={createInvite.isPending}
-                />
+                <div className="flex items-center gap-2">
+                    <CreateGuestDialog onCreate={handleCreateGuest} />
+                    <InviteUserDialog
+                        onInvite={(email) => createInvite.mutate({ email })}
+                        isInviting={createInvite.isPending}
+                    />
+                </div>
             </div>
 
             <div className="mb-10">

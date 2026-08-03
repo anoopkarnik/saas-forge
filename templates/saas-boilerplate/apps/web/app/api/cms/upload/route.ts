@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@workspace/auth/better-auth/auth";
+import { assertNotGuest } from "@/lib/auth/assertNotGuest";
 import { headers } from "next/headers";
 import { ratelimit } from "@/server/ratelimit";
 import {
@@ -21,6 +22,9 @@ export async function POST(req: Request) {
   if (session.user.role !== "admin") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
+
+  const guestBlocked = assertNotGuest(session);
+  if (guestBlocked) return guestBlocked;
 
   const { success } = await ratelimit.limit(session.user.id);
   if (!success) {

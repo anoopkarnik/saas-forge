@@ -78,3 +78,24 @@ export const adminProcedure = protectedProcedure.use(async ({ ctx, next }) => {
 
   return next();
 })
+
+// Admin surface that the read-only demo (guest) role may also *read*.
+// Admins get full access; guests may run queries only (the guest mutation
+// block from protectedProcedure still applies); everyone else needs admin.
+// Use this only for non-sensitive admin reads — keep PII/secret/IP queries on
+// adminProcedure so they stay admin-only.
+export const guestReadableAdminProcedure = protectedProcedure.use(
+  async ({ ctx, type, next }) => {
+    const role = ctx.session.user.role;
+    const isAdmin = role === 'admin';
+    const isGuestRead = role === 'guest' && type === 'query';
+    if (!isAdmin && !isGuestRead) {
+      throw new TRPCError({
+        code: 'FORBIDDEN',
+        message: 'Admin access is required to access this resource.',
+      });
+    }
+
+    return next();
+  },
+)

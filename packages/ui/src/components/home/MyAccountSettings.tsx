@@ -167,7 +167,7 @@ const MyAccountSettings = ({ onNavigate, onSetPassword, onUpdateAvatar, guestMai
   const handleName = async (name: string) => {
     const { error } = await authClient.updateUser({ name })
     if (error) {
-      toast.error("Error", { description: error })
+      toast.error("Error", { description: error.message || error.statusText || "Unable to update name" })
 
     }
     else {

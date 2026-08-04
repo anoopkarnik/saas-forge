@@ -91,7 +91,13 @@ export default function UserManagementPage() {
     };
 
     const handleCreateGuest = async (email: string, password: string) => {
-        const { error } = await authClient.admin.createUser({ email, password, role: "guest", name: email.split("@")[0] });
+        const { error } = await authClient.admin.createUser({
+            email,
+            password,
+            role: "guest",
+            name: email.split("@")[0],
+            data: { emailVerified: true },
+        });
         if (error) { toast.error(error.message || "Failed to create guest"); return; }
         toast.success("Guest account created");
         fetchUsers();

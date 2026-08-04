@@ -1,4 +1,4 @@
-import { adminProcedure, createTRPCRouter, protectedProcedure } from "@/trpc/init";
+import { adminProcedure, createTRPCRouter, protectedProcedure, guestReadableAdminProcedure } from "@/trpc/init";
 import {
   faqFormSchema,
   featuresFormSchema,
@@ -406,18 +406,18 @@ export const aiRouter = createTRPCRouter({
       return { kind: input.kind, section, values };
     }),
 
-  getAvailableModels: adminProcedure
+  getAvailableModels: guestReadableAdminProcedure
     .input(z.object({ provider: z.string() }))
     .query(async ({ input }) => {
       const { listModels } = await import("@workspace/ai");
       return listModels(input.provider as any);
     }),
 
-  getWebhookConfig: adminProcedure.query(async () => {
+  getWebhookConfig: guestReadableAdminProcedure.query(async () => {
     return toPublicN8nWebhookConfig(getN8nWebhookEnvConfig());
   }),
 
-  getSpeechConfigs: adminProcedure.query(async () => {
+  getSpeechConfigs: guestReadableAdminProcedure.query(async () => {
     const records = await (db as any).aiSpeechConfig.findMany({
       where: { capability: { in: speechCapabilities } },
     });

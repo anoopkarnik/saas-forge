@@ -19,10 +19,31 @@ determined by which procedure builder it was declared with in
   `guest` role is authenticated but blocked from mutations, so guests get
   read-only access)
 - `adminProcedure` → **Admin only**
+- `guestReadableAdminProcedure` → **Admin write, guest read** (added as part of
+  this work; see below)
 
 There is no per-call role field, so "what role can access it" is derivable but
 not stored. The live surface is available at `appRouter._def.procedures`
 (a flat `path → { _def.type }` map).
+
+### Guest read-only model
+
+`guest` is a **public one-click demo** login, so effectively an anonymous
+visitor. The requirement is: guests read what they may see, write nothing.
+
+`guestReadableAdminProcedure` (in `trpc/init.ts`) grants **admins full access
+and guests query-only access**; everyone else needs admin. The guest mutation
+block from `protectedProcedure` still applies, so guests can never mutate.
+
+Because the demo login is public, only **non-sensitive** admin reads are moved
+to this procedure — SEO analytics, model/speech/webhook config, and admin doc
+reads. Sensitive admin queries stay on `adminProcedure` (guest-blocked):
+`admin.invites.list` (invitee + admin emails / PII), `ai.getPrompts` /
+`getPromptVersions` (prompt IP), and `ai.getUsageEvents` (cost data).
+
+Resulting guest access: public queries ✓, public mutations ✓ (ungated),
+authenticated queries ✓, authenticated mutations ✗, `adminGuestRead` queries ✓,
+admin queries/mutations ✗.
 
 Router groups (`apps/web/trpc/routers/_app.ts`): support, landing,
 documentation, home, billing, seo, ai, aiJobs, apiKey, admin. The `admin`
@@ -63,11 +84,10 @@ presence and type are.
 
 Pure presentational component (props-only, like the existing
 `RegistrationModeToggle`), so it template-syncs cleanly. One collapsible
-section per group. Each row: call name, a Query/Mutation badge, and a
-color-coded access badge (Public / Authenticated / Admin). Authenticated
-**mutations** carry a small `guest: read-only` note (matches the guest-block in
-`protectedProcedure`). A short legend at the top explains the three levels plus
-the guest rule.
+section per group. Each row: call name, a Query/Mutation badge, a color-coded
+access badge (Public / Authenticated / Admin; `adminGuestRead` shows as Admin),
+and a **Guest** column (✓/✗) computed from `(access, type)` per the guest model
+above. A legend explains the tiers plus the guest read-only rule.
 
 ### 4. Page — `apps/web/app/(home)/admin/api/page.tsx`
 
@@ -93,6 +113,9 @@ display. Access badges reflect current behavior; nothing new is enforced.
 
 ## Testing
 
-- `apps/web/trpc/__tests__/apiRegistry.test.ts` — drift test (above).
+- `apps/web/trpc/routers/__tests__/apiRegistry.test.ts` — drift test (above).
+- `apps/web/trpc/routers/__tests__/guestReadableAdmin.test.ts` — verifies the
+  new procedure: admin full access, guest query-only, guest mutation blocked,
+  non-admin user blocked.
 - `pnpm --dir apps/web typecheck`.
 - `pnpm template:check-sync` after starter-related changes.

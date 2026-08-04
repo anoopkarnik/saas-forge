@@ -1,6 +1,6 @@
 {
   "name": "saas-forge",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "SaaS Forge desktop application for managing your SaaS projects",
   "main": "out/main/index.js",
   "scripts": {

@@ -1,7 +1,7 @@
 import { fetchDocumentation } from "@/lib/functions/fetchDocumentation";
 import { DocumentationProps } from "@/lib/ts-types/doc";
 import { redis } from "@/server/redis";
-import { createTRPCRouter, baseProcedure, adminProcedure } from "@/trpc/init";
+import { createTRPCRouter, baseProcedure, adminProcedure, guestReadableAdminProcedure } from "@/trpc/init";
 import { retrieveBlocksTree } from "@workspace/cms/notion/block/retrieveBlockChildren";
 import prisma from "@workspace/database/client";
 import { TRPCError } from "@trpc/server";
@@ -136,7 +136,7 @@ export const documentationRouter = createTRPCRouter({
 
       return blocks;
     }),
-    listAdminDocs: adminProcedure
+    listAdminDocs: guestReadableAdminProcedure
     .query(async () => {
       ensurePostgresDocumentationEditing();
 
@@ -159,7 +159,7 @@ export const documentationRouter = createTRPCRouter({
         lastUpdated: doc.lastUpdated.toISOString(),
       }));
     }),
-    getAdminDocById: adminProcedure
+    getAdminDocById: guestReadableAdminProcedure
     .input(z.object({ id: z.string().min(1, "Document id is required") }))
     .query(async ({ input }) => {
       ensurePostgresDocumentationEditing();

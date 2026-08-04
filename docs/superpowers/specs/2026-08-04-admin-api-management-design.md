@@ -1,0 +1,98 @@
+# Admin → API Management — Design
+
+Date: 2026-08-04
+
+## Goal
+
+An admin-only page that lists every tRPC call in the app, grouped by router,
+showing each call's type (query/mutation) and the role that can access it. The
+data is kept accurate by a drift test against the live router.
+
+## Background
+
+Access control in this repo is structural — the role a call requires is fully
+determined by which procedure builder it was declared with in
+`apps/web/trpc/init.ts`:
+
+- `baseProcedure` → **Public** (anyone, including unauthenticated)
+- `protectedProcedure` → **Authenticated** (user + admin full access; the
+  `guest` role is authenticated but blocked from mutations, so guests get
+  read-only access)
+- `adminProcedure` → **Admin only**
+
+There is no per-call role field, so "what role can access it" is derivable but
+not stored. The live surface is available at `appRouter._def.procedures`
+(a flat `path → { _def.type }` map).
+
+Router groups (`apps/web/trpc/routers/_app.ts`): support, landing,
+documentation, home, billing, seo, ai, aiJobs, apiKey, admin. The `admin`
+router has nested sub-routers (`admin.settings.*`, `admin.invites.*`).
+
+## Components
+
+### 1. Registry — `apps/web/trpc/apiRegistry.ts`
+
+Single source of truth. Plain data, no server-only imports (safe to import from
+a client component).
+
+```ts
+type Access = "public" | "authenticated" | "admin";
+type ApiCall = { name: string; type: "query" | "mutation"; access: Access };
+type ApiGroup = { group: string; label: string; calls: ApiCall[] };
+export const API_REGISTRY: ApiGroup[] = [ /* 10+ groups */ ];
+```
+
+Nested admin sub-routers render as their own labeled groups
+(`admin.settings`, `admin.invites`). `access` is hand-authored (it maps 1:1 to
+the builder used) and verified for presence/type by the drift test.
+
+### 2. Drift test — `apps/web/trpc/__tests__/apiRegistry.test.ts`
+
+Imports the live `appRouter`, flattens `appRouter._def.procedures` to
+`path → type`, and asserts:
+
+- every real procedure path exists in the registry (no missing endpoints);
+- every registry entry maps to a real path (no stale entries);
+- the registry's `type` matches the router's actual `_def.type`.
+
+Adding/removing/renaming a procedure without updating the registry turns the
+test red. Role is not stored in the router, so it cannot be auto-verified —
+presence and type are.
+
+### 3. UI — `packages/ui/src/components/admin/ApiRegistryTable.tsx`
+
+Pure presentational component (props-only, like the existing
+`RegistrationModeToggle`), so it template-syncs cleanly. One collapsible
+section per group. Each row: call name, a Query/Mutation badge, and a
+color-coded access badge (Public / Authenticated / Admin). Authenticated
+**mutations** carry a small `guest: read-only` note (matches the guest-block in
+`protectedProcedure`). A short legend at the top explains the three levels plus
+the guest rule.
+
+### 4. Page — `apps/web/app/(home)/admin/api/page.tsx`
+
+Client page following the `useAdminGuard()` pattern from
+`app/(home)/admin/users/page.tsx` (spinner while pending, `null` if not admin).
+Renders `<ApiRegistryTable data={API_REGISTRY} />`. Data is static — no tRPC
+fetch.
+
+### 5. Navigation — `packages/ui/src/components/sidebar/AppSidebar.tsx`
+
+Add an "API Management" item to the admin group, pointing to `/admin/api`.
+
+### 6. Template sync
+
+After implementation, run `pnpm template:check-sync` / `pnpm template:sync` so
+the new files land in `templates/saas-boilerplate` (both `apps/web` and
+`packages/ui`).
+
+## Scope (YAGNI)
+
+Read-only reference page. No editing, no live invocation, no input-schema
+display. Access badges reflect current behavior; nothing new is enforced.
+
+## Testing
+
+- `apps/web/trpc/__tests__/apiRegistry.test.ts` — drift test (above).
+- `pnpm --dir apps/web typecheck`.
+- `pnpm template:check-sync` after starter-related changes.

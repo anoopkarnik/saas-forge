@@ -1,6 +1,6 @@
 {
   "name": "saas-forge",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "scripts": {
     "build": "turbo build",
     "dev": "turbo dev",

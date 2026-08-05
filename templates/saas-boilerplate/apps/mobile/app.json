@@ -2,7 +2,7 @@
   "expo": {
     "name": "SaaS Forge",
     "slug": "saas-forge",
-    "version": "1.4.0",
+    "version": "1.4.1",
     "scheme": "saas-forge",
     "orientation": "portrait",
     "icon": "./assets/icon.png",

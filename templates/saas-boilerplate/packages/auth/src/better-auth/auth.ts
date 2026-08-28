@@ -46,9 +46,12 @@ const getRegistrationMode = async (): Promise<RegistrationMode> => {
 const options = {
     basePath: "/api/auth",
     baseURL: appUrl,
+    // `expo()` is cast because the installed @better-auth/expo types are skewed
+    // from better-auth core (missing `hasPlugin` on AuthContext) — type-only, no
+    // runtime change. Remove once the better-auth package versions are aligned.
     plugins: [openAPI(), admin({
         impersonationSessionDuration: 3600
-    }), expo()],
+    }), expo() as any],
     trustedOrigins: [
         "saas-forge://",
         "saas-forge://*",

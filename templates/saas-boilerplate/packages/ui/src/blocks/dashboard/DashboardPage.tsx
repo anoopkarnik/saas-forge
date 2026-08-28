@@ -13,6 +13,7 @@ import {
   FileUp,
   Layers3,
   Rocket,
+  Save,
   Settings2,
   Sparkles,
   Upload,
@@ -81,6 +82,15 @@ interface DashboardPageProps {
     envVars: Record<string, string>,
     modules: ScaffoldModuleId[],
   ) => Promise<void>;
+  onSaveConfiguration?: (payload: {
+    name: string;
+    config: Record<string, unknown>;
+    modules: ScaffoldModuleId[];
+    platforms: string[];
+    productTypeId?: string;
+    tierId?: string;
+    versionId?: string;
+  }) => Promise<void> | void;
   docsBaseUrl?: string;
   onNavigateDoc?: (slug: string) => void;
 }
@@ -171,11 +181,13 @@ import { WizardSummary } from "@workspace/ui/components/dashboard/WizardSummary"
 
 export default function DashboardPage({
   onSubmitConfiguration,
+  onSaveConfiguration,
   docsBaseUrl = "",
   onNavigateDoc,
 }: DashboardPageProps) {
   const isGuest = useIsGuest();
   const [isDownloading, setIsDownloading] = React.useState(false);
+  const [isSaving, setIsSaving] = React.useState(false);
   const [selectedPreset, setSelectedPreset] =
     React.useState<ResolvedPreset | null>(null);
   const [presetProductTypeId, setPresetProductTypeId] =
@@ -484,6 +496,40 @@ export default function DashboardPage({
     await onSubmit(form.getValues());
   }, [form, getFirstStepForField, onSubmit]);
 
+  const handleSaveConfiguration = React.useCallback(async () => {
+    if (!onSaveConfiguration) return;
+    const values = form.getValues();
+    const safeName = (values.name || "").trim();
+    if (!safeName) {
+      form.setError("name", {
+        type: "manual",
+        message: "Add a project name before saving.",
+      });
+      form.setFocus("name");
+      return;
+    }
+    setIsSaving(true);
+    try {
+      await onSaveConfiguration({
+        name: safeName,
+        config: values as Record<string, unknown>,
+        modules: values.SELECTED_MODULES || [],
+        platforms: values.NEXT_PUBLIC_PLATFORM || ["web"],
+        productTypeId: presetProductTypeId ?? undefined,
+        tierId: presetTierId,
+        versionId: presetVersionId,
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  }, [
+    onSaveConfiguration,
+    form,
+    presetProductTypeId,
+    presetTierId,
+    presetVersionId,
+  ]);
+
   const renderWizardField = React.useCallback(
     (name: WizardFieldName, sectionId: string) => {
       const meta = getWizardFieldMeta(name);
@@ -556,6 +602,18 @@ export default function DashboardPage({
               <Rocket className="mr-2 h-4 w-4" />
               Deploy to Vercel (Coming Soon)
             </Button>
+            {onSaveConfiguration ? (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleSaveConfiguration}
+                disabled={isSaving || isGuest}
+                className="touch-manipulation"
+              >
+                <Save className="mr-2 h-4 w-4" />
+                {isSaving ? "Saving…" : "Save configuration"}
+              </Button>
+            ) : null}
             <Button
               type="button"
               onClick={handleFinalDownload}

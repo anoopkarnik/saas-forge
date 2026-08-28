@@ -26,6 +26,8 @@ model User {
     aiCollections    AiCollection[]    @relation("AiCollections")
     apiKeys          ApiKey[]
     sentInvitations  Invitation[]     @relation("InvitationInvitedBy")
+    projectConfigs   ProjectConfig[]
+    scaffoldJobs     ScaffoldJob[]
 
     createdAt  DateTime @default(now())
     updatedAt  DateTime @updatedAt

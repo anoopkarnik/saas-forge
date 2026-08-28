@@ -32,8 +32,21 @@
     ".claude/settings.local.json",
     "apps/mobile/components/downloads",
     "apps/web/vitest-coverage-output.txt",
+    "apps/web/.env",
+    "apps/web/.env.production",
+    "packages/database/.env",
     "apps/web/app/api/scaffold",
-    "apps/web/tests/integration/scaffoldRoute.test.ts"
+    "apps/web/tests/integration/scaffoldRoute.test.ts",
+    "packages/database/prisma/scaffold.prisma",
+    "packages/database/prisma/migrations/20260817001340_project_upgrade",
+    "apps/web/lib/scaffold",
+    "apps/web/trpc/routers/projectProcedures.ts",
+    "apps/web/trpc/routers/__tests__/projectProcedures.test.ts",
+    "apps/web/app/api/v1/projects",
+    "apps/web/app/api/v1/credits",
+    "apps/web/app/api/v1/scaffold",
+    "apps/web/app/(home)/projects",
+    "apps/web/components/projects"
   ],
   "templateOverrides": [
     "CLAUDE.md",
@@ -49,6 +62,10 @@
     "apps/web/components/home/AppSidebar.tsx",
     "apps/web/middleware.ts",
     "apps/web/next.config.mjs",
-    "package.json"
+    "package.json",
+    "packages/database/prisma/schema.prisma",
+    "packages/database/prisma/user.prisma",
+    "apps/web/trpc/routers/_app.ts",
+    "apps/web/trpc/apiRegistry.ts"
   ]
 }

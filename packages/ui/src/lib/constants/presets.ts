@@ -1407,7 +1407,7 @@ function buildDelivery(
   };
 }
 
-function getAccounts(
+export function getAccounts(
   values: Partial<FormValues>,
   modules: ScaffoldModuleId[],
 ): string[] {
@@ -1433,7 +1433,7 @@ function getAccounts(
   return unique(accounts);
 }
 
-function getSecrets(
+export function getSecrets(
   values: Partial<FormValues>,
   modules: ScaffoldModuleId[],
 ): string[] {

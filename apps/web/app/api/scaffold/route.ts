@@ -5,7 +5,6 @@ import fs from "node:fs";
 import { auth } from "@workspace/auth/better-auth/auth";
 import { headers } from "next/headers";
 import { assertNotGuest } from "@/lib/auth/assertNotGuest";
-import db from "@workspace/database/client";
 import { revalidatePath } from "next/cache";
 import { ratelimit } from "@/server/ratelimit";
 import {
@@ -16,6 +15,11 @@ import {
   loadScaffoldRegistry,
   validateSelectedModules,
 } from "@/lib/scaffold-modules";
+import {
+  chargeScaffoldCredits,
+  InsufficientCreditsError,
+} from "@/lib/scaffold/service";
+import { getTemplateVersion } from "@/lib/scaffold/template-version";
 
 const scaffoldRoots = process.env.VERCEL
   ? ["templates/saas-boilerplate", ".generated/saas-boilerplate"]
@@ -453,10 +457,17 @@ export async function POST(req: NextRequest) {
 
     await archive.finalize();
 
-    // Deduct credits
-    await db.user.update({
-      where: { id: session.user.id },
-      data: { creditsUsed: session.user.creditsUsed + pricing.totalCredits },
+    // Deduct credits atomically and record the download in the ScaffoldJob ledger.
+    await chargeScaffoldCredits({
+      userId: session.user.id,
+      amount: pricing.totalCredits,
+      job: {
+        type: "download",
+        source: "web",
+        toModules: modules,
+        toTierId: "custom",
+        templateVersion: getTemplateVersion(),
+      },
     });
 
     revalidatePath("/(home)");
@@ -471,6 +482,10 @@ export async function POST(req: NextRequest) {
     });
   } catch (err: any) {
     cleanupTempDir();
+
+    if (err instanceof InsufficientCreditsError) {
+      return jsonWithCors(req, { error: "Not enough credits" }, 403);
+    }
 
     if (
       err instanceof InvalidScaffoldModuleError ||

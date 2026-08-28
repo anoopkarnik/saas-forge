@@ -433,7 +433,63 @@ export function getWizardStepFields(
   }
 }
 
-export function getAccountsProviderGroups(values: FormValues): ProviderGroup[] {
+/**
+ * Secret / value-to-fill fields. These are NOT collected in the download wizard
+ * (which keeps only option choices) — they are surfaced per saved project in the
+ * Projects tab, so users fill them where the project is managed, not up front.
+ */
+export const SECRET_WIZARD_FIELDS = new Set<WizardFieldName>([
+  "DATABASE_URL",
+  "LANDING_DATABASE_ID",
+  "HERO_DATABASE_ID",
+  "FEATURE_DATABASE_ID",
+  "TESTIMONIAL_DATABASE_ID",
+  "PRICING_DATABASE_ID",
+  "FAQ_DATABASE_ID",
+  "FOOTER_DATABASE_ID",
+  "DOCUMENTATION_DATABASE_ID",
+  "NOTION_API_TOKEN",
+  "UPSTASH_REDIS_REST_URL",
+  "UPSTASH_REDIS_REST_TOKEN",
+  "BETTER_AUTH_SECRET",
+  "AUTH_GITHUB_CLIENT_ID",
+  "AUTH_GITHUB_CLIENT_SECRET",
+  "AUTH_GOOGLE_CLIENT_ID",
+  "AUTH_GOOGLE_CLIENT_SECRET",
+  "AUTH_LINKEDIN_CLIENT_ID",
+  "AUTH_LINKEDIN_CLIENT_SECRET",
+  "RESEND_API_KEY",
+  "R2_ACCOUNT_ID",
+  "R2_ACCESS_KEY_ID",
+  "R2_SECRET_ACCESS_KEY",
+  "R2_BUCKET_NAME",
+  "NEXT_PUBLIC_R2_PUBLIC_URL",
+  "BLOB_READ_WRITE_TOKEN",
+  "BETTERSTACK_TELEMETRY_SOURCE_TOKEN",
+  "BETTERSTACK_TELEMETRY_INGESTING_HOST",
+  "NEXT_PUBLIC_GOOGLE_ANALYTICS_MEASUREMENT_ID",
+  "GA4_PROPERTY_ID",
+  "GA4_CREDENTIALS_JSON",
+  "GOOGLE_PAGESPEED_API_KEY",
+  "STRIPE_SECRET_KEY",
+  "STRIPE_WEBHOOK_SECRET",
+  "DODO_PAYMENTS_API_KEY",
+  "DODO_PAYMENTS_WEBHOOK_KEY",
+  "DODO_PAYMENTS_RETURN_URL",
+  "DODO_CREDITS_PRODUCT_ID",
+  "NEXT_PUBLIC_DODO_PAYMENTS_URL",
+  "OPENAI_API_KEY",
+  "ANTHROPIC_API_KEY",
+  "GOOGLE_GENERATIVE_AI_API_KEY",
+  "OPENROUTER_API_KEY",
+  "AI_GATEWAY_API_KEY",
+  "OLLAMA_BASE_URL",
+  "OPENAI_COMPATIBLE_BASE_URL",
+  "N8N_WEBHOOK_URL",
+  "N8N_WEBHOOK_JWT_KEY",
+]);
+
+function buildProviderGroups(values: FormValues): ProviderGroup[] {
   const groups: ProviderGroup[] = [
     {
       id: "database",
@@ -595,6 +651,21 @@ export function getAccountsProviderGroups(values: FormValues): ProviderGroup[] {
   return groups.filter((group) => group.fields.length > 0);
 }
 
+/** Full grouped list of env vars a config needs — shown per project in the Projects tab. */
+export function getProjectEnvGroups(values: FormValues): ProviderGroup[] {
+  return buildProviderGroups(values);
+}
+
+/** Wizard view of Accounts & Keys: option choices only; secret/value fields are removed. */
+export function getAccountsProviderGroups(values: FormValues): ProviderGroup[] {
+  return buildProviderGroups(values)
+    .map((group) => ({
+      ...group,
+      fields: group.fields.filter((field) => !SECRET_WIZARD_FIELDS.has(field)),
+    }))
+    .filter((group) => group.fields.length > 0);
+}
+
 export function getReviewSummaryItems(values: FormValues) {
   return [
     {
@@ -658,6 +729,8 @@ export function isWizardFieldRequired(
   name: WizardFieldName,
   values: FormValues,
 ) {
+  // Secrets/values are no longer collected in the wizard — never required here.
+  if (SECRET_WIZARD_FIELDS.has(name)) return false;
   switch (name) {
     case "name":
     case "NEXT_PUBLIC_SAAS_NAME":

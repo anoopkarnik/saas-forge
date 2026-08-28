@@ -45,12 +45,10 @@ describe("DashboardPage preset handoff", () => {
     fireEvent.click(
       screen.getByRole("button", { name: /Accounts & Keys Connect/ }),
     );
+    // Secrets are no longer collected in the wizard — provider key inputs now
+    // live in the Projects tab. The group heading still shows the AI toggle.
     expect(screen.getByText("AI Providers")).toBeTruthy();
-    const openAiKey = screen.getByLabelText(
-      "OpenAI API Key",
-    ) as HTMLInputElement;
-    fireEvent.change(openAiKey, { target: { value: "preserved-secret" } });
-    expect(openAiKey.value).toBe("preserved-secret");
+    expect(screen.queryByLabelText("OpenAI API Key")).toBeNull();
 
     fireEvent.click(screen.getByRole("button", { name: /Review Check/ }));
     expect(screen.getByText("What You're Building")).toBeTruthy();

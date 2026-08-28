@@ -141,6 +141,21 @@ export const API_REGISTRY: ApiGroup[] = [
     ],
   },
   {
+    group: "project",
+    label: "Projects",
+    calls: [
+      { name: "list", type: "query", access: "authenticated" },
+      { name: "get", type: "query", access: "authenticated" },
+      { name: "save", type: "mutation", access: "authenticated" },
+      { name: "update", type: "mutation", access: "authenticated" },
+      { name: "duplicate", type: "mutation", access: "authenticated" },
+      { name: "delete", type: "mutation", access: "authenticated" },
+      { name: "estimateDownload", type: "query", access: "authenticated" },
+      { name: "estimateUpgrade", type: "query", access: "authenticated" },
+      { name: "setupGuide", type: "query", access: "authenticated" },
+    ],
+  },
+  {
     group: "admin.settings",
     label: "Admin · Settings",
     calls: [

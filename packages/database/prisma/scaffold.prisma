@@ -1,0 +1,78 @@
+/// Platform-only models for the SaaS Forge scaffolding app.
+/// These live in `scaffold_schema` and are intentionally excluded from the
+/// downloaded boilerplate (see template-sync.manifest.json). Do not reference
+/// them from any code that ships inside templates/saas-boilerplate.
+
+model ProjectConfig {
+    id              String    @id @default(cuid())
+    userId          String
+    user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    name            String
+    slug            String
+
+    productTypeId   String?
+    tierId          String
+    versionId       String
+    platforms       String[]
+    modules         String[]
+
+    /// Non-secret FormValues only (toggles, names, providers). Secrets are never stored.
+    config          Json
+
+    templateVersion String
+    lastBuiltHash   String?
+    lastBuiltAt     DateTime?
+
+    createdAt       DateTime  @default(now())
+    updatedAt       DateTime  @updatedAt
+
+    builds          ScaffoldJob[]
+
+    @@unique([userId, slug])
+    @@index([userId])
+    @@schema("scaffold_schema")
+}
+
+model ScaffoldJob {
+    id              String              @id @default(cuid())
+    userId          String
+    user            User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    projectId       String?
+    project         ProjectConfig?      @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
+    type            SCAFFOLD_JOB_TYPE
+    source          SCAFFOLD_JOB_SOURCE
+
+    fromModules     String[]
+    toModules       String[]
+    fromTierId      String?
+    toTierId        String
+
+    creditsSpent    Int
+    templateVersion String
+
+    /// Guards against double-charging on retried API calls.
+    idempotencyKey  String?             @unique
+
+    createdAt       DateTime            @default(now())
+
+    @@index([userId])
+    @@index([projectId])
+    @@schema("scaffold_schema")
+}
+
+enum SCAFFOLD_JOB_TYPE {
+    download
+    upgrade
+
+    @@schema("scaffold_schema")
+}
+
+enum SCAFFOLD_JOB_SOURCE {
+    web
+    api
+
+    @@schema("scaffold_schema")
+}

@@ -19,10 +19,18 @@ type RegistryModuleEntry = {
   requires: ScaffoldModuleId[];
   incompatibleWith: ScaffoldModuleId[];
   downloadEnabled?: boolean;
+  /**
+   * When explicitly false, the module has no scaffold actions yet (empty
+   * manifest). It stays selectable so the UI can list it, but it is charged 0
+   * credits until real file actions are authored. Defaults to implemented.
+   */
+  implemented?: boolean;
 };
 
 type RegistryShape = {
   baseCreditsCost: number;
+  /** Credits charged per tier step when upgrading (e.g. tier-1 -> tier-3 = 2 steps). */
+  tierUpgradeCreditsPerStep?: number;
   modules: RegistryModuleEntry[];
 };
 
@@ -147,10 +155,13 @@ export function calculateScaffoldCredits(
   const registryMap = new Map(
     registry.modules.map((module) => [module.id, module]),
   );
-  const moduleCredits = selectedModules.map((moduleId) => ({
-    moduleId,
-    credits: registryMap.get(moduleId)?.creditsCost ?? 0,
-  }));
+  const moduleCredits = selectedModules.map((moduleId) => {
+    const entry = registryMap.get(moduleId);
+    // Not-yet-implemented modules (empty manifests) stay selectable but free
+    // until their scaffold actions are authored.
+    const credits = entry && entry.implemented === false ? 0 : entry?.creditsCost ?? 0;
+    return { moduleId, credits };
+  });
 
   return {
     baseCredits: registry.baseCreditsCost,
@@ -159,6 +170,24 @@ export function calculateScaffoldCredits(
       registry.baseCreditsCost +
       moduleCredits.reduce((total, entry) => total + entry.credits, 0),
   };
+}
+
+/** Sum of module credits only (no base), implemented-aware. Used for upgrade deltas. */
+export function calculateModulesCredits(
+  selectedModules: ScaffoldModuleId[],
+  registry = loadScaffoldRegistry(),
+): number {
+  return calculateScaffoldCredits(selectedModules, registry).moduleCredits.reduce(
+    (total, entry) => total + entry.credits,
+    0,
+  );
+}
+
+/** Credits charged per tier step on an upgrade (tier-1 -> tier-3 = 2 steps). */
+export function getTierUpgradeCreditsPerStep(
+  registry = loadScaffoldRegistry(),
+): number {
+  return registry.tierUpgradeCreditsPerStep ?? 0;
 }
 
 function ensureParent(filePath: string) {

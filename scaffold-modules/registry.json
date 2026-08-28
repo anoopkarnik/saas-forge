@@ -1,5 +1,6 @@
 {
   "baseCreditsCost": 20,
+  "tierUpgradeCreditsPerStep": 3,
   "modules": [
     {
       "id": "billing",
@@ -8,7 +9,8 @@
       "creditsCost": 10,
       "requires": [],
       "incompatibleWith": [],
-      "downloadEnabled": true
+      "downloadEnabled": true,
+      "implemented": true
     },
     {
       "id": "multi_tenancy",
@@ -17,7 +19,8 @@
       "creditsCost": 15,
       "requires": [],
       "incompatibleWith": [],
-      "downloadEnabled": false
+      "downloadEnabled": true,
+      "implemented": false
     },
     {
       "id": "ai",
@@ -26,7 +29,8 @@
       "creditsCost": 20,
       "requires": [],
       "incompatibleWith": [],
-      "downloadEnabled": true
+      "downloadEnabled": true,
+      "implemented": true
     },
     {
       "id": "api_keys",
@@ -35,7 +39,8 @@
       "creditsCost": 5,
       "requires": [],
       "incompatibleWith": [],
-      "downloadEnabled": false
+      "downloadEnabled": true,
+      "implemented": false
     },
     {
       "id": "notifications",
@@ -44,7 +49,8 @@
       "creditsCost": 5,
       "requires": [],
       "incompatibleWith": [],
-      "downloadEnabled": false
+      "downloadEnabled": true,
+      "implemented": false
     }
   ]
 }

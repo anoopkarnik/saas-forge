@@ -3,9 +3,20 @@
 import * as React from "react";
 import DashboardPage from "@workspace/ui/blocks/dashboard/DashboardPage";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+import { useMutation } from "@tanstack/react-query";
+import { useTRPC } from "@/trpc/client";
 
 export default function Page() {
-  const handleSubmitConfiguration = async (safeName: string, envVars: Record<string, string>, modules: string[]) => {
+  const trpc = useTRPC();
+  const router = useRouter();
+  const saveConfiguration = useMutation(trpc.project.save.mutationOptions());
+
+  const handleSubmitConfiguration = async (
+    safeName: string,
+    envVars: Record<string, string>,
+    modules: string[],
+  ) => {
     try {
       const response = await fetch("/api/scaffold", {
         method: "POST",
@@ -34,9 +45,43 @@ export default function Page() {
     }
   };
 
+  const handleSaveConfiguration = async (payload: {
+    name: string;
+    config: Record<string, unknown>;
+    modules: string[];
+    platforms: string[];
+    productTypeId?: string;
+    tierId?: string;
+    versionId?: string;
+  }) => {
+    try {
+      const res = await saveConfiguration.mutateAsync({
+        name: payload.name,
+        productTypeId: payload.productTypeId,
+        tierId: payload.tierId,
+        versionId: payload.versionId,
+        platforms: payload.platforms,
+        modules: payload.modules,
+        config: payload.config,
+      });
+
+      const strippedNote = res.strippedKeys.length
+        ? ` ${res.strippedKeys.length} secret value(s) were not stored — fill them via the setup guide.`
+        : "";
+
+      toast.success(`Saved "${res.project.name}".${strippedNote}`, {
+        action: { label: "View projects", onClick: () => router.push("/projects") },
+      });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Save failed. Please try again.");
+      throw error;
+    }
+  };
+
   return (
     <DashboardPage
       onSubmitConfiguration={handleSubmitConfiguration}
+      onSaveConfiguration={handleSaveConfiguration}
       docsBaseUrl={process.env.NEXT_PUBLIC_URL!}
     />
   );

@@ -29,6 +29,15 @@ vi.mock("@workspace/database/client", () => ({
   },
 }));
 
+const mockCharge = vi.fn();
+vi.mock("@/lib/scaffold/service", () => ({
+  chargeScaffoldCredits: (...args: any[]) => mockCharge(...args),
+  InsufficientCreditsError: class InsufficientCreditsError extends Error {},
+}));
+vi.mock("@/lib/scaffold/template-version", () => ({
+  getTemplateVersion: () => "1.4.1",
+}));
+
 // Mock ratelimit
 vi.mock("@/server/ratelimit", () => ({
   ratelimit: {
@@ -166,6 +175,7 @@ describe("Scaffold Route Integration Tests", () => {
     mockRmSync.mockReturnValue(undefined);
 
     mockUserUpdate.mockResolvedValue({});
+    mockCharge.mockResolvedValue({ charged: 20, alreadyProcessed: false, jobId: "j1" });
 
     mockLoadScaffoldRegistry.mockReturnValue({
       baseCreditsCost: 20,
@@ -252,7 +262,7 @@ describe("Scaffold Route Integration Tests", () => {
       expect(response.status).toBe(401);
       expect(data.error).toBe("Unauthorized");
       expect(ratelimit.limit).not.toHaveBeenCalled();
-      expect(mockUserUpdate).not.toHaveBeenCalled();
+      expect(mockCharge).not.toHaveBeenCalled();
     });
 
     it("should return 403 for disallowed origins before auth work", async () => {
@@ -276,7 +286,7 @@ describe("Scaffold Route Integration Tests", () => {
       expect(data.error).toBe("Forbidden");
       expect(auth.api.getSession).not.toHaveBeenCalled();
       expect(ratelimit.limit).not.toHaveBeenCalled();
-      expect(mockUserUpdate).not.toHaveBeenCalled();
+      expect(mockCharge).not.toHaveBeenCalled();
     });
 
     it("should return 429 when rate limit is exceeded", async () => {
@@ -326,7 +336,7 @@ describe("Scaffold Route Integration Tests", () => {
       expect(response.status).toBe(403);
       expect(data.error).toBe("This is a read-only demo account.");
       expect(ratelimit.limit).not.toHaveBeenCalled();
-      expect(mockUserUpdate).not.toHaveBeenCalled();
+      expect(mockCharge).not.toHaveBeenCalled();
     });
 
     it("should return 403 when user has insufficient credits", async () => {
@@ -399,7 +409,7 @@ describe("Scaffold Route Integration Tests", () => {
 
       expect(response.status).toBe(400);
       expect(data.error).toContain("Unknown scaffold module");
-      expect(mockUserUpdate).not.toHaveBeenCalled();
+      expect(mockCharge).not.toHaveBeenCalled();
     });
 
     it("should return 400 for modules that are not downloadable yet", async () => {
@@ -419,7 +429,7 @@ describe("Scaffold Route Integration Tests", () => {
 
       expect(response.status).toBe(400);
       expect(data.error).toContain("not available for download yet");
-      expect(mockUserUpdate).not.toHaveBeenCalled();
+      expect(mockCharge).not.toHaveBeenCalled();
     });
 
     it("should successfully generate and stream a zip file", async () => {
@@ -461,11 +471,10 @@ describe("Scaffold Route Integration Tests", () => {
       expect(mockAppend).toHaveBeenCalled(); // .env files
       expect(mockFinalize).toHaveBeenCalled();
 
-      // Verify credits were deducted
-      expect(mockUserUpdate).toHaveBeenCalledWith({
-        where: { id: "user_1" },
-        data: { creditsUsed: 20 },
-      });
+      // Verify credits were deducted via the shared transactional charge
+      expect(mockCharge).toHaveBeenCalledWith(
+        expect.objectContaining({ userId: "user_1", amount: 20 }),
+      );
 
       await new Promise((resolve) => setTimeout(resolve, 10));
       expect(mockRmSync).toHaveBeenCalledWith(
@@ -491,10 +500,9 @@ describe("Scaffold Route Integration Tests", () => {
       );
 
       expect(response.status).toBe(200);
-      expect(mockUserUpdate).toHaveBeenCalledWith({
-        where: { id: "user_1" },
-        data: { creditsUsed: 30 },
-      });
+      expect(mockCharge).toHaveBeenCalledWith(
+        expect.objectContaining({ userId: "user_1", amount: 30 }),
+      );
     });
 
     it("should sanitize project name with special characters", async () => {
@@ -625,7 +633,7 @@ describe("Scaffold Route Integration Tests", () => {
       expect(response.headers.get("Allow")).toBe("POST, OPTIONS");
       expect(data.error).toBe("Method Not Allowed");
       expect(auth.api.getSession).not.toHaveBeenCalled();
-      expect(mockUserUpdate).not.toHaveBeenCalled();
+      expect(mockCharge).not.toHaveBeenCalled();
     });
   });
 

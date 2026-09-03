@@ -22,8 +22,12 @@ const stageMode = process.argv.includes("--stage");
 const generatedSegments = new Set([
   ".cache",
   ".next",
+  ".pytest_cache",
+  ".ruff_cache",
   ".turbo",
+  ".venv",
   ".vercel",
+  "__pycache__",
   "build",
   "coverage",
   "dist",

@@ -42,6 +42,10 @@ const scaffoldTraceExcludes = [
     `${root}/**/dist/**`,
     `${root}/**/node_modules/**`,
     `${root}/**/out/**`,
+    `${root}/**/.venv/**`,
+    `${root}/**/__pycache__/**`,
+    `${root}/**/.pytest_cache/**`,
+    `${root}/**/.ruff_cache/**`,
   ]),
   "**/node_modules/.cache/**",
   "**/node_modules/.bin/**",
@@ -49,6 +53,51 @@ const scaffoldTraceExcludes = [
   "**/.next/cache/**",
   "apps/web/.next/cache/**",
   "apps/web/public/**",
+]
+
+// Build artifacts no serverless function needs at runtime. lib/scaffold-modules.ts
+// reaches the filesystem through dynamically computed paths (resolveWorkspacePath
+// walks [".", "..", "../.."] from process.cwd()), which the file tracer cannot
+// resolve statically, so it over-includes the workspace into every route that
+// transitively imports it — including /api/trpc, via projectProcedures.
+// NOTE: these globs resolve relative to the app directory (apps/web), not to
+// outputFileTracingRoot — hence the ../../ hops for monorepo-level paths.
+const globalTraceExcludes = [
+  "**/.venv/**",
+  "**/__pycache__/**",
+  "**/.pytest_cache/**",
+  "**/.ruff_cache/**",
+  "**/coverage/**",
+  "**/.turbo/**",
+  "**/.next/cache/**",
+  "public/**",
+  "tests/**",
+  // sharp ships a prebuilt binary per platform (~250MB in total). Vercel runs
+  // linux-x64 glibc, so only @img/sharp-linux-x64 + its libvips are needed.
+  // Revisit if the deploy target ever changes (arm64, musl).
+  "../../node_modules/.pnpm/@img+sharp-darwin-*/**",
+  "../../node_modules/.pnpm/@img+sharp-libvips-darwin-*/**",
+  "../../node_modules/.pnpm/@img+sharp-win32-*/**",
+  "../../node_modules/.pnpm/@img+sharp-wasm32*/**",
+  "../../node_modules/.pnpm/@img+sharp-linuxmusl-*/**",
+  "../../node_modules/.pnpm/@img+sharp-libvips-linuxmusl-*/**",
+  "../../node_modules/.pnpm/@img+sharp-linux-arm*/**",
+  "../../node_modules/.pnpm/@img+sharp-libvips-linux-arm*/**",
+  "../../node_modules/.pnpm/@img+sharp-linux-ppc64*/**",
+  "../../node_modules/.pnpm/@img+sharp-libvips-linux-ppc64*/**",
+  "../../node_modules/.pnpm/@img+sharp-linux-riscv64*/**",
+  "../../node_modules/.pnpm/@img+sharp-libvips-linux-riscv64*/**",
+  "../../node_modules/.pnpm/@img+sharp-linux-s390x*/**",
+  "../../node_modules/.pnpm/@img+sharp-libvips-linux-s390x*/**",
+]
+
+// Only the scaffold routes package starter source; nothing else needs the
+// template trees or the Python backend.
+const nonScaffoldTraceExcludes = [
+  ...globalTraceExcludes,
+  "../../templates/**",
+  "../../.generated/**",
+  "../../apps/backend/**",
 ]
 
 /** @type {import('next').NextConfig} */
@@ -75,6 +124,8 @@ const nextConfig = {
     "/api/scaffold": scaffoldTraceIncludes,
   },
   outputFileTracingExcludes: {
+    "**": globalTraceExcludes,
+    "/api/trpc/[trpc]": nonScaffoldTraceExcludes,
     "/api/scaffold": scaffoldTraceExcludes,
   },
   async headers() {

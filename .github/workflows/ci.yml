@@ -197,7 +197,6 @@ jobs:
       BACKEND_HMAC_SECRET: "ci-secret-32-bytes-padding-xxxxxxx"
       BACKEND_DATABASE_URL: "postgresql+asyncpg://postgres:postgres@localhost:5432/saas_forge"
       DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/saas_forge"
-      DIRECT_URL: "postgresql://postgres:postgres@localhost:5432/saas_forge"
       REDIS_URL: "redis://localhost:6379/0"
     steps:
       - uses: actions/checkout@v4

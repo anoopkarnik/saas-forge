@@ -37,7 +37,6 @@ services:
         condition: service_started
     environment:
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/saas_forge
-      DIRECT_URL: postgresql://postgres:postgres@postgres:5432/saas_forge
       NEXT_PUBLIC_URL: http://localhost:3000
       BETTER_AUTH_SECRET: change-me-before-production
       BACKEND_URL: http://backend-api:8000

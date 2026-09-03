@@ -33,7 +33,6 @@ export interface SetupGuide {
 /** Short "where do I get this" hint per env var. Falls back to a generic line. */
 const ENV_HINTS: Record<string, string> = {
   DATABASE_URL: "Postgres connection string from your database provider (Neon, Supabase, Railway).",
-  DIRECT_URL: "Direct (non-pooled) Postgres URL, if your provider distinguishes it.",
   BETTER_AUTH_SECRET: "Generate with `openssl rand -base64 32`.",
   AUTH_GITHUB_CLIENT_ID: "GitHub → Settings → Developer settings → OAuth Apps.",
   AUTH_GITHUB_CLIENT_SECRET: "Same GitHub OAuth App — generate a new client secret.",

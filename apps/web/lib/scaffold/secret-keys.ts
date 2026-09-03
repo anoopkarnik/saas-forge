@@ -9,7 +9,6 @@
 /** Explicit list of known secret/credential env keys from the download schema. */
 export const SECRET_ENV_KEYS: ReadonlySet<string> = new Set([
   "DATABASE_URL",
-  "DIRECT_URL",
   "BETTER_AUTH_SECRET",
   "AUTH_LINKEDIN_CLIENT_ID",
   "AUTH_LINKEDIN_CLIENT_SECRET",

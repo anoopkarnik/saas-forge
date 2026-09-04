@@ -191,8 +191,11 @@ describe("Documentation Router Integration Tests", () => {
       vi.stubEnv("UPSTASH_REDIS_REST_URL", "https://redis.test.com");
       vi.stubEnv("UPSTASH_REDIS_REST_TOKEN", "test_token");
 
-      mockRedisGet.mockResolvedValue(mockDocumentation);
+      mockRedisGet.mockImplementation(async (key: string) =>
+        key === "acme docs-documentation:v1" ? mockDocumentation : null,
+      );
       mockRetrieveBlocksTree.mockResolvedValue(mockBlocks);
+      mockRedisSet.mockResolvedValue("OK");
 
       const caller = documentationRouter.createCaller(createCallerContext());
       const result = await caller.queryDocumentationBySlug({ slug: "api-reference" });
@@ -203,6 +206,28 @@ describe("Documentation Router Integration Tests", () => {
         apiToken: "test_notion_token",
         block_id: "doc_2",
       });
+      expect(mockRedisSet).toHaveBeenCalledWith(
+        "acme docs-documentation:blocks:v1:doc_2",
+        mockBlocks,
+        { ex: 3600 },
+      );
+    });
+
+    it("should return the cached block tree without hitting Notion", async () => {
+      vi.stubEnv("UPSTASH_REDIS_REST_URL", "https://redis.test.com");
+      vi.stubEnv("UPSTASH_REDIS_REST_TOKEN", "test_token");
+
+      mockRedisGet.mockImplementation(async (key: string) => {
+        if (key === "acme docs-documentation:v1") return mockDocumentation;
+        if (key === "acme docs-documentation:blocks:v1:doc_2") return mockBlocks;
+        return null;
+      });
+
+      const caller = documentationRouter.createCaller(createCallerContext());
+      const result = await caller.queryDocumentationBySlug({ slug: "api-reference" });
+
+      expect(result).toEqual(mockBlocks);
+      expect(mockRetrieveBlocksTree).not.toHaveBeenCalled();
     });
 
     it("should throw when slug is not found", async () => {

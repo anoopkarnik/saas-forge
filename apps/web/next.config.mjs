@@ -119,6 +119,11 @@ const nextConfig = {
       { hostname: 'localhost', protocol: 'http' },
       { hostname: "prod-files-secure.s3.us-west-2.amazonaws.com", protocol: "https" },
     ],
+    // CMS logos/marketing images change rarely. Next keys the optimizer cache by
+    // source URL, so a long TTL is safe even for Notion's short-lived signed S3
+    // URLs — a rotated URL is a new cache key, not a stale hit. Keeps the
+    // CPU-heavy sharp re-encode from running on every cold cache slot.
+    minimumCacheTTL: 60 * 60 * 24 * 31,
   },
   outputFileTracingIncludes: {
     "/api/scaffold": scaffoldTraceIncludes,

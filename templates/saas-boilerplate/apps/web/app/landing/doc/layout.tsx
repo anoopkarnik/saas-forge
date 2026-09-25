@@ -7,8 +7,9 @@ import { ErrorBoundary } from "react-error-boundary";
 import DocSidebar from "@/blocks/landing/DocSidebar";
 import { SidebarProvider } from "@workspace/ui/components/shadcn/sidebar";
 
-// export const revalidate = 600;
-export const dynamic = "force-dynamic";
+// Public docs shell — cache the render and revalidate every 10 minutes to match
+// landing/doc/[slug]/page.tsx instead of rendering it on every request.
+export const revalidate = 600;
 const DocumentationPage = async ({ children }: { children: React.ReactNode }): Promise<React.ReactElement> => {
   const queryClient = getQueryClient();
   await Promise.all([

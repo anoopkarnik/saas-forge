@@ -10,7 +10,9 @@ import { Separator } from "@workspace/ui/components/shadcn/separator";
 import { BreadcrumbsHeader } from "@/components/home/BreadcrumbsHeader"
 import AppSidebar from "@/components/home/AppSidebar";
 
-export const dynamic = "force-dynamic";
+// No blanket force-dynamic: every page under (home) is a client component that
+// fetches its own data. This layout still renders per-request (it reads the
+// session via the tRPC server proxy), but child routes are free to be cached.
 
 export default async function Layout({ children }: { children: React.ReactNode }): Promise<React.ReactElement> {
 

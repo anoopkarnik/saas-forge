@@ -1,6 +1,6 @@
 # Multi-Tenancy / Organizations / RBAC
 
-_Revised 2026-10-02. Supersedes the 2026-04-07 draft: scope reduced to a shippable v1, built on the Better Auth organization plugin, and designed as the strippable `multi_tenancy` scaffold module (30 credits)._
+_Revised 2026-10-02. Supersedes the 2026-04-07 draft: scope reduced to a shippable v1, built on the Better Auth organization plugin, and designed as the strippable `multi_tenancy` scaffold module (50 credits)._
 
 ## Context
 
@@ -9,7 +9,7 @@ SaaS Forge ships a flat user model: users, global `admin`/`guest` roles, per-use
 This feature ships two ways:
 
 1. **In the root SaaS Forge app** (dogfooded): every user gets a workspace and can invite teammates.
-2. **As the `multi_tenancy` scaffold module** priced at **30 credits**. When a buyer does not select it, the module's `unselected` manifest strips it out cleanly, in any combination with `billing` and `ai`.
+2. **As the `multi_tenancy` scaffold module** priced at **50 credits**. When a buyer does not select it, the module's `unselected` manifest strips it out cleanly, in any combination with `billing` and `ai`.
 
 ## Decisions (v1)
 
@@ -122,10 +122,11 @@ Web pages (removed when unselected):
 
 Logged-out invitees hit the middleware redirect to `/landing`. After they sign in or sign up with the invited email, the invitation appears in the switcher. The email copy says so. No middleware change is needed, because `middleware.ts` is already overridden by `billing`.
 
-## Scaffold module (`multi_tenancy`, 30 credits)
+## Scaffold module (`multi_tenancy`, 50 credits)
 
-- `scaffold-modules/registry.json`: `creditsCost: 30`, `implemented: true`.
-- `packages/ui/src/lib/constants/scaffold-modules.ts` and `apps/mobile/components/downloads/constants.ts`: price 30, `available: true`.
+- `scaffold-modules/registry.json`: `creditsCost: 50`, `implemented: true`.
+- `packages/ui/src/lib/constants/scaffold-modules.ts` and `apps/mobile/components/downloads/constants.ts`: price 50, `available: true`.
+- Scaffolds wizard → Features step: a "Teams & Organizations" panel directly after "AI Capabilities", rendered with the shared `ModuleToggleCard`.
 - `scaffold-modules/multi_tenancy/manifest.json` → `unselected`:
   - `remove`: `org.prisma`, `apps/web/trpc/org.ts`, `organizationProcedures.ts` (+ tests), the two web pages, `apps/web/components/organizations`, `packages/ui/src/components/organizations`, desktop/mobile organization folders, email org template + sender, backfill script.
   - `copy`: stubs for the auth `organization.ts`, the web/desktop/mobile slot files.
@@ -149,4 +150,4 @@ Logged-out invitees hit the middleware redirect to `/landing`. After they sign i
 5. Invite flow: invite → email sent → invitee sees it in `current` → accept → membership + active org; expired/mismatched-email invites are rejected.
 6. `pnpm --dir apps/web typecheck` and `test` pass; `pnpm template:check-sync` passes.
 7. Scaffold variants compile: `prisma validate` + typecheck for `multi_tenancy` selected and unselected, each with `ai`/`billing` on and off.
-8. Pricing endpoint reports `multi_tenancy` at 30 credits.
+8. Pricing endpoint reports `multi_tenancy` at 50 credits.

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from sqlalchemy import select, update
@@ -41,8 +41,8 @@ async def mark_running(session: AsyncSession, job_id: str) -> None:
         .where(AiJobRun.id == job_id)
         .values(
             status=AiJobStatus.RUNNING,
-            startedAt=datetime.now(timezone.utc),
-            lastHeartbeatAt=datetime.now(timezone.utc),
+            startedAt=datetime.now(UTC),
+            lastHeartbeatAt=datetime.now(UTC),
         )
     )
 
@@ -51,7 +51,7 @@ async def heartbeat(session: AsyncSession, job_id: str) -> None:
     await session.execute(
         update(AiJobRun)
         .where(AiJobRun.id == job_id)
-        .values(lastHeartbeatAt=datetime.now(timezone.utc))
+        .values(lastHeartbeatAt=datetime.now(UTC))
     )
 
 
@@ -86,7 +86,7 @@ async def mark_terminal(
             result=result,
             errorCode=error_code,
             errorMessage=error_message,
-            finishedAt=datetime.now(timezone.utc),
+            finishedAt=datetime.now(UTC),
         )
     )
 

@@ -15,19 +15,18 @@ async def session():
     from saas_forge_backend.db.engine import get_sessionmaker
 
     sm = get_sessionmaker()
-    async with sm() as s:
-        async with s.begin():
-            yield s
-            await s.rollback()
+    async with sm() as s, s.begin():
+        yield s
+        await s.rollback()
 
 
 @pytest.mark.asyncio
 async def test_job_lifecycle_writes(session):
-    from saas_forge_backend.db.models import AiJobStatus
-    from saas_forge_backend.db.repositories import jobs
-
     # Requires an existing user; integration test seeds one minimally via raw SQL.
     from sqlalchemy import text
+
+    from saas_forge_backend.db.models import AiJobStatus
+    from saas_forge_backend.db.repositories import jobs
     user_id = cuid2.cuid()
     await session.execute(
         text(

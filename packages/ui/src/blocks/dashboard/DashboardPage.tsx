@@ -7,7 +7,6 @@ import {
   AlertTriangle,
   ArrowRight,
   Check,
-  CircleDot,
   Download,
   ExternalLink,
   FileUp,
@@ -174,6 +173,7 @@ const STEP_INDEX_BY_ID = new Map(
 );
 
 import { FeaturePanel } from "@workspace/ui/components/dashboard/FeaturePanel";
+import { ModuleToggleCard } from "@workspace/ui/components/dashboard/ModuleToggleCard";
 import { StepChip } from "@workspace/ui/components/dashboard/StepChip";
 import { StartChoiceCard } from "@workspace/ui/components/dashboard/StartChoiceCard";
 import { PresetJourney } from "@workspace/ui/components/dashboard/PresetJourney";
@@ -1011,42 +1011,14 @@ export default function DashboardPage({
                     >
                       {SCAFFOLD_MODULE_OPTIONS.filter(
                         (module) => module.id === "billing",
-                      ).map((module) => {
-                        const selected = (
-                          values.SELECTED_MODULES || []
-                        ).includes(module.id);
-
-                        return (
-                          <button
-                            key={module.id}
-                            type="button"
-                            onClick={() => toggleScaffoldModule(module.id)}
-                            className={cn(
-                              "w-full rounded-2xl border p-4 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
-                              selected
-                                ? "border-primary bg-primary/10 shadow-sm"
-                                : "border-border/60 bg-background hover:border-primary/40",
-                            )}
-                          >
-                            <div className="flex items-center justify-between gap-3">
-                              <div>
-                                <div className="flex items-center gap-2 text-sm font-semibold">
-                                  <CircleDot className="h-4 w-4 text-primary" />
-                                  {module.label}
-                                </div>
-                                <p className="mt-2 text-sm text-muted-foreground">
-                                  {module.description}
-                                </p>
-                              </div>
-                              <Badge variant={selected ? "default" : "outline"}>
-                                {selected
-                                  ? "Included"
-                                  : `+${module.creditsCost} credits`}
-                              </Badge>
-                            </div>
-                          </button>
-                        );
-                      })}
+                      ).map((module) => (
+                        <ModuleToggleCard
+                          key={module.id}
+                          module={module}
+                          selected={(values.SELECTED_MODULES || []).includes(module.id)}
+                          onToggle={() => toggleScaffoldModule(module.id)}
+                        />
+                      ))}
                     </FeaturePanel>
 
                     <FeaturePanel
@@ -1056,42 +1028,31 @@ export default function DashboardPage({
                     >
                       {SCAFFOLD_MODULE_OPTIONS.filter(
                         (module) => module.id === "ai",
-                      ).map((module) => {
-                        const selected = (
-                          values.SELECTED_MODULES || []
-                        ).includes(module.id);
+                      ).map((module) => (
+                        <ModuleToggleCard
+                          key={module.id}
+                          module={module}
+                          selected={(values.SELECTED_MODULES || []).includes(module.id)}
+                          onToggle={() => toggleScaffoldModule(module.id)}
+                        />
+                      ))}
+                    </FeaturePanel>
 
-                        return (
-                          <button
-                            key={module.id}
-                            type="button"
-                            onClick={() => toggleScaffoldModule(module.id)}
-                            className={cn(
-                              "w-full rounded-2xl border p-4 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
-                              selected
-                                ? "border-primary bg-primary/10 shadow-sm"
-                                : "border-border/60 bg-background hover:border-primary/40",
-                            )}
-                          >
-                            <div className="flex items-center justify-between gap-3">
-                              <div>
-                                <div className="flex items-center gap-2 text-sm font-semibold">
-                                  <CircleDot className="h-4 w-4 text-primary" />
-                                  {module.label}
-                                </div>
-                                <p className="mt-2 text-sm text-muted-foreground">
-                                  {module.description}
-                                </p>
-                              </div>
-                              <Badge variant={selected ? "default" : "outline"}>
-                                {selected
-                                  ? "Included"
-                                  : `+${module.creditsCost} credits`}
-                              </Badge>
-                            </div>
-                          </button>
-                        );
-                      })}
+                    <FeaturePanel
+                      title="Teams & Organizations"
+                      question="Will customers work together in shared workspaces?"
+                      description="Enable this for workspaces, member invites, workspace switching, and owner/admin/member/viewer roles."
+                    >
+                      {SCAFFOLD_MODULE_OPTIONS.filter(
+                        (module) => module.id === "multi_tenancy",
+                      ).map((module) => (
+                        <ModuleToggleCard
+                          key={module.id}
+                          module={module}
+                          selected={(values.SELECTED_MODULES || []).includes(module.id)}
+                          onToggle={() => toggleScaffoldModule(module.id)}
+                        />
+                      ))}
                     </FeaturePanel>
                   </div>
                 ) : null}

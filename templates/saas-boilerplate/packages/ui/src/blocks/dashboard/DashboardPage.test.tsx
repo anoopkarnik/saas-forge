@@ -55,4 +55,38 @@ describe("DashboardPage preset handoff", () => {
     expect(screen.getAllByText("Launch Bot").length).toBeGreaterThan(0);
     expect(screen.getByText("AI Chatbot · Balanced Beta")).toBeTruthy();
   });
+
+  it("offers Organizations / Teams beside AI Capabilities for 50 credits", () => {
+    render(<DashboardPage onSubmitConfiguration={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole("button", { name: /^Use a Preset/ }));
+    const journey = screen.getByRole("region", {
+      name: "Choose how you want to ship",
+    });
+    fireEvent.change(within(journey).getByLabelText("Search product types"), {
+      target: { value: "AI Chatbot" },
+    });
+    fireEvent.click(within(journey).getByRole("button", { name: /AI Chatbot/ }));
+    fireEvent.click(
+      within(journey).getByRole("button", { name: "Use Balanced Beta" }),
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: /Features Pick the capabilities/ }),
+    );
+
+    const aiPanel = screen.getByText("AI Capabilities");
+    const teamsPanel = screen.getByText("Teams & Organizations");
+    // The teams panel sits right after the AI panel.
+    expect(
+      aiPanel.compareDocumentPosition(teamsPanel) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+
+    const orgModule = screen.getByRole("button", {
+      name: /Organizations \/ Teams/,
+    });
+    expect(within(orgModule).getByText("+50 credits")).toBeTruthy();
+    fireEvent.click(orgModule);
+    expect(within(orgModule).getByText("Included")).toBeTruthy();
+  });
 });

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from collections.abc import AsyncIterator
-from dataclasses import dataclass, field
 from typing import Any
 
 from langchain_core.documents import Document
@@ -11,7 +10,6 @@ from saas_forge_backend.agents.registry import AgentEvent
 from saas_forge_backend.llm.factory import resolve_chat_model
 from saas_forge_backend.rag.embedders import resolve_embedder
 from saas_forge_backend.rag.knowledge import KnowledgeSource
-
 
 SYSTEM_PROMPT = (
     "You are a helpful assistant. Use only the provided context to answer. "

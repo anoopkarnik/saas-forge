@@ -27,7 +27,7 @@ export const SCAFFOLD_MODULE_OPTIONS: ScaffoldModuleOption[] = [
     id: "multi_tenancy",
     label: "Organizations / Teams",
     description: "Workspaces, member invites, workspace switching, and owner/admin/member/viewer roles.",
-    creditsCost: 30,
+    creditsCost: 50,
     available: true,
   },
   {

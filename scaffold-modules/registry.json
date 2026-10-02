@@ -16,7 +16,7 @@
       "id": "multi_tenancy",
       "label": "Organizations / Teams",
       "default": false,
-      "creditsCost": 30,
+      "creditsCost": 50,
       "requires": [],
       "incompatibleWith": [],
       "downloadEnabled": true,

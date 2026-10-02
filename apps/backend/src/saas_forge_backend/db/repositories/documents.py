@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -43,7 +43,7 @@ async def mark_ready(session: AsyncSession, *, document_id: str, chunk_count: in
         .values(
             status=AiDocumentStatus.READY,
             chunkCount=chunk_count,
-            indexedAt=datetime.now(timezone.utc),
+            indexedAt=datetime.now(UTC),
         )
     )
 

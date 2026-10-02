@@ -12,7 +12,7 @@ class ChunkingConfig:
     strategy: str = "recursive"
 
     @classmethod
-    def from_input(cls, value: dict | None) -> "ChunkingConfig":
+    def from_input(cls, value: dict | None) -> ChunkingConfig:
         if not value:
             return cls()
         return cls(

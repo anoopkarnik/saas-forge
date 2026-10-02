@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from saas_forge_backend.db.engine import get_sessionmaker
 from saas_forge_backend.db.models import AiJobStatus
@@ -22,7 +22,7 @@ async def sweep_pending(ctx: dict) -> None:
         rows = await jobs_repo.list_pending_older_than(s, seconds=PENDING_AGE_SECONDS)
 
     for row in rows:
-        age = (datetime.now(timezone.utc) - row.createdAt).total_seconds()
+        age = (datetime.now(UTC) - row.createdAt).total_seconds()
         if age > ENQUEUE_TIMEOUT_SECONDS:
             async with sm() as s, s.begin():
                 await jobs_repo.mark_terminal(

@@ -207,7 +207,7 @@ describe("project router", () => {
 
     const withTeams = await caller.save({ name: "Teams", modules: ["multi_tenancy"] });
     const est3 = await caller.estimateDownload({ slug: withTeams.project.slug });
-    expect(est3.fullCredits).toBe(50); // base 20 + multi_tenancy 30
+    expect(est3.fullCredits).toBe(70); // base 20 + multi_tenancy 50
   });
 
   it("estimateUpgrade computes module delta plus tier-step credits", async () => {

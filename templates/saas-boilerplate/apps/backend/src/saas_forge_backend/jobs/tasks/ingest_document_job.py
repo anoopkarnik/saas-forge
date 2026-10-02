@@ -8,16 +8,18 @@ import cuid2
 from saas_forge_backend.db.engine import get_sessionmaker
 from saas_forge_backend.db.models import AiJobStatus
 from saas_forge_backend.db.repositories import (
-    chunks as chunks_repo,
     collections as collections_repo,
+)
+from saas_forge_backend.db.repositories import (
     documents as docs_repo,
+)
+from saas_forge_backend.db.repositories import (
     jobs as jobs_repo,
 )
 from saas_forge_backend.jobs import redis_status
 from saas_forge_backend.jobs.event_emitter import EventEmitter
 from saas_forge_backend.rag.embedders import resolve_embedder
 from saas_forge_backend.rag.ingestion import UnsupportedSource, ingest
-from saas_forge_backend.rag.splitters import ChunkingConfig, split_text
 
 log = logging.getLogger(__name__)
 

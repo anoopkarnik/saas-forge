@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import AsyncIterator, Awaitable, Callable
+from collections.abc import AsyncIterator, Callable
 from dataclasses import dataclass
 from typing import Any
 
@@ -38,8 +38,8 @@ REGISTRY = AgentRegistry()
 
 
 def register_default_agents() -> None:
-    from saas_forge_backend.agents.noop import run as noop_run
     from saas_forge_backend.agents.echo_llm import run as echo_run
+    from saas_forge_backend.agents.noop import run as noop_run
     from saas_forge_backend.agents.rag_chat import run as rag_chat_run
     if "noop" not in REGISTRY.ids():
         REGISTRY.register("noop", noop_run)

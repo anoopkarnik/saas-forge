@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from arq import create_pool
 
-from saas_forge_backend.config import get_settings
 from saas_forge_backend.jobs.worker import _redis_settings
 
 

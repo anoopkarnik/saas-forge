@@ -1,6 +1,6 @@
 import asyncio
 import os
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import cuid2
 import pytest
@@ -20,6 +20,8 @@ async def test_rag_pgvector_full_round_trip():
     from saas_forge_backend.db.models import AiJobStatus
     from saas_forge_backend.db.repositories import (
         collections as collections_repo,
+    )
+    from saas_forge_backend.db.repositories import (
         jobs as jobs_repo,
     )
     from saas_forge_backend.jobs.queue import enqueue_ingest_document_job

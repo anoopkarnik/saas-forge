@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -12,7 +12,7 @@ async def test_sweep_pending_re_enqueues_recent_rows(monkeypatch):
 
     row = MagicMock()
     row.id = "j1"
-    row.createdAt = datetime.now(timezone.utc) - timedelta(seconds=90)
+    row.createdAt = datetime.now(UTC) - timedelta(seconds=90)
 
     with patch("saas_forge_backend.jobs.reaper.get_sessionmaker") as gsm, \
          patch("saas_forge_backend.jobs.reaper.jobs_repo") as repo, \
@@ -36,7 +36,7 @@ async def test_sweep_pending_marks_failed_after_timeout(monkeypatch):
 
     row = MagicMock()
     row.id = "j2"
-    row.createdAt = datetime.now(timezone.utc) - timedelta(seconds=400)
+    row.createdAt = datetime.now(UTC) - timedelta(seconds=400)
 
     with patch("saas_forge_backend.jobs.reaper.get_sessionmaker") as gsm, \
          patch("saas_forge_backend.jobs.reaper.jobs_repo") as repo, \

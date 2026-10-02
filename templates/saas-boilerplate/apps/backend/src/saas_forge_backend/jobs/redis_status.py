@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from redis.asyncio import Redis as AsyncRedis
@@ -27,8 +27,8 @@ async def write_running(job_id: str, *, agent_id: str) -> None:
             mapping={
                 "status": "RUNNING",
                 "agent_id": agent_id,
-                "started_at": datetime.now(timezone.utc).isoformat(),
-                "last_heartbeat": datetime.now(timezone.utc).isoformat(),
+                "started_at": datetime.now(UTC).isoformat(),
+                "last_heartbeat": datetime.now(UTC).isoformat(),
             },
         )
         await r.expire(_key(job_id), _LIVE_TTL_SECONDS)
@@ -42,7 +42,7 @@ async def write_event(job_id: str, *, seq: int, type: str, payload: dict[str, An
                 "latest_event_seq": str(seq),
                 "latest_event_type": type,
                 "latest_event_payload": json.dumps(payload, separators=(",", ":")),
-                "last_heartbeat": datetime.now(timezone.utc).isoformat(),
+                "last_heartbeat": datetime.now(UTC).isoformat(),
             },
         )
         await r.expire(_key(job_id), _LIVE_TTL_SECONDS)
@@ -51,7 +51,7 @@ async def write_event(job_id: str, *, seq: int, type: str, payload: dict[str, An
 async def write_terminal(job_id: str, *, status: str, error_code: str | None = None) -> None:
     mapping: dict[str, str] = {
         "status": status,
-        "finished_at": datetime.now(timezone.utc).isoformat(),
+        "finished_at": datetime.now(UTC).isoformat(),
     }
     if error_code:
         mapping["error_code"] = error_code

@@ -1,10 +1,8 @@
 from __future__ import annotations
 
-import asyncio
 import logging
 
 from arq.connections import RedisSettings
-from redis.asyncio import Redis as AsyncRedis
 
 from saas_forge_backend.config import get_settings
 

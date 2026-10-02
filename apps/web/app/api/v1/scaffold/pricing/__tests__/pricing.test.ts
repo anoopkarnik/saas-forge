@@ -36,7 +36,7 @@ describe("GET /api/v1/scaffold/pricing", () => {
 
     const multi = body.modules.find((m: any) => m.id === "multi_tenancy");
     expect(multi.downloadEnabled).toBe(true);
-    expect(multi.creditsCost).toBe(30);
+    expect(multi.creditsCost).toBe(50);
     expect(multi.implemented).toBe(true);
 
     // Not-yet-implemented module is listed but charged 0.

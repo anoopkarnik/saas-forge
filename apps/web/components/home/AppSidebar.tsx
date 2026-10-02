@@ -20,6 +20,7 @@ import { useTRPC } from "@/trpc/client";
 import { useQuery } from "@tanstack/react-query";
 import { useSession } from "@workspace/auth/better-auth/auth-client";
 import SidebarUser from "@/blocks/home/SidebarUser";
+import WorkspaceSlot from "@/components/organizations/WorkspaceSlot";
 
 export function AppSidebar() {
     const router = useRouter();
@@ -61,6 +62,9 @@ export function AppSidebar() {
                         </a>
                     </SidebarMenuItem>
                 </SidebarMenu>
+                <div className="pt-3">
+                    <WorkspaceSlot />
+                </div>
             </SidebarHeader>
             <SidebarContent className="p-3">
                 <SidebarGroup>

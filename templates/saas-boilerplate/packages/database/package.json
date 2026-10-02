@@ -11,6 +11,7 @@
     "migrate:deploy": "npx prisma migrate deploy --schema prisma",
     "reset": "npx prisma migrate reset --force --schema prisma",
     "seed": "npx prisma db seed",
+    "backfill:orgs": "tsx scripts/backfill-organizations.ts",
     "typecheck": "tsc --noEmit",
     "test:coverage": "vitest run --coverage --passWithNoTests"
   },

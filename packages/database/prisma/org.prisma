@@ -1,0 +1,51 @@
+// Organizations / workspaces (multi_tenancy scaffold module).
+// Shaped for the Better Auth organization plugin; the plugin's `invitation`
+// model is renamed to OrganizationInvitation so it does not collide with the
+// admin invite-only `Invitation` model in user.prisma.
+
+model Organization {
+    id          String   @id @default(cuid())
+    name        String
+    slug        String   @unique
+    logo        String?
+    metadata    String?
+    createdAt   DateTime @default(now())
+
+    members     Member[]
+    invitations OrganizationInvitation[]
+
+    @@schema("user_schema")
+}
+
+model Member {
+    id             String       @id @default(cuid())
+    organizationId String
+    userId         String
+    role           String       @default("member")
+    createdAt      DateTime     @default(now())
+
+    organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+    user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    @@unique([organizationId, userId])
+    @@index([userId])
+    @@schema("user_schema")
+}
+
+model OrganizationInvitation {
+    id             String       @id @default(cuid())
+    organizationId String
+    email          String
+    role           String?
+    status         String       @default("pending")
+    expiresAt      DateTime
+    inviterId      String
+    createdAt      DateTime     @default(now())
+
+    organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+    inviter        User         @relation("OrganizationInvitationInviter", fields: [inviterId], references: [id], onDelete: Cascade)
+
+    @@index([organizationId])
+    @@index([email])
+    @@schema("user_schema")
+}

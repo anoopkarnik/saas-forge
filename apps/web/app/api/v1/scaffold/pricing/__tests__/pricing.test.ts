@@ -34,11 +34,15 @@ describe("GET /api/v1/scaffold/pricing", () => {
     expect(billing.creditsCost).toBe(10);
     expect(billing.implemented).toBe(true);
 
-    // Not-yet-implemented module is listed but charged 0.
     const multi = body.modules.find((m: any) => m.id === "multi_tenancy");
     expect(multi.downloadEnabled).toBe(true);
-    expect(multi.creditsCost).toBe(0);
-    expect(multi.listedCreditsCost).toBe(15);
-    expect(multi.implemented).toBe(false);
+    expect(multi.creditsCost).toBe(30);
+    expect(multi.implemented).toBe(true);
+
+    // Not-yet-implemented module is listed but charged 0.
+    const apiKeys = body.modules.find((m: any) => m.id === "api_keys");
+    expect(apiKeys.creditsCost).toBe(0);
+    expect(apiKeys.listedCreditsCost).toBe(5);
+    expect(apiKeys.implemented).toBe(false);
   });
 });

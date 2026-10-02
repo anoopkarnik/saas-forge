@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom"
 import { useSession } from "@workspace/auth/better-auth/auth-client";
 import AppSidebar from "@workspace/ui/components/sidebar/AppSidebar"
 import SidebarUser from "./SidebarUser"
+import WorkspaceSlot from "../organizations/WorkspaceSlot"
 import { SidebarProvider, SidebarTrigger } from "@workspace/ui/components/shadcn/sidebar";
 import { Separator } from "@workspace/ui/components/shadcn/separator";
 import DashboardPage from "@workspace/ui/blocks/dashboard/DashboardPage";
@@ -75,6 +76,7 @@ export default function DashboardRoute() {
                 onNavigate={(path) => navigate(path)}
                 isAdmin={session?.user?.role === "admin"}
                 slotUser={<SidebarUser />}
+                slotWorkspace={<WorkspaceSlot />}
                 slotProgress={null}
             />
             <div className="flex flex-col flex-1 max-h-screen">

@@ -279,9 +279,9 @@ export const SCAFFOLD_MODULE_OPTIONS = [
     {
         value: "multi_tenancy",
         label: "Organizations / Teams",
-        description: "Coming soon",
-        creditsCost: 15,
-        disabled: true,
+        description: "Workspaces, member invites, workspace switching, and owner/admin/member/viewer roles.",
+        creditsCost: 30,
+        disabled: false,
     },
     {
         value: "ai",

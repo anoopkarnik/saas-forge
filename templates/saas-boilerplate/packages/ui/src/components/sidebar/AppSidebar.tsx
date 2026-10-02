@@ -27,10 +27,11 @@ export interface AppSidebarProps {
     onNavigate?: (path: string) => void;
     slotUser?: React.ReactNode;
     slotProgress?: React.ReactNode;
+    slotWorkspace?: React.ReactNode;
     isAdmin?: boolean;
 }
 
-export function AppSidebar({ navbarConfig, pathname, onNavigateHome, onNavigate, slotUser, slotProgress, isAdmin }: AppSidebarProps) {
+export function AppSidebar({ navbarConfig, pathname, onNavigateHome, onNavigate, slotUser, slotProgress, slotWorkspace, isAdmin }: AppSidebarProps) {
     const { theme, resolvedTheme } = useTheme();
     const [mounted, setMounted] = useState(false);
 
@@ -63,6 +64,7 @@ export function AppSidebar({ navbarConfig, pathname, onNavigateHome, onNavigate,
                         </a>
                     </SidebarMenuItem>
                 </SidebarMenu>
+                {slotWorkspace && <div className="pt-3">{slotWorkspace}</div>}
             </SidebarHeader>
             <SidebarContent className="p-3">
                 <SidebarGroup>

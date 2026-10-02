@@ -1,84 +1,152 @@
 # Multi-Tenancy / Organizations / RBAC
 
+_Revised 2026-10-02. Supersedes the 2026-04-07 draft: scope reduced to a shippable v1, built on the Better Auth organization plugin, and designed as the strippable `multi_tenancy` scaffold module (30 credits)._
+
 ## Context
 
-SaaS Forge currently ships with a flat user model: authenticated users, admins, billing, CMS, scaffold download, and shared desktop/mobile/web auth flows. There is no concept of organization ownership, team membership, workspace switching, or scoped permissions. That is a major gap for B2B SaaS teams and one of the hardest platform capabilities to retrofit once product data and authorization assumptions spread across the codebase.
+SaaS Forge ships a flat user model: users, global `admin`/`guest` roles, per-user credits, CMS, scaffold download, and shared web/desktop/mobile auth. There is no organization ownership, team membership, workspace switching, or scoped permission. That is a major gap for B2B buyers and is expensive to retrofit once product data spreads.
 
-The current repo shape makes that gap visible:
+This feature ships two ways:
 
-- `packages/database/prisma/` models users and billing data, but not organizations or memberships.
-- `packages/auth` and `apps/web/trpc/init.ts` support authenticated and admin procedures, but not org-scoped authorization.
-- Web, desktop, and mobile all assume "one user -> one account context" rather than "one user -> many workspaces".
+1. **In the root SaaS Forge app** (dogfooded): every user gets a workspace and can invite teammates.
+2. **As the `multi_tenancy` scaffold module** priced at **30 credits**. When a buyer does not select it, the module's `unselected` manifest strips it out cleanly, in any combination with `billing` and `ai`.
 
-## Why This Priority
+## Decisions (v1)
 
-This is ranked first because it has the highest combined score across retrofit difficulty, market demand, and platform leverage. If organizations are added after more product modules, every billing, audit, admin, notification, API, and UI surface becomes harder to migrate safely.
+| Topic | Decision |
+| --- | --- |
+| Engine | Better Auth `organization()` plugin (already on better-auth ^1.5.5). Plugin config is isolated in one file. |
+| Credits / billing | **Stay per-user.** Org-owned credits are a follow-up (spec #15). |
+| Org-scoped data in v1 | Organization profile, members, invitations. New product features opt in via `orgProcedure`. |
+| Roles | `owner`, `admin`, `member`, `viewer` |
+| Global `admin` | No implicit access to other orgs. |
+| Global `guest` (demo) | Read-only everywhere, including org endpoints. |
+| Clients | Web: full (switcher, create, team settings, accept invite). Desktop: switcher + shared team-settings dialog. Mobile: org selector in Settings. |
+| Transport | All clients use a single `organization` tRPC router. No Better Auth client plugin is added anywhere. |
+| Active org source of truth | `Session.activeOrganizationId` **read from the DB row**, not the 5-minute cookie cache. |
+| Invite-only registration | A pending, unexpired org invitation for the email also permits sign-up. |
 
-It belongs ahead of `#2 Runtime Site Config` because runtime settings can be layered onto either a single-tenant or org-aware system, while org-aware ownership changes the shape of nearly every future feature. It also belongs ahead of `#3 Security Hardening` in this ranking because multi-tenancy is both a top buyer-facing differentiator and the single most expensive capability to bolt on later.
+## Out of scope (v1)
 
-## Overview
+Org-owned credits and transactions, org-scoped AI conversations and API keys, audit log, notifications, teams-within-orgs, admin cross-org browser, custom per-org role builder, SSO/domain capture. Each is a later spec that assumes this data model.
 
-Introduce first-class organizations, memberships, invitations, workspace switching, and role-based access control across the shared platform.
+## Data model
 
-Initial scope:
+New file `packages/database/prisma/org.prisma` (schema `user_schema`), shaped to the Better Auth organization plugin:
 
-- One user can belong to multiple organizations.
-- Every protected product action runs in an explicit org context.
-- Minimum roles: `owner`, `admin`, `member`, `viewer`.
-- Billing, audit logs, notifications, API keys, and usage accounting become org-scoped by default.
+- `Organization`: `id`, `name`, `slug` (unique), `logo?`, `metadata?`, `createdAt`.
+- `Member`: `id`, `organizationId`, `userId`, `role` (string), `createdAt`; unique `(organizationId, userId)`; cascades on org/user delete.
+- `OrganizationInvitation`: the plugin's `invitation` model renamed via `schema.invitation.modelName`, so the existing admin `Invitation` model (invite-only sign-up) is untouched. Fields: `id`, `organizationId`, `email`, `role`, `status`, `expiresAt`, `inviterId`, `createdAt`.
 
-## Main Approach
+Changes to `user.prisma`:
 
-Add core data models for organizations and memberships in `packages/database/prisma`, then move authorization checks up into shared auth/tRPC layers so product features do not each reinvent team checks.
+- `Session.activeOrganizationId String?`
+- `User.members Member[]`, `User.organizationInvitations OrganizationInvitation[]` (back-relations)
 
-Key implementation direction:
+Migration: the project owner runs `pnpm migrate`; agents do not author migration SQL. After the migration exists, its folder must be added to the module's `unselected.remove` list.
 
-- Create `Organization`, `OrganizationMembership`, and `OrganizationInvite` models.
-- Add `orgId` to data domains that should become workspace-owned, starting with billing, future audit logs, notifications, and runtime config.
-- Extend `packages/auth` to load active org context into session helpers.
-- Add `orgProcedure` and `orgRoleProcedure` patterns in `apps/web/trpc/init.ts`.
-- Introduce a shared org switcher UI in `packages/ui`, then reuse it in web and desktop; mobile can start with a simple org selector screen.
-- Default new users into a personal workspace to preserve backward compatibility for single-founder projects.
+Backfill: `packages/database/scripts/backfill-organizations.ts` (`pnpm --filter @workspace/database backfill:orgs`). For every user with zero memberships, it creates a personal workspace with them as `owner`. It is idempotent and safe to re-run.
 
-Migration strategy:
+## Auth layer
 
-- Phase 1: add org tables and backfill each existing user into a personal org.
-- Phase 2: update billing, settings, and future modules to read/write through active org context.
-- Phase 3: expose invitations, membership management, and role controls in the admin/settings UI.
+Everything lives in `packages/auth/src/better-auth/organization.ts`, which is the only file that knows about the plugin:
 
-## Deliverables
+- `organizationPlugins`: `[organization({ ac, roles, schema: { invitation: { modelName: "organizationInvitation" } }, invitationExpiresIn: 7 days, sendInvitationEmail })]`.
+- `ac` / `roles` via `createAccessControl`:
+  - owner: everything.
+  - admin: update org, manage members and invitations; cannot delete org or modify owners.
+  - member: no org-management permissions.
+  - viewer: same as member at the plugin level; read-only is enforced in the app layer.
+- `createPersonalOrganization(user)`: called from `user.create.after`; creates "{name}'s Workspace" with a unique slug.
+- `getInitialActiveOrganizationId(userId)`: called from `session.create.before`; returns the most recently joined membership's org.
+- `hasPendingOrganizationInvite(email)`: used by the invite-only registration hook.
 
-1. Prisma models and migrations for organizations, memberships, invites, and active-org relationships.
-2. Shared auth/session helpers that can resolve active organization and user role.
-3. tRPC authorization helpers for org membership and org-role enforcement.
-4. Web and desktop workspace switcher plus team settings screens.
-5. Invite flow with email invite send, accept, reject, and expired-token handling.
-6. Initial org-scoped billing and usage ownership.
-7. Backfill script or migration path for existing single-user records.
+`auth.ts` spreads `organizationPlugins` and calls these three helpers. When the module is unselected, `organization.ts` is replaced by a stub exporting `[]` and no-op helpers, so `auth.ts` itself never needs a module override.
 
-## Likely Files / Systems Affected
+`guestGuard.ts` adds the plugin's write paths (`/organization/create`, `/update`, `/delete`, `/invite-member`, `/cancel-invitation`, `/accept-invitation`, `/reject-invitation`, `/remove-member`, `/update-member-role`, `/leave`) to the guest block list.
 
-- `packages/database/prisma/*`
-- `packages/auth/src/**/*`
-- `apps/web/trpc/init.ts`
-- `apps/web/trpc/routers/*`
-- `apps/web/app/(home)/**/*`
-- `apps/desktop/src/renderer/**/*`
-- `apps/mobile/**/*`
-- `packages/ui/src/components/**/*`
+Email: `packages/email/src/resend/organization.ts` exports `sendOrganizationInvitationEmail`, rendering `templates/OrganizationInvitation.tsx`. The link points to `${NEXT_PUBLIC_URL}/accept-invitation/{id}`.
 
-## Risks / Dependencies
+## tRPC authorization
 
-- This depends on careful schema migration planning because existing data currently assumes user-owned records.
-- Better Auth organization support should be evaluated, but the repo should not become tightly coupled to plugin-specific behavior that is hard to share across web, desktop, and mobile.
-- Billing, notifications, audit logging, feature flags, and API keys should align to org ownership once introduced, so those later specs should assume this data model exists.
-- Personal-workspace fallback is required to avoid breaking users who do not need teams.
+New `apps/web/trpc/org.ts` (kept separate from `init.ts` so it can be stripped):
+
+- `orgProcedure` = `protectedProcedure` + middleware that:
+  1. reads `activeOrganizationId` from the `Session` row (`ctx.session.session.id`);
+  2. loads the `Member` row for `(activeOrganizationId, userId)`;
+  3. throws `PRECONDITION_FAILED` ("No active organization") when either is missing;
+  4. adds `ctx.org = { id, role }`.
+- `orgRoleProcedure(minRole)`: `orgProcedure` + rank check (`viewer < member < admin < owner`); throws `FORBIDDEN` below the rank.
+- `ROLE_RANK` and `hasOrgRole(role, minRole)` are pure and unit-tested.
+
+New `apps/web/trpc/routers/organizationProcedures.ts`, registered as `organization` in `_app.ts`:
+
+| Procedure | Guard | Implementation |
+| --- | --- | --- |
+| `current` (query) | protected | memberships + active org (null if invalid) + pending invitations for the user's email |
+| `create` (mutation) | protected | `auth.api.createOrganization`, then set active |
+| `setActive` (mutation) | protected | verify membership, update `Session.activeOrganizationId` |
+| `members` (query) | org | members with user name/email/image + pending invitations |
+| `update` (mutation) | org admin+ | `auth.api.updateOrganization` |
+| `invite` (mutation) | org admin+ | `auth.api.createInvitation` (role ≤ inviter's role) |
+| `cancelInvitation` (mutation) | org admin+ | `auth.api.cancelInvitation` |
+| `updateMemberRole` (mutation) | org admin+ | `auth.api.updateMemberRole` |
+| `removeMember` (mutation) | org admin+ | `auth.api.removeMember` |
+| `leave` (mutation) | org | `auth.api.leaveOrganization`; refuse if it is the user's last org |
+| `delete` (mutation) | org owner | `auth.api.deleteOrganization`; refuse if it is the user's last org |
+| `getInvitation` (query) | protected | invitation for the signed-in email only |
+| `acceptInvitation` / `rejectInvitation` (mutation) | protected | `auth.api.acceptInvitation` / `rejectInvitation`; accepting sets active |
+
+`auth.api` `APIError`s are mapped to `TRPCError`s with the plugin's message. The plugin performs its own permission checks; the tRPC guards are defence in depth and give consistent error codes to all clients.
+
+## UI
+
+Shared, presentational components (props in, callbacks out) live in `packages/ui/src/components/organizations/`:
+
+- `WorkspaceSwitcher`: dropdown of orgs, active check, "Create workspace", "Manage team", and a pending-invitations section with accept/decline.
+- `CreateWorkspaceDialog`
+- `TeamSettings`: org name; members table with role select and remove; invite form (email + role); pending invites with revoke; leave and delete.
+
+**Slot/stub rule.** Shared host files import a module-owned *slot* file and never import the components directly. The module's `unselected` actions replace each slot with a stub that renders `null`. Any other module's full-file override may therefore keep the slot import safely.
+
+| Client | Slot file (stubbed when unselected) | Host |
+| --- | --- | --- |
+| Web | `apps/web/components/organizations/WorkspaceSlot.tsx` (wires tRPC + router) | `AppSidebar.tsx` header |
+| Desktop | `apps/desktop/src/renderer/src/components/organizations/WorkspaceSlot.tsx` | `DashboardRoute.tsx` → new `slotWorkspace` prop on the sidebar |
+| Mobile | `apps/mobile/components/organizations/OrgSelector.tsx` (raw tRPC fetch, like `billing-api.ts`) | `app/(home)/settings.tsx` |
+
+Web pages (removed when unselected):
+
+- `apps/web/app/(home)/organization/page.tsx`: team settings.
+- `apps/web/app/(home)/accept-invitation/[id]/page.tsx`: shows org, inviter and role, with Accept/Decline. If the invite belongs to another email, it explains and offers sign-out.
+
+Logged-out invitees hit the middleware redirect to `/landing`. After they sign in or sign up with the invited email, the invitation appears in the switcher. The email copy says so. No middleware change is needed, because `middleware.ts` is already overridden by `billing`.
+
+## Scaffold module (`multi_tenancy`, 30 credits)
+
+- `scaffold-modules/registry.json`: `creditsCost: 30`, `implemented: true`.
+- `packages/ui/src/lib/constants/scaffold-modules.ts` and `apps/mobile/components/downloads/constants.ts`: price 30, `available: true`.
+- `scaffold-modules/multi_tenancy/manifest.json` → `unselected`:
+  - `remove`: `org.prisma`, `apps/web/trpc/org.ts`, `organizationProcedures.ts` (+ tests), the two web pages, `apps/web/components/organizations`, `packages/ui/src/components/organizations`, desktop/mobile organization folders, email org template + sender, backfill script.
+  - `copy`: stubs for the auth `organization.ts`, the web/desktop/mobile slot files.
+  - `replace`: `packages/database/prisma/user.prisma` (no org relations, no `activeOrganizationId`), `packages/database/package.json` (no `backfill:orgs`).
+  - `_app.ts` needs no override: `cleanDeadRouterImports` drops the router once its file is removed.
+- Existing overrides that host a slot (`ai`'s web `AppSidebar.tsx`, `billing`'s mobile `settings.tsx`) gain the slot import so selecting `multi_tenancy` with `ai`/`billing` unselected still shows the switcher.
+
+## Error handling
+
+- No or invalid active org → `PRECONDITION_FAILED`. The web/desktop slot auto-selects the first membership when `current.active` is null.
+- Removed member with stale session → membership re-check fails → `PRECONDITION_FAILED` → switcher re-selects.
+- Plugin `APIError` → `TRPCError` (`FORBIDDEN`/`BAD_REQUEST`/`NOT_FOUND`) carrying the plugin message, which the UI shows in a toast.
+- Personal-org creation failure in `user.create.after` is logged, not thrown, so sign-up never fails. The backfill script repairs it.
 
 ## Verification
 
-1. A migrated existing user is assigned a personal organization automatically.
-2. A user can create a second organization, switch contexts, and see isolated org-scoped data.
-3. Non-members cannot access another org's tRPC procedures.
-4. Role checks work for at least `owner`, `admin`, and `member` on shared settings flows.
-5. Billing and future usage data resolve against active org context rather than only `userId`.
-6. Web and desktop keep session + active-org state in sync after org switching.
+1. A new user gets a personal workspace and an active org on first session (unit-tested helpers).
+2. A user can create a second org, switch, and `members` returns only the active org's members.
+3. A non-member calling org procedures with a forged active org gets `PRECONDITION_FAILED`.
+4. Role matrix: `viewer`/`member` cannot invite; `admin` can invite/remove members but cannot delete; `owner` can delete; `guest` mutations are `FORBIDDEN`.
+5. Invite flow: invite → email sent → invitee sees it in `current` → accept → membership + active org; expired/mismatched-email invites are rejected.
+6. `pnpm --dir apps/web typecheck` and `test` pass; `pnpm template:check-sync` passes.
+7. Scaffold variants compile: `prisma validate` + typecheck for `multi_tenancy` selected and unselected, each with `ai`/`billing` on and off.
+8. Pricing endpoint reports `multi_tenancy` at 30 credits.

@@ -24,6 +24,8 @@
  * it at runtime.
  */
 
+import { ORGANIZATION_API_GROUPS } from "./apiRegistry.organization";
+
 export type Access = "public" | "authenticated" | "admin" | "adminGuestRead";
 
 export type ApiCall = {
@@ -155,6 +157,7 @@ export const API_REGISTRY: ApiGroup[] = [
       { name: "setupGuide", type: "query", access: "authenticated" },
     ],
   },
+  ...ORGANIZATION_API_GROUPS,
   {
     group: "admin.settings",
     label: "Admin · Settings",

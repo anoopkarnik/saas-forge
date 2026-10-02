@@ -1,5 +1,62 @@
 {
   "id": "multi_tenancy",
   "selected": {},
-  "unselected": {}
+  "unselected": {
+    "remove": [
+      "packages/database/prisma/org.prisma",
+      "packages/database/prisma/migrations/20261002150133_add_organizations",
+      "packages/database/src/backfillOrganizations.ts",
+      "packages/database/src/backfillOrganizations.test.ts",
+      "packages/database/scripts/backfill-organizations.ts",
+      "packages/auth/src/better-auth/organization-helpers.ts",
+      "packages/auth/src/better-auth/organization-helpers.test.ts",
+      "packages/auth/src/better-auth/organization.test.ts",
+      "packages/email/src/resend/organization.ts",
+      "packages/email/src/templates/OrganizationInvitation.tsx",
+      "packages/email/src/templates/OrganizationInvitation.test.tsx",
+      "packages/ui/src/components/organizations",
+      "apps/web/trpc/org.ts",
+      "apps/web/trpc/routers/organizationProcedures.ts",
+      "apps/web/trpc/routers/__tests__/orgProcedure.test.ts",
+      "apps/web/trpc/routers/__tests__/organizationProcedures.test.ts",
+      "apps/web/app/(home)/organization",
+      "apps/web/app/(home)/accept-invitation",
+      "apps/web/components/organizations",
+      "apps/desktop/src/renderer/src/components/organizations",
+      "apps/mobile/components/organizations",
+      "apps/mobile/lib/organization-api.ts"
+    ],
+    "copy": [
+      {
+        "from": "overrides/unselected/apps/web/components/organizations/WorkspaceSlot.tsx",
+        "to": "apps/web/components/organizations/WorkspaceSlot.tsx"
+      },
+      {
+        "from": "overrides/unselected/apps/desktop/src/renderer/src/components/organizations/WorkspaceSlot.tsx",
+        "to": "apps/desktop/src/renderer/src/components/organizations/WorkspaceSlot.tsx"
+      },
+      {
+        "from": "overrides/unselected/apps/mobile/components/organizations/OrgSelector.tsx",
+        "to": "apps/mobile/components/organizations/OrgSelector.tsx"
+      }
+    ],
+    "replace": [
+      {
+        "from": "overrides/unselected/packages/auth/src/better-auth/organization.ts",
+        "to": "packages/auth/src/better-auth/organization.ts"
+      },
+      {
+        "from": "overrides/unselected/apps/web/trpc/apiRegistry.organization.ts",
+        "to": "apps/web/trpc/apiRegistry.organization.ts"
+      },
+      {
+        "from": "overrides/unselected/packages/database/prisma/user.prisma",
+        "to": "packages/database/prisma/user.prisma"
+      },
+      {
+        "from": "overrides/unselected/packages/database/package.json",
+        "to": "packages/database/package.json"
+      }
+    ]
+  }
 }

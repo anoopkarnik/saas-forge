@@ -2,6 +2,7 @@ import React from "react"
 import { useNavigate, useLocation } from "react-router-dom"
 import { useSession } from "@workspace/auth/better-auth/auth-client";
 import SidebarUser from "./SidebarUser"
+import WorkspaceSlot from "../organizations/WorkspaceSlot"
 import { SidebarProvider, SidebarTrigger } from "@workspace/ui/components/shadcn/sidebar";
 import { Separator } from "@workspace/ui/components/shadcn/separator";
 import Support from "../support/Support";
@@ -40,6 +41,7 @@ export default function DashboardRoute() {
                 onNavigate={(route) => navigate(route)}
                 isAdmin={session?.user?.role === "admin"}
                 slotUser={<SidebarUser />}
+                slotWorkspace={<WorkspaceSlot />}
             />
             <div className="flex flex-col flex-1 max-h-screen">
                 <div className="flex items-center gap-4 py-2 px-4">

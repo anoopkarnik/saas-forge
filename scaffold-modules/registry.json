@@ -16,11 +16,11 @@
       "id": "multi_tenancy",
       "label": "Organizations / Teams",
       "default": false,
-      "creditsCost": 15,
+      "creditsCost": 30,
       "requires": [],
       "incompatibleWith": [],
       "downloadEnabled": true,
-      "implemented": false
+      "implemented": true
     },
     {
       "id": "ai",

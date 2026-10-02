@@ -26,6 +26,8 @@ model User {
     aiCollections    AiCollection[]    @relation("AiCollections")
     apiKeys          ApiKey[]
     sentInvitations  Invitation[]     @relation("InvitationInvitedBy")
+    members          Member[]
+    organizationInvitations OrganizationInvitation[] @relation("OrganizationInvitationInviter")
 
     createdAt  DateTime @default(now())
     updatedAt  DateTime @updatedAt
@@ -80,6 +82,7 @@ model Session {
   userAgent    String?
   ipAddress      String?
   impersonatedBy String?
+  activeOrganizationId String?
 
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt

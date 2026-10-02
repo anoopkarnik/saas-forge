@@ -7,6 +7,7 @@ import PasswordSection from "@/components/settings/PasswordSection";
 import SessionsSection from "@/components/settings/SessionsSection";
 import ThemeSection from "@/components/settings/ThemeSection";
 import DangerZoneSection from "@/components/settings/DangerZoneSection";
+import OrgSelector from "@/components/organizations/OrgSelector";
 
 export default function Settings() {
     const router = useRouter();
@@ -48,6 +49,7 @@ export default function Settings() {
             <Subtitle className="text-left mb-6">Manage your account and preferences</Subtitle>
 
             <ProfileSection />
+            <OrgSelector />
             <ThemeSection />
             <PasswordSection />
             <SessionsSection />

@@ -8,6 +8,12 @@ import { authCookiePrefix } from "./cookies";
 import { isEmailAllowedToRegister, type RegistrationMode } from "./registration";
 import { createAuthMiddleware, APIError, getSessionFromCtx } from "better-auth/api";
 import { isGuestAccountMutation } from "./guestGuard";
+import {
+    createPersonalOrganization,
+    getInitialActiveOrganizationId,
+    hasPendingOrganizationInvite,
+    organizationPlugins,
+} from "./organization";
 
 type DeleteQueryCallbackArgs = {
     args: any;
@@ -51,7 +57,7 @@ const options = {
     // runtime change. Remove once the better-auth package versions are aligned.
     plugins: [openAPI(), admin({
         impersonationSessionDuration: 3600
-    }), expo() as any],
+    }), expo() as any, ...organizationPlugins],
     trustedOrigins: [
         "saas-forge://",
         "saas-forge://*",
@@ -172,11 +178,12 @@ const options = {
                         where: { email, status: "PENDING" },
                         orderBy: { createdAt: "desc" },
                     });
-                    const allowed = isEmailAllowedToRegister(
-                        mode,
-                        invite ? { status: invite.status, expiresAt: invite.expiresAt } : null,
-                        new Date(),
-                    );
+                    const allowed =
+                        isEmailAllowedToRegister(
+                            mode,
+                            invite ? { status: invite.status, expiresAt: invite.expiresAt } : null,
+                            new Date(),
+                        ) || (await hasPendingOrganizationInvite(email));
                     if (!allowed) {
                         throw new APIError("FORBIDDEN", {
                             message: "Sign-ups are invite-only. Please use your invitation link.",
@@ -196,6 +203,16 @@ const options = {
                         where: { email, status: "PENDING" },
                         data: { status: "ACCEPTED", acceptedAt: new Date() },
                     });
+                    await createPersonalOrganization(user);
+                },
+            },
+        },
+        session: {
+            create: {
+                before: async (session: { userId: string }) => {
+                    const activeOrganizationId = await getInitialActiveOrganizationId(session.userId);
+                    if (!activeOrganizationId) return;
+                    return { data: { ...session, activeOrganizationId } };
                 },
             },
         },

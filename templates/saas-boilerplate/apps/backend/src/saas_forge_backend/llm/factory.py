@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from langchain_core.language_models import BaseChatModel
+from pydantic import SecretStr
 
 from saas_forge_backend.config import get_settings
 
@@ -34,7 +35,9 @@ def resolve_chat_model(value: str, *, temperature: float = 0.2) -> BaseChatModel
         if not settings.openai_api_key:
             raise MissingProviderCredentials("OPENAI_API_KEY not set")
         from langchain_openai import ChatOpenAI
-        return ChatOpenAI(model=model, temperature=temperature, api_key=settings.openai_api_key)
+        return ChatOpenAI(
+            model=model, temperature=temperature, api_key=SecretStr(settings.openai_api_key)
+        )
 
     if provider == "openrouter":
         if not settings.openrouter_api_key:
@@ -43,7 +46,7 @@ def resolve_chat_model(value: str, *, temperature: float = 0.2) -> BaseChatModel
         return ChatOpenAI(
             model=model,
             temperature=temperature,
-            api_key=settings.openrouter_api_key,
+            api_key=SecretStr(settings.openrouter_api_key),
             base_url=OPENROUTER_BASE_URL,
         )
 
@@ -51,7 +54,13 @@ def resolve_chat_model(value: str, *, temperature: float = 0.2) -> BaseChatModel
         if not settings.anthropic_api_key:
             raise MissingProviderCredentials("ANTHROPIC_API_KEY not set")
         from langchain_anthropic import ChatAnthropic
-        return ChatAnthropic(model=model, temperature=temperature, api_key=settings.anthropic_api_key)
+        return ChatAnthropic(
+            model_name=model,
+            temperature=temperature,
+            api_key=SecretStr(settings.anthropic_api_key),
+            timeout=None,
+            stop=None,
+        )
 
     if provider == "ollama":
         if not settings.ollama_base_url:

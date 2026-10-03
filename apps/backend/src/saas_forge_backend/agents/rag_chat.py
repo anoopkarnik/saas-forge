@@ -42,7 +42,9 @@ async def run(input_payload: dict[str, Any], ctx: dict[str, Any]) -> AsyncIterat
 
     embedder = resolve_embedder(embedder_name) if embedder_name else resolve_embedder(
         # Falls back to settings.rag_embedder
-        __import__("saas_forge_backend.config", fromlist=["get_settings"]).get_settings().rag_embedder
+        __import__("saas_forge_backend.config", fromlist=["get_settings"])
+        .get_settings()
+        .rag_embedder
     )
     knowledge = KnowledgeSource(collection_id=collection_id, embedder=embedder, top_k=top_k)
     chunks = await knowledge.retrieve(query)
@@ -54,7 +56,9 @@ async def run(input_payload: dict[str, Any], ctx: dict[str, Any]) -> AsyncIterat
     yield AgentEvent(type="step", payload={"node": "answer", "status": "start"})
 
     llm = resolve_chat_model(llm_name)
-    context_block = _format_context([Document(page_content=c.text, metadata=c.metadata) for c in chunks])
+    context_block = _format_context(
+        [Document(page_content=c.text, metadata=c.metadata) for c in chunks]
+    )
     messages = [
         SystemMessage(SYSTEM_PROMPT),
         HumanMessage(f"Context:\n{context_block}\n\nQuestion: {query}"),

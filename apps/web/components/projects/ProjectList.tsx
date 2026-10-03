@@ -366,7 +366,7 @@ export function ProjectList() {
 
       {rows.length === 0 ? (
         <p className="rounded-md border border-dashed p-6 text-sm text-muted-foreground">
-          You haven't saved any project configurations yet. Build one on the dashboard and click
+          You haven&apos;t saved any project configurations yet. Build one on the dashboard and click
           &ldquo;Save configuration&rdquo;.
         </p>
       ) : (

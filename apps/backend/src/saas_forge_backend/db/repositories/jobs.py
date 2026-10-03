@@ -129,7 +129,12 @@ async def list_stale_running(
     stmt = (
         select(AiJobRun)
         .where(AiJobRun.status == AiJobStatus.RUNNING)
-        .where(_t(f"\"lastHeartbeatAt\" < now() - interval '{int(heartbeat_max_age_seconds)} seconds'"))
+        .where(
+            _t(
+                f"\"lastHeartbeatAt\" < now() - "
+                f"interval '{int(heartbeat_max_age_seconds)} seconds'"
+            )
+        )
         .limit(limit)
     )
     return list((await session.execute(stmt)).scalars().all())

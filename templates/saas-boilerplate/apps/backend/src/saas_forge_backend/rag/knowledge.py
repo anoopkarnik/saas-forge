@@ -43,6 +43,8 @@ class KnowledgeSource:
             if self.score_threshold is not None and score < self.score_threshold:
                 continue
             chunks.append(
-                RetrievedChunk(text=doc.page_content, metadata=dict(doc.metadata), score=float(score)),
+                RetrievedChunk(
+                    text=doc.page_content, metadata=dict(doc.metadata), score=float(score)
+                ),
             )
         return chunks

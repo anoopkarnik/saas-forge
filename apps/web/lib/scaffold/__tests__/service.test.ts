@@ -1,13 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
+type JobData = { idempotencyKey?: string; creditsSpent: number };
+
 const { db, state } = vi.hoisted(() => {
   const state = {
     creditsUsed: 0,
     creditsTotal: 100,
-    jobs: new Map<string, any>(),
+    jobs: new Map<string, { id: string; creditsSpent: number }>(),
     updateCalled: false,
     txCalled: false,
-    lastJobData: null as any,
+    lastJobData: null as JobData | null,
   };
   const tx = {
     user: {
@@ -15,14 +17,14 @@ const { db, state } = vi.hoisted(() => {
         creditsUsed: state.creditsUsed,
         creditsTotal: state.creditsTotal,
       }),
-      update: async ({ data }: any) => {
+      update: async ({ data }: { data: { creditsUsed: number } }) => {
         state.updateCalled = true;
         state.creditsUsed = data.creditsUsed;
         return {};
       },
     },
     scaffoldJob: {
-      create: async ({ data }: any) => {
+      create: async ({ data }: { data: JobData }) => {
         state.lastJobData = data;
         const id = "job1";
         if (data.idempotencyKey)
@@ -32,12 +34,12 @@ const { db, state } = vi.hoisted(() => {
     },
   };
   const db = {
-    $transaction: async (cb: any) => {
+    $transaction: async (cb: (client: typeof tx) => unknown) => {
       state.txCalled = true;
       return cb(tx);
     },
     scaffoldJob: {
-      findUnique: async ({ where }: any) => state.jobs.get(where.idempotencyKey) ?? null,
+      findUnique: async ({ where }: { where: { idempotencyKey: string } }) => state.jobs.get(where.idempotencyKey) ?? null,
     },
   };
   return { db, state };
@@ -79,7 +81,7 @@ describe("chargeScaffoldCredits", () => {
     expect(res).toMatchObject({ charged: 30, alreadyProcessed: false });
     expect(state.creditsUsed).toBe(30);
     expect(state.updateCalled).toBe(true);
-    expect(state.lastJobData.creditsSpent).toBe(30);
+    expect(state.lastJobData?.creditsSpent).toBe(30);
   });
 
   it("throws InsufficientCreditsError without charging", async () => {
@@ -107,7 +109,7 @@ describe("chargeScaffoldCredits", () => {
     const res = await chargeScaffoldCredits({ userId: "u1", amount: 0, job });
     expect(res.charged).toBe(0);
     expect(state.updateCalled).toBe(false);
-    expect(state.lastJobData.creditsSpent).toBe(0);
+    expect(state.lastJobData?.creditsSpent).toBe(0);
   });
 });
 

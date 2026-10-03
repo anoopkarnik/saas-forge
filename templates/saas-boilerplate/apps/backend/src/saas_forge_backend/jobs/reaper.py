@@ -44,7 +44,9 @@ async def sweep_pending(ctx: dict) -> None:
 async def sweep_stale_running(ctx: dict) -> None:
     sm = get_sessionmaker()
     async with sm() as s, s.begin():
-        rows = await jobs_repo.list_stale_running(s, heartbeat_max_age_seconds=STALE_HEARTBEAT_SECONDS)
+        rows = await jobs_repo.list_stale_running(
+            s, heartbeat_max_age_seconds=STALE_HEARTBEAT_SECONDS
+        )
         for row in rows:
             await jobs_repo.mark_terminal(
                 s, row.id,

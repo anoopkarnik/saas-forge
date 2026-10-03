@@ -8,7 +8,7 @@ import { Input } from "@workspace/ui/components/shadcn/input";
 import { Separator } from "@workspace/ui/components/shadcn/separator";
 import { Button } from "@workspace/ui/components/shadcn/button";
 import { AIFillPromptDialog } from "@workspace/ui/components/admin/AIFillPromptDialog";
-import { LayoutPanelTop, Github, Save, Loader2, WandSparkles } from "lucide-react";
+import { LayoutPanelTop, Github, Save, Loader2 } from "lucide-react";
 import { SectionHeader } from "@workspace/ui/components/admin/SectionHeader";
 import { ImageUploadField } from "@workspace/ui/components/admin/ImageUploadField";
 import { navbarFormSchema, type NavbarFormValues, type SectionTabProps } from "@workspace/ui/lib/zod/cms";

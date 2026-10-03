@@ -45,5 +45,5 @@ def test_signed_request_passes_signature_check():
 
 def test_healthz_does_not_require_signature():
     client = _client()
-    assert _client().get("/healthz").status_code == 200
-    assert _client().get("/readyz").status_code in (200, 503)
+    assert client.get("/healthz").status_code == 200
+    assert client.get("/readyz").status_code in (200, 503)

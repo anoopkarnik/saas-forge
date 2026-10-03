@@ -22,8 +22,8 @@ def _parse_sse(body: str) -> list[tuple[str, dict]]:
         if not chunk.strip():
             continue
         lines = chunk.splitlines()
-        event_type = next(l.removeprefix("event: ") for l in lines if l.startswith("event: "))
-        data = next(l.removeprefix("data: ") for l in lines if l.startswith("data: "))
+        event_type = next(ln.removeprefix("event: ") for ln in lines if ln.startswith("event: "))
+        data = next(ln.removeprefix("data: ") for ln in lines if ln.startswith("data: "))
         events.append((event_type, json.loads(data)))
     return events
 

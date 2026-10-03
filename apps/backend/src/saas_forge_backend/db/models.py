@@ -28,7 +28,7 @@ class Base(DeclarativeBase):
     pass
 
 
-class AiJobStatus(str, enum.Enum):
+class AiJobStatus(enum.StrEnum):
     PENDING = "PENDING"
     RUNNING = "RUNNING"
     SUCCEEDED = "SUCCEEDED"
@@ -36,7 +36,7 @@ class AiJobStatus(str, enum.Enum):
     CANCELLED = "CANCELLED"
 
 
-class AiDocumentStatus(str, enum.Enum):
+class AiDocumentStatus(enum.StrEnum):
     INGESTING = "INGESTING"
     READY = "READY"
     FAILED = "FAILED"
@@ -65,7 +65,9 @@ class AiJobRun(Base):
     finishedAt: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     lastHeartbeatAt: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
-    events: Mapped[list[AiJobEvent]] = relationship(back_populates="job", cascade="all,delete-orphan")
+    events: Mapped[list[AiJobEvent]] = relationship(
+        back_populates="job", cascade="all,delete-orphan"
+    )
 
     __table_args__ = (
         Index("AiJobRun_userId_createdAt_idx", "userId", sa_text("createdAt DESC")),
@@ -79,7 +81,9 @@ class AiJobEvent(Base):
     __tablename__ = "AiJobEvent"
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
-    jobId: Mapped[str] = mapped_column(String, ForeignKey("ai_schema.AiJobRun.id", ondelete="CASCADE"))
+    jobId: Mapped[str] = mapped_column(
+        String, ForeignKey("ai_schema.AiJobRun.id", ondelete="CASCADE")
+    )
     seq: Mapped[int] = mapped_column(Integer, nullable=False)
     type: Mapped[str] = mapped_column(String, nullable=False)
     payload: Mapped[dict] = mapped_column(JSONB, nullable=False)
@@ -110,7 +114,9 @@ class AiCollection(Base):
         DateTime(timezone=True), nullable=False, server_default=sa_text("now()")
     )
 
-    documents: Mapped[list[AiDocument]] = relationship(back_populates="collection", cascade="all,delete-orphan")
+    documents: Mapped[list[AiDocument]] = relationship(
+        back_populates="collection", cascade="all,delete-orphan"
+    )
 
     __table_args__ = (
         UniqueConstraint("userId", "orgId", "name", name="AiCollection_userId_orgId_name_key"),

@@ -1,3 +1,6 @@
+# redis-py types async commands as `Awaitable[T] | T` (shared with the sync client),
+# so pyright rejects awaiting them even though they are coroutines at runtime.
+# pyright: reportGeneralTypeIssues=false
 from __future__ import annotations
 
 import json

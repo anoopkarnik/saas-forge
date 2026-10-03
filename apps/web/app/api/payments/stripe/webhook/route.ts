@@ -3,11 +3,20 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import db from "@workspace/database/client"
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-    apiVersion: '2026-02-25.clover'
-});
+// Created lazily: `next build` evaluates this module while collecting page data,
+// and the Stripe constructor throws when STRIPE_SECRET_KEY is absent at build time.
+let _stripe: Stripe | null = null;
+function getStripe(): Stripe {
+    if (!_stripe) {
+        _stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+            apiVersion: '2026-02-25.clover'
+        });
+    }
+    return _stripe;
+}
 
 export async function POST(request: NextRequest) {
+    const stripe = getStripe();
     const body = await request.text();
     const signature = (await headers()).get("Stripe-Signature") as string;
     let event: Stripe.Event;

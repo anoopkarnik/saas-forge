@@ -15,12 +15,12 @@ async def bulk_insert(
     collection_id: str,
     rows: Iterable[tuple[int, str, dict]],  # (seq, text, metadata)
 ) -> list[AiDocumentChunk]:
-    import cuid2
+    from saas_forge_backend.ids import new_id
     instances = []
     for seq, txt, meta in rows:
         instances.append(
             AiDocumentChunk(
-                id=cuid2.cuid(),
+                id=new_id(),
                 documentId=document_id,
                 collectionId=collection_id,
                 seq=seq,

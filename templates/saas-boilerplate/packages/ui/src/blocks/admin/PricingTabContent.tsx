@@ -8,7 +8,6 @@ import { Input } from "@workspace/ui/components/shadcn/input";
 import { Textarea } from "@workspace/ui/components/shadcn/textarea";
 import { Switch } from "@workspace/ui/components/shadcn/switch";
 import { Button } from "@workspace/ui/components/shadcn/button";
-import { AIFillPromptDialog } from "@workspace/ui/components/admin/AIFillPromptDialog";
 import { CreditCard, Save, Loader2, WandSparkles } from "lucide-react";
 import { SectionHeader } from "@workspace/ui/components/admin/SectionHeader";
 import { ArrayEditor } from "@workspace/ui/components/admin/ArrayEditor";

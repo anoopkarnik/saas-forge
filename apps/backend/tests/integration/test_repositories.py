@@ -1,8 +1,9 @@
 import os
 
-import cuid2
 import pytest
 import pytest_asyncio
+
+from saas_forge_backend.ids import new_id
 
 pytestmark = pytest.mark.skipif(
     not os.getenv("BACKEND_INTEGRATION"),
@@ -27,7 +28,7 @@ async def test_job_lifecycle_writes(session):
 
     from saas_forge_backend.db.models import AiJobStatus
     from saas_forge_backend.db.repositories import jobs
-    user_id = cuid2.cuid()
+    user_id = new_id()
     await session.execute(
         text(
             'INSERT INTO user_schema."User" (id, name, email, "emailVerified", role, banned, '
@@ -37,7 +38,7 @@ async def test_job_lifecycle_writes(session):
         {"id": user_id, "email": f"{user_id}@example.com"},
     )
 
-    job_id = cuid2.cuid()
+    job_id = new_id()
     await jobs.insert_pending(
         session,
         job_id=job_id,

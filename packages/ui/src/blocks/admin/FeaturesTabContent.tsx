@@ -8,7 +8,7 @@ import { Input } from "@workspace/ui/components/shadcn/input";
 import { Textarea } from "@workspace/ui/components/shadcn/textarea";
 import { Button } from "@workspace/ui/components/shadcn/button";
 import { AIFillPromptDialog } from "@workspace/ui/components/admin/AIFillPromptDialog";
-import { Sparkles, Save, Loader2, WandSparkles } from "lucide-react";
+import { Sparkles, Save, Loader2 } from "lucide-react";
 import { SectionHeader } from "@workspace/ui/components/admin/SectionHeader";
 import { ImageUploadField } from "@workspace/ui/components/admin/ImageUploadField";
 import { ArrayEditor } from "@workspace/ui/components/admin/ArrayEditor";

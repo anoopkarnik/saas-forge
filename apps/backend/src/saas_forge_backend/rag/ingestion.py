@@ -69,7 +69,8 @@ async def ingest(
         filename = source.get("filename")
         if not url:
             raise UnsupportedSource("uploaded_file requires 'url'")
-        suffix = "." + (filename or url).rsplit(".", 1)[-1].lower() if "." in (filename or url) else ""
+        name = filename or url
+        suffix = "." + name.rsplit(".", 1)[-1].lower() if "." in name else ""
         if suffix not in SUPPORTED_FILE_EXTENSIONS:
             raise UnsupportedSource(f"unsupported file extension: {suffix}")
         content = await _fetch_bytes(url)

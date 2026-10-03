@@ -17,7 +17,7 @@ async def test_sweep_pending_re_enqueues_recent_rows(monkeypatch):
     with patch("saas_forge_backend.jobs.reaper.get_sessionmaker") as gsm, \
          patch("saas_forge_backend.jobs.reaper.jobs_repo") as repo, \
          patch("saas_forge_backend.jobs.reaper.enqueue_run_agent_job", AsyncMock()) as enq, \
-         patch("saas_forge_backend.jobs.reaper.redis_status") as rs:
+         patch("saas_forge_backend.jobs.reaper.redis_status"):
         sm = MagicMock()
         sm.return_value.__aenter__.return_value = sm
         sm.begin.return_value.__aenter__.return_value = None

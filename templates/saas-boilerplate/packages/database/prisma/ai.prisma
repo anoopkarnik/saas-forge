@@ -234,6 +234,9 @@ model AiDocumentChunk {
   seq          Int
   text         String
   metadata     Json
+  // Managed by the Python backend (pgvector). Declared here so Prisma
+  // migrations stop dropping it; the Prisma client does not expose it.
+  embedding    Unsupported("vector(1536)")?
   createdAt    DateTime   @default(now())
   document     AiDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
 

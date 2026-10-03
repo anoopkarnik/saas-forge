@@ -1,10 +1,11 @@
 import { describe, it, expect, vi } from "vitest";
+import type { ReactNode } from "react";
 import { render, screen } from "@testing-library/react";
 import { AppSidebar } from "./AppSidebar";
 
 vi.mock("next-themes", () => ({ useTheme: () => ({ theme: "light", resolvedTheme: "light" }) }));
 vi.mock("@workspace/ui/components/shadcn/sidebar", () => {
-  const Pass = ({ children }: any) => <div>{children}</div>;
+  const Pass = ({ children }: { children?: ReactNode }) => <div>{children}</div>;
   return {
     Sidebar: Pass,
     SidebarContent: Pass,

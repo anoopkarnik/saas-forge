@@ -27,7 +27,10 @@ def test_echo_llm_emits_step_tokens_step_final_end():
     )
     assert resp.status_code == 200
     chunks = [c for c in resp.text.split("\n\n") if c.strip()]
-    types = [next(l for l in c.splitlines() if l.startswith("event: ")).removeprefix("event: ") for c in chunks]
+    types = [
+        next(ln for ln in c.splitlines() if ln.startswith("event: ")).removeprefix("event: ")
+        for c in chunks
+    ]
     assert types[0] == "step"
     assert "token" in types
     assert types[-2:] == ["final", "end"]
@@ -37,8 +40,9 @@ def test_echo_llm_emits_step_tokens_step_final_end():
     final_payload = None
     for c in chunks:
         lines = c.splitlines()
-        etype = next(l for l in lines if l.startswith("event: ")).removeprefix("event: ")
-        data = json.loads(next(l for l in lines if l.startswith("data: ")).removeprefix("data: "))
+        etype = next(ln for ln in lines if ln.startswith("event: ")).removeprefix("event: ")
+        data_line = next(ln for ln in lines if ln.startswith("data: "))
+        data = json.loads(data_line.removeprefix("data: "))
         if etype == "token":
             deltas.append(data["delta"])
         if etype == "final":

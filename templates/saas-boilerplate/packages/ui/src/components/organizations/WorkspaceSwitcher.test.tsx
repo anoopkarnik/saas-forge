@@ -1,29 +1,37 @@
 import { describe, it, expect, vi } from "vitest";
+import type { MouseEvent, ReactNode } from "react";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { WorkspaceSwitcher } from "./WorkspaceSwitcher";
 
 // Radix menus/dialogs only open on pointer events and mount react-remove-scroll,
 // which breaks under this workspace's test setup (see UserActionsDropdown.test).
 // Stub the primitives to exercise WorkspaceSwitcher's own behavior.
+type StubProps = {
+  children?: ReactNode;
+  open?: boolean;
+  disabled?: boolean;
+  onClick?: (e: MouseEvent) => void;
+  onSelect?: (e: MouseEvent) => void;
+};
 vi.mock("@workspace/ui/components/shadcn/dropdown-menu", () => ({
-  DropdownMenu: ({ children }: any) => <>{children}</>,
-  DropdownMenuTrigger: ({ children }: any) => <>{children}</>,
-  DropdownMenuContent: ({ children }: any) => <div>{children}</div>,
-  DropdownMenuItem: ({ children, onClick, onSelect, disabled }: any) => (
+  DropdownMenu: ({ children }: StubProps) => <>{children}</>,
+  DropdownMenuTrigger: ({ children }: StubProps) => <>{children}</>,
+  DropdownMenuContent: ({ children }: StubProps) => <div>{children}</div>,
+  DropdownMenuItem: ({ children, onClick, onSelect, disabled }: StubProps) => (
     <button onClick={(e) => { onClick?.(e); onSelect?.(e); }} disabled={disabled}>
       {children}
     </button>
   ),
-  DropdownMenuLabel: ({ children }: any) => <div>{children}</div>,
+  DropdownMenuLabel: ({ children }: StubProps) => <div>{children}</div>,
   DropdownMenuSeparator: () => <hr />,
 }));
 vi.mock("@workspace/ui/components/shadcn/dialog", () => ({
-  Dialog: ({ open, children }: any) => (open ? <div>{children}</div> : null),
-  DialogContent: ({ children }: any) => <div>{children}</div>,
-  DialogHeader: ({ children }: any) => <div>{children}</div>,
-  DialogTitle: ({ children }: any) => <h2>{children}</h2>,
-  DialogDescription: ({ children }: any) => <p>{children}</p>,
-  DialogFooter: ({ children }: any) => <div>{children}</div>,
+  Dialog: ({ open, children }: StubProps) => (open ? <div>{children}</div> : null),
+  DialogContent: ({ children }: StubProps) => <div>{children}</div>,
+  DialogHeader: ({ children }: StubProps) => <div>{children}</div>,
+  DialogTitle: ({ children }: StubProps) => <h2>{children}</h2>,
+  DialogDescription: ({ children }: StubProps) => <p>{children}</p>,
+  DialogFooter: ({ children }: StubProps) => <div>{children}</div>,
 }));
 
 const orgs = [

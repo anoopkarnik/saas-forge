@@ -56,6 +56,10 @@ packages = ["src/saas_forge_backend"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+# One loop for the whole run: the db engine is a process-wide singleton and its
+# asyncpg connections are bound to the loop that created them.
+asyncio_default_fixture_loop_scope = "session"
+asyncio_default_test_loop_scope = "session"
 pythonpath = ["src"]
 testpaths = ["tests"]
 

@@ -7,7 +7,7 @@ const apiKey = vi.hoisted(() => ({
 }));
 
 vi.mock("@workspace/database/client", () => {
-  const client: any = { apiKey };
+  const client: { apiKey: typeof apiKey; $extends?: () => unknown } = { apiKey };
   client.$extends = () => client;
   return { default: client };
 });
@@ -36,7 +36,6 @@ function reqWith(authHeader?: string): NextRequest {
 }
 
 const validPlaintext = "sk_aaaaaaaaaa_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
-const validPrefix = "sk_aaaaaaaaaa";
 const validHash = hashApiKey(validPlaintext);
 
 const activeRow = {

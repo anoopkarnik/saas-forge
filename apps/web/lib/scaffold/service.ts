@@ -160,7 +160,7 @@ export function buildProjectZip(
     });
 
     const archive = archiver("zip", { zlib: { level: 9 } });
-    archive.directory(tempDir, input.projectName, (entry: any) => {
+    archive.directory(tempDir, input.projectName, (entry: archiver.EntryData) => {
       const relInsideProject = entry.name.replace(`${input.projectName}/`, "");
       return shouldIgnore(relInsideProject) ? false : entry;
     });
@@ -176,12 +176,12 @@ export function buildProjectZip(
 
     const stream = new ReadableStream({
       start(controller) {
-        archive.on("data", (chunk: any) => controller.enqueue(chunk));
+        archive.on("data", (chunk: Buffer) => controller.enqueue(chunk));
         archive.on("end", () => {
           controller.close();
           cleanup();
         });
-        archive.on("error", (err: any) => {
+        archive.on("error", (err: Error) => {
           cleanup();
           controller.error(err);
         });
@@ -313,15 +313,15 @@ function tierOrder(tierId: string): number {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
-function archiveToStream(archive: any, cleanup: () => void): ReadableStream {
+function archiveToStream(archive: archiver.Archiver, cleanup: () => void): ReadableStream {
   return new ReadableStream({
     start(controller) {
-      archive.on("data", (chunk: any) => controller.enqueue(chunk));
+      archive.on("data", (chunk: Buffer) => controller.enqueue(chunk));
       archive.on("end", () => {
         controller.close();
         cleanup();
       });
-      archive.on("error", (err: any) => {
+      archive.on("error", (err: Error) => {
         cleanup();
         controller.error(err);
       });

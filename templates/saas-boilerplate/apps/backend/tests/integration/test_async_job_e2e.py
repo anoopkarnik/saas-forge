@@ -1,8 +1,9 @@
 import asyncio
 import os
 
-import cuid2
 import pytest
+
+from saas_forge_backend.ids import new_id
 
 pytestmark = pytest.mark.skipif(
     not os.getenv("BACKEND_INTEGRATION"),
@@ -22,7 +23,7 @@ async def test_noop_job_runs_end_to_end():
 
     sm = get_sessionmaker()
 
-    user_id = cuid2.cuid()
+    user_id = new_id()
     async with sm() as s, s.begin():
         await s.execute(
             text(
@@ -33,7 +34,7 @@ async def test_noop_job_runs_end_to_end():
             {"id": user_id, "email": f"{user_id}@example.com"},
         )
 
-    job_id = cuid2.cuid()
+    job_id = new_id()
     async with sm() as s, s.begin():
         await jobs_repo.insert_pending(
             s, job_id=job_id, user_id=user_id, org_id=None,

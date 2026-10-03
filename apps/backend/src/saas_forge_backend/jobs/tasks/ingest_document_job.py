@@ -3,8 +3,6 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-import cuid2
-
 from saas_forge_backend.db.engine import get_sessionmaker
 from saas_forge_backend.db.models import AiJobStatus
 from saas_forge_backend.db.repositories import (
@@ -16,6 +14,7 @@ from saas_forge_backend.db.repositories import (
 from saas_forge_backend.db.repositories import (
     jobs as jobs_repo,
 )
+from saas_forge_backend.ids import new_id
 from saas_forge_backend.jobs import redis_status
 from saas_forge_backend.jobs.event_emitter import EventEmitter
 from saas_forge_backend.rag.embedders import resolve_embedder
@@ -46,8 +45,12 @@ async def ingest_document_job(ctx: dict[str, Any], job_id: str) -> dict[str, Any
             raise UnsupportedSource(f"unknown collection: {collection_id}")
         embedder = resolve_embedder(collection.embedder)
 
-        document_id = cuid2.cuid()
-        title = str(input_payload.get("title") or input_payload.get("source", {}).get("filename") or document_id)
+        document_id = new_id()
+        title = str(
+            input_payload.get("title")
+            or input_payload.get("source", {}).get("filename")
+            or document_id
+        )
         async with sm() as s, s.begin():
             await docs_repo.create(
                 s,

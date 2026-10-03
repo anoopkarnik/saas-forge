@@ -9,7 +9,7 @@ import { Textarea } from "@workspace/ui/components/shadcn/textarea";
 import { Separator } from "@workspace/ui/components/shadcn/separator";
 import { Button } from "@workspace/ui/components/shadcn/button";
 import { AIFillPromptDialog } from "@workspace/ui/components/admin/AIFillPromptDialog";
-import { ShieldCheck, Globe, Star, Save, Loader2, WandSparkles } from "lucide-react";
+import { ShieldCheck, Globe, Star, Save, Loader2 } from "lucide-react";
 import { SectionHeader } from "@workspace/ui/components/admin/SectionHeader";
 import { legalFormSchema, type LegalFormValues, type SectionTabProps } from "@workspace/ui/lib/zod/cms";
 

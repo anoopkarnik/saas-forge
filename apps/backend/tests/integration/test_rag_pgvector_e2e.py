@@ -2,8 +2,9 @@ import asyncio
 import os
 from unittest.mock import patch
 
-import cuid2
 import pytest
+
+from saas_forge_backend.ids import new_id
 
 pytestmark = pytest.mark.skipif(
     not os.getenv("BACKEND_INTEGRATION"),
@@ -27,8 +28,8 @@ async def test_rag_pgvector_full_round_trip():
     from saas_forge_backend.jobs.queue import enqueue_ingest_document_job
 
     sm = get_sessionmaker()
-    user_id = cuid2.cuid()
-    collection_id = cuid2.cuid()
+    user_id = new_id()
+    collection_id = new_id()
     async with sm() as s, s.begin():
         await s.execute(
             text(
@@ -53,7 +54,7 @@ async def test_rag_pgvector_full_round_trip():
     if not os.getenv("OPENAI_API_KEY"):
         pytest.skip("OPENAI_API_KEY not set; pgvector e2e needs real embeddings")
 
-    job_id = cuid2.cuid()
+    job_id = new_id()
     async with sm() as s, s.begin():
         await jobs_repo.insert_pending(
             s, job_id=job_id, user_id=user_id, org_id=None,
@@ -61,7 +62,10 @@ async def test_rag_pgvector_full_round_trip():
             input_payload={
                 "collection_id": collection_id,
                 "title": "Capitals",
-                "source": {"type": "text", "content": "Paris is the capital of France. Tokyo is the capital of Japan."},
+                "source": {
+                    "type": "text",
+                    "content": "Paris is the capital of France. Tokyo is the capital of Japan.",
+                },
             },
         )
     await enqueue_ingest_document_job(job_id)
@@ -72,11 +76,12 @@ async def test_rag_pgvector_full_round_trip():
     while asyncio.get_event_loop().time() < deadline:
         async with sm() as s:
             row = await jobs_repo.get(s, job_id)
-        if row.status in {AiJobStatus.SUCCEEDED, AiJobStatus.FAILED}:
+        if row is not None and row.status in {AiJobStatus.SUCCEEDED, AiJobStatus.FAILED}:
             final = row
             break
         await asyncio.sleep(0.5)
     assert final is not None and final.status == AiJobStatus.SUCCEEDED
+    assert final.result is not None
     assert final.result["chunk_count"] >= 1
 
     # Now run rag_chat with a mocked LLM (we only verify retrieval works).

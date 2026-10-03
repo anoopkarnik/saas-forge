@@ -1,6 +1,6 @@
 # SaaS Forge — Desktop App
 
-Electron 36 + React 19 + React Router v7 + Vite 7 desktop application, packaged with electron-builder.
+Electron 44 + React 19 + React Router v7 + Vite 7 desktop application, packaged with electron-builder.
 
 ## Prerequisites
 
@@ -299,7 +299,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile

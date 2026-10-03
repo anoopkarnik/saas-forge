@@ -110,12 +110,11 @@ function createWindow(): void {
     console.error(`[main] Renderer process gone:`, details);
   });
 
-  mainWindow.webContents.on(
-    "console-message",
-    (_event, level, message, line, sourceId) => {
-      console.log(`[renderer] ${message} (${sourceId}:${line})`);
-    },
-  );
+  mainWindow.webContents.on("console-message", (event) => {
+    console.log(
+      `[renderer] ${event.message} (${event.sourceId}:${event.lineNumber})`,
+    );
+  });
 
   // After OAuth completes, the webview lands on /api/auth/desktop-callback.
   // At this point all cookies are committed. Reload the Electron app at /auth-callback.

@@ -44,7 +44,7 @@
     "@vitejs/plugin-react": "^5.x",
     "@workspace/typescript-config": "workspace:*",
     "cross-env": "^10.1.0",
-    "electron": "^36.x",
+    "electron": "44.5.1",
     "electron-builder": "^25.x",
     "electron-vite": "^5.0.0",
     "tailwindcss": "^4.1.11",

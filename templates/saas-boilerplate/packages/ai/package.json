@@ -21,7 +21,7 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@types/node": "^20.19.25",
+    "@types/node": "^24.19.1",
     "@workspace/typescript-config": "workspace:*",
     "typescript": "^5.9.2",
     "vitest": "^4.0.18"

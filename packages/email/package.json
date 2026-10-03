@@ -22,7 +22,7 @@
     "resend": "^6.6.0"
   },
   "devDependencies": {
-    "@types/node": "^20.19.25",
+    "@types/node": "^24.19.1",
     "@types/react": "^19.1.9",
     "@vitejs/plugin-react": "^5.1.4",
     "vitest": "^4.0.18"

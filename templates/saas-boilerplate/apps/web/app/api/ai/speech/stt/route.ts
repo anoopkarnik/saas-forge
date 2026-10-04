@@ -1,6 +1,5 @@
 import { Buffer } from "node:buffer";
-import { auth } from "@workspace/auth/better-auth/auth";
-import { assertNotGuest } from "@/lib/auth/assertNotGuest";
+import { guardRoute } from "@/server/routeGuard";
 import {
   OPENAI_STT_URL,
   applySpeechTemplate,
@@ -54,13 +53,10 @@ function shouldSendCustomMultipart(url: string, sampleBody: Record<string, unkno
 }
 
 export async function POST(req: Request) {
-  const session = await auth.api.getSession({ headers: req.headers });
-  if (!session?.user?.id) {
-    return jsonSpeechError("You must be logged in to use speech to text.", 401);
+  const guard = await guardRoute(req, "/api/ai/speech/stt");
+  if (!guard.ok) {
+    return jsonSpeechError(guard.error, guard.status);
   }
-
-  const guestBlocked = assertNotGuest(session);
-  if (guestBlocked) return guestBlocked;
 
   const formData = await req.formData().catch(() => null);
   if (!formData) {

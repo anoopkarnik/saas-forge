@@ -2,11 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import archiver from "archiver";
 import path from "node:path";
 import fs from "node:fs";
-import { auth } from "@workspace/auth/better-auth/auth";
-import { headers } from "next/headers";
-import { assertNotGuest } from "@/lib/auth/assertNotGuest";
 import { revalidatePath } from "next/cache";
-import { ratelimit } from "@/server/ratelimit";
+import { guardRoute } from "@/server/routeGuard";
+import { DESKTOP_APP_ORIGIN } from "@workspace/auth/better-auth/desktop-origin";
 import {
   calculateScaffoldCredits,
   compileScaffoldVariant,
@@ -25,6 +23,7 @@ const scaffoldRoots = process.env.VERCEL
   ? ["templates/saas-boilerplate", ".generated/saas-boilerplate"]
   : [".generated/saas-boilerplate", "templates/saas-boilerplate"];
 const scaffoldAllowedOrigins = [
+  DESKTOP_APP_ORIGIN,
   "http://localhost:3000",
   "http://localhost:5173",
   "http://localhost:8081",
@@ -283,27 +282,11 @@ export async function POST(req: NextRequest) {
       return jsonWithCors(req, { error: "Forbidden" }, 403);
     }
 
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
-
-    if (!session?.user) {
-      return jsonWithCors(req, { error: "Unauthorized" }, 401);
+    const guard = await guardRoute(req, "/api/scaffold");
+    if (!guard.ok) {
+      return jsonWithCors(req, { error: guard.error }, guard.status);
     }
-
-    const guestBlocked = assertNotGuest(session);
-    if (guestBlocked) {
-      return jsonWithCors(
-        req,
-        { error: "This is a read-only demo account." },
-        403,
-      );
-    }
-
-    const { success } = await ratelimit.limit(session.user.id);
-    if (!success) {
-      return jsonWithCors(req, { error: "Rate limit exceeded" }, 429);
-    }
+    const { session } = guard;
 
     const body = await req.json();
     const projectName = sanitizeProjectName(body.name ?? "");

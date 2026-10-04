@@ -163,11 +163,12 @@ Import direction (enforced by `pnpm arch:check` in CI, rules in `.dependency-cru
 - In `packages/ui`, components never import blocks.
 - Saved projects: all `db.projectConfig` access lives in `apps/web/lib/scaffold/project-service.ts`; tRPC and REST routes map its `null` results to their own 404s.
 
-Middleware source of truth is `apps/web/middleware.ts`:
+Route trust contract source of truth is `apps/web/lib/route-policy.ts`:
 
-- `publicRoutes` currently includes `/landing`, `/public`, payment webhooks, `/api/trpc`, `/auth-callback`, and `/api/scaffold`.
-- `authRoutes` currently includes auth pages and `/api/auth`.
-- Everything else is treated as protected and unauthenticated users are redirected to `/landing`.
+- One row per page group, API route and webhook: auth mode (`public`, `auth-page`, `auth-handler`, `session`, `api-key`, `webhook`, `procedure`), required roles, guest access, rate-limit bucket, max body size, and where input is validated.
+- `apps/web/middleware.ts` derives page gating and 413 body-size limits from it. Unlisted paths are protected pages; unauthenticated users are redirected to `/landing`.
+- `session` API routes call `guardRoute(req, "<path>")` from `apps/web/server/routeGuard.ts` for session, role, guest, and rate-limit checks instead of re-implementing them.
+- Adding an API route means adding its row; `tests/integration/routePolicy.test.ts` fails otherwise.
 
 Webhook idempotency is important for payments:
 

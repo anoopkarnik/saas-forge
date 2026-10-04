@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@workspace/auth/better-auth/auth";
-import { headers } from "next/headers";
 import { z } from "zod";
-import { assertNotGuest } from "@/lib/auth/assertNotGuest";
+import { guardRoute } from "@/server/routeGuard";
 import { getProject, markProjectUpgraded } from "@/lib/scaffold/project-service";
 import {
   InvalidScaffoldModuleError,
@@ -32,16 +30,11 @@ const input = z.object({
 });
 
 export async function POST(req: NextRequest) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const guard = await guardRoute(req, "/api/scaffold/upgrade");
+  if (!guard.ok) {
+    return NextResponse.json({ error: guard.error }, { status: guard.status });
   }
-  if (assertNotGuest(session)) {
-    return NextResponse.json(
-      { error: "This is a read-only demo account." },
-      { status: 403 },
-    );
-  }
+  const { session } = guard;
 
   const body = await req.json().catch(() => ({}));
   const parsed = input.safeParse(body);

@@ -1,5 +1,4 @@
-import { auth } from "@workspace/auth/better-auth/auth";
-import { assertNotGuest } from "@/lib/auth/assertNotGuest";
+import { guardRoute } from "@/server/routeGuard";
 import {
   OPENAI_TTS_URL,
   applySpeechTemplate,
@@ -53,13 +52,10 @@ function buildBsamaritanTtsBody(text: string, sampleBody: Record<string, unknown
 }
 
 export async function POST(req: Request) {
-  const session = await auth.api.getSession({ headers: req.headers });
-  if (!session?.user?.id) {
-    return jsonSpeechError("You must be logged in to use text to speech.", 401);
+  const guard = await guardRoute(req, "/api/ai/speech/tts");
+  if (!guard.ok) {
+    return jsonSpeechError(guard.error, guard.status);
   }
-
-  const guestBlocked = assertNotGuest(session);
-  if (guestBlocked) return guestBlocked;
 
   const parsed = ttsRequestSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) {

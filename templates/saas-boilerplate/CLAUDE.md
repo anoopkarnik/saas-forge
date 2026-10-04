@@ -118,11 +118,12 @@ tRPC setup:
 - `protectedProcedure` is the authenticated helper.
 - For new admin or CMS mutations, require server-side auth and role checks. Do not rely on client-side gating alone.
 
-Middleware source of truth is `apps/web/middleware.ts`:
+Route trust contract source of truth is `apps/web/lib/route-policy.ts`:
 
-- `publicRoutes` currently includes `/landing`, `/public`, payment webhooks, `/api/trpc`, and `/auth-callback`.
-- `authRoutes` currently includes auth pages and `/api/auth`.
-- Everything else is treated as protected and unauthenticated users are redirected to `/landing`.
+- One row per page group, API route and webhook: auth mode (`public`, `auth-page`, `auth-handler`, `session`, `api-key`, `webhook`, `procedure`), required roles, guest access, rate-limit bucket, max body size, and where input is validated.
+- `apps/web/middleware.ts` derives page gating and 413 body-size limits from it. Unlisted paths are protected pages; unauthenticated users are redirected to `/landing`.
+- `session` API routes call `guardRoute(req, "<path>")` from `apps/web/server/routeGuard.ts` for session, role, guest, and rate-limit checks instead of re-implementing them.
+- Adding an API route means adding its row; `tests/integration/routePolicy.test.ts` fails otherwise.
 
 Webhook idempotency is important for payments:
 

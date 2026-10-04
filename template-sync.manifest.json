@@ -61,7 +61,6 @@
     "apps/mobile/app/(home)/index.tsx",
     "apps/web/app/(home)/page.tsx",
     "apps/web/components/home/AppSidebar.tsx",
-    "apps/web/middleware.ts",
     "apps/web/next.config.mjs",
     "package.json",
     "packages/database/prisma/schema.prisma",

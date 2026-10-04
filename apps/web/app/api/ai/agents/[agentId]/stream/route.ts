@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@workspace/auth/better-auth/auth";
-import { assertNotGuest } from "@/lib/auth/assertNotGuest";
+import { guardRoute } from "@/server/routeGuard";
 import { openAgentStream } from "@/lib/backend/client";
 
 export const dynamic = "force-dynamic";
@@ -9,13 +8,11 @@ export const runtime = "nodejs";
 type RouteContext = { params: Promise<{ agentId: string }> };
 
 export async function POST(req: NextRequest, ctx: RouteContext) {
-  const session = await auth.api.getSession({ headers: req.headers });
-  if (!session) {
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  const guard = await guardRoute(req, "/api/ai/agents/[agentId]/stream");
+  if (!guard.ok) {
+    return NextResponse.json({ error: guard.error }, { status: guard.status });
   }
-
-  const guestBlocked = assertNotGuest(session);
-  if (guestBlocked) return guestBlocked;
+  const { session } = guard;
 
   const { agentId } = await ctx.params;
   let input: Record<string, unknown> = {};

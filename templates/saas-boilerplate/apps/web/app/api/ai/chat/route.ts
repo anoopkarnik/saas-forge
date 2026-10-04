@@ -1,5 +1,4 @@
-import { auth } from "@workspace/auth/better-auth/auth";
-import { assertNotGuest } from "@/lib/auth/assertNotGuest";
+import { guardRoute } from "@/server/routeGuard";
 import db from "@workspace/database/client";
 import { logAIEvent } from "@workspace/observability/ai-logger";
 import {
@@ -23,17 +22,21 @@ import {
   getN8nWebhookEnvConfig,
   isN8nWebhookProvider,
 } from "@/lib/helper/aiWebhook";
-import { convertToModelMessages, streamText, type UIMessage } from "ai";
-import { z } from "zod";
+import { aiChatRequestSchema, type AiChatMessage } from "@/lib/zod/aiChat";
+import {
+  convertToModelMessages,
+  safeValidateUIMessages,
+  streamText,
+  type InferUITools,
+  type UIDataTypes,
+  type UIMessage,
+} from "ai";
+
+type StarterChatUIMessage = UIMessage<unknown, UIDataTypes, InferUITools<typeof starterAssistantTools>>;
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 export const maxDuration = 60;
-
-const chatRequestSchema = z.object({
-  messages: z.array(z.any()).min(1),
-  promptKey: z.string().min(1).default("chat.assistant"),
-});
 
 function jsonError(message: string, status: number) {
   return Response.json({ error: message }, { status });
@@ -53,10 +56,10 @@ function sanitizeError(error: unknown) {
   };
 }
 
-function toWebhookMessages(messages: unknown[]) {
+function toWebhookMessages(messages: AiChatMessage[]) {
   return messages
-    .map((message: any) => ({
-      role: typeof message?.role === "string" ? message.role : "user",
+    .map((message) => ({
+      role: message.role,
       content: getMessageText(message),
     }))
     .filter((message) => message.content);
@@ -114,22 +117,43 @@ async function recordFailure({
 
 export async function POST(req: Request) {
   const startedAt = Date.now();
-  const session = await auth.api.getSession({ headers: req.headers });
-
-  if (!session?.user?.id) {
-    return jsonError("You must be logged in to use AI chat.", 401);
+  const guard = await guardRoute(req, "/api/ai/chat");
+  if (!guard.ok) {
+    return jsonError(guard.error, guard.status);
   }
+  const { session } = guard;
 
-  const guestBlocked = assertNotGuest(session);
-  if (guestBlocked) return guestBlocked;
-
-  const parsed = chatRequestSchema.safeParse(await req.json().catch(() => null));
+  const userId = session.user.id;
+  const parsed = aiChatRequestSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) {
+    logAIEvent({
+      userId,
+      status: "failed",
+      errorCode: "INVALID_REQUEST",
+      errorMessage: parsed.error.issues
+        .slice(0, 5)
+        .map((issue) => `${issue.path.join(".") || "body"}: ${issue.code}`)
+        .join("; "),
+    });
     return jsonError("Invalid AI chat request.", 400);
   }
 
   const { messages, promptKey } = parsed.data;
-  const userId = session.user.id;
+  // Structural check of SDK parts (tool inputs/outputs against their schemas).
+  const uiMessages = await safeValidateUIMessages<StarterChatUIMessage>({
+    messages,
+    tools: starterAssistantTools,
+  });
+  if (!uiMessages.success) {
+    logAIEvent({
+      userId,
+      promptKey,
+      status: "failed",
+      errorCode: "INVALID_REQUEST",
+      errorMessage: uiMessages.error.message.slice(0, 500),
+    });
+    return jsonError("Invalid AI chat request.", 400);
+  }
 
   const [user, prompt] = await Promise.all([
     db.user.findUnique({
@@ -184,9 +208,9 @@ export async function POST(req: Request) {
     .map((message) => ({
       conversationId: conversation.id,
       userId,
-      role: message.role ?? "user",
+      role: message.role,
       content: getMessageText(message),
-      parts: message.parts ?? null,
+      parts: message.parts,
     }))
     .filter((message) => message.content || message.parts);
 
@@ -272,7 +296,7 @@ export async function POST(req: Request) {
         status: "success",
       });
 
-      return createTextUIMessageStreamResponse(text, messages as UIMessage[]);
+      return createTextUIMessageStreamResponse(text, uiMessages.data);
     } catch (error) {
       await recordFailure({
         userId,
@@ -306,7 +330,7 @@ export async function POST(req: Request) {
     const result = streamText({
       model: resolvedModel.model,
       system: prompt.activeVersion.content,
-      messages: await convertToModelMessages(messages as UIMessage[]),
+      messages: await convertToModelMessages(uiMessages.data),
       tools: starterAssistantTools,
       providerOptions:
         resolvedModel.provider === "gateway"

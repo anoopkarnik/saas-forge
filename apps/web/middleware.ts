@@ -3,36 +3,14 @@ import {
   authSessionCookieName,
   secureAuthSessionCookieName,
 } from "@workspace/auth/better-auth/cookies";
-
-const publicRoutes = [
-  "/landing",
-  "/public",
-  "/api/payments/dodo/webhook",
-  "/api/payments/stripe/webhook",
-  "/api/trpc",
-  "/api/v1",
-  "/auth-callback",
-  "/api/demo-login",
-];
-
-const authRoutes = [
-  "/sign-in",
-  "/sign-up",
-  "/error",
-  "/forgot-password",
-  "/reset-password",
-  "/email-verified",
-  "/api/auth",
-];
-
-const apiAuthPrefix = "/api/auth";
+import { DESKTOP_APP_ORIGIN } from "@workspace/auth/better-auth/desktop-origin";
+import { resolveRoutePolicy } from "@/lib/route-policy";
 
 const allowedOrigins = [
   "http://localhost:3000",
   "http://localhost:5173",
   "http://localhost:8081",
-  "file://",
-  "null",
+  DESKTOP_APP_ORIGIN,
   process.env.NEXT_PUBLIC_URL,
 ].filter(Boolean) as string[];
 
@@ -41,24 +19,31 @@ const corsOptions = {
   "Access-Control-Allow-Headers": "Content-Type, Authorization",
 };
 
+// Origin can be "null" or malformed; that must never throw (500) or match.
+function isSameHost(origin: string, host: string) {
+  try {
+    return !!origin && new URL(origin).host === host;
+  } catch {
+    return false;
+  }
+}
+
 export default async function middleware(req: NextRequest) {
   const origin = req.headers.get("origin") ?? "";
   const pathName = req.nextUrl.pathname;
-  const isScaffoldRoute = pathName.startsWith("/api/scaffold");
-  const sameHost = origin && new URL(origin).host === req.nextUrl.host;
-  const isAllowedOrigin = sameHost || allowedOrigins.includes(origin);
-
-  const isApiAuthRoute = pathName.startsWith(apiAuthPrefix);
-  const isPublicRoute = publicRoutes.some((route) =>
-    pathName.startsWith(route),
-  );
-  const isAuthRoute = authRoutes.includes(pathName);
+  // Route access rules live in lib/route-policy.ts; unlisted paths are
+  // protected pages.
+  const policy = resolveRoutePolicy(pathName);
+  const routeAuth = policy?.auth ?? "session";
+  const handlerManagesCors = policy?.cors === "self-managed";
+  const isAllowedOrigin =
+    isSameHost(origin, req.nextUrl.host) || allowedOrigins.includes(origin);
 
   // Handle preflighted requests
   const isPreflight = req.method === "OPTIONS";
 
   if (isPreflight) {
-    if (isScaffoldRoute) {
+    if (handlerManagesCors) {
       return NextResponse.next();
     }
     const preflightHeaders = {
@@ -71,22 +56,42 @@ export default async function middleware(req: NextRequest) {
     return NextResponse.json({}, { headers: preflightHeaders });
   }
 
+  const contentLength = Number(req.headers.get("content-length") ?? 0);
+  if (policy?.maxBodyBytes && contentLength > policy.maxBodyBytes) {
+    return NextResponse.json(
+      { error: "Payload too large" },
+      {
+        status: 413,
+        headers: isAllowedOrigin
+          ? {
+              "Access-Control-Allow-Origin": origin,
+              "Access-Control-Allow-Credentials": "true",
+            }
+          : undefined,
+      },
+    );
+  }
+
   const response = NextResponse.next();
 
   // Set CORS headers on all responses for allowed origins
-  if (!isScaffoldRoute && isAllowedOrigin) {
+  if (!handlerManagesCors && isAllowedOrigin) {
     response.headers.set("Access-Control-Allow-Origin", origin);
     response.headers.set("Access-Control-Allow-Credentials", "true");
   }
 
-  if (!isScaffoldRoute) {
+  if (!handlerManagesCors) {
     Object.entries(corsOptions).forEach(([key, value]) => {
       response.headers.set(key, value);
     });
   }
 
-  // Avoid infinite recursion: don't fetch session for /api/auth routes
-  if (isApiAuthRoute || isPublicRoute || isScaffoldRoute) {
+  // Cookie gating is for pages only. Session API routes answer 401 JSON
+  // themselves via guardRoute (routePolicy.test.ts enforces this), and the
+  // rest — Better Auth itself, tRPC, API keys, webhooks — authenticate in
+  // their handlers. Skipping /api/auth here also avoids infinite recursion.
+  const isPage = !pathName.startsWith("/api/");
+  if (!isPage || (routeAuth !== "session" && routeAuth !== "auth-page")) {
     return response;
   }
 
@@ -97,14 +102,14 @@ export default async function middleware(req: NextRequest) {
     req.cookies.get(secureAuthSessionCookieName)?.value;
   const isLoggedIn = !!sessionToken;
 
-  if (isAuthRoute) {
+  if (routeAuth === "auth-page") {
     if (isLoggedIn) {
       return Response.redirect(new URL("/", req.nextUrl));
     }
     return response;
   }
 
-  if (!isLoggedIn && !isPublicRoute) {
+  if (!isLoggedIn) {
     return Response.redirect(new URL("/landing", req.nextUrl));
   }
 

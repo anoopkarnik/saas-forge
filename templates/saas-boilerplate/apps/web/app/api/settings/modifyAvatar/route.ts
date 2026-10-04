@@ -1,8 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth } from "@workspace/auth/better-auth/auth";
-import { assertNotGuest } from "@/lib/auth/assertNotGuest";
-import { headers } from "next/headers";
-import { ratelimit } from "@/server/ratelimit";
+import { guardRoute } from "@/server/routeGuard";
 import {
   normalizeImageUpload,
   uploadNormalizedImage,
@@ -11,20 +8,9 @@ import {
 export const runtime = "nodejs"; // important
 
 export async function POST(req: Request) {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-
-  if (!session?.user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const guestBlocked = assertNotGuest(session);
-  if (guestBlocked) return guestBlocked;
-
-  const { success } = await ratelimit.limit(session.user.id);
-  if (!success) {
-    return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 });
+  const guard = await guardRoute(req, "/api/settings/modifyAvatar");
+  if (!guard.ok) {
+    return NextResponse.json({ error: guard.error }, { status: guard.status });
   }
 
   const formData = await req.formData();

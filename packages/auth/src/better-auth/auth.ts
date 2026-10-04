@@ -5,6 +5,7 @@ import { admin,  openAPI, jwt } from "better-auth/plugins";
 import { expo } from "@better-auth/expo";
 import { sendResetEmail, sendVerificationEmail } from "@workspace/email/resend/index"
 import { authCookiePrefix } from "./cookies";
+import { DESKTOP_APP_ORIGIN } from "./desktop-origin";
 import { isEmailAllowedToRegister, type RegistrationMode } from "./registration";
 import { createAuthMiddleware, APIError, getSessionFromCtx } from "better-auth/api";
 import { isGuestAccountMutation } from "./guestGuard";
@@ -63,8 +64,7 @@ const options = {
         "saas-forge://*",
         "exp://",
         "exp://*",
-        "file://",
-        "null",
+        DESKTOP_APP_ORIGIN,
         "http://localhost:5173",
         "http://localhost:8081",
         appUrl

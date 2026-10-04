@@ -1,81 +1,121 @@
-import { NextResponse, type NextRequest } from "next/server"
+import { NextResponse, type NextRequest } from "next/server";
 import {
-    authSessionCookieName,
-    secureAuthSessionCookieName,
-} from "@workspace/auth/better-auth/cookies"
+  authSessionCookieName,
+  secureAuthSessionCookieName,
+} from "@workspace/auth/better-auth/cookies";
+import { DESKTOP_APP_ORIGIN } from "@workspace/auth/better-auth/desktop-origin";
+import { resolveRoutePolicy } from "@/lib/route-policy";
 
-const publicRoutes = ["/landing","/public","/api/payments/dodo/webhook","/api/payments/stripe/webhook","/api/trpc", "/auth-callback", "/api/demo-login"]
-
-const authRoutes =["/sign-in","/sign-up","/error","/forgot-password","/reset-password",'/email-verified',"/api/auth"]
-
-const apiAuthPrefix = "/api/auth"
-
-const allowedOrigins = ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:8081', process.env.NEXT_PUBLIC_URL].filter(Boolean) as string[]
+const allowedOrigins = [
+  "http://localhost:3000",
+  "http://localhost:5173",
+  "http://localhost:8081",
+  DESKTOP_APP_ORIGIN,
+  process.env.NEXT_PUBLIC_URL,
+].filter(Boolean) as string[];
 
 const corsOptions = {
-    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+};
+
+// Origin can be "null" or malformed; that must never throw (500) or match.
+function isSameHost(origin: string, host: string) {
+  try {
+    return !!origin && new URL(origin).host === host;
+  } catch {
+    return false;
+  }
+}
+
+export default async function middleware(req: NextRequest) {
+  const origin = req.headers.get("origin") ?? "";
+  const pathName = req.nextUrl.pathname;
+  // Route access rules live in lib/route-policy.ts; unlisted paths are
+  // protected pages.
+  const policy = resolveRoutePolicy(pathName);
+  const routeAuth = policy?.auth ?? "session";
+  const handlerManagesCors = policy?.cors === "self-managed";
+  const isAllowedOrigin =
+    isSameHost(origin, req.nextUrl.host) || allowedOrigins.includes(origin);
+
+  // Handle preflighted requests
+  const isPreflight = req.method === "OPTIONS";
+
+  if (isPreflight) {
+    if (handlerManagesCors) {
+      return NextResponse.next();
+    }
+    const preflightHeaders = {
+      ...(isAllowedOrigin && {
+        "Access-Control-Allow-Origin": origin,
+        "Access-Control-Allow-Credentials": "true",
+      }),
+      ...corsOptions,
+    };
+    return NextResponse.json({}, { headers: preflightHeaders });
   }
 
-export default async function middleware(req:NextRequest){
+  const contentLength = Number(req.headers.get("content-length") ?? 0);
+  if (policy?.maxBodyBytes && contentLength > policy.maxBodyBytes) {
+    return NextResponse.json(
+      { error: "Payload too large" },
+      {
+        status: 413,
+        headers: isAllowedOrigin
+          ? {
+              "Access-Control-Allow-Origin": origin,
+              "Access-Control-Allow-Credentials": "true",
+            }
+          : undefined,
+      },
+    );
+  }
 
-    const origin = req.headers.get('origin') ?? ''
-    const pathName = req.nextUrl.pathname;
-    const sameHost = origin && new URL(origin).host === req.nextUrl.host;
-    const isAllowedOrigin = sameHost || allowedOrigins.includes(origin)
+  const response = NextResponse.next();
 
+  // Set CORS headers on all responses for allowed origins
+  if (!handlerManagesCors && isAllowedOrigin) {
+    response.headers.set("Access-Control-Allow-Origin", origin);
+    response.headers.set("Access-Control-Allow-Credentials", "true");
+  }
 
-    const isApiAuthRoute = pathName.startsWith(apiAuthPrefix);
-    const isPublicRoute =  publicRoutes.some((route) => pathName.startsWith(route));
-    const isAuthRoute = authRoutes.includes(pathName);    
-  
-    const response = NextResponse.next()
-
-    const isPreflight = req.method === 'OPTIONS'
-    
-    if (isPreflight) {
-        const preflightHeaders = {
-        ...(isAllowedOrigin && { 
-            'Access-Control-Allow-Origin': origin,
-            'Access-Control-Allow-Credentials': 'true'
-        }),
-        ...corsOptions,
-        }
-        return NextResponse.json({}, { headers: preflightHeaders })
-    }
-
-    if (isAllowedOrigin) {
-        response.headers.set('Access-Control-Allow-Origin', origin)
-        response.headers.set('Access-Control-Allow-Credentials', 'true')
-    }
-     
+  if (!handlerManagesCors) {
     Object.entries(corsOptions).forEach(([key, value]) => {
-        response.headers.set(key, value)
-    })
+      response.headers.set(key, value);
+    });
+  }
 
-    if (isApiAuthRoute || isPublicRoute) {
-        return response;
+  // Cookie gating is for pages only. Session API routes answer 401 JSON
+  // themselves via guardRoute (routePolicy.test.ts enforces this), and the
+  // rest — Better Auth itself, tRPC, API keys, webhooks — authenticate in
+  // their handlers. Skipping /api/auth here also avoids infinite recursion.
+  const isPage = !pathName.startsWith("/api/");
+  if (!isPage || (routeAuth !== "session" && routeAuth !== "auth-page")) {
+    return response;
+  }
+
+  // Check for both the local and Secure (production HTTPS) cookie prefixes.
+  // Better Auth uses __Secure- prefix in production.
+  const sessionToken =
+    req.cookies.get(authSessionCookieName)?.value ||
+    req.cookies.get(secureAuthSessionCookieName)?.value;
+  const isLoggedIn = !!sessionToken;
+
+  if (routeAuth === "auth-page") {
+    if (isLoggedIn) {
+      return Response.redirect(new URL("/", req.nextUrl));
     }
+    return response;
+  }
 
-    const sessionToken = req.cookies.get(authSessionCookieName)?.value || req.cookies.get(secureAuthSessionCookieName)?.value;
-    const isLoggedIn = !!sessionToken;
+  if (!isLoggedIn) {
+    return Response.redirect(new URL("/landing", req.nextUrl));
+  }
 
-
-    if (isAuthRoute){
-        if (isLoggedIn){
-            return Response.redirect(new URL('/',req.nextUrl));
-        }
-        return response;
-    }
-
-    if (!isLoggedIn && !isPublicRoute){
-        return Response.redirect(new URL('/landing',req.nextUrl));
-    }
-
-
-    return response
+  return response;
 }
 
 export const config = {
-    matcher: ['/((?!.+\\.[\\w]+$|_next).*)','/','/(api|trpc)(.*)'],
-}
+  matcher: ["/((?!.+\\.[\\w]+$|_next).*)", "/", "/(api|trpc)(.*)"],
+};

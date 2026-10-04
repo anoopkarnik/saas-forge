@@ -52,10 +52,6 @@
         "to": "apps/web/.env.example"
       },
       {
-        "from": "overrides/unselected/apps/web/middleware.ts",
-        "to": "apps/web/middleware.ts"
-      },
-      {
         "from": "overrides/unselected/apps/web/package.json",
         "to": "apps/web/package.json"
       },

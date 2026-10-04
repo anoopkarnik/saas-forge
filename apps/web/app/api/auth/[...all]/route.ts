@@ -1,10 +1,11 @@
 import { handlers } from "@workspace/auth/better-auth/auth"; // path to your auth file
+import { DESKTOP_APP_ORIGIN } from "@workspace/auth/better-auth/desktop-origin";
 import { NextRequest, NextResponse } from "next/server";
 
 const { POST: authPOST, GET: authGET } = handlers;
 
-const desktopOrigins = ["null", ""];
 const allowedOrigins = [
+  DESKTOP_APP_ORIGIN,
   "http://localhost:5173",
   "http://localhost:8081",
   "saas-forge://",
@@ -13,13 +14,15 @@ const allowedOrigins = [
 ].filter(Boolean) as string[];
 
 /**
- * Electron desktop app (file:// protocol) sends Origin: null or no origin.
- * Better Auth rejects requests with missing/null origins internally.
- * Rewrite these to a trusted origin so Better Auth accepts them.
+ * Non-browser clients send no Origin, which Better Auth rejects internally.
+ * Rewrite a missing origin to our own so Better Auth accepts them. "null" is
+ * deliberately NOT rewritten: sandboxed iframes on any site send it, and our
+ * cookies are SameSite=None, so trusting it would allow cross-site requests.
+ * The desktop app sends DESKTOP_APP_ORIGIN instead.
  */
-const normalizeDesktopOrigin = (req: NextRequest): NextRequest => {
+const normalizeMissingOrigin = (req: NextRequest): NextRequest => {
   const origin = req.headers.get("origin");
-  if (!origin || desktopOrigins.includes(origin)) {
+  if (!origin) {
     const headers = new Headers(req.headers);
     headers.set(
       "origin",
@@ -54,11 +57,11 @@ const setCorsHeaders = (res: Response | NextResponse, req: NextRequest) => {
 };
 
 export const POST = async (req: NextRequest) => {
-  return setCorsHeaders(await authPOST(normalizeDesktopOrigin(req)), req);
+  return setCorsHeaders(await authPOST(normalizeMissingOrigin(req)), req);
 };
 
 export const GET = async (req: NextRequest) => {
-  return setCorsHeaders(await authGET(normalizeDesktopOrigin(req)), req);
+  return setCorsHeaders(await authGET(normalizeMissingOrigin(req)), req);
 };
 
 export const OPTIONS = async (req: NextRequest) => {

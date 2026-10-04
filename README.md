@@ -393,7 +393,7 @@ If you change shared SaaS behavior, make the change in the root repo first and t
 
 ## 💬 Support
 
-- Email: [support@saasforge.dev](mailto:support@saasforge.dev)
+- Email: [support@saasforge.cc](mailto:support@saasforge.cc)
 - Issues: [GitHub Issues](https://github.com/anoopkarnik/saas-forge/issues)
 - Discussions: [GitHub Discussions](https://github.com/anoopkarnik/saas-forge/discussions)
 - Repository: [github.com/anoopkarnik/saas-forge](https://github.com/anoopkarnik/saas-forge)

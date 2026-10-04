@@ -1,5 +1,6 @@
-import { app, shell, BrowserWindow, ipcMain, dialog } from "electron";
+import { app, shell, BrowserWindow, ipcMain, dialog, net, protocol } from "electron";
 import { join } from "path";
+import { pathToFileURL } from "url";
 import { mkdirSync, accessSync, constants, writeFileSync } from "fs";
 import { homedir } from "os";
 import {
@@ -8,6 +9,12 @@ import {
   findDesktopDeepLink,
 } from "./deepLink";
 import { createMainWindowOptions } from "./windowConfig";
+import {
+  RENDERER_SCHEME,
+  rendererPageUrl,
+  rendererSchemePrivileges,
+  resolveRendererFile,
+} from "./rendererProtocol";
 
 // Fix shared memory / /tmp issues on Linux packaged apps.
 // Must happen BEFORE app.commandLine calls so Chromium picks them up.
@@ -41,6 +48,14 @@ app.commandLine.appendSwitch("disable-dev-shm-usage");
 // Register saas-forge:// as the default protocol client.
 app.setAsDefaultProtocolClient(DESKTOP_DEEP_LINK_SCHEME);
 
+// The packaged renderer is served from app://saas-forge rather than file://,
+// whose requests carry Origin "null" — indistinguishable from a sandboxed
+// iframe on any site, so the web API can't safely trust it. Must be called
+// before the app is ready.
+protocol.registerSchemesAsPrivileged([
+  { scheme: RENDERER_SCHEME, privileges: rendererSchemePrivileges },
+]);
+
 // Single-instance lock for Windows/Linux: forward deep-link URL to existing window
 const gotTheLock = app.requestSingleInstanceLock();
 if (!gotTheLock) {
@@ -55,10 +70,7 @@ function loadRendererURL(hash?: string): void {
   if (devUrl) {
     mainWindow.loadURL(hash ? `${devUrl}#${hash}` : devUrl);
   } else {
-    mainWindow.loadFile(
-      join(__dirname, "../renderer/index.html"),
-      hash ? { hash } : undefined,
-    );
+    mainWindow.loadURL(rendererPageUrl(hash));
   }
 }
 
@@ -135,7 +147,7 @@ function createWindow(): void {
   if (url) {
     mainWindow.loadURL(url);
   } else {
-    mainWindow.loadFile(join(__dirname, "../renderer/index.html"));
+    mainWindow.loadURL(rendererPageUrl());
   }
 }
 
@@ -156,6 +168,15 @@ ipcMain.handle(
 
 app.whenReady().then(() => {
   console.log("[main] App is ready, creating window...");
+
+  const rendererDir = join(__dirname, "../renderer");
+  protocol.handle(RENDERER_SCHEME, (request) => {
+    const file = resolveRendererFile(rendererDir, request.url);
+    return file
+      ? net.fetch(pathToFileURL(file).toString())
+      : new Response("Not found", { status: 404 });
+  });
+
   createWindow();
 
   app.on("activate", function () {

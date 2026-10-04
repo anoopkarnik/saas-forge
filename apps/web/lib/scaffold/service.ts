@@ -1,4 +1,3 @@
-import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import archiver from "archiver";
@@ -14,6 +13,7 @@ import {
   type ScaffoldModuleId,
   type ScaffoldPricingOutput,
 } from "@/lib/scaffold-modules";
+import { tierOrder } from "@/lib/scaffold/project-rules";
 import { getTemplateVersion } from "@/lib/scaffold/template-version";
 import { generateSetupGuide } from "@/lib/scaffold/setup-guide";
 
@@ -79,28 +79,7 @@ function shouldIgnore(relPath: string): boolean {
   return false;
 }
 
-/**
- * Stable content hash of the buildable inputs. Must match the hash computed in
- * `projectProcedures.ts` so an unchanged config re-downloads for free.
- */
-export function computeBuildHash(project: {
-  modules: string[];
-  tierId: string;
-  versionId: string;
-  platforms: string[];
-  templateVersion: string;
-  config: unknown;
-}): string {
-  const payload = JSON.stringify({
-    modules: [...project.modules].sort(),
-    tierId: project.tierId,
-    versionId: project.versionId,
-    platforms: [...project.platforms].sort(),
-    templateVersion: project.templateVersion,
-    config: project.config,
-  });
-  return createHash("sha256").update(payload).digest("hex");
-}
+export { computeBuildHash } from "@/lib/scaffold/project-rules";
 
 export type BuildProjectZipInput = {
   /** Display name (for the setup guide). */
@@ -307,11 +286,6 @@ export async function chargeScaffoldCredits(
 // ---------------------------------------------------------------------------
 // Upgrade kit (Claude Code-driven, local)
 // ---------------------------------------------------------------------------
-
-function tierOrder(tierId: string): number {
-  const parsed = Number.parseInt(String(tierId).replace(/^tier-/, ""), 10);
-  return Number.isFinite(parsed) ? parsed : 0;
-}
 
 function archiveToStream(archive: archiver.Archiver, cleanup: () => void): ReadableStream {
   return new ReadableStream({

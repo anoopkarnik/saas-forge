@@ -70,6 +70,7 @@ import {
   isWizardFieldComplete,
   isWizardFieldRequired,
   WIZARD_STEPS,
+  type EntryChoice,
   type ProviderGroup,
   type WizardFieldName,
   type WizardStepId,
@@ -94,7 +95,6 @@ interface DashboardPageProps {
   onNavigateDoc?: (slug: string) => void;
 }
 
-export type EntryChoice = "manual" | "preset" | "import";
 
 const DEFAULT_FORM_VALUES: FormValues = {
   name: "",

@@ -17,7 +17,7 @@ vi.mock("@/server/authenticateApiKey", () => ({
   authenticateApiKey: (...a: any[]) => mockAuth(...a),
 }));
 vi.mock("@/lib/scaffold-modules", () => ({ InvalidScaffoldModuleError }));
-vi.mock("@/lib/scaffold/project-write", () => ({
+vi.mock("@/lib/scaffold/project-service", () => ({
   createProject: (...a: any[]) => mockCreate(...a),
   updateProject: (...a: any[]) => mockUpdate(...a),
 }));

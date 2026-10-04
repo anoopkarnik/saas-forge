@@ -2,9 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@workspace/auth/better-auth/auth";
 import { headers } from "next/headers";
 import { z } from "zod";
-import db from "@workspace/database/client";
 import { assertNotGuest } from "@/lib/auth/assertNotGuest";
-import { projectDetailSelect } from "@/lib/scaffold/project-selects";
+import { getProject, markProjectUpgraded } from "@/lib/scaffold/project-service";
 import {
   InvalidScaffoldModuleError,
   validateSelectedModules,
@@ -50,10 +49,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: parsed.error.message }, { status: 400 });
   }
 
-  const project = await db.projectConfig.findFirst({
-    where: { userId: session.user.id, slug: parsed.data.slug },
-    select: projectDetailSelect,
-  });
+  const project = await getProject(session.user.id, parsed.data.slug);
   if (!project) {
     return NextResponse.json({ error: "Project not found" }, { status: 404 });
   }
@@ -130,26 +126,20 @@ export async function POST(req: NextRequest) {
   }
 
   const nextTemplateVersion = getTemplateVersion();
-  void db.projectConfig
-    .update({
-      where: { id: project.id },
-      data: {
-        modules: toModules,
-        tierId: toTierId,
-        versionId: toVersionId,
-        templateVersion: nextTemplateVersion,
-        lastBuiltHash: computeBuildHash({
-          modules: toModules,
-          tierId: toTierId,
-          versionId: toVersionId,
-          platforms: project.platforms,
-          templateVersion: nextTemplateVersion,
-          config: project.config,
-        }),
-        lastBuiltAt: new Date(),
-      },
-    })
-    .catch(() => {});
+  markProjectUpgraded(project.id, {
+    modules: toModules,
+    tierId: toTierId,
+    versionId: toVersionId,
+    templateVersion: nextTemplateVersion,
+    lastBuiltHash: computeBuildHash({
+      modules: toModules,
+      tierId: toTierId,
+      versionId: toVersionId,
+      platforms: project.platforms,
+      templateVersion: nextTemplateVersion,
+      config: project.config,
+    }),
+  });
 
   return new NextResponse(kit.stream as any, {
     headers: {

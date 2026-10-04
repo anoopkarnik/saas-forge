@@ -34,6 +34,7 @@ If you plan to run native clients too, review:
 pnpm dev
 pnpm build
 pnpm lint
+pnpm arch:check
 pnpm test
 pnpm test:coverage
 pnpm format
@@ -153,6 +154,14 @@ tRPC setup:
 - `apps/web/trpc/init.ts` exposes `baseProcedure` as the current public procedure helper.
 - `protectedProcedure` is the authenticated helper.
 - For new admin or CMS mutations, require server-side auth and role checks. Do not rely on client-side gating alone.
+
+Import direction (enforced by `pnpm arch:check` in CI, rules in `.dependency-cruiser.cjs`):
+
+- No circular imports, including type-only ones.
+- UI code (`apps/web/components`, `apps/web/hooks`, Next pages/layouts, `packages/ui`, desktop renderer, mobile) never imports `@workspace/database`; it goes through tRPC or an `apps/web/lib` service.
+- `apps/web/lib` services never import route handlers or tRPC routers; `packages/*` never import `apps/*`.
+- In `packages/ui`, components never import blocks.
+- Saved projects: all `db.projectConfig` access lives in `apps/web/lib/scaffold/project-service.ts`; tRPC and REST routes map its `null` results to their own 404s.
 
 Middleware source of truth is `apps/web/middleware.ts`:
 
@@ -296,6 +305,7 @@ Useful default checks:
 
 - `pnpm --dir apps/web typecheck`
 - `pnpm --dir apps/web test`
+- `pnpm arch:check`
 - `pnpm template:check-sync` after starter-related changes
 - `pnpm template:build` when starter behavior may have changed
 

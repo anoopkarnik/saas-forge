@@ -1,5 +1,5 @@
 import { randomBytes } from "node:crypto";
-import type { PrismaClient } from "@prisma/client";
+import type { PrismaClient } from "./generated/prisma/client";
 
 // Gives every user without a membership a personal workspace they own
 // (multi_tenancy module). Idempotent: users with any membership are skipped.

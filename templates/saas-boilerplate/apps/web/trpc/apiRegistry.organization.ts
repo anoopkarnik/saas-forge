@@ -1,4 +1,4 @@
-import type { ApiGroup } from "./apiRegistry";
+import type { ApiGroup } from "./apiRegistry.types";
 
 // Organization procedures (multi_tenancy module). Kept in its own file so the
 // scaffold can swap it for an empty list when the module is not selected.

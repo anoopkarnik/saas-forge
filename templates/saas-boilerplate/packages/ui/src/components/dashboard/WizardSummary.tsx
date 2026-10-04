@@ -14,9 +14,8 @@ import {
     calculateScaffoldCredits,
     BASE_SCAFFOLD_CREDITS_COST,
 } from "@workspace/ui/lib/constants/scaffold-modules";
-import { WIZARD_STEPS, WizardStepId } from "@workspace/ui/lib/scaffold-wizard";
+import { EntryChoice, WIZARD_STEPS, WizardStepId } from "@workspace/ui/lib/scaffold-wizard";
 import { ResolvedPreset } from "@workspace/ui/lib/constants/presets";
-import { EntryChoice } from "../../blocks/dashboard/DashboardPage";
 import { FormValues } from "@workspace/ui/lib/zod/download";
 import { formatList } from "@workspace/ui/lib/utils/formatList";
 

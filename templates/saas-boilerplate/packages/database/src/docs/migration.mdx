@@ -328,15 +328,15 @@ seed();
 ```
 
 
-### Add to package.json
+### Add to prisma.config.ts
 
 
-```json
-{
-  "prisma": {
-    "seed": "tsx seed.ts"
-  }
-}
+```ts
+export default defineConfig({
+  migrations: {
+    seed: "tsx src/seed.ts",
+  },
+});
 ```
 
 

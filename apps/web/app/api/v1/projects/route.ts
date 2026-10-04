@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import db from "@workspace/database/client";
 import { authenticateApiKey } from "@/server/authenticateApiKey";
-import { projectListSelect } from "@/lib/scaffold/project-selects";
 import { InvalidScaffoldModuleError } from "@/lib/scaffold-modules";
-import { createProject } from "@/lib/scaffold/project-write";
+import { createProject, listProjects } from "@/lib/scaffold/project-service";
 
 export const runtime = "nodejs";
 
@@ -12,11 +10,7 @@ export async function GET(req: NextRequest) {
   const auth = await authenticateApiKey(req, { scopes: ["read:projects"] });
   if (!auth.ok) return auth.response;
 
-  const projects = await db.projectConfig.findMany({
-    where: { userId: auth.userId },
-    select: projectListSelect,
-    orderBy: { updatedAt: "desc" },
-  });
+  const projects = await listProjects(auth.userId);
 
   return NextResponse.json({ projects });
 }

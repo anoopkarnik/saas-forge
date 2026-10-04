@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import db from "@workspace/database/client";
 import { authenticateApiKey } from "@/server/authenticateApiKey";
-import { projectDetailSelect } from "@/lib/scaffold/project-selects";
 import { InvalidScaffoldModuleError } from "@/lib/scaffold-modules";
-import { updateProject } from "@/lib/scaffold/project-write";
+import { getProject, updateProject } from "@/lib/scaffold/project-service";
 
 export const runtime = "nodejs";
 
@@ -15,10 +13,7 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
   if (!auth.ok) return auth.response;
 
   const { slug } = await ctx.params;
-  const project = await db.projectConfig.findFirst({
-    where: { userId: auth.userId, slug },
-    select: projectDetailSelect,
-  });
+  const project = await getProject(auth.userId, slug);
 
   if (!project) {
     return NextResponse.json(

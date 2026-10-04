@@ -1,0 +1,10 @@
+{
+  "//": "Resolver-only config for dependency-cruiser: maps apps/web's @/ alias from the repo root.",
+  "compilerOptions": {
+    "baseUrl": "../..",
+    "paths": { "@/*": ["apps/web/*"] },
+    "jsx": "preserve",
+    "allowJs": true
+  },
+  "files": ["../../apps/web/middleware.ts"]
+}

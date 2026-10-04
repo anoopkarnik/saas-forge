@@ -10,6 +10,8 @@ export type WizardStepId =
 
 export type WizardFieldName = keyof FormValues;
 
+export type EntryChoice = "manual" | "preset" | "import";
+
 export type WizardStep = {
   id: WizardStepId;
   title: string;

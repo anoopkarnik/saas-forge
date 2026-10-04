@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import db from "@workspace/database/client";
 import { authenticateApiKey } from "@/server/authenticateApiKey";
-import { projectDetailSelect } from "@/lib/scaffold/project-selects";
+import { getProject, markProjectUpgraded } from "@/lib/scaffold/project-service";
 import {
   InvalidScaffoldModuleError,
   validateSelectedModules,
@@ -37,10 +36,7 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
   if (!auth.ok) return auth.response;
 
   const { slug } = await ctx.params;
-  const project = await db.projectConfig.findFirst({
-    where: { userId: auth.userId, slug },
-    select: projectDetailSelect,
-  });
+  const project = await getProject(auth.userId, slug);
   if (!project) return jsonError("not_found", "Project not found.", 404);
 
   let body: unknown = {};
@@ -144,19 +140,13 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
     templateVersion: nextTemplateVersion,
     config: project.config,
   };
-  void db.projectConfig
-    .update({
-      where: { id: project.id },
-      data: {
-        modules: toModules,
-        tierId: toTierId,
-        versionId: toVersionId,
-        templateVersion: nextTemplateVersion,
-        lastBuiltHash: computeBuildHash(nextProject),
-        lastBuiltAt: new Date(),
-      },
-    })
-    .catch(() => {});
+  markProjectUpgraded(project.id, {
+    modules: toModules,
+    tierId: toTierId,
+    versionId: toVersionId,
+    templateVersion: nextTemplateVersion,
+    lastBuiltHash: computeBuildHash(nextProject),
+  });
 
   return new NextResponse(kit.stream as any, {
     headers: {

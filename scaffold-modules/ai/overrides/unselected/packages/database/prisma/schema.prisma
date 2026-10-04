@@ -1,11 +1,9 @@
 generator client {
-  provider        = "prisma-client-js"
-  previewFeatures = ["prismaSchemaFolder", "multiSchema"]
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
   schemas = ["user_schema","billing_schema","cms_schema"]
-  url      = env("DATABASE_URL")
-
 }

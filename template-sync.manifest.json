@@ -35,6 +35,7 @@
     "apps/web/.env",
     "apps/web/.env.production",
     "packages/database/.env",
+    "packages/database/src/generated",
     "apps/web/app/api/scaffold",
     "apps/web/tests/integration/scaffoldRoute.test.ts",
     "packages/database/prisma/scaffold.prisma",

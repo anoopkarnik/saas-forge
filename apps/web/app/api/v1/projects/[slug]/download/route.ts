@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import db from "@workspace/database/client";
 import { authenticateApiKey } from "@/server/authenticateApiKey";
-import { projectDetailSelect } from "@/lib/scaffold/project-selects";
+import { getProject, markProjectBuilt } from "@/lib/scaffold/project-service";
 import {
   InvalidScaffoldModuleError,
   calculateScaffoldCredits,
@@ -30,10 +29,7 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
   if (!auth.ok) return auth.response;
 
   const { slug } = await ctx.params;
-  const project = await db.projectConfig.findFirst({
-    where: { userId: auth.userId, slug },
-    select: projectDetailSelect,
-  });
+  const project = await getProject(auth.userId, slug);
   if (!project) return jsonError("not_found", "Project not found.", 404);
 
   let modules: ScaffoldModuleId[];
@@ -97,12 +93,7 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
   }
 
   // Mark built so an unchanged re-download is free next time (best-effort).
-  void db.projectConfig
-    .update({
-      where: { id: project.id },
-      data: { lastBuiltHash: currentHash, lastBuiltAt: new Date() },
-    })
-    .catch(() => {});
+  markProjectBuilt(project.id, currentHash);
 
   return new NextResponse(build.stream as any, {
     headers: {

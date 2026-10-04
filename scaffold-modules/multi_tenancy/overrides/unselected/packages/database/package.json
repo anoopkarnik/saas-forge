@@ -7,9 +7,9 @@
   "scripts": {
     "test": "vitest run --passWithNoTests",
     "generate": "npx prisma generate --schema prisma",
-    "migrate": "npx prisma migrate dev --schema prisma",
+    "migrate": "npx prisma migrate dev --schema prisma && npx prisma generate --schema prisma",
     "migrate:deploy": "npx prisma migrate deploy --schema prisma",
-    "reset": "npx prisma migrate reset --force --schema prisma",
+    "reset": "npx prisma migrate reset --force --schema prisma && npx prisma db seed",
     "seed": "npx prisma db seed",
     "typecheck": "tsc --noEmit",
     "test:coverage": "vitest run --coverage --passWithNoTests"
@@ -22,7 +22,7 @@
     "@notionhq/client": "^2.3.0",
     "@types/node": "^24.19.1",
     "notion-to-md": "^3.1.9",
-    "prisma": "^6.0.1",
+    "prisma": "^7.10.0",
     "tsx": "^4.21.0"
   },
   "exports": {
@@ -30,13 +30,10 @@
     "./constants": "./src/constants/index.ts"
   },
   "dependencies": {
-    "@prisma/adapter-pg": "^6.0.1",
-    "@prisma/client": "^6.0.1",
+    "@prisma/adapter-pg": "^7.10.0",
+    "@prisma/client": "^7.10.0",
     "@workspace/cms": "workspace:^",
     "dotenv": "^17.2.3",
     "vitest": "^4.0.18"
-  },
-  "prisma": {
-    "seed": "tsx src/seed.ts"
   }
 }

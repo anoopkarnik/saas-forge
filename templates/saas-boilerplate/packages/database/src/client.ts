@@ -1,9 +1,11 @@
-import { PrismaClient } from "@prisma/client"
+import { PrismaPg } from "@prisma/adapter-pg"
+import { PrismaClient } from "./generated/prisma/client"
 
 const prismaClientSingleton = () => {
   const queryLoggingEnabled = process.env.PRISMA_QUERY_LOGGING === "true";
 
   const client = new PrismaClient({
+    adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }),
     log: queryLoggingEnabled ? [{ emit: "event", level: "query" }] : undefined,
   });
 

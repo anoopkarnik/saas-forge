@@ -1,0 +1,10 @@
+{
+  "//": "Resolver-only config for dependency-cruiser: maps apps/mobile's @/ alias from the repo root.",
+  "compilerOptions": {
+    "baseUrl": "../..",
+    "paths": { "@/*": ["apps/mobile/*"] },
+    "jsx": "preserve",
+    "allowJs": true
+  },
+  "files": ["../../apps/mobile/app/_layout.tsx"]
+}

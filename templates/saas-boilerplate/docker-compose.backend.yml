@@ -36,6 +36,7 @@ services:
     image: ${DOCKERHUB_NAMESPACE}/saas-forge-backend-api:${IMAGE_TAG:-latest}
     restart: always
     environment:
+      APP_ENV: production
       BACKEND_DATABASE_URL: ${BACKEND_DATABASE_URL}
       REDIS_URL: ${REDIS_URL}
       BACKEND_HMAC_SECRET: ${BACKEND_HMAC_SECRET}
@@ -65,6 +66,7 @@ services:
     image: ${DOCKERHUB_NAMESPACE}/saas-forge-backend-worker:${IMAGE_TAG:-latest}
     restart: always
     environment:
+      APP_ENV: production
       BACKEND_DATABASE_URL: ${BACKEND_DATABASE_URL}
       REDIS_URL: ${REDIS_URL}
       BACKEND_HMAC_SECRET: ${BACKEND_HMAC_SECRET}

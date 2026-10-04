@@ -1,3 +1,7 @@
+# Secrets have no defaults: put BETTER_AUTH_SECRET and BACKEND_HMAC_SECRET in a
+# .env file next to this compose file (Compose loads it automatically).
+# The images run in production mode and refuse to boot with weak secrets.
+
 services:
   postgres:
     image: pgvector/pgvector:pg16
@@ -38,9 +42,9 @@ services:
     environment:
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/saas_forge
       NEXT_PUBLIC_URL: http://localhost:3000
-      BETTER_AUTH_SECRET: change-me-before-production
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?set BETTER_AUTH_SECRET in .env (openssl rand -base64 32)}
       BACKEND_URL: http://backend-api:8000
-      BACKEND_HMAC_SECRET: ${BACKEND_HMAC_SECRET:-dev-only-change-me-32bytes-hex0000}
+      BACKEND_HMAC_SECRET: ${BACKEND_HMAC_SECRET:?set BACKEND_HMAC_SECRET in .env (openssl rand -hex 32)}
     ports:
       - "${WEB_PORT:-3000}:3000"
 
@@ -56,9 +60,10 @@ services:
       redis:
         condition: service_started
     environment:
+      APP_ENV: production
       BACKEND_DATABASE_URL: postgresql+asyncpg://postgres:postgres@postgres:5432/saas_forge
       REDIS_URL: redis://redis:6379/0
-      BACKEND_HMAC_SECRET: ${BACKEND_HMAC_SECRET:-dev-only-change-me-32bytes-hex0000}
+      BACKEND_HMAC_SECRET: ${BACKEND_HMAC_SECRET:?set BACKEND_HMAC_SECRET in .env (openssl rand -hex 32)}
       LOG_FORMAT: ${LOG_FORMAT:-pretty}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       RAG_VECTOR_STORE: ${RAG_VECTOR_STORE:-pgvector}
@@ -87,9 +92,10 @@ services:
       redis:
         condition: service_started
     environment:
+      APP_ENV: production
       BACKEND_DATABASE_URL: postgresql+asyncpg://postgres:postgres@postgres:5432/saas_forge
       REDIS_URL: redis://redis:6379/0
-      BACKEND_HMAC_SECRET: ${BACKEND_HMAC_SECRET:-dev-only-change-me-32bytes-hex0000}
+      BACKEND_HMAC_SECRET: ${BACKEND_HMAC_SECRET:?set BACKEND_HMAC_SECRET in .env (openssl rand -hex 32)}
       LOG_FORMAT: ${LOG_FORMAT:-pretty}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       RAG_VECTOR_STORE: ${RAG_VECTOR_STORE:-pgvector}

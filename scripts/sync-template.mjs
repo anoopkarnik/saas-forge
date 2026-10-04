@@ -1,3 +1,4 @@
+import { spawnSync } from "child_process";
 import fs from "fs";
 import os from "os";
 import path from "path";
@@ -17,6 +18,7 @@ const includePaths = manifest.include;
 const excludePaths = manifest.exclude;
 const overridePaths = manifest.templateOverrides;
 const checkMode = process.argv.includes("--check");
+const maxDiffLines = 60;
 const stageMode = process.argv.includes("--stage");
 
 const generatedSegments = new Set([
@@ -213,7 +215,69 @@ function listManagedFiles(rootDir) {
     walk(path.join(rootDir, includePath), includePath);
   }
 
+  // Root-level overrides (CLAUDE.md, README.md, ...) sit outside every include path.
+  for (const overridePath of overridePaths) {
+    walk(path.join(rootDir, overridePath), overridePath);
+  }
+
   return files;
+}
+
+function listFiles(rootDir) {
+  const files = [];
+
+  function walk(currentPath, relPath) {
+    if (relPath && isForbidden(relPath)) {
+      return;
+    }
+
+    const stat = fs.statSync(currentPath);
+    if (!stat.isDirectory()) {
+      files.push(normalize(relPath));
+      return;
+    }
+
+    for (const entry of fs.readdirSync(currentPath, { withFileTypes: true })) {
+      const childRelPath = relPath ? joinRelative(relPath, entry.name) : entry.name;
+      walk(path.join(currentPath, entry.name), childRelPath);
+    }
+  }
+
+  if (fs.existsSync(rootDir)) {
+    walk(rootDir, "");
+  }
+
+  return files.sort();
+}
+
+function isManaged(relPath) {
+  return (
+    overridePaths.includes(relPath) ||
+    includePaths.some((included) => relPath === included || relPath.startsWith(`${included}/`))
+  );
+}
+
+function sourceOf(relPath) {
+  return overridePaths.includes(relPath)
+    ? joinRelative(manifest.overrideRoot, relPath)
+    : relPath;
+}
+
+function unifiedDiff(expectedPath, actualPath, relPath) {
+  const result = spawnSync(
+    "diff",
+    ["-u", "--label", `${sourceOf(relPath)} (source)`, "--label", `${joinRelative(manifest.templateRoot, relPath)} (template)`, expectedPath, actualPath],
+    { encoding: "utf8" }
+  );
+
+  if (result.status !== 1 || !result.stdout) {
+    return null;
+  }
+
+  const lines = result.stdout.split("\n");
+  return lines.length > maxDiffLines
+    ? [...lines.slice(0, maxDiffLines), `... (${lines.length - maxDiffLines} more lines)`].join("\n")
+    : result.stdout;
 }
 
 function listForbiddenPaths(rootDir) {
@@ -248,16 +312,17 @@ function compareManagedTrees(expectedRoot, actualRoot) {
   const expectedFiles = listManagedFiles(expectedRoot);
   const actualFiles = listManagedFiles(actualRoot);
   const errors = [];
+  const diffs = [];
 
   for (const expectedPath of expectedFiles.keys()) {
     if (!actualFiles.has(expectedPath)) {
-      errors.push(`Missing file: ${expectedPath}`);
+      errors.push(`Missing file: ${expectedPath} (source: ${sourceOf(expectedPath)})`);
     }
   }
 
   for (const actualPath of actualFiles.keys()) {
     if (!expectedFiles.has(actualPath)) {
-      errors.push(`Unexpected file: ${actualPath}`);
+      errors.push(`Unexpected file: ${actualPath} (no source; it would be deleted by template:sync)`);
     }
   }
 
@@ -268,11 +333,48 @@ function compareManagedTrees(expectedRoot, actualRoot) {
     }
 
     if (!expectedContents.equals(actualContents)) {
-      errors.push(`Out-of-sync file: ${filePath}`);
+      errors.push(`Out-of-sync file: ${filePath} (source: ${sourceOf(filePath)})`);
+      const diff = unifiedDiff(path.join(expectedRoot, filePath), path.join(actualRoot, filePath), filePath);
+      if (diff) {
+        diffs.push(diff);
+      }
     }
   }
 
-  return errors;
+  // Files outside the manifest are never compared, so they would drift silently.
+  for (const filePath of listFiles(actualRoot)) {
+    if (!isManaged(filePath)) {
+      errors.push(`Unmanaged file: ${filePath} (add it to "include" or "templateOverrides" in template-sync.manifest.json)`);
+    }
+  }
+
+  for (const filePath of listFiles(overrideRoot)) {
+    if (!overridePaths.includes(filePath)) {
+      errors.push(`Unregistered override: ${joinRelative(manifest.overrideRoot, filePath)} (add it to "templateOverrides" or delete it)`);
+    }
+  }
+
+  return { errors, diffs };
+}
+
+function writeStepSummary(errors, diffs) {
+  if (!process.env.GITHUB_STEP_SUMMARY) {
+    return;
+  }
+
+  const sections = [
+    "## Template sync check failed",
+    "",
+    `Fix the source file listed for each entry, then run \`pnpm template:sync\` and commit both. Never edit \`${manifest.templateRoot}\` directly.`,
+    "",
+    ...errors.map((error) => `- ${error}`),
+  ];
+
+  if (diffs.length > 0) {
+    sections.push("", "<details><summary>Diffs (source → template)</summary>", "", "```diff", ...diffs, "```", "", "</details>");
+  }
+
+  fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, `${sections.join("\n")}\n`);
 }
 
 if (checkMode) {
@@ -280,7 +382,7 @@ if (checkMode) {
 
   try {
     applySync(expectedRoot);
-    const errors = compareManagedTrees(expectedRoot, templateRoot);
+    const { errors, diffs } = compareManagedTrees(expectedRoot, templateRoot);
     const forbiddenPaths = listForbiddenPaths(templateRoot);
 
     for (const forbiddenPath of forbiddenPaths) {
@@ -292,6 +394,13 @@ if (checkMode) {
       for (const error of errors) {
         console.error(`- ${error}`);
       }
+      for (const diff of diffs) {
+        console.error(`\n${diff}`);
+      }
+      console.error(
+        `\nFix the source file listed for each entry, then run \`pnpm template:sync\` and commit both. Never edit ${manifest.templateRoot} directly.`
+      );
+      writeStepSummary(errors, diffs);
       process.exitCode = 1;
     } else {
       console.log(`Template is in sync with ${manifest.templateRoot}.`);

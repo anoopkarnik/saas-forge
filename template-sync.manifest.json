@@ -10,6 +10,14 @@
     ".dockerignore",
     ".gitignore",
     ".github/workflows/ci.yml",
+    ".github/ISSUE_TEMPLATE",
+    "LICENSE",
+    "docs/CHANGELOG.md",
+    "docs/CODE_OF_CONDUCT.md",
+    "docs/CONTRIBUTING.md",
+    "docs/ISSUE_TEMPLATE",
+    "docs/SECURITY.md",
+    "docs/pull_request_template.md",
     "apps/backend",
     "apps/web",
     "apps/mobile",
@@ -50,6 +58,7 @@
     "apps/web/components/projects"
   ],
   "templateOverrides": [
+    "AGENTS.md",
     "CLAUDE.md",
     "UPGRADING.md",
     "README.md",

@@ -108,6 +108,7 @@ Other directories under `templates/` may exist in-tree, but should not be treate
 
 - `pnpm template:sync` copies shared repo truth into `templates/saas-boilerplate` and reapplies starter-only overrides.
 - `pnpm template:check-sync` fails when the managed starter has drifted or contains forbidden generated artifacts.
+- Every starter file must come from `template-sync.manifest.json`: an `include` path copied from root, or a `templateOverrides` entry backed by `template-overrides/saas-boilerplate`. `check-sync` also fails on unmanaged template files and unregistered override files, and prints the source path plus a diff for each drifted file.
 - `pnpm template:stage` creates `.generated/saas-boilerplate`, the clean starter copy used for validation and root build tracing.
 - `pnpm template:prepare` stages the starter, installs dependencies in the staged copy, and runs Prisma generate there.
 - `pnpm template:build`, `pnpm template:test`, and `pnpm template:test:coverage` should be run against the staged starter, not the managed template source.
@@ -172,7 +173,10 @@ Reference: `apps/web/app/api/payments/stripe/webhook/route.ts`
 
 ## Environment and Config
 
-There is no centralized env validation layer yet. The repo reads `process.env` directly in many places.
+Boot-time env validation lives in `apps/web/lib/env.ts` (called from `apps/web/instrumentation.ts`) and `apps/backend/src/saas_forge_backend/config.py`. Production refuses to start on missing core vars, weak or placeholder secrets (`BETTER_AUTH_SECRET`, `BACKEND_HMAC_SECRET`), missing credentials for an enabled integration toggle, or a secret-looking `NEXT_PUBLIC_*` name; development only warns. The backend enforces this when `APP_ENV=production`. Code still reads `process.env` directly at call sites.
+
+- When an integration toggle gains a required credential, add it to `INTEGRATION_REQUIREMENTS` in `apps/web/lib/env.ts`.
+- `docker-compose.yml` has no secret defaults; Compose requires `BETTER_AUTH_SECRET` and `BACKEND_HMAC_SECRET` from a sibling `.env`.
 
 Use these files as the source of truth:
 

@@ -1,4 +1,8 @@
 {
   "tailwindCSS.experimental.configFile": "packages/ui/src/styles/globals.css",
-  "codeiumDev.useDevUnleash": true
+  "codeiumDev.useDevUnleash": true,
+  "files.readonlyInclude": {
+    "templates/saas-boilerplate/**": true,
+    ".generated/**": true
+  }
 }

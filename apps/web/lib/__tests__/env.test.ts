@@ -1,0 +1,124 @@
+import { describe, expect, it, vi } from "vitest";
+import { assertServerEnv, findServerEnvIssues } from "@/lib/env";
+
+const STRONG_SECRET = "s".repeat(40);
+
+const baseEnv = {
+  NODE_ENV: "production",
+  NEXT_PUBLIC_URL: "https://example.com",
+  DATABASE_URL: "postgresql://u:p@db:5432/app",
+  BETTER_AUTH_SECRET: STRONG_SECRET,
+};
+
+describe("findServerEnvIssues", () => {
+  it("accepts a minimal valid configuration", () => {
+    expect(findServerEnvIssues(baseEnv)).toEqual([]);
+  });
+
+  it("requires core variables", () => {
+    const issues = findServerEnvIssues({});
+    expect(issues.map((i) => i.key)).toEqual(
+      expect.arrayContaining(["NEXT_PUBLIC_URL", "DATABASE_URL", "BETTER_AUTH_SECRET"]),
+    );
+  });
+
+  it("rejects malformed URLs", () => {
+    const issues = findServerEnvIssues({
+      ...baseEnv,
+      NEXT_PUBLIC_URL: "example.com",
+      DATABASE_URL: "mysql://u:p@db/app",
+    });
+    expect(issues.map((i) => i.key)).toEqual(["NEXT_PUBLIC_URL", "DATABASE_URL"]);
+  });
+
+  it.each(["change-me-before-production", "short"])(
+    "rejects weak BETTER_AUTH_SECRET %s",
+    (secret) => {
+      const issues = findServerEnvIssues({ ...baseEnv, BETTER_AUTH_SECRET: secret });
+      expect(issues.map((i) => i.key)).toEqual(["BETTER_AUTH_SECRET"]);
+    },
+  );
+
+  it("rejects the dev-only backend HMAC secret", () => {
+    const issues = findServerEnvIssues({
+      ...baseEnv,
+      BACKEND_HMAC_SECRET: "dev-only-change-me-32bytes-hex0000",
+    });
+    expect(issues.map((i) => i.key)).toEqual(["BACKEND_HMAC_SECRET"]);
+  });
+
+  it("requires BACKEND_HMAC_SECRET only when BACKEND_URL is set", () => {
+    expect(findServerEnvIssues(baseEnv)).toEqual([]);
+    const issues = findServerEnvIssues({ ...baseEnv, BACKEND_URL: "http://backend:8000" });
+    expect(issues.map((i) => i.key)).toEqual(["BACKEND_HMAC_SECRET"]);
+  });
+
+  it("requires credentials for enabled integrations", () => {
+    const issues = findServerEnvIssues({
+      ...baseEnv,
+      NEXT_PUBLIC_AUTH_GOOGLE: "true",
+      NEXT_PUBLIC_EMAIL_CLIENT: "resend",
+      NEXT_PUBLIC_PAYMENT_GATEWAY: "stripe",
+      NEXT_PUBLIC_IMAGE_STORAGE: "cloudflare_r2",
+      NEXT_PUBLIC_ALLOW_RATE_LIMIT: "upstash",
+      NEXT_PUBLIC_CMS: "notion",
+    });
+    expect(issues.map((i) => i.key).sort()).toEqual(
+      [
+        "AUTH_GOOGLE_CLIENT_ID",
+        "AUTH_GOOGLE_CLIENT_SECRET",
+        "RESEND_API_KEY",
+        "NEXT_PUBLIC_SUPPORT_MAIL",
+        "STRIPE_SECRET_KEY",
+        "STRIPE_WEBHOOK_SECRET",
+        "R2_ACCOUNT_ID",
+        "R2_ACCESS_KEY_ID",
+        "R2_SECRET_ACCESS_KEY",
+        "R2_BUCKET_NAME",
+        "UPSTASH_REDIS_REST_URL",
+        "UPSTASH_REDIS_REST_TOKEN",
+        "NOTION_API_TOKEN",
+      ].sort(),
+    );
+  });
+
+  it("ignores credentials for disabled integrations", () => {
+    expect(
+      findServerEnvIssues({
+        ...baseEnv,
+        NEXT_PUBLIC_AUTH_GOOGLE: "false",
+        NEXT_PUBLIC_EMAIL_CLIENT: "none",
+        NEXT_PUBLIC_PAYMENT_GATEWAY: "none",
+        NEXT_PUBLIC_CMS: "postgres",
+      }),
+    ).toEqual([]);
+  });
+
+  it("flags secrets exposed through NEXT_PUBLIC_ variables", () => {
+    const issues = findServerEnvIssues({
+      ...baseEnv,
+      NEXT_PUBLIC_STRIPE_SECRET_KEY: "sk_live_x",
+      NEXT_PUBLIC_GOOGLE_ANALYTICS_MEASUREMENT_ID: "G-123",
+    });
+    expect(issues.map((i) => i.key)).toEqual(["NEXT_PUBLIC_STRIPE_SECRET_KEY"]);
+  });
+});
+
+describe("assertServerEnv", () => {
+  it("throws in production when the environment is invalid", () => {
+    expect(() =>
+      assertServerEnv({ ...baseEnv, BETTER_AUTH_SECRET: "change-me-before-production" }),
+    ).toThrow(/BETTER_AUTH_SECRET/);
+  });
+
+  it("only warns outside production", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    expect(() => assertServerEnv({ NODE_ENV: "development" })).not.toThrow();
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("BETTER_AUTH_SECRET"));
+    warn.mockRestore();
+  });
+
+  it("is silent for a valid production environment", () => {
+    expect(() => assertServerEnv(baseEnv)).not.toThrow();
+  });
+});

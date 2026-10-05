@@ -24,6 +24,7 @@ import {
   templateFingerprint,
 } from "@/lib/scaffold/build-cache";
 import { appendFilesToZip, renameZipRoot } from "@workspace/ui/lib/zip-append";
+import { getPreviewIndex } from "@/lib/scaffold/preview-index";
 
 /**
  * Shared scaffold service: the one builder behind the session route
@@ -462,6 +463,21 @@ export async function prewarmBuildCache(): Promise<Array<{ modules: string[]; pl
     }
   }
   return results;
+}
+
+/** Pre-purchase preview: the index the wizard composes selections from. */
+export function getScaffoldPreviewIndex() {
+  return getPreviewIndex(getScaffoldRoot());
+}
+
+/** Exact file list and readable snippets of one selection (builds on a cache miss). */
+export async function previewScaffoldBuild(modules: string[], platforms: string[]) {
+  const base = await getOrBuildBaseArchive({
+    scaffoldRoot: getScaffoldRoot(),
+    modules: validateSelectedModules(modules),
+    platforms,
+  });
+  return { files: base.manifest.files, snippets: base.manifest.snippets ?? {} };
 }
 
 /** True when the user already has a delivered build of this exact selection. */

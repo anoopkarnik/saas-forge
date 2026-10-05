@@ -1,6 +1,12 @@
 {
   "baseCreditsCost": 20,
   "tierUpgradeCreditsPerStep": 3,
+  "previewSnippets": [
+    "README.md",
+    "apps/web/.env.example",
+    "packages/database/prisma/schema.prisma",
+    "packages/database/prisma/user.prisma"
+  ],
   "modules": [
     {
       "id": "billing",

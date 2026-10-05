@@ -59,3 +59,35 @@ export function toggleModule(catalog: ScaffoldCatalog, selected: string[], modul
     return [...next];
 }
 
+// Counts-only preview of a selection, from the server's `scaffold.previewIndex`
+// (the web wizard shows the full file tree).
+type PreviewIndex = {
+    files: Array<{ path: string; module: string | null; category: string }>;
+    envVars: Array<{ key: string; module: string | null }>;
+    models: Array<{ name: string; module: string | null }>;
+};
+
+export async function fetchPreviewIndex(apiUrl: string): Promise<PreviewIndex> {
+    const res = await fetch(`${apiUrl}/api/trpc/scaffold.previewIndex`);
+    if (!res.ok) throw new Error("Failed to load the file preview");
+    const json = await res.json();
+    return json.result.data as PreviewIndex;
+}
+
+const PLATFORM_ROOTS: Record<string, string> = { mobile: "apps/mobile/", desktop: "apps/desktop/" };
+
+export function previewCounts(index: PreviewIndex, modules: string[], platforms: string[]) {
+    const keep = (module: string | null) => module === null || modules.includes(module);
+    const files = index.files.filter(
+        (file) =>
+            keep(file.module) &&
+            Object.entries(PLATFORM_ROOTS).every(([platform, root]) => platforms.includes(platform) || !file.path.startsWith(root)),
+    );
+    return {
+        files: files.length,
+        routes: files.filter((file) => file.category === "route").length,
+        models: index.models.filter((model) => keep(model.module)).length,
+        envVars: index.envVars.filter((env) => keep(env.module)).length,
+    };
+}
+

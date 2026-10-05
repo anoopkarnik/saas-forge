@@ -23,7 +23,7 @@ import {
  * Bump whenever the output of buildBaseArchive or compileScaffoldVariant
  * changes; build-cache.test.ts fails when their sources change without it.
  */
-export const BUILDER_VERSION = 3;
+export const BUILDER_VERSION = 4;
 
 /** Neutral top-level folder of a cached archive, renamed per download. */
 export const BASE_ROOT = "saas-forge-app";
@@ -46,7 +46,7 @@ const IGNORE_DIRS = new Set([
 ]);
 const IGNORE_FILES = new Set([".DS_Store", "Thumbs.db", ".env"]);
 
-function shouldIgnore(relPath: string): boolean {
+export function isIgnoredPath(relPath: string): boolean {
   const parts = relPath.split(path.sep);
   return parts.some((part) => IGNORE_DIRS.has(part)) || IGNORE_FILES.has(path.basename(relPath));
 }
@@ -55,6 +55,8 @@ export type BaseManifest = {
   buildKey: string;
   files: Array<{ path: string; size: number }>;
   envExamples: Record<string, string>;
+  /** Allow-listed files buyers may read before paying (registry `previewSnippets`). */
+  snippets: Record<string, string>;
 };
 
 export type BaseArchive = { bytes: Uint8Array<ArrayBuffer>; manifest: BaseManifest };
@@ -79,7 +81,7 @@ export function templateFingerprint(scaffoldRoot: string): string {
     for (const entry of fs.readdirSync(dir, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
       const full = path.join(dir, entry.name);
       const rel = path.relative(scaffoldRoot, full);
-      if (shouldIgnore(rel)) continue;
+      if (isIgnoredPath(rel)) continue;
       if (entry.isDirectory()) walk(full);
       else if (entry.isFile()) hash.update(rel).update("\0").update(fs.readFileSync(full)).update("\0");
     }
@@ -166,7 +168,7 @@ async function archiveDirectory(dir: string): Promise<Uint8Array<ArrayBuffer>> {
   });
   archive.directory(dir, BASE_ROOT, (entry: archiver.EntryData) => {
     const rel = entry.name.slice(BASE_ROOT.length + 1);
-    return shouldIgnore(rel) ? false : entry;
+    return isIgnoredPath(rel) ? false : entry;
   });
   await archive.finalize();
   await done;
@@ -196,22 +198,30 @@ export async function buildBaseArchive(input: {
       for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
         const full = path.join(dir, entry.name);
         const rel = path.relative(tempDir, full);
-        if (shouldIgnore(rel)) continue;
+        if (isIgnoredPath(rel)) continue;
         if (entry.isDirectory()) walk(full);
         else if (entry.isFile()) files.push({ path: rel.split(path.sep).join("/"), size: fs.statSync(full).size });
       }
     };
     walk(tempDir);
 
-    const envExamples: Record<string, string> = {};
-    for (const example of ENV_EXAMPLES) {
-      const full = path.join(tempDir, example);
-      if (fs.existsSync(full)) envExamples[example] = fs.readFileSync(full, "utf-8");
-    }
+    const readAll = (paths: string[]) => {
+      const out: Record<string, string> = {};
+      for (const rel of paths) {
+        const full = path.join(tempDir, rel);
+        if (fs.existsSync(full)) out[rel] = fs.readFileSync(full, "utf-8");
+      }
+      return out;
+    };
 
     return {
       bytes: await archiveDirectory(tempDir),
-      manifest: { buildKey: input.buildKey, files, envExamples },
+      manifest: {
+        buildKey: input.buildKey,
+        files,
+        envExamples: readAll(ENV_EXAMPLES),
+        snippets: readAll(registry.previewSnippets ?? []),
+      },
     };
   } finally {
     fs.rmSync(tempDir, { recursive: true, force: true });

@@ -34,6 +34,8 @@ type RegistryShape = {
   baseCreditsCost: number;
   /** Credits charged per tier step when upgrading (e.g. tier-1 -> tier-3 = 2 steps). */
   tierUpgradeCreditsPerStep?: number;
+  /** Files buyers may read in the pre-purchase preview. */
+  previewSnippets?: string[];
   modules: RegistryModuleEntry[];
 };
 

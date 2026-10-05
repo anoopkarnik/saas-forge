@@ -19,6 +19,7 @@ const registrySchema = z
   .object({
     baseCreditsCost: z.number().int().nonnegative(),
     tierUpgradeCreditsPerStep: z.number().int().nonnegative(),
+    previewSnippets: z.array(z.string()),
     modules: z.array(
       z
         .object({

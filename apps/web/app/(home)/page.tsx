@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { useTRPC } from "@/trpc/client";
+import { ScaffoldPreview } from "@/components/scaffold-preview/ScaffoldPreview";
 import { secretEnvFiles, splitSecretEnv } from "@workspace/ui/lib/scaffold-secrets";
 import { appendFilesToZip } from "@workspace/ui/lib/zip-append";
 
@@ -110,6 +111,7 @@ export default function Page() {
   return (
     <DashboardPage
       catalog={catalogQuery.data}
+      renderPreview={(selection) => <ScaffoldPreview {...selection} />}
       onSubmitConfiguration={handleSubmitConfiguration}
       onSaveConfiguration={handleSaveConfiguration}
       docsBaseUrl={process.env.NEXT_PUBLIC_URL!}

@@ -27,7 +27,15 @@ import {
     FormState, DEFAULT_FORM, STRING_FIELD_KEYS
 } from "./constants";
 import { parseMobileEnvFile } from "./envParser";
-import { PriceChangedError, fetchScaffoldCatalog, toggleModule, totalCredits, type ScaffoldCatalog } from "./catalog";
+import {
+    PriceChangedError,
+    fetchPreviewIndex,
+    fetchScaffoldCatalog,
+    previewCounts,
+    toggleModule,
+    totalCredits,
+    type ScaffoldCatalog,
+} from "./catalog";
 import { isSecretEnvKey } from "./secrets";
 
 export default function DownloadConfigForm({ templateTitle, onBack }: Props) {
@@ -45,6 +53,10 @@ export default function DownloadConfigForm({ templateTitle, onBack }: Props) {
     const selectedBilling = formValues.SELECTED_MODULES.includes("billing");
     const [catalog, setCatalog] = useState<ScaffoldCatalog | null>(null);
     const [catalogError, setCatalogError] = useState(false);
+    const [previewIndex, setPreviewIndex] = useState<Awaited<ReturnType<typeof fetchPreviewIndex>> | null>(null);
+    const counts = previewIndex
+        ? previewCounts(previewIndex, formValues.SELECTED_MODULES, ["web", ...formValues.NEXT_PUBLIC_PLATFORM])
+        : null;
 
     const loadCatalog = async () => {
         const apiUrl = process.env.EXPO_PUBLIC_API_URL;
@@ -59,6 +71,8 @@ export default function DownloadConfigForm({ templateTitle, onBack }: Props) {
 
     useEffect(() => {
         loadCatalog();
+        const apiUrl = process.env.EXPO_PUBLIC_API_URL;
+        if (apiUrl) fetchPreviewIndex(apiUrl).then(setPreviewIndex).catch(() => setPreviewIndex(null));
     }, []);
 
     const totalCreditsCost = catalog ? totalCredits(catalog, formValues.SELECTED_MODULES) : null;
@@ -418,6 +432,11 @@ export default function DownloadConfigForm({ templateTitle, onBack }: Props) {
                     <View className="rounded-lg bg-muted/40 px-3 py-3">
                         <MutedText className="text-xs">Base starter: {catalog ? `${catalog.baseCredits} credits` : "…"}</MutedText>
                         <Label className="text-base mt-1">Total: {totalCreditsCost ?? "…"} credits</Label>
+                        {counts ? (
+                            <MutedText className="text-xs mt-1">
+                                What you get: {counts.files.toLocaleString()} files · {counts.routes} routes · {counts.models} models · {counts.envVars} env vars
+                            </MutedText>
+                        ) : null}
                     </View>
                 </View>
             </View>

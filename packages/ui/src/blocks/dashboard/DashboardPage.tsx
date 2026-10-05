@@ -99,6 +99,11 @@ interface DashboardPageProps {
   }) => Promise<void> | void;
   docsBaseUrl?: string;
   onNavigateDoc?: (slug: string) => void;
+  /** Host-provided preview of the current selection, shown under the summary. */
+  renderPreview?: (selection: {
+    modules: ScaffoldModuleId[];
+    platforms: Array<"web" | "desktop" | "mobile">;
+  }) => React.ReactNode;
 }
 
 
@@ -191,6 +196,7 @@ export default function DashboardPage({
   onSaveConfiguration,
   docsBaseUrl = "",
   onNavigateDoc,
+  renderPreview,
 }: DashboardPageProps) {
   const isGuest = useIsGuest();
   const [isDownloading, setIsDownloading] = React.useState(false);
@@ -1353,15 +1359,21 @@ export default function DashboardPage({
           </div>
         </div>
 
-        <WizardSummary
-          currentStepIndex={currentStepIndex}
-          completionByStep={completionByStep}
-          selectedPreset={selectedPreset}
-          entryChoice={entryChoice}
-          pricing={pricing}
-          values={values}
-          missingLabels={missingLabels}
-        />
+        <div className="flex flex-col gap-4">
+          <WizardSummary
+            currentStepIndex={currentStepIndex}
+            completionByStep={completionByStep}
+            selectedPreset={selectedPreset}
+            entryChoice={entryChoice}
+            pricing={pricing}
+            values={values}
+            missingLabels={missingLabels}
+          />
+          {renderPreview?.({
+            modules: (values.SELECTED_MODULES || []) as ScaffoldModuleId[],
+            platforms: values.NEXT_PUBLIC_PLATFORM?.length ? values.NEXT_PUBLIC_PLATFORM : ["web"],
+          })}
+        </div>
       </div>
     );
   };

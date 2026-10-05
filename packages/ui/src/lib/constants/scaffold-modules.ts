@@ -19,10 +19,20 @@ export type ScaffoldCatalogModule = {
   incompatibleWith: ScaffoldModuleId[];
 };
 
+export type ScaffoldCatalogProvider = {
+  id: string;
+  label: string;
+  /** The wizard's env toggle, e.g. NEXT_PUBLIC_PAYMENT_GATEWAY. */
+  env: string;
+  module: ScaffoldModuleId | null;
+  values: string[];
+};
 export type ScaffoldCatalog = {
   baseCredits: number;
   tierUpgradeCreditsPerStep: number;
   modules: ScaffoldCatalogModule[];
+  /** Provider toggles whose unchosen values a download leaves out. */
+  providers?: ScaffoldCatalogProvider[];
 };
 
 export type ScaffoldQuote = {

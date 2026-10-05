@@ -1,0 +1,17 @@
+{
+  "ownedIdentifiers": ["from \"stripe\"", "from 'stripe'", "\"stripe\": \""],
+  "selected": {
+    "textReplace": [
+      {
+        "file": "apps/web/trpc/routers/billingProcedures.ts",
+        "find": "const DEFAULT_PAYMENT_GATEWAY = \"dodo\";",
+        "replace": "const DEFAULT_PAYMENT_GATEWAY = \"stripe\";"
+      },
+      { "file": "apps/web/.env.example", "find": "NEXT_PUBLIC_PAYMENT_GATEWAY=\n", "replace": "NEXT_PUBLIC_PAYMENT_GATEWAY=stripe\n" }
+    ]
+  },
+  "unselected": {
+    "remove": ["apps/web/app/api/payments/stripe", "apps/web/tests/integration/stripeWebhookRoute.test.ts"],
+    "jsonRemove": [{ "file": "apps/web/package.json", "keys": { "dependencies": ["stripe"] } }]
+  }
+}

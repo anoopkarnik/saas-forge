@@ -34,7 +34,8 @@ const generatedSegments = new Set([
   "coverage",
   "dist",
   "node_modules",
-  "out"
+  "out",
+  ".expo"
 ]);
 
 const rmOptions = {
@@ -66,8 +67,15 @@ function isExcluded(relPath) {
   );
 }
 
+// A developer's own env files (.env, .env.local, .env.production…) hold real
+// secrets and must never reach the starter; only .env.example ships.
+function isLocalEnvFile(relPath) {
+  const name = path.basename(relPath);
+  return /^\.env(\..+)?$/.test(name) && name !== ".env.example";
+}
+
 function isForbidden(relPath) {
-  return shouldIgnoreGenerated(relPath) || isExcluded(relPath);
+  return shouldIgnoreGenerated(relPath) || isExcluded(relPath) || isLocalEnvFile(relPath);
 }
 
 function ensureParent(filePath) {

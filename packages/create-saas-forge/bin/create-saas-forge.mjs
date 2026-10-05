@@ -6,7 +6,7 @@ import { runCredits, runLogin, runNew, runUpgrade } from "../src/commands.mjs";
 const HELP = `Usage:
   create-saas-forge [new] <dir> [--modules billing,ai] [--platforms web,mobile] [--name <name>] [--yes] [--install]
   create-saas-forge new <dir> --project <slug>      Download a saved project
-  create-saas-forge upgrade [--add ai_agents] [--tier tier-3] [--dry-run] [--yes]
+  create-saas-forge upgrade [--add ai_agents] [--tier tier-3] [--provider payment_gateway=dodo] [--dry-run] [--yes]
   create-saas-forge credits
   create-saas-forge login
 
@@ -21,6 +21,7 @@ const { values: flags, positionals } = parseArgs({
     project: { type: "string" },
     add: { type: "string" },
     tier: { type: "string" },
+    provider: { type: "string", multiple: true },
     "api-key": { type: "string" },
     url: { type: "string" },
     yes: { type: "boolean", short: "y" },

@@ -109,13 +109,17 @@ export function UpgradePreview({
   slug,
   targetModules,
   targetTierId,
+  targetProviders,
 }: {
   slug: string;
   targetModules: string[];
   targetTierId: string;
+  targetProviders: Record<string, string>;
 }) {
   const scaffoldTrpc = useScaffoldTRPC();
-  const preview = useQuery(scaffoldTrpc.project.upgradePreview.queryOptions({ slug, targetModules, targetTierId }));
+  const preview = useQuery(
+    scaffoldTrpc.project.upgradePreview.queryOptions({ slug, targetModules, targetTierId, targetProviders }),
+  );
 
   if (preview.isLoading) return <p className="text-muted-foreground">Comparing builds…</p>;
   if (!preview.data) return null;

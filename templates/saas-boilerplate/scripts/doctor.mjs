@@ -71,20 +71,30 @@ const HINTS = {
   AUTH_LINKEDIN_CLIENT_ID: "https://www.linkedin.com/developers/apps → your app → Auth.",
   AUTH_LINKEDIN_CLIENT_SECRET: "Same LinkedIn app → Auth.",
   // scaffold:begin billing
+  // scaffold:begin payment_gateway.stripe
   STRIPE_SECRET_KEY: "https://dashboard.stripe.com/apikeys (sk_test_… while testing).",
   STRIPE_WEBHOOK_SECRET:
     "https://dashboard.stripe.com/webhooks → your endpoint → Signing secret. Locally, `stripe listen --forward-to localhost:3000/api/payments/stripe/webhook` prints one.",
+  // scaffold:end payment_gateway.stripe
+  // scaffold:begin payment_gateway.dodo
   DODO_PAYMENTS_API_KEY: "https://app.dodopayments.com → Developer → API Keys.",
   DODO_PAYMENTS_WEBHOOK_KEY: "https://app.dodopayments.com → Developer → Webhooks → your endpoint's secret.",
+  // scaffold:end payment_gateway.dodo
   // scaffold:end billing
+  // scaffold:begin image_storage.vercel_blob
   BLOB_READ_WRITE_TOKEN: "https://vercel.com/dashboard/stores → your Blob store → .env.local tab.",
+  // scaffold:end image_storage.vercel_blob
+  // scaffold:begin image_storage.cloudflare_r2
   R2_ACCOUNT_ID: "https://dash.cloudflare.com → R2 → Account ID.",
   R2_ACCESS_KEY_ID: "https://dash.cloudflare.com → R2 → Manage R2 API Tokens.",
   R2_SECRET_ACCESS_KEY: "Same R2 API token.",
   R2_BUCKET_NAME: "A bucket under https://dash.cloudflare.com → R2.",
+  // scaffold:end image_storage.cloudflare_r2
   UPSTASH_REDIS_REST_URL: "https://console.upstash.com/redis → your database → REST API.",
   UPSTASH_REDIS_REST_TOKEN: "Same Upstash database → REST API.",
+  // scaffold:begin cms.notion
   NOTION_API_TOKEN: "https://www.notion.so/profile/integrations → your integration → Internal Integration Secret.",
+  // scaffold:end cms.notion
 };
 
 /** Shape checks for values boot validation accepts as any non-empty string. */
@@ -93,8 +103,10 @@ const FORMATS = {
   RESEND_API_KEY: [/^re_/, "Resend keys start with re_"],
   AUTH_GOOGLE_CLIENT_ID: [/\.apps\.googleusercontent\.com$/, "Google client IDs end with .apps.googleusercontent.com"],
   // scaffold:begin billing
+  // scaffold:begin payment_gateway.stripe
   STRIPE_SECRET_KEY: [/^(sk|rk)_(test|live)_/, "Stripe secret keys start with sk_test_ or sk_live_"],
   STRIPE_WEBHOOK_SECRET: [/^whsec_/, "Stripe webhook secrets start with whsec_"],
+  // scaffold:end payment_gateway.stripe
   // scaffold:end billing
   UPSTASH_REDIS_REST_URL: [/^https:\/\//, "should be the https:// REST URL"],
 };

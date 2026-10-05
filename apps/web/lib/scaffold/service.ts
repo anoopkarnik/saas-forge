@@ -8,8 +8,12 @@ import {
   compileScaffoldVariant,
   createTempScaffoldDir,
   getTierUpgradeCreditsPerStep,
+  InvalidScaffoldModuleError,
+  loadProviderRegistry,
   loadScaffoldRegistry,
+  resolveProviderChoices,
   validateSelectedModules,
+  type ProviderChoices,
   type ScaffoldModuleId,
   type ScaffoldPricingOutput,
 } from "@/lib/scaffold-modules";
@@ -98,6 +102,8 @@ export type BuildProjectZipInput = {
   envVars?: Record<string, string>;
   /** Serve this earlier cached build if it still exists (re-downloads). */
   preferredBuildKey?: string | null;
+  /** Providers to keep; defaults to those the envVars choose. */
+  providers?: ProviderChoices;
 };
 
 export type BuildProjectZipResult = {
@@ -106,6 +112,54 @@ export type BuildProjectZipResult = {
   buildKey: string;
   cacheHit: boolean;
 };
+
+/**
+ * The providers a selection keeps, from the wizard's public values or a saved
+ * config: its payment gateway, image storage and CMS, unless it keeps them all.
+ */
+export function selectionProviders(
+  values: Record<string, unknown> | null | undefined,
+  modules: readonly string[],
+): ProviderChoices {
+  return resolveProviderChoices(values ?? {}, modules, { keepAll: values?.KEEP_ALL_PROVIDERS === "true" });
+}
+
+export type UpgradeProviders = {
+  fromProviders: ProviderChoices;
+  toProviders: ProviderChoices;
+  /** Provider toggles whose choice changes (a switch is an upgrade of its own). */
+  switched: string[];
+  /** The saved config with the new choices, to store after the upgrade. */
+  config: Record<string, unknown>;
+};
+
+/**
+ * The provider side of an upgrade: the project's choices now, and after
+ * `changes` (toggle id → value, e.g. { payment_gateway: "dodo" }). Throws
+ * InvalidScaffoldModuleError on an unknown toggle or value.
+ */
+export function upgradeProviders(
+  config: Record<string, unknown>,
+  fromModules: readonly string[],
+  toModules: readonly string[],
+  changes: Record<string, string> = {},
+): UpgradeProviders {
+  const registry = loadProviderRegistry();
+  const nextConfig = { ...config };
+  for (const [toggleId, value] of Object.entries(changes)) {
+    const toggle = registry.providers.find((entry) => entry.id === toggleId);
+    if (!toggle || !toggle.values.includes(value)) {
+      throw new InvalidScaffoldModuleError(`Unknown provider choice ${toggleId}=${value}`);
+    }
+    nextConfig[toggle.env] = value;
+  }
+  const fromProviders = selectionProviders(config, fromModules);
+  const toProviders = selectionProviders(nextConfig, toModules);
+  const switched = Object.keys(toProviders).filter(
+    (toggleId) => fromProviders[toggleId] !== undefined && fromProviders[toggleId] !== toProviders[toggleId],
+  );
+  return { fromProviders, toProviders, switched, config: nextConfig };
+}
 
 /** Rebuilds the wizard's array fields from flat env vars (for SETUP.md). */
 export function formValuesFromEnv(envVars: Record<string, string>): Record<string, unknown> {
@@ -173,6 +227,7 @@ export async function buildProjectZip(
     scaffoldRoot,
     modules,
     platforms: input.platforms,
+    providers: input.providers ?? selectionProviders(input.envVars, modules),
     preferredBuildKey: input.preferredBuildKey,
   });
   const guide = generateSetupGuide({
@@ -342,11 +397,12 @@ export async function refundScaffoldJob(jobId: string): Promise<boolean> {
 }
 
 /** Build key for a selection against the deployed starter. */
-export function scaffoldBuildKey(modules: string[], platforms: string[]): string {
+export function scaffoldBuildKey(modules: string[], platforms: string[], providers: ProviderChoices = {}): string {
   return computeBuildKey({
     templateFingerprint: templateFingerprint(getScaffoldRoot()),
     modules,
     platforms,
+    providers,
   });
 }
 
@@ -456,7 +512,8 @@ export async function downloadScaffold(input: DownloadScaffoldInput): Promise<Do
   if (input.envVars) assertNoSecrets(input.envVars);
   const modules = validateSelectedModules(input.modules);
   const pricing = calculateScaffoldCredits(modules);
-  const buildKey = scaffoldBuildKey(modules, input.platforms);
+  const providers = input.providers ?? selectionProviders(input.envVars, modules);
+  const buildKey = scaffoldBuildKey(modules, input.platforms, providers);
   const free = input.free || (await ownsBuild(input.userId, buildKey));
 
   const charge = await chargeScaffoldCredits({
@@ -480,7 +537,7 @@ export async function downloadScaffold(input: DownloadScaffoldInput): Promise<Do
 
   let build: BuildProjectZipResult;
   try {
-    build = await buildProjectZip({ ...input, modules });
+    build = await buildProjectZip({ ...input, modules, providers });
   } catch (err) {
     await refundScaffoldJob(charge.jobId);
     throw err;
@@ -608,6 +665,9 @@ export type BuildUpgradeKitInput = {
   platforms: string[];
   config: Record<string, unknown>;
   productTypeId?: string | null;
+  /** The project's providers before and after (a provider switch is an upgrade). */
+  fromProviders?: ProviderChoices;
+  toProviders?: ProviderChoices;
 };
 
 export type BuildUpgradeKitResult = {
@@ -627,7 +687,14 @@ export type BuildUpgradeKitResult = {
  * upgrade kit stages `diff.added` and `diff.modified` from `targetDir`; the
  * preview only counts them, so both always agree. Call `cleanup` when done.
  */
-function compileUpgradeDiff(input: { fromModules: string[]; toModules: string[]; platforms: string[] }) {
+function compileUpgradeDiff(input: {
+  fromModules: string[];
+  toModules: string[];
+  platforms: string[];
+  /** The project's providers before and after; a changed choice is part of the upgrade. */
+  fromProviders?: ProviderChoices;
+  toProviders?: ProviderChoices;
+}) {
   const registry = loadScaffoldRegistry();
   const fromModules = validateSelectedModules(input.fromModules, registry);
   const toModules = validateSelectedModules(input.toModules, registry);
@@ -653,6 +720,7 @@ function compileUpgradeDiff(input: { fromModules: string[]; toModules: string[];
       tempDir: tempA,
       selectedModules: fromModules,
       platforms: input.platforms,
+      providers: input.fromProviders,
       registry,
     });
     compileScaffoldVariant({
@@ -660,6 +728,7 @@ function compileUpgradeDiff(input: { fromModules: string[]; toModules: string[];
       tempDir: tempB,
       selectedModules: toModules,
       platforms: input.platforms,
+      providers: input.toProviders,
       registry,
     });
     return { fromModules, toModules, targetDir: tempB, diff: diffTrees(tempA, tempB), cleanup };
@@ -684,6 +753,8 @@ export function previewUpgrade(input: {
   fromTierId: string;
   toTierId: string;
   platforms: string[];
+  fromProviders?: ProviderChoices;
+  toProviders?: ProviderChoices;
 }): UpgradePreview {
   const { fromModules, toModules, diff, cleanup } = compileUpgradeDiff(input);
   try {
@@ -737,6 +808,7 @@ export function buildUpgradeKit(
       },
       addedModules: delta.addedModules,
       removedModules: delta.removedModules,
+      providers: { from: input.fromProviders ?? {}, to: input.toProviders ?? {} },
       tierSteps: delta.tierSteps,
       deltaCredits: delta.deltaCredits,
       changedFiles: diff,

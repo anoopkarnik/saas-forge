@@ -17,6 +17,9 @@ export const formSchema = z.object({
   NEXT_PUBLIC_THEME: z.enum(["blue", "green", "neutral", "orange", "red", "rose", "violet", "yellow"]),
   NEXT_PUBLIC_THEME_TYPE: z.enum(["light", "dark", "system"]),
   SELECTED_MODULES: z.array(z.enum(["billing", "multi_tenancy", "ai", "ai_agents", "api_keys", "notifications"])).optional(),
+  // "true" ships every payment gateway, image storage and CMS (runtime switching);
+  // by default the download keeps only the ones chosen.
+  KEEP_ALL_PROVIDERS: z.enum(["true", "false"]).optional(),
   NEXT_PUBLIC_SAAS_NAME: z.string(),
   NEXT_PUBLIC_COMPANY_NAME: z.string(),
   NEXT_PUBLIC_URL: z.string(),

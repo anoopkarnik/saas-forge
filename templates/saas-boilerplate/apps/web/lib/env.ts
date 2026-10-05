@@ -30,16 +30,26 @@ const INTEGRATION_REQUIREMENTS: Array<{
   { toggle: "NEXT_PUBLIC_AUTH_GITHUB", value: "true", keys: ["AUTH_GITHUB_CLIENT_ID", "AUTH_GITHUB_CLIENT_SECRET"] },
   { toggle: "NEXT_PUBLIC_AUTH_LINKEDIN", value: "true", keys: ["AUTH_LINKEDIN_CLIENT_ID", "AUTH_LINKEDIN_CLIENT_SECRET"] },
   { toggle: "NEXT_PUBLIC_EMAIL_CLIENT", value: "resend", keys: ["RESEND_API_KEY", "NEXT_PUBLIC_SUPPORT_MAIL"] },
+  // scaffold:begin payment_gateway.stripe
   { toggle: "NEXT_PUBLIC_PAYMENT_GATEWAY", value: "stripe", keys: ["STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET"] },
+  // scaffold:end payment_gateway.stripe
+  // scaffold:begin payment_gateway.dodo
   { toggle: "NEXT_PUBLIC_PAYMENT_GATEWAY", value: "dodo", keys: ["DODO_PAYMENTS_API_KEY", "DODO_PAYMENTS_WEBHOOK_KEY"] },
+  // scaffold:end payment_gateway.dodo
+  // scaffold:begin image_storage.vercel_blob
   { toggle: "NEXT_PUBLIC_IMAGE_STORAGE", value: "vercel_blob", keys: ["BLOB_READ_WRITE_TOKEN"] },
+  // scaffold:end image_storage.vercel_blob
+  // scaffold:begin image_storage.cloudflare_r2
   {
     toggle: "NEXT_PUBLIC_IMAGE_STORAGE",
     value: "cloudflare_r2",
     keys: ["R2_ACCOUNT_ID", "R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY", "R2_BUCKET_NAME"],
   },
+  // scaffold:end image_storage.cloudflare_r2
   { toggle: "NEXT_PUBLIC_ALLOW_RATE_LIMIT", value: "upstash", keys: ["UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN"] },
+  // scaffold:begin cms.notion
   { toggle: "NEXT_PUBLIC_CMS", value: "notion", keys: ["NOTION_API_TOKEN"] },
+  // scaffold:end cms.notion
 ];
 
 function isBlank(value: string | undefined): boolean {

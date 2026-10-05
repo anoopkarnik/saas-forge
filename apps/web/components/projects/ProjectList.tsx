@@ -72,11 +72,12 @@ async function upgradeProject(
   modules: string[],
   tierId: string,
   expectedTotalCredits: number | undefined,
+  providers: Record<string, string>,
 ) {
   const response = await fetch("/api/scaffold/upgrade", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ slug, modules, tierId, expectedTotalCredits }),
+    body: JSON.stringify({ slug, modules, tierId, expectedTotalCredits, providers }),
   });
   if (response.status === 409) throw new Error(PRICE_CHANGED);
   if (!response.ok) {
@@ -104,6 +105,7 @@ function ProjectRow({ project }: { project: ProjectListItem }) {
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [targetTier, setTargetTier] = useState(project.tierId);
   const [extraModules, setExtraModules] = useState<string[]>([]);
+  const [providerChoices, setProviderChoices] = useState<Record<string, string>>({});
   const [isUpgrading, setIsUpgrading] = useState(false);
 
   const targetModules = Array.from(new Set([...project.modules, ...extraModules]));
@@ -111,8 +113,20 @@ function ProjectRow({ project }: { project: ProjectListItem }) {
 
   const detail = useQuery({
     ...trpc.project.get.queryOptions({ slug: project.slug }),
-    enabled: open,
+    enabled: open || upgradeOpen,
   });
+  const savedConfig = ((detail.data as { config?: Record<string, unknown> } | undefined)?.config ?? {});
+  // Providers this project can switch: pruned per choice (not kept all) and in a selected module.
+  const providerToggles =
+    savedConfig.KEEP_ALL_PROVIDERS === "true"
+      ? []
+      : (catalog.data?.providers ?? []).filter((toggle) => !toggle.module || targetModules.includes(toggle.module));
+  const providerSwitches = Object.fromEntries(
+    Object.entries(providerChoices).filter(([id, value]) => {
+      const toggle = providerToggles.find((entry) => entry.id === id);
+      return toggle && value !== String(savedConfig[toggle.env] ?? "");
+    }),
+  );
   const guide = useQuery({
     ...trpc.project.setupGuide.queryOptions({ slug: project.slug }),
     enabled: open,
@@ -337,7 +351,41 @@ function ProjectRow({ project }: { project: ProjectListItem }) {
               </p>
             ) : null}
           </div>
-          <UpgradePreview slug={project.slug} targetModules={targetModules} targetTierId={targetTier} />
+          {providerToggles.length ? (
+            <div className="flex flex-col gap-1">
+              <span className="font-medium">Providers</span>
+              {providerToggles.map((toggle) => {
+                const current = String(savedConfig[toggle.env] ?? "");
+                return (
+                  <label key={toggle.id} className="flex items-center gap-2">
+                    <span className="w-36">{toggle.label}</span>
+                    <select
+                      value={providerChoices[toggle.id] ?? current}
+                      onChange={(e) => setProviderChoices((prev) => ({ ...prev, [toggle.id]: e.target.value }))}
+                      className="w-44 rounded border bg-background p-1 text-sm"
+                    >
+                      {current && !toggle.values.includes(current) ? <option value={current}>{current}</option> : null}
+                      {toggle.values.map((value) => (
+                        <option key={value} value={value}>
+                          {value}
+                          {value === current ? " (current)" : ""}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                );
+              })}
+              <p className="text-xs text-muted-foreground">
+                Switching a provider is free: the kit swaps the provider&apos;s code, SDK and env vars.
+              </p>
+            </div>
+          ) : null}
+          <UpgradePreview
+            slug={project.slug}
+            targetModules={targetModules}
+            targetTierId={targetTier}
+            targetProviders={providerSwitches}
+          />
           {upgradeEstimate.data ? (
             <p className="text-muted-foreground">
               Upgrade cost:{" "}
@@ -353,7 +401,8 @@ function ProjectRow({ project }: { project: ProjectListItem }) {
                 isUpgrading ||
                 (!!upgradeEstimate.data &&
                   upgradeEstimate.data.addedModules.length === 0 &&
-                  upgradeEstimate.data.tierSteps === 0)
+                  upgradeEstimate.data.tierSteps === 0 &&
+                  Object.keys(providerSwitches).length === 0)
               }
               onClick={async () => {
                 setIsUpgrading(true);
@@ -363,6 +412,7 @@ function ProjectRow({ project }: { project: ProjectListItem }) {
                     targetModules,
                     targetTier,
                     upgradeEstimate.data?.deltaCredits,
+                    providerSwitches,
                   );
                   toast.success(
                     "Upgrade kit downloaded — run /upgrade-boilerplate in your project",
@@ -372,6 +422,7 @@ function ProjectRow({ project }: { project: ProjectListItem }) {
                   });
                   setUpgradeOpen(false);
                   setExtraModules([]);
+                  setProviderChoices({});
                 } catch (error) {
                   toast.error(
                     error instanceof Error ? error.message : "Upgrade failed",

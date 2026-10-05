@@ -27,11 +27,14 @@ vi.mock("next/headers", () => ({
   headers: vi.fn(() => new Headers()),
 }));
 
+// scaffold:begin image_storage.vercel_blob
 const mockPut = vi.fn();
 vi.mock("@vercel/blob", () => ({
   put: (...args: any[]) => mockPut(...args),
 }));
+// scaffold:end image_storage.vercel_blob
 
+// scaffold:begin image_storage.cloudflare_r2
 const mockS3Send = vi.fn();
 vi.mock("@aws-sdk/client-s3", () => ({
   S3Client: class MockS3Client {
@@ -43,6 +46,7 @@ vi.mock("@aws-sdk/client-s3", () => ({
     }
   },
 }));
+// scaffold:end image_storage.cloudflare_r2
 
 describe("CMS Upload Route Integration Tests", () => {
   beforeEach(() => {
@@ -168,6 +172,7 @@ describe("CMS Upload Route Integration Tests", () => {
       );
     });
 
+    // scaffold:begin image_storage.vercel_blob
     it("should upload validated images to Vercel Blob by default", async () => {
       mockPut.mockResolvedValue({
         url: "https://blob.vercel.com/cms.png",
@@ -207,6 +212,9 @@ describe("CMS Upload Route Integration Tests", () => {
       );
     });
 
+    // scaffold:end image_storage.vercel_blob
+
+    // scaffold:begin image_storage.cloudflare_r2
     it("should upload validated images to Cloudflare R2 when configured", async () => {
       vi.stubEnv("NEXT_PUBLIC_IMAGE_STORAGE", "cloudflare_r2");
       vi.stubEnv("R2_ACCOUNT_ID", "test_account");
@@ -247,5 +255,6 @@ describe("CMS Upload Route Integration Tests", () => {
 
       vi.unstubAllEnvs();
     });
+    // scaffold:end image_storage.cloudflare_r2
   });
 });

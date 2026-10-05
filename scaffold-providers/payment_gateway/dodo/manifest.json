@@ -1,0 +1,16 @@
+{
+  "ownedIdentifiers": ["from 'dodopayments'", "from \"dodopayments\"", "\"dodopayments\": \"", "@dodopayments/nextjs"],
+  "selected": {
+    "textReplace": [
+      { "file": "apps/web/.env.example", "find": "NEXT_PUBLIC_PAYMENT_GATEWAY=\n", "replace": "NEXT_PUBLIC_PAYMENT_GATEWAY=dodo\n" }
+    ]
+  },
+  "unselected": {
+    "remove": [
+      "apps/web/app/api/payments/dodo",
+      "apps/web/tests/integration/webhookRoute.test.ts",
+      "apps/web/tests/integration/webhookRouteConfigured.test.ts"
+    ],
+    "jsonRemove": [{ "file": "apps/web/package.json", "keys": { "dependencies": ["@dodopayments/nextjs", "dodopayments"] } }]
+  }
+}

@@ -50,6 +50,8 @@ export default function DownloadConfigForm({ templateTitle, onBack }: Props) {
         payment: false,
     });
     const [formValues, setFormValues] = useState<FormState>({ ...DEFAULT_FORM });
+    // Off: the download keeps only the chosen payment gateway, image storage and CMS.
+    const [keepAllProviders, setKeepAllProviders] = useState(false);
     const selectedBilling = formValues.SELECTED_MODULES.includes("billing");
     const [catalog, setCatalog] = useState<ScaffoldCatalog | null>(null);
     const [catalogError, setCatalogError] = useState(false);
@@ -192,6 +194,7 @@ export default function DownloadConfigForm({ templateTitle, onBack }: Props) {
             if (formValues.NEXT_PUBLIC_SUPPORT_FEATURES.length > 0) {
                 envVars["NEXT_PUBLIC_SUPPORT_FEATURES"] = formValues.NEXT_PUBLIC_SUPPORT_FEATURES.join(",");
             }
+            if (keepAllProviders) envVars["KEEP_ALL_PROVIDERS"] = "true";
             if (formValues.NEXT_PUBLIC_PLATFORM.length > 0) {
                 envVars["NEXT_PUBLIC_PLATFORM"] = formValues.NEXT_PUBLIC_PLATFORM.join(",");
             }
@@ -438,6 +441,19 @@ export default function DownloadConfigForm({ templateTitle, onBack }: Props) {
                             </MutedText>
                         ) : null}
                     </View>
+                    <TouchableOpacity
+                        className={`rounded-xl border p-3 ${keepAllProviders ? "border-primary bg-primary/10" : "border-border/30 bg-card"}`}
+                        activeOpacity={0.8}
+                        onPress={() => setKeepAllProviders((value) => !value)}
+                    >
+                        <View className="flex-row items-center justify-between gap-3">
+                            <Label className="text-sm">Keep every provider</Label>
+                            <MutedText className="text-xs font-semibold text-primary">{keepAllProviders ? "On" : "Off"}</MutedText>
+                        </View>
+                        <MutedText className="text-xs mt-1">
+                            Off: your download keeps only the payment gateway, image storage and CMS you chose. On: all of them, to switch at runtime later.
+                        </MutedText>
+                    </TouchableOpacity>
                 </View>
             </View>
 

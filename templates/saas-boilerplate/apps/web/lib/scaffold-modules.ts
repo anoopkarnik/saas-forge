@@ -85,6 +85,35 @@ type ModuleManifest = {
   ownedIdentifiers?: string[];
 };
 
+/**
+ * A wizard choice between providers (payment gateway, image storage, CMS).
+ * Unchosen values that have a scaffold-providers/<id>/<value>/manifest.json are
+ * removed from the download, and their `<id>.<value>` marker regions dropped.
+ */
+type ProviderToggle = {
+  id: string;
+  label: string;
+  /** The public env toggle the wizard sets, e.g. NEXT_PUBLIC_PAYMENT_GATEWAY. */
+  env: string;
+  /** Only prunes when this module is selected; null for core toggles. */
+  module: ScaffoldModuleId | null;
+  /** Every valid choice; any other value keeps all providers. */
+  values: string[];
+};
+
+type ProviderRegistryShape = { providers: ProviderToggle[] };
+
+/** The chosen value per provider toggle. A toggle left out keeps every provider. */
+export type ProviderChoices = Record<string, string>;
+
+type ProviderManifest = {
+  /** Applied when this is the buyer's explicit choice, e.g. to pin a default. */
+  selected?: ModuleActions;
+  unselected?: ModuleActions;
+  /** Strings that must not appear once this provider is pruned. */
+  ownedIdentifiers?: string[];
+};
+
 export type ScaffoldPricingOutput = {
   baseCredits: number;
   moduleCredits: Array<{ moduleId: ScaffoldModuleId; credits: number }>;
@@ -105,6 +134,8 @@ export type ScaffoldCatalog = {
     requires: ScaffoldModuleId[];
     incompatibleWith: ScaffoldModuleId[];
   }>;
+  /** Provider toggles whose unchosen values a download leaves out. */
+  providers: ProviderToggle[];
 };
 
 export class InvalidScaffoldModuleError extends Error {
@@ -137,6 +168,60 @@ export function loadModuleManifest(moduleId: ScaffoldModuleId): ModuleManifest {
     path.join("scaffold-modules", moduleId, "manifest.json"),
   );
   return JSON.parse(fs.readFileSync(manifestPath, "utf-8")) as ModuleManifest;
+}
+
+export function loadProviderRegistry(): ProviderRegistryShape {
+  const registryPath = resolveWorkspacePath("scaffold-providers/registry.json");
+  if (!fs.existsSync(registryPath)) return { providers: [] };
+  return JSON.parse(fs.readFileSync(registryPath, "utf-8")) as ProviderRegistryShape;
+}
+
+function getProviderRoot(toggleId: string, value: string) {
+  return resolveWorkspacePath(path.join("scaffold-providers", toggleId, value));
+}
+
+function loadProviderManifest(toggleId: string, value: string): ProviderManifest | null {
+  const manifestPath = path.join(getProviderRoot(toggleId, value), "manifest.json");
+  if (!fs.existsSync(manifestPath)) return null;
+  return JSON.parse(fs.readFileSync(manifestPath, "utf-8")) as ProviderManifest;
+}
+
+/**
+ * The providers a download keeps: the wizard's toggle values, for toggles whose
+ * module is selected. `keepAll` keeps every provider (runtime switching).
+ */
+export function resolveProviderChoices(
+  env: Record<string, unknown>,
+  modules: readonly string[],
+  { keepAll = false, registry = loadProviderRegistry() }: { keepAll?: boolean; registry?: ProviderRegistryShape } = {},
+): ProviderChoices {
+  if (keepAll) return {};
+  const choices: ProviderChoices = {};
+  for (const toggle of registry.providers) {
+    if (toggle.module && !modules.includes(toggle.module)) continue;
+    const value = env[toggle.env];
+    if (typeof value === "string" && toggle.values.includes(value)) choices[toggle.id] = value;
+  }
+  return choices;
+}
+
+/** Each provider value with whether this selection keeps it. */
+function providerStates(
+  modules: ReadonlySet<string>,
+  providers: ProviderChoices,
+  registry: ProviderRegistryShape,
+) {
+  return registry.providers.flatMap((toggle) => {
+    const active = !toggle.module || modules.has(toggle.module);
+    const chosen = active ? providers[toggle.id] : undefined;
+    return toggle.values.map((value) => ({
+      toggleId: toggle.id,
+      value,
+      markerId: `${toggle.id}.${value}`,
+      chosen: chosen === value,
+      kept: chosen === undefined || chosen === value,
+    }));
+  });
 }
 
 function getModuleRoot(moduleId: ScaffoldModuleId) {
@@ -235,6 +320,7 @@ export function getScaffoldCatalog(registry = loadScaffoldRegistry()): ScaffoldC
       requires: module.requires,
       incompatibleWith: module.incompatibleWith,
     })),
+    providers: loadProviderRegistry().providers,
   };
 }
 
@@ -380,10 +466,11 @@ function removeJsonKeys(tempDir: string, action: JsonRemoveAction) {
 }
 
 // Shared files mark module-owned lines with a region in their own comment
-// syntax (`//`, `{/* */}`, `#`): a "scaffold:begin" line naming the module id,
-// then a matching "scaffold:end" line. When the module is unselected the region
-// is dropped; either way the marker lines themselves never ship.
-const MARKER_PATTERN = /\bscaffold:(begin|end)\s+([a-z_]+)\b/;
+// syntax (`//`, `{/* */}`, `#`): a "scaffold:begin" line naming the module id
+// (or a provider, `payment_gateway.stripe`), then a matching "scaffold:end"
+// line. When the module or provider is not kept the region is dropped; either
+// way the marker lines themselves never ship.
+const MARKER_PATTERN = /\bscaffold:(begin|end)\s+([a-z0-9_]+(?:\.[a-z0-9_]+)?)\b/;
 const MARKER_EXTENSIONS = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".prisma", ".yml", ".yaml", ".md"]);
 
 function isMarkerCandidate(fileName: string) {
@@ -411,7 +498,7 @@ export function stripScaffoldMarkers(
     const [, kind, id] = match as unknown as [string, "begin" | "end", string];
     const where = `${fileLabel}:${index + 1}`;
     if (!knownModules.has(id)) {
-      throw new InvalidScaffoldModuleError(`Unknown module "${id}" in scaffold marker at ${where}`);
+      throw new InvalidScaffoldModuleError(`Unknown module or provider "${id}" in scaffold marker at ${where}`);
     }
     if (kind === "begin") {
       open.push({ id, line: index + 1 });
@@ -472,16 +559,23 @@ export function findScaffoldLeaks(
   variantDir: string,
   selectedModules: ScaffoldModuleId[],
   registry = loadScaffoldRegistry(),
+  providers: ProviderChoices = {},
 ): string[] {
   const selected = new Set(selectedModules);
   const owned = registry.modules
     .filter((module) => !selected.has(module.id))
     .flatMap((module) =>
       (loadModuleManifest(module.id).ownedIdentifiers ?? []).map((identifier) => ({
-        moduleId: module.id,
+        moduleId: module.id as string,
         identifier,
       })),
     );
+  for (const provider of providerStates(selected, providers, loadProviderRegistry())) {
+    if (provider.kept) continue;
+    for (const identifier of loadProviderManifest(provider.toggleId, provider.value)?.ownedIdentifiers ?? []) {
+      owned.push({ moduleId: provider.markerId, identifier });
+    }
+  }
 
   const leaks: string[] = [];
   walkFiles(variantDir, (filePath) => {
@@ -619,22 +713,30 @@ const SCAFFOLD_IGNORE_DIRS = new Set([
   "coverage",
 ]);
 
+/** A developer's own env file (.env, .env.production…): real secrets, never shipped. */
+export function isLocalEnvFile(fileName: string) {
+  return /^\.env(\..+)?$/.test(fileName) && fileName !== ".env.example";
+}
+
 export function compileScaffoldVariant({
   baseRoot,
   tempDir,
   selectedModules,
   platforms,
+  providers = {},
   registry = loadScaffoldRegistry(),
 }: {
   baseRoot: string;
   tempDir: string;
   selectedModules: ScaffoldModuleId[];
   platforms: string[];
+  /** Chosen providers; an empty object keeps them all. */
+  providers?: ProviderChoices;
   registry?: RegistryShape;
 }) {
   fs.cpSync(baseRoot, tempDir, {
     recursive: true,
-    filter: (src) => !SCAFFOLD_IGNORE_DIRS.has(path.basename(src)),
+    filter: (src) => !SCAFFOLD_IGNORE_DIRS.has(path.basename(src)) && !isLocalEnvFile(path.basename(src)),
   });
 
   const selectedModuleSet = new Set(selectedModules);
@@ -650,12 +752,21 @@ export function compileScaffoldVariant({
     }
   }
 
+  // After the modules: a provider only prunes inside a selected module.
+  const providerSet = providerStates(selectedModuleSet, providers, loadProviderRegistry());
+  for (const provider of providerSet) {
+    if (provider.kept && !provider.chosen) continue;
+    const manifest = loadProviderManifest(provider.toggleId, provider.value);
+    const root = getProviderRoot(provider.toggleId, provider.value);
+    applyModuleActions(tempDir, root, provider.chosen ? manifest?.selected : manifest?.unselected);
+  }
+
   prunePlatforms(tempDir, platforms);
   pruneVariantLockfile(tempDir);
   applyScaffoldMarkers(
     tempDir,
-    selectedModuleSet,
-    new Set(registry.modules.map((module) => module.id)),
+    new Set<string>([...selectedModuleSet, ...providerSet.filter((provider) => provider.kept).map((provider) => provider.markerId)]),
+    new Set<string>([...registry.modules.map((module) => module.id), ...providerSet.map((provider) => provider.markerId)]),
   );
 
   return tempDir;

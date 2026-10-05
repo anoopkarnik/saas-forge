@@ -597,6 +597,28 @@ export default function DashboardPage({
     />
   );
 
+  const renderProviderChoice = () => (
+    <div className="rounded-2xl border border-border/60 bg-background p-4 shadow-sm">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-sm font-semibold">Only the providers you pick</p>
+          <p className="text-xs text-muted-foreground">
+            Your download keeps the payment gateway, image storage and CMS you
+            chose. The others&apos; code, SDKs and env vars are left out. Keep
+            them all to switch providers at runtime later.
+          </p>
+        </div>
+        <Switch
+          checked={values.KEEP_ALL_PROVIDERS === "true"}
+          onCheckedChange={(checked) =>
+            form.setValue("KEEP_ALL_PROVIDERS", checked ? "true" : "false", { shouldDirty: true })
+          }
+          aria-label="Keep every provider"
+        />
+      </div>
+    </div>
+  );
+
   const renderAdvancedMode = () => (
     <div className="space-y-8">
       <div className="rounded-2xl border border-border/60 bg-muted/20 p-6">
@@ -653,6 +675,8 @@ export default function DashboardPage({
           </div>
         </div>
       </div>
+
+      {renderProviderChoice()}
 
       <Card className="border-border/60 shadow-sm">
         <CardHeader>
@@ -1369,6 +1393,7 @@ export default function DashboardPage({
             values={values}
             missingLabels={missingLabels}
           />
+          {renderProviderChoice()}
           {renderPreview?.({
             modules: (values.SELECTED_MODULES || []) as ScaffoldModuleId[],
             platforms: values.NEXT_PUBLIC_PLATFORM?.length ? values.NEXT_PUBLIC_PLATFORM : ["web"],

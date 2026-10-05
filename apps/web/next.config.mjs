@@ -130,7 +130,12 @@ const nextConfig = {
   outputFileTracingIncludes: {
     // Read with fs at runtime (module registry, pricing, template version,
     // release notes), which tracing cannot follow. Small, so every route gets them.
-    "**": ["../../scaffold-modules/**/*", "../../template-sync.manifest.json", "../../releases/**/*"],
+    "**": [
+      "../../scaffold-modules/**/*",
+      "../../scaffold-providers/**/*",
+      "../../template-sync.manifest.json",
+      "../../releases/**/*",
+    ],
     "/api/scaffold": scaffoldTraceIncludes,
     "/api/v1/projects/*/download": scaffoldTraceIncludes,
     "/api/v1/projects/*/upgrade": scaffoldTraceIncludes,

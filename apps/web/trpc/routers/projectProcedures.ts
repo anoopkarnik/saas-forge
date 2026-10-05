@@ -28,7 +28,13 @@ import {
 } from "@/lib/scaffold/release-emails";
 import { getProjectReleases, loadReleases } from "@/lib/scaffold/releases";
 import { generateSetupGuide } from "@/lib/scaffold/setup-guide";
-import { ownsBuild, previewUpgrade, scaffoldBuildKey } from "@/lib/scaffold/service";
+import {
+  ownsBuild,
+  previewUpgrade,
+  scaffoldBuildKey,
+  selectionProviders,
+  upgradeProviders,
+} from "@/lib/scaffold/service";
 import { getTemplateVersion } from "@/lib/scaffold/template-version";
 
 // ---------------------------------------------------------------------------
@@ -65,6 +71,8 @@ const upgradeEstimateInput = z.object({
   targetModules: z.array(z.string()).optional(),
   targetTierId: z.string().trim().min(1).optional(),
   targetVersionId: z.string().trim().min(1).optional(),
+  /** Provider switches, e.g. { payment_gateway: "dodo" }. */
+  targetProviders: z.record(z.string(), z.string()).optional(),
 });
 
 // ---------------------------------------------------------------------------
@@ -195,10 +203,11 @@ export const projectRouter = createTRPCRouter({
       const modules = await safeValidateModules(project.modules);
       const pricing = calculateScaffoldCredits(modules);
       // Free when unchanged since the last API build, or when the user already
-      // owns this exact build (same modules, platforms and starter).
+      // owns this exact build (same modules, providers, platforms and starter).
+      const providers = selectionProviders(project.config as Record<string, unknown>, modules);
       const alreadyBuilt =
         (!!project.lastBuiltHash && project.lastBuiltHash === computeBuildHash(project)) ||
-        (await ownsBuild(ctx.session.user.id, scaffoldBuildKey(modules, project.platforms)));
+        (await ownsBuild(ctx.session.user.id, scaffoldBuildKey(modules, project.platforms, providers)));
 
       return {
         credits: alreadyBuilt ? 0 : pricing.totalCredits,
@@ -258,15 +267,23 @@ export const projectRouter = createTRPCRouter({
       const toModules = input.targetModules
         ? await safeValidateModules(input.targetModules)
         : project.modules;
-      const preview = await withModuleValidation(() =>
-        previewUpgrade({
+      const preview = await withModuleValidation(() => {
+        const providers = upgradeProviders(
+          project.config as Record<string, unknown>,
+          project.modules,
+          toModules,
+          input.targetProviders,
+        );
+        return previewUpgrade({
           fromModules: project.modules,
           toModules,
           fromTierId: project.tierId,
           toTierId: input.targetTierId ?? project.tierId,
           platforms: project.platforms,
-        }),
-      );
+          fromProviders: providers.fromProviders,
+          toProviders: providers.toProviders,
+        });
+      });
       const { releases } = getProjectReleases(project, loadReleases(), getTemplateVersion());
       const warnings = releases.flatMap((release) =>
         release.entries

@@ -24,6 +24,7 @@
       "apps/mobile/lib/credits-provider.tsx",
       "apps/web/app/api/payments",
       "apps/web/tests/integration/billingProcedures.test.ts",
+      "apps/web/tests/integration/stripeWebhookRoute.test.ts",
       "apps/web/tests/integration/webhookRoute.test.ts",
       "apps/web/tests/integration/webhookRouteConfigured.test.ts",
       "apps/web/trpc/routers/billingProcedures.ts",

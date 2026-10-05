@@ -1,0 +1,8 @@
+{
+  "selected": {
+    "textReplace": [
+      { "file": "apps/web/lib/cms-provider.ts", "find": "const DEFAULT_CMS = \"notion\";", "replace": "const DEFAULT_CMS = \"constant\";" },
+      { "file": "apps/web/.env.example", "find": "NEXT_PUBLIC_CMS=\"postgres\"", "replace": "NEXT_PUBLIC_CMS=\"constant\"" }
+    ]
+  }
+}

@@ -230,6 +230,7 @@ describe("doctor probes", () => {
   });
 
   // scaffold:begin billing
+  // scaffold:begin payment_gateway.stripe
   it("points local Stripe setups at stripe listen", async () => {
     const result = await run("stripe", respond(200, { id: "acct_1" }), {
       NEXT_PUBLIC_PAYMENT_GATEWAY: "stripe",
@@ -239,6 +240,7 @@ describe("doctor probes", () => {
     expect(result.status).toBe("ok");
     expect(result.message).toContain("stripe listen --forward-to localhost:3000/api/payments/stripe/webhook");
   });
+  // scaffold:end payment_gateway.stripe
   // scaffold:end billing
 
   it.each([

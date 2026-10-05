@@ -60,10 +60,7 @@ describe("findServerEnvIssues", () => {
       ...baseEnv,
       NEXT_PUBLIC_AUTH_GOOGLE: "true",
       NEXT_PUBLIC_EMAIL_CLIENT: "resend",
-      NEXT_PUBLIC_PAYMENT_GATEWAY: "stripe",
-      NEXT_PUBLIC_IMAGE_STORAGE: "cloudflare_r2",
       NEXT_PUBLIC_ALLOW_RATE_LIMIT: "upstash",
-      NEXT_PUBLIC_CMS: "notion",
     });
     expect(issues.map((i) => i.key).sort()).toEqual(
       [
@@ -71,17 +68,32 @@ describe("findServerEnvIssues", () => {
         "AUTH_GOOGLE_CLIENT_SECRET",
         "RESEND_API_KEY",
         "NEXT_PUBLIC_SUPPORT_MAIL",
-        "STRIPE_SECRET_KEY",
-        "STRIPE_WEBHOOK_SECRET",
-        "R2_ACCOUNT_ID",
-        "R2_ACCESS_KEY_ID",
-        "R2_SECRET_ACCESS_KEY",
-        "R2_BUCKET_NAME",
         "UPSTASH_REDIS_REST_URL",
         "UPSTASH_REDIS_REST_TOKEN",
-        "NOTION_API_TOKEN",
       ].sort(),
     );
+  });
+
+  // One case per provider, so a download that keeps only some still passes.
+  it.each([
+    // scaffold:begin payment_gateway.stripe
+    ["NEXT_PUBLIC_PAYMENT_GATEWAY", "stripe", ["STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET"]],
+    // scaffold:end payment_gateway.stripe
+    // scaffold:begin payment_gateway.dodo
+    ["NEXT_PUBLIC_PAYMENT_GATEWAY", "dodo", ["DODO_PAYMENTS_API_KEY", "DODO_PAYMENTS_WEBHOOK_KEY"]],
+    // scaffold:end payment_gateway.dodo
+    // scaffold:begin image_storage.vercel_blob
+    ["NEXT_PUBLIC_IMAGE_STORAGE", "vercel_blob", ["BLOB_READ_WRITE_TOKEN"]],
+    // scaffold:end image_storage.vercel_blob
+    // scaffold:begin image_storage.cloudflare_r2
+    ["NEXT_PUBLIC_IMAGE_STORAGE", "cloudflare_r2", ["R2_ACCOUNT_ID", "R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY", "R2_BUCKET_NAME"]],
+    // scaffold:end image_storage.cloudflare_r2
+    // scaffold:begin cms.notion
+    ["NEXT_PUBLIC_CMS", "notion", ["NOTION_API_TOKEN"]],
+    // scaffold:end cms.notion
+  ])("requires credentials when %s=%s", (toggle, value, keys) => {
+    const issues = findServerEnvIssues({ ...baseEnv, [toggle as string]: value as string });
+    expect(issues.map((i) => i.key).sort()).toEqual([...(keys as string[])].sort());
   });
 
   it("ignores credentials for disabled integrations", () => {

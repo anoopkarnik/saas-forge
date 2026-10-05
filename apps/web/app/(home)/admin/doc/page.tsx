@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useTRPC } from "@/trpc/client";
+import { getCmsProvider } from "@/lib/cms-provider";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAdminGuard } from "@/hooks/useAdminGuard";
 import { toast } from "sonner";
@@ -35,7 +36,7 @@ export default function DocumentationAdminPage() {
     const { isPending, isAdmin } = useAdminGuard();
     const trpc = useTRPC();
     const queryClient = useQueryClient();
-    const cmsProvider = process.env.NEXT_PUBLIC_CMS || "notion";
+    const cmsProvider = getCmsProvider();
     const isPostgresCms = cmsProvider === "postgres";
 
     const [selectedId, setSelectedId] = useState<string | "new" | null>(null);

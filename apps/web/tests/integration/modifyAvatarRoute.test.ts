@@ -30,12 +30,15 @@ vi.mock("next/headers", () => ({
   headers: vi.fn(() => new Headers()),
 }));
 
+// scaffold:begin image_storage.vercel_blob
 // Mock @vercel/blob
 const mockPut = vi.fn();
 vi.mock("@vercel/blob", () => ({
   put: (...args: any[]) => mockPut(...args),
 }));
+// scaffold:end image_storage.vercel_blob
 
+// scaffold:begin image_storage.cloudflare_r2
 // Mock @aws-sdk/client-s3
 const mockS3Send = vi.fn();
 vi.mock("@aws-sdk/client-s3", () => ({
@@ -48,6 +51,7 @@ vi.mock("@aws-sdk/client-s3", () => ({
     }
   },
 }));
+// scaffold:end image_storage.cloudflare_r2
 
 describe("ModifyAvatar Route Integration Tests", () => {
   beforeEach(() => {
@@ -252,6 +256,7 @@ describe("ModifyAvatar Route Integration Tests", () => {
       expect(data.error).toBe("File size exceeds 5MB limit.");
     });
 
+    // scaffold:begin image_storage.vercel_blob
     it("should upload to Vercel Blob by default", async () => {
       mockPut.mockResolvedValue({
         url: "https://blob.vercel.com/avatar.png",
@@ -295,6 +300,9 @@ describe("ModifyAvatar Route Integration Tests", () => {
       );
     });
 
+    // scaffold:end image_storage.vercel_blob
+
+    // scaffold:begin image_storage.cloudflare_r2
     it("should upload to Cloudflare R2 when configured", async () => {
       vi.stubEnv("NEXT_PUBLIC_IMAGE_STORAGE", "cloudflare_r2");
       vi.stubEnv("R2_ACCOUNT_ID", "test_account");
@@ -338,5 +346,6 @@ describe("ModifyAvatar Route Integration Tests", () => {
 
       vi.unstubAllEnvs();
     });
+    // scaffold:end image_storage.cloudflare_r2
   });
 });

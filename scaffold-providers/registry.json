@@ -1,0 +1,25 @@
+{
+  "providers": [
+    {
+      "id": "payment_gateway",
+      "label": "Payment gateway",
+      "env": "NEXT_PUBLIC_PAYMENT_GATEWAY",
+      "module": "billing",
+      "values": ["none", "stripe", "dodo"]
+    },
+    {
+      "id": "image_storage",
+      "label": "Image storage",
+      "env": "NEXT_PUBLIC_IMAGE_STORAGE",
+      "module": null,
+      "values": ["vercel_blob", "cloudflare_r2"]
+    },
+    {
+      "id": "cms",
+      "label": "CMS",
+      "env": "NEXT_PUBLIC_CMS",
+      "module": null,
+      "values": ["constant", "postgres", "notion"]
+    }
+  ]
+}

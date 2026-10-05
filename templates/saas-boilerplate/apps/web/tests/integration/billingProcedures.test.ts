@@ -13,6 +13,7 @@ vi.mock('@workspace/database/client', () => ({
   },
 }));
 
+// scaffold:begin payment_gateway.dodo
 // Mock DodoPayments
 const mockCreateCustomer = vi.fn();
 const mockCreateCheckoutSession = vi.fn();
@@ -29,6 +30,20 @@ vi.mock('dodopayments', () => {
     },
   };
 });
+// scaffold:end payment_gateway.dodo
+
+// scaffold:begin payment_gateway.stripe
+// Mock Stripe
+const mockStripeCreateCustomer = vi.fn();
+const mockStripeCreateSession = vi.fn();
+
+vi.mock('stripe', () => ({
+  default: class MockStripe {
+    customers = { create: mockStripeCreateCustomer };
+    checkout = { sessions: { create: mockStripeCreateSession } };
+  },
+}));
+// scaffold:end payment_gateway.stripe
 
 // Mock Auth
 vi.mock('@workspace/auth/better-auth/auth', () => ({
@@ -56,8 +71,10 @@ function createCallerContext(session: any) {
 describe('Billing Router Integration Tests', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // scaffold:begin payment_gateway.dodo
     vi.stubEnv('DODO_PAYMENTS_API_KEY', 'test_key');
     vi.stubEnv('DODO_CREDITS_PRODUCT_ID', 'prod_123');
+    // scaffold:end payment_gateway.dodo
     vi.stubEnv('NEXT_PUBLIC_URL', 'http://localhost:3000');
 
     // Default authenticated session
@@ -71,6 +88,7 @@ describe('Billing Router Integration Tests', () => {
     vi.unstubAllEnvs();
   });
 
+  // scaffold:begin payment_gateway.dodo
   describe('createNewCustomer', () => {
     it('should throw an error if Dodo configuration is missing', async () => {
       // Unset API key to trigger error
@@ -113,7 +131,40 @@ describe('Billing Router Integration Tests', () => {
     });
   });
 
+  // scaffold:end payment_gateway.dodo
+
+  // scaffold:begin payment_gateway.stripe
+  describe('with Stripe', () => {
+    beforeEach(() => {
+      vi.stubEnv('NEXT_PUBLIC_PAYMENT_GATEWAY', 'stripe');
+      vi.stubEnv('STRIPE_SECRET_KEY', 'sk_test_123');
+    });
+
+    const caller = () =>
+      billingRouter.createCaller(
+        createCallerContext({ user: { id: 'user_1', email: 'test@test.com', name: 'Test User' } } as any),
+      );
+
+    it('creates the customer in Stripe', async () => {
+      mockStripeCreateCustomer.mockResolvedValue({ id: 'cus_123' });
+      expect(await caller().createNewCustomer({ email: 'test@test.com', name: 'Test User' })).toEqual({ id: 'cus_123' });
+      expect(mockStripeCreateCustomer).toHaveBeenCalledWith({ email: 'test@test.com', name: 'Test User' });
+    });
+
+    it('opens a Stripe checkout for the credits', async () => {
+      mockStripeCreateSession.mockResolvedValue({ url: 'https://checkout.stripe.com/c/pay_123' });
+      expect(await caller().createCheckoutSession({ credits: 100 })).toEqual({
+        checkoutUrl: 'https://checkout.stripe.com/c/pay_123',
+      });
+      expect(mockStripeCreateSession).toHaveBeenCalledWith(
+        expect.objectContaining({ client_reference_id: 'user_1', metadata: { userId: 'user_1', credits: '100' } }),
+      );
+    });
+  });
+  // scaffold:end payment_gateway.stripe
+
   describe('createCheckoutSession', () => {
+    // scaffold:begin payment_gateway.dodo
     it('should successfully create a checkout session for valid credits', async () => {
       mockCreateCheckoutSession.mockResolvedValue({ checkout_url: 'https://checkout.dodo.com/session_123' });
 
@@ -135,6 +186,7 @@ describe('Billing Router Integration Tests', () => {
         metadata: { userId: 'user_1', credits: '100' },
       });
     });
+    // scaffold:end payment_gateway.dodo
 
     it('should throw an error if credits are not a multiple of 50', async () => {
       const caller = billingRouter.createCaller(

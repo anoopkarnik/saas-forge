@@ -17,6 +17,7 @@ import {
   chargeScaffoldCredits,
   computeBuildHash,
   computeUpgradeDelta,
+  upgradeProviders,
   previewUpgrade,
 } from "@/lib/scaffold/service";
 
@@ -30,6 +31,8 @@ const upgradeInput = z.object({
   versionId: z.string().trim().min(1).optional(),
   /** The delta the buyer saw; a mismatch is rejected with 409 price_changed. */
   expectedTotalCredits: z.number().int().nonnegative().optional(),
+  /** Provider switches, e.g. { payment_gateway: "dodo" }: the kit swaps the code. */
+  providers: z.record(z.string(), z.string()).optional(),
 });
 
 function jsonError(code: string, message: string, status: number) {
@@ -51,13 +54,21 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
 
   const params = req.nextUrl.searchParams;
   const modules = params.get("modules")?.split(",").map((id) => id.trim()).filter(Boolean);
+  // ?providers=payment_gateway:dodo,cms:postgres
+  const switches = Object.fromEntries(
+    (params.get("providers") ?? "").split(",").filter(Boolean).map((pair) => pair.split(":").map((part) => part.trim())),
+  ) as Record<string, string>;
   try {
+    const toModules = modules ?? project.modules;
+    const providers = upgradeProviders((project.config ?? {}) as Record<string, unknown>, project.modules, toModules, switches);
     const preview = previewUpgrade({
       fromModules: project.modules,
-      toModules: modules ?? project.modules,
+      toModules,
       fromTierId: project.tierId,
       toTierId: params.get("tierId") || project.tierId,
       platforms: project.platforms,
+      fromProviders: providers.fromProviders,
+      toProviders: providers.toProviders,
     });
     const releases = getProjectReleases(project, loadReleases(), getTemplateVersion());
     return NextResponse.json({ preview, releases });
@@ -96,9 +107,16 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
 
   let fromModules: ScaffoldModuleId[];
   let toModules: ScaffoldModuleId[];
+  let providers: ReturnType<typeof upgradeProviders>;
   try {
     fromModules = validateSelectedModules(project.modules);
     toModules = validateSelectedModules(parsed.data.modules ?? project.modules);
+    providers = upgradeProviders(
+      (project.config ?? {}) as Record<string, unknown>,
+      fromModules,
+      toModules,
+      parsed.data.providers,
+    );
   } catch (err) {
     if (err instanceof InvalidScaffoldModuleError) {
       return jsonError("invalid_modules", err.message, 400);
@@ -113,7 +131,7 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
     toTierId,
   });
 
-  if (delta.addedModules.length === 0 && delta.tierSteps === 0) {
+  if (delta.addedModules.length === 0 && delta.tierSteps === 0 && providers.switched.length === 0) {
     return jsonError(
       "nothing_to_upgrade",
       "Target matches the current configuration.",
@@ -165,8 +183,10 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
       toTierId,
       versionId: toVersionId,
       platforms: project.platforms,
-      config: (project.config ?? {}) as Record<string, unknown>,
+      config: providers.config,
       productTypeId: project.productTypeId,
+      fromProviders: providers.fromProviders,
+      toProviders: providers.toProviders,
     });
   } catch (err) {
     if (err instanceof ScaffoldRootNotFoundError) {
@@ -186,7 +206,7 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
     versionId: toVersionId,
     platforms: project.platforms,
     templateVersion: nextTemplateVersion,
-    config: project.config,
+    config: providers.config,
   };
   markProjectUpgraded(project.id, {
     modules: toModules,
@@ -194,6 +214,7 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
     versionId: toVersionId,
     templateVersion: nextTemplateVersion,
     lastBuiltHash: computeBuildHash(nextProject),
+    config: providers.config,
   });
 
   return new NextResponse(kit.stream as any, {

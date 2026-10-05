@@ -197,10 +197,21 @@ describe("runUpgrade", () => {
     expect(client.upgradePreview).toHaveBeenCalledWith("my-app", {
       modules: expect.arrayContaining(["billing", "ai", "ai_agents"]),
       tierId: "tier-3",
+      providers: {},
     });
     expect(lines.join("\n")).toMatch(/40 added, 2 changed, 0 removed; 1 new migration/);
     expect(lines.join("\n")).toContain("[security] Verify webhooks");
     expect(client.upgrade).not.toHaveBeenCalled();
+  });
+});
+
+describe("runUpgrade provider switch", () => {
+  it("buys a provider switch on its own", async () => {
+    const cwd = tempDir();
+    fs.writeFileSync(path.join(cwd, ".saas-forge.json"), JSON.stringify({ project: "my-app" }));
+    const client = fakeClient({ upgrade: vi.fn(async () => ({ bytes: makeZip({ "my-app/UPGRADE.md": "x" }), charged: 0 })) });
+    await runUpgrade({ provider: ["payment_gateway=dodo"], yes: true }, io(cwd, client));
+    expect(client.upgrade).toHaveBeenCalledWith("my-app", expect.objectContaining({ providers: { payment_gateway: "dodo" } }));
   });
 });
 

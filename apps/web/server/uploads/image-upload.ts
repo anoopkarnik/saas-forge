@@ -1,8 +1,14 @@
+// scaffold:begin image_storage.vercel_blob
 import { put } from "@vercel/blob";
+// scaffold:end image_storage.vercel_blob
+// scaffold:begin image_storage.cloudflare_r2
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+// scaffold:end image_storage.cloudflare_r2
 import sharp from "sharp";
 import { randomUUID } from "crypto";
 
+// Used when NEXT_PUBLIC_IMAGE_STORAGE is unset. A download keeps only the
+// storage the buyer chose, and pins this default to it.
 const DEFAULT_STORAGE_PROVIDER = "vercel_blob";
 const SAFE_IMAGE_FORMATS = new Set(["jpeg", "png", "webp"]);
 
@@ -93,6 +99,7 @@ const buildObjectKey = (prefix: string, extension: string) => {
   return `${prefix}/${Date.now()}-${randomUUID()}.${extension}`;
 };
 
+// scaffold:begin image_storage.cloudflare_r2
 const uploadToR2 = async ({
   buffer,
   keyPrefix,
@@ -122,7 +129,9 @@ const uploadToR2 = async ({
     ? `${process.env.NEXT_PUBLIC_R2_PUBLIC_URL}/${key}`
     : `https://${process.env.R2_BUCKET_NAME}.${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com/${key}`;
 };
+// scaffold:end image_storage.cloudflare_r2
 
+// scaffold:begin image_storage.vercel_blob
 const uploadToBlob = async ({
   buffer,
   keyPrefix,
@@ -138,6 +147,7 @@ const uploadToBlob = async ({
 
   return blob.url;
 };
+// scaffold:end image_storage.vercel_blob
 
 export const uploadNormalizedImage = async (
   options: UploadNormalizedImageOptions,
@@ -145,9 +155,15 @@ export const uploadNormalizedImage = async (
   const storageProvider =
     process.env.NEXT_PUBLIC_IMAGE_STORAGE || DEFAULT_STORAGE_PROVIDER;
 
+  // scaffold:begin image_storage.cloudflare_r2
   if (storageProvider === "cloudflare_r2") {
     return uploadToR2(options);
   }
-
-  return uploadToBlob(options);
+  // scaffold:end image_storage.cloudflare_r2
+  // scaffold:begin image_storage.vercel_blob
+  if (storageProvider !== "cloudflare_r2") {
+    return uploadToBlob(options);
+  }
+  // scaffold:end image_storage.vercel_blob
+  throw new Error(`Image storage "${storageProvider}" is not part of this project.`);
 };

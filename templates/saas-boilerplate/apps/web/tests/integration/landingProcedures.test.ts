@@ -21,6 +21,7 @@ vi.mock('@/server/redis', () => ({
   },
 }));
 
+// scaffold:begin cms.notion
 vi.mock('@workspace/cms/notion/page/updatePage', () => ({
   updateNotionPage: vi.fn(),
 }));
@@ -36,6 +37,7 @@ vi.mock('@workspace/cms/notion/page/trashPage', () => ({
 vi.mock('@workspace/cms/notion/database/queryDatabase', () => ({
   queryAllNotionDatabase: vi.fn(),
 }));
+// scaffold:end cms.notion
 
 vi.mock('@workspace/database/client', () => ({
   default: {
@@ -115,6 +117,9 @@ describe('Landing Router Integration Tests', () => {
   });
 
   describe('getLandingInfoFromNotion', () => {
+    // Any cacheable CMS: a download may pin the default to "constant", which skips Redis.
+    beforeEach(() => vi.stubEnv('NEXT_PUBLIC_CMS', 'postgres'));
+
     it('should fetch data directly when Redis is not configured', async () => {
       // Ensure Redis env vars are NOT set, so the router skips cache
       delete process.env.UPSTASH_REDIS_REST_URL;

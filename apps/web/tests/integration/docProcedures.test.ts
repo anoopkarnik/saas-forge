@@ -1,10 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { documentationRouter } from "../../trpc/routers/docProcedures.js";
 
+// scaffold:begin cms.notion
 const mockFetchDocumentation = vi.fn();
 vi.mock("@/lib/functions/fetchDocumentationFromNotion", () => ({
   fetchDocumentation: (...args: any[]) => mockFetchDocumentation(...args),
 }));
+// scaffold:end cms.notion
 
 const mockRedisGet = vi.fn();
 const mockRedisSet = vi.fn();
@@ -17,10 +19,12 @@ vi.mock("@/server/redis", () => ({
   },
 }));
 
+// scaffold:begin cms.notion
 const mockRetrieveBlocksTree = vi.fn();
 vi.mock("@workspace/cms/notion/block/retrieveBlockChildren", () => ({
   retrieveBlocksTree: (...args: any[]) => mockRetrieveBlocksTree(...args),
 }));
+// scaffold:end cms.notion
 
 const mockLandingPageFindUnique = vi.fn();
 const mockDocumentationFindMany = vi.fn();
@@ -112,7 +116,9 @@ const mockDocRow = {
 describe("Documentation Router Integration Tests", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // scaffold:begin cms.notion
     vi.stubEnv("NOTION_API_TOKEN", "test_notion_token");
+    // scaffold:end cms.notion
     vi.stubEnv("NEXT_PUBLIC_SAAS_NAME", "Acme Docs");
   });
 
@@ -120,6 +126,8 @@ describe("Documentation Router Integration Tests", () => {
     vi.unstubAllEnvs();
   });
 
+  // scaffold:begin cms.notion
+  // The default CMS is Notion, so these read through the mocked Notion fetchers.
   describe("getDocumentationInfoFromNotion", () => {
     it("should fetch data directly when Redis is not configured", async () => {
       delete process.env.UPSTASH_REDIS_REST_URL;
@@ -240,6 +248,8 @@ describe("Documentation Router Integration Tests", () => {
       );
     });
   });
+
+  // scaffold:end cms.notion
 
   describe("admin documentation procedures", () => {
     beforeEach(() => {

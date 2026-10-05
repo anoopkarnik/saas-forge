@@ -2,7 +2,10 @@ import { fetchDocumentation } from "@/lib/functions/fetchDocumentation";
 import { DocumentationProps } from "@/lib/ts-types/doc";
 import { redis } from "@/server/redis";
 import { createTRPCRouter, baseProcedure, adminProcedure, guestReadableAdminProcedure } from "@/trpc/init";
+// scaffold:begin cms.notion
 import { retrieveBlocksTree } from "@workspace/cms/notion/block/retrieveBlockChildren";
+// scaffold:end cms.notion
+import { getCmsProvider } from "@/lib/cms-provider";
 import prisma from "@workspace/database/client";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
@@ -20,8 +23,6 @@ const documentationEditorSchema = z.object({
   order: z.number().int().min(0, "Order must be 0 or greater"),
   content: z.string().min(1, "Content is required"),
 });
-
-const getCmsProvider = () => process.env.NEXT_PUBLIC_CMS || "notion";
 
 const ensurePostgresDocumentationEditing = () => {
   if (getCmsProvider() !== "postgres") {
@@ -57,7 +58,7 @@ const clearDocumentationCache = async () => {
 export const documentationRouter = createTRPCRouter({
     getDocumentationInfoFromNotion: baseProcedure
     .query(async () => {
-      const cmsProvider = process.env.NEXT_PUBLIC_CMS || "notion";
+      const cmsProvider = getCmsProvider();
 
       if (
         !process.env.UPSTASH_REDIS_REST_URL || 
@@ -84,7 +85,7 @@ export const documentationRouter = createTRPCRouter({
     .query(async ({ input }) => {
       // We need to fetch the documentation list to find the ID corresponding to the slug
       
-      const cmsProvider = process.env.NEXT_PUBLIC_CMS || "notion";
+      const cmsProvider = getCmsProvider();
       
       let documentation: DocumentationProps | null = null;
       if (
@@ -112,7 +113,7 @@ export const documentationRouter = createTRPCRouter({
         throw new Error("Documentation not found");
       }
 
-      if (process.env.NEXT_PUBLIC_CMS === "constant") {
+      if (cmsProvider === "constant") {
         const { documentationData } = await import("@workspace/database/constants");
         const fs = await import("fs/promises");
         const path = await import("path");
@@ -124,39 +125,45 @@ export const documentationRouter = createTRPCRouter({
         return await fs.readFile(targetPath, "utf-8");
       }
 
-      if (process.env.NEXT_PUBLIC_CMS === "postgres") {
+      if (cmsProvider === "postgres") {
         const prisma = (await import("@workspace/database/client")).default;
         const page = await prisma.documentation.findUnique({ where: { slug: input.slug } });
         if (!page) throw new Error("Documentation not found in database");
         return page.content;
       }
 
-      // retrieveBlocksTree recurses one Notion API call per nested block, so it
-      // is the most expensive read on this path. Cache the assembled tree per
-      // doc id (TTL-only; the Notion CMS has no in-app write path to invalidate).
-      const blocksCacheEnabled =
-        !!process.env.UPSTASH_REDIS_REST_URL &&
-        !!process.env.UPSTASH_REDIS_REST_TOKEN;
+      // scaffold:begin cms.notion
+      if (cmsProvider === "notion") {
+        // retrieveBlocksTree recurses one Notion API call per nested block, so it
+        // is the most expensive read on this path. Cache the assembled tree per
+        // doc id (TTL-only; the Notion CMS has no in-app write path to invalidate).
+        const blocksCacheEnabled =
+          !!process.env.UPSTASH_REDIS_REST_URL &&
+          !!process.env.UPSTASH_REDIS_REST_TOKEN;
 
-      if (blocksCacheEnabled) {
-        const cachedBlocks = await redis.get<any[]>(getDocumentationBlocksCacheKey(doc.id));
-        if (cachedBlocks) {
-          return cachedBlocks;
+        if (blocksCacheEnabled) {
+          const cachedBlocks = await redis.get<any[]>(getDocumentationBlocksCacheKey(doc.id));
+          if (cachedBlocks) {
+            return cachedBlocks;
+          }
         }
-      }
 
-      const blocks = await retrieveBlocksTree({
-        apiToken: process.env.NOTION_API_TOKEN!,
-        block_id: doc.id
-      });
-
-      if (blocksCacheEnabled) {
-        await redis.set(getDocumentationBlocksCacheKey(doc.id), blocks, {
-          ex: DOCUMENTATION_CACHE_TTL_SECONDS,
+        const blocks = await retrieveBlocksTree({
+          apiToken: process.env.NOTION_API_TOKEN!,
+          block_id: doc.id
         });
-      }
 
-      return blocks;
+        if (blocksCacheEnabled) {
+          await redis.set(getDocumentationBlocksCacheKey(doc.id), blocks, {
+            ex: DOCUMENTATION_CACHE_TTL_SECONDS,
+          });
+        }
+
+        return blocks;
+      }
+      // scaffold:end cms.notion
+
+      throw new Error(`CMS "${cmsProvider}" is not supported`);
     }),
     listAdminDocs: guestReadableAdminProcedure
     .query(async () => {

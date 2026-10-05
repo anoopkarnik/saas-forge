@@ -1,0 +1,20 @@
+{
+  "ownedIdentifiers": ["from \"@aws-sdk/client-s3\"", "\"@aws-sdk/client-s3\": \"", "r2.cloudflarestorage.com"],
+  "selected": {
+    "textReplace": [
+      {
+        "file": "apps/web/server/uploads/image-upload.ts",
+        "find": "const DEFAULT_STORAGE_PROVIDER = \"vercel_blob\";",
+        "replace": "const DEFAULT_STORAGE_PROVIDER = \"cloudflare_r2\";"
+      },
+      {
+        "file": "apps/web/.env.example",
+        "find": "NEXT_PUBLIC_IMAGE_STORAGE=\"vercel_blob\"",
+        "replace": "NEXT_PUBLIC_IMAGE_STORAGE=\"cloudflare_r2\""
+      }
+    ]
+  },
+  "unselected": {
+    "jsonRemove": [{ "file": "apps/web/package.json", "keys": { "dependencies": ["@aws-sdk/client-s3"] } }]
+  }
+}

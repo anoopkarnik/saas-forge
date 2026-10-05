@@ -145,14 +145,21 @@ export type ProjectUpgrade = {
   versionId: string;
   templateVersion: string;
   lastBuiltHash: string;
+  /** The saved config with the upgrade's provider choices. */
+  config?: Record<string, unknown>;
 };
 
 /** Best-effort: persists the upgraded inputs plus the build stamp. */
 export function markProjectUpgraded(projectId: string, upgrade: ProjectUpgrade): void {
+  const { config, ...rest } = upgrade;
   void db.projectConfig
     .update({
       where: { id: projectId },
-      data: { ...upgrade, lastBuiltAt: new Date() },
+      data: {
+        ...rest,
+        ...(config ? { config: stripSecrets(config).config as Prisma.InputJsonValue } : {}),
+        lastBuiltAt: new Date(),
+      },
     })
     .catch(() => {});
 }

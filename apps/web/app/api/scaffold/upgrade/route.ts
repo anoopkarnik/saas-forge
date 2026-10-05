@@ -16,6 +16,7 @@ import {
   chargeScaffoldCredits,
   computeBuildHash,
   computeUpgradeDelta,
+  upgradeProviders,
 } from "@/lib/scaffold/service";
 
 export const runtime = "nodejs";
@@ -30,6 +31,8 @@ const input = z.object({
   versionId: z.string().trim().min(1).optional(),
   /** The delta the buyer saw; a mismatch is rejected with 409 price_changed. */
   expectedTotalCredits: z.number().int().nonnegative().optional(),
+  /** Provider switches, e.g. { payment_gateway: "dodo" }: the kit swaps the code. */
+  providers: z.record(z.string(), z.string()).optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -55,9 +58,16 @@ export async function POST(req: NextRequest) {
 
   let fromModules: ScaffoldModuleId[];
   let toModules: ScaffoldModuleId[];
+  let providers: ReturnType<typeof upgradeProviders>;
   try {
     fromModules = validateSelectedModules(project.modules);
     toModules = validateSelectedModules(parsed.data.modules ?? project.modules);
+    providers = upgradeProviders(
+      (project.config ?? {}) as Record<string, unknown>,
+      fromModules,
+      toModules,
+      parsed.data.providers,
+    );
   } catch (err) {
     if (err instanceof InvalidScaffoldModuleError) {
       return NextResponse.json({ error: err.message }, { status: 400 });
@@ -71,7 +81,7 @@ export async function POST(req: NextRequest) {
     fromTierId: project.tierId,
     toTierId,
   });
-  if (delta.addedModules.length === 0 && delta.tierSteps === 0) {
+  if (delta.addedModules.length === 0 && delta.tierSteps === 0 && providers.switched.length === 0) {
     return NextResponse.json({ error: "Nothing to upgrade" }, { status: 400 });
   }
   if (isPriceChanged(parsed.data.expectedTotalCredits, delta.deltaCredits)) {
@@ -114,8 +124,10 @@ export async function POST(req: NextRequest) {
       toTierId,
       versionId: toVersionId,
       platforms: project.platforms,
-      config: (project.config ?? {}) as Record<string, unknown>,
+      config: providers.config,
       productTypeId: project.productTypeId,
+      fromProviders: providers.fromProviders,
+      toProviders: providers.toProviders,
     });
   } catch (err) {
     if (err instanceof ScaffoldRootNotFoundError) {
@@ -139,8 +151,9 @@ export async function POST(req: NextRequest) {
       versionId: toVersionId,
       platforms: project.platforms,
       templateVersion: nextTemplateVersion,
-      config: project.config,
+      config: providers.config,
     }),
+    config: providers.config,
   });
 
   return new NextResponse(kit.stream as any, {

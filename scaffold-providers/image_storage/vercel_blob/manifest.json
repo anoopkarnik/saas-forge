@@ -1,0 +1,6 @@
+{
+  "ownedIdentifiers": ["from \"@vercel/blob\"", "\"@vercel/blob\": \""],
+  "unselected": {
+    "jsonRemove": [{ "file": "apps/web/package.json", "keys": { "devDependencies": ["@vercel/blob"] } }]
+  }
+}

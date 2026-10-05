@@ -116,12 +116,14 @@ export async function runUpgrade(flags, io) {
   const [pricing, { project }] = await Promise.all([client.pricing(), client.getProject(slug)]);
   const toModules = withRequirements(pricing, [...project.modules, ...list(flags.add)]);
   const toTier = flags.tier || project.tierId;
+  // --provider payment_gateway=dodo switches a provider; the kit swaps its code.
+  const providers = Object.fromEntries((flags.provider ?? []).map((pair) => pair.split("=").map((part) => part.trim())));
   const quote = quoteUpgrade(pricing, project.modules, toModules, project.tierId, toTier);
 
   io.log(`Upgrade "${slug}": adds ${quote.added.join(", ") || "no modules"}, ${quote.tierSteps} tier step(s), ${quote.credits} credits.`);
   if (flags["dry-run"]) {
     // The same preview as the Upgrade Center: the kit's files and the release notes since this project's version.
-    const { preview, releases } = await client.upgradePreview(slug, { modules: toModules, tierId: toTier });
+    const { preview, releases } = await client.upgradePreview(slug, { modules: toModules, tierId: toTier, providers });
     const migrations = preview.migrations.length ? `; ${preview.migrations.length} new migration(s), run pnpm migrate after applying` : "";
     io.log(`Files: ${preview.files.added} added, ${preview.files.modified} changed, ${preview.files.removed} removed${migrations}.`);
     if (releases.behind > 0) io.log(`${releases.behind} release(s) since v${releases.currentVersion}:`);
@@ -131,13 +133,16 @@ export async function runUpgrade(flags, io) {
     }
     return { dryRun: true, ...quote, preview, releases };
   }
-  if (quote.added.length === 0 && quote.tierSteps === 0) throw new Error("Nothing to upgrade.");
+  if (quote.added.length === 0 && quote.tierSteps === 0 && Object.keys(providers).length === 0) {
+    throw new Error("Nothing to upgrade.");
+  }
   if (!(await confirm(io, flags, "Buy this upgrade?"))) return { cancelled: true };
 
   const { bytes, charged } = await client.upgrade(slug, {
     modules: toModules,
     tierId: toTier,
     expectedTotalCredits: quote.credits,
+    ...(Object.keys(providers).length ? { providers } : {}),
   });
   extractZip(bytes, io.cwd);
   io.log(`Upgrade kit saved (${charged} credits). Follow UPGRADE.md, or run the upgrade-boilerplate skill in Claude Code.`);

@@ -92,8 +92,12 @@ export const routePolicies = [
   { path: "/api/trpc", match: "prefix", auth: "procedure", rateLimit: "none", input: "trpc" },
 
   // Payment webhooks
+  // scaffold:begin payment_gateway.stripe
   { path: "/api/payments/stripe/webhook", match: "exact", auth: "webhook", rateLimit: "none", maxBodyBytes: 1 * MB, input: "provider" },
+  // scaffold:end payment_gateway.stripe
+  // scaffold:begin payment_gateway.dodo
   { path: "/api/payments/dodo/webhook", match: "exact", auth: "webhook", rateLimit: "none", maxBodyBytes: 1 * MB, input: "provider" },
+  // scaffold:end payment_gateway.dodo
 
   // Session routes
   { path: "/api/cms/upload", match: "exact", auth: "session", roles: ["admin"], rateLimit: "default", maxBodyBytes: 11 * MB, input: "image-upload" },

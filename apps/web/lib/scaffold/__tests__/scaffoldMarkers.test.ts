@@ -38,7 +38,7 @@ describe("stripScaffoldMarkers", () => {
   });
 
   it.each([
-    ["unknown module", "// scaffold:begin payments\nx\n// scaffold:end payments", /Unknown module "payments" .*file\.ts:1/],
+    ["unknown module", "// scaffold:begin payments\nx\n// scaffold:end payments", /Unknown module or provider "payments" .*file\.ts:1/],
     ["unclosed region", "// scaffold:begin ai\nx", /Unclosed scaffold:begin ai at file\.ts:1/],
     ["stray end", "x\n// scaffold:end ai", /Unmatched scaffold:end ai at file\.ts:2/],
     ["crossed regions", "// scaffold:begin ai\n// scaffold:begin billing\n// scaffold:end ai\n// scaffold:end billing", /Unmatched scaffold:end ai at file\.ts:3/],

@@ -1,0 +1,27 @@
+{
+  "ownedIdentifiers": [
+    "@workspace/cms/notion",
+    "\"@workspace/cms\": \"",
+    "from \"@notionhq/client\"",
+    "\"@notionhq/client\": \"",
+    "notion-to-md"
+  ],
+  "selected": {
+    "textReplace": [{ "file": "apps/web/.env.example", "find": "NEXT_PUBLIC_CMS=\"postgres\"", "replace": "NEXT_PUBLIC_CMS=\"notion\"" }]
+  },
+  "unselected": {
+    "remove": [
+      "packages/cms",
+      "apps/web/lib/functions/fetchDocumentationFromNotion.ts",
+      "apps/web/lib/functions/fetchLandingPageDataFromNotion.ts",
+      "packages/database/scripts/fetch-docs.ts"
+    ],
+    "jsonRemove": [
+      { "file": "apps/web/package.json", "keys": { "dependencies": ["@workspace/cms"] } },
+      {
+        "file": "packages/database/package.json",
+        "keys": { "dependencies": ["@workspace/cms"], "devDependencies": ["@notionhq/client", "notion-to-md"] }
+      }
+    ]
+  }
+}

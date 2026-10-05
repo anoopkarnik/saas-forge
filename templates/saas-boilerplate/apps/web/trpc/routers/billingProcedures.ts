@@ -1,10 +1,22 @@
 import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
+// scaffold:begin payment_gateway.dodo
 import DodoPayments from 'dodopayments';
+// scaffold:end payment_gateway.dodo
+// scaffold:begin payment_gateway.stripe
 import Stripe from 'stripe';
+// scaffold:end payment_gateway.stripe
 import { z } from "zod";
 import db from "@workspace/database/client";
 import { TRPCError } from "@trpc/server";
 
+// Used when NEXT_PUBLIC_PAYMENT_GATEWAY is unset. A download keeps only the
+// gateway the buyer chose, and pins this default to it.
+const DEFAULT_PAYMENT_GATEWAY = "dodo";
+const paymentGateway = () => process.env.NEXT_PUBLIC_PAYMENT_GATEWAY || DEFAULT_PAYMENT_GATEWAY;
+const gatewayNotConfigured = () =>
+  new TRPCError({ code: "PRECONDITION_FAILED", message: "No payment gateway is configured" });
+
+// scaffold:begin payment_gateway.dodo
 let _dodoClient: DodoPayments | null = null;
 function getDodoClient(): DodoPayments {
   if (!_dodoClient) {
@@ -18,7 +30,9 @@ function getDodoClient(): DodoPayments {
   }
   return _dodoClient;
 }
+// scaffold:end payment_gateway.dodo
 
+// scaffold:begin payment_gateway.stripe
 let _stripeClient: Stripe | null = null;
 function getStripeClient(): Stripe {
   if (!_stripeClient) {
@@ -31,6 +45,7 @@ function getStripeClient(): Stripe {
   }
   return _stripeClient;
 }
+// scaffold:end payment_gateway.stripe
 
 const CREDITS_PER_UNIT = 50; // example: 1 quantity = 50 credits
 
@@ -41,25 +56,31 @@ export const billingRouter = createTRPCRouter({
       name: z.string().min(1, "Name is required"),
     }))
     .mutation(async ({ input }) => {
-      const paymentGateway = process.env.NEXT_PUBLIC_PAYMENT_GATEWAY || "dodo";
-      
-      if (paymentGateway === 'stripe') {
+      const gateway = paymentGateway();
+      // scaffold:begin payment_gateway.stripe
+      if (gateway === 'stripe') {
         const response = await getStripeClient().customers.create({
           email: input.email,
           name: input.name,
         });
         return response;
       }
-
-      const response = await getDodoClient().customers.create({
-        email: input.email,
-        name: input.name,
-      });
-      return response;
+      // scaffold:end payment_gateway.stripe
+      // scaffold:begin payment_gateway.dodo
+      if (gateway !== 'stripe') {
+        const response = await getDodoClient().customers.create({
+          email: input.email,
+          name: input.name,
+        });
+        return response;
+      }
+      // scaffold:end payment_gateway.dodo
+      throw gatewayNotConfigured();
     }),
     createCheckoutSession: protectedProcedure
     .input(z.object({credits: z.number().int().positive()}))
-    .mutation(async ({ input, ctx }) => {
+    // Declared so the type stays the same whichever gateways a download keeps.
+    .mutation(async ({ input, ctx }): Promise<{ checkoutUrl: string | null | undefined }> => {
       const userId = ctx.session.user.id;
       if (!userId) throw new TRPCError({ code: "UNAUTHORIZED" });
 
@@ -73,9 +94,9 @@ export const billingRouter = createTRPCRouter({
       }
 
       const appUrl = process.env.NEXT_PUBLIC_URL || "http://localhost:3000";
-      const paymentGateway = process.env.NEXT_PUBLIC_PAYMENT_GATEWAY || "dodo";
-
-      if (paymentGateway === 'stripe') {
+      const gateway = paymentGateway();
+      // scaffold:begin payment_gateway.stripe
+      if (gateway === 'stripe') {
         const session = await getStripeClient().checkout.sessions.create({
           payment_method_types: ['card'],
           line_items: [
@@ -100,20 +121,24 @@ export const billingRouter = createTRPCRouter({
         
         return { checkoutUrl: session.url };
       }
-
-      const session = await getDodoClient().checkoutSessions.create({
-        product_cart: [
-        { product_id: process.env.DODO_CREDITS_PRODUCT_ID!, quantity }
-            ],
-            return_url: `${appUrl}?payment=success`,
-            customer: {
-              email: ctx.session.user.email ?? undefined,
-              name: ctx.session.user.name ?? undefined,
-            },
-            metadata: { userId: String(userId), credits: String(input.credits) }
-          });
-      
-      return { checkoutUrl: session.checkout_url };
+      // scaffold:end payment_gateway.stripe
+      // scaffold:begin payment_gateway.dodo
+      if (gateway !== 'stripe') {
+        const session = await getDodoClient().checkoutSessions.create({
+          product_cart: [
+            { product_id: process.env.DODO_CREDITS_PRODUCT_ID!, quantity }
+          ],
+          return_url: `${appUrl}?payment=success`,
+          customer: {
+            email: ctx.session.user.email ?? undefined,
+            name: ctx.session.user.name ?? undefined,
+          },
+          metadata: { userId: String(userId), credits: String(input.credits) }
+        });
+        return { checkoutUrl: session.checkout_url };
+      }
+      // scaffold:end payment_gateway.dodo
+      throw gatewayNotConfigured();
     }),
     getTransactions: protectedProcedure
     .query(async ({ ctx }) => {

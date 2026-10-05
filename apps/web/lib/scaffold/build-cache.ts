@@ -6,8 +6,10 @@ import { GetObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3
 import {
   compileScaffoldVariant,
   createTempScaffoldDir,
+  isLocalEnvFile,
   loadScaffoldRegistry,
   resolveWorkspacePath,
+  type ProviderChoices,
   type ScaffoldModuleId,
 } from "@/lib/scaffold-modules";
 
@@ -16,14 +18,15 @@ import {
  *
  * The cached artefact is the compiled variant without anything buyer-specific
  * (no .env files, SETUP.md or project name), so one build serves every buyer
- * with the same modules and platforms. Per-download files are appended later.
+ * with the same modules, providers and platforms. Per-download files are
+ * appended later.
  */
 
 /**
  * Bump whenever the output of buildBaseArchive or compileScaffoldVariant
  * changes; build-cache.test.ts fails when their sources change without it.
  */
-export const BUILDER_VERSION = 4;
+export const BUILDER_VERSION = 5;
 
 /** Neutral top-level folder of a cached archive, renamed per download. */
 export const BASE_ROOT = "saas-forge-app";
@@ -44,11 +47,12 @@ const IGNORE_DIRS = new Set([
   "coverage",
   "scaffold",
 ]);
-const IGNORE_FILES = new Set([".DS_Store", "Thumbs.db", ".env"]);
+const IGNORE_FILES = new Set([".DS_Store", "Thumbs.db"]);
 
 export function isIgnoredPath(relPath: string): boolean {
   const parts = relPath.split(path.sep);
-  return parts.some((part) => IGNORE_DIRS.has(part)) || IGNORE_FILES.has(path.basename(relPath));
+  const name = path.basename(relPath);
+  return parts.some((part) => IGNORE_DIRS.has(part)) || IGNORE_FILES.has(name) || isLocalEnvFile(name);
 }
 
 export type BaseManifest = {
@@ -69,8 +73,8 @@ export interface BuildCacheStore {
 const fingerprints = new Map<string, string>();
 
 /**
- * Content hash of the starter plus the module manifests and overrides that
- * shape a variant, so edits to either never hit a stale build.
+ * Content hash of the starter plus the module and provider manifests and
+ * overrides that shape a variant, so edits to any of them never hit a stale build.
  */
 export function templateFingerprint(scaffoldRoot: string): string {
   const cached = fingerprints.get(scaffoldRoot);
@@ -87,17 +91,18 @@ export function templateFingerprint(scaffoldRoot: string): string {
     }
   };
   walk(scaffoldRoot);
-  const modulesDir = resolveWorkspacePath("scaffold-modules");
-  if (fs.existsSync(modulesDir)) {
-    hash.update("scaffold-modules\0");
-    const walkModules = (dir: string) => {
+  for (const name of ["scaffold-modules", "scaffold-providers"]) {
+    const manifestsDir = resolveWorkspacePath(name);
+    if (!fs.existsSync(manifestsDir)) continue;
+    hash.update(`${name}\0`);
+    const walkManifests = (dir: string) => {
       for (const entry of fs.readdirSync(dir, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
         const full = path.join(dir, entry.name);
-        if (entry.isDirectory()) walkModules(full);
-        else if (entry.isFile()) hash.update(path.relative(modulesDir, full)).update("\0").update(fs.readFileSync(full)).update("\0");
+        if (entry.isDirectory()) walkManifests(full);
+        else if (entry.isFile()) hash.update(path.relative(manifestsDir, full)).update("\0").update(fs.readFileSync(full)).update("\0");
       }
     };
-    walkModules(modulesDir);
+    walkManifests(manifestsDir);
   }
 
   const fingerprint = hash.digest("hex");
@@ -109,6 +114,7 @@ export function computeBuildKey(input: {
   templateFingerprint: string;
   modules: string[];
   platforms: string[];
+  providers?: ProviderChoices;
 }): string {
   return createHash("sha256")
     .update(
@@ -116,6 +122,7 @@ export function computeBuildKey(input: {
         template: input.templateFingerprint,
         modules: [...input.modules].sort(),
         platforms: [...input.platforms].sort(),
+        providers: Object.entries(input.providers ?? {}).sort(([a], [b]) => a.localeCompare(b)),
         builder: BUILDER_VERSION,
       }),
     )
@@ -180,6 +187,7 @@ export async function buildBaseArchive(input: {
   scaffoldRoot: string;
   modules: ScaffoldModuleId[];
   platforms: string[];
+  providers?: ProviderChoices;
   buildKey: string;
 }): Promise<BaseArchive> {
   const registry = loadScaffoldRegistry();
@@ -190,6 +198,7 @@ export async function buildBaseArchive(input: {
       tempDir,
       selectedModules: input.modules,
       platforms: input.platforms,
+      providers: input.providers,
       registry,
     });
 
@@ -236,6 +245,8 @@ export async function getOrBuildBaseArchive(input: {
   scaffoldRoot: string;
   modules: ScaffoldModuleId[];
   platforms: string[];
+  /** Chosen providers; empty keeps every provider. */
+  providers?: ProviderChoices;
   /** Serve this earlier build if still cached (an owner re-downloading what they bought). */
   preferredBuildKey?: string | null;
   store?: BuildCacheStore | null;
@@ -245,6 +256,7 @@ export async function getOrBuildBaseArchive(input: {
     templateFingerprint: templateFingerprint(input.scaffoldRoot),
     modules: input.modules,
     platforms: input.platforms,
+    providers: input.providers,
   });
 
   if (store) {

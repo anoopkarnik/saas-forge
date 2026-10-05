@@ -194,6 +194,7 @@ async function probeResend(env, fetchImpl) {
 }
 
 // scaffold:begin billing
+// scaffold:begin payment_gateway.stripe
 async function probeStripe(env, fetchImpl) {
   const auth = { headers: { Authorization: `Bearer ${env.STRIPE_SECRET_KEY}` } };
   const account = await http(fetchImpl, "https://api.stripe.com/v1/account", auth);
@@ -216,7 +217,9 @@ async function probeStripe(env, fetchImpl) {
   if (endpoint.status !== "enabled") return warn(`${name}; webhook endpoint ${webhookUrl} is ${endpoint.status}`);
   return ok(`${name}; webhook endpoint ${webhookUrl} is enabled`);
 }
+// scaffold:end payment_gateway.stripe
 
+// scaffold:begin payment_gateway.dodo
 async function probeDodo(env, fetchImpl) {
   const mode = env.DODO_PAYMENTS_ENVIRONMENT || "live_mode";
   const base = mode === "test_mode" ? "https://test.dodopayments.com" : "https://live.dodopayments.com";
@@ -229,6 +232,7 @@ async function probeDodo(env, fetchImpl) {
   }
   return warn(`could not verify (Dodo answered ${status})`);
 }
+// scaffold:end payment_gateway.dodo
 // scaffold:end billing
 
 async function probeUpstash(env, fetchImpl) {
@@ -240,6 +244,7 @@ async function probeUpstash(env, fetchImpl) {
   return warn(`could not verify (Upstash answered ${status})`);
 }
 
+// scaffold:begin image_storage.vercel_blob
 async function probeBlob(env, root) {
   const { put, del } = await importFrom(root, "apps/web", "@vercel/blob");
   const token = env.BLOB_READ_WRITE_TOKEN;
@@ -257,7 +262,9 @@ async function probeBlob(env, root) {
     throw error;
   }
 }
+// scaffold:end image_storage.vercel_blob
 
+// scaffold:begin image_storage.cloudflare_r2
 async function probeR2(env, root) {
   const { S3Client, PutObjectCommand, DeleteObjectCommand } = await importFrom(root, "apps/web", "@aws-sdk/client-s3");
   const bucket = env.R2_BUCKET_NAME;
@@ -285,7 +292,9 @@ async function probeR2(env, root) {
     client.destroy();
   }
 }
+// scaffold:end image_storage.cloudflare_r2
 
+// scaffold:begin cms.notion
 async function probeNotion(env, fetchImpl) {
   const { status, body } = await http(fetchImpl, "https://api.notion.com/v1/users/me", {
     headers: { Authorization: `Bearer ${env.NOTION_API_TOKEN}`, "Notion-Version": "2022-06-28" },
@@ -294,6 +303,7 @@ async function probeNotion(env, fetchImpl) {
   if (status === 401) return fail("Notion rejected NOTION_API_TOKEN");
   return warn(`could not verify (Notion answered ${status})`);
 }
+// scaffold:end cms.notion
 
 /**
  * The probes this env turns on. `keys` are the values a failed probe asks for
@@ -311,27 +321,37 @@ export function activeProbes(env, { root, fetchImpl = fetch }) {
     add("resend", "Resend", ["RESEND_API_KEY"], () => probeResend(env, fetchImpl));
   }
   // scaffold:begin billing
+  // scaffold:begin payment_gateway.stripe
   if (env.NEXT_PUBLIC_PAYMENT_GATEWAY === "stripe") {
     add("stripe", "Stripe", ["STRIPE_SECRET_KEY"], () => probeStripe(env, fetchImpl));
   }
+  // scaffold:end payment_gateway.stripe
+  // scaffold:begin payment_gateway.dodo
   if (env.NEXT_PUBLIC_PAYMENT_GATEWAY === "dodo") {
     add("dodo", "Dodo Payments", ["DODO_PAYMENTS_API_KEY"], () => probeDodo(env, fetchImpl));
   }
+  // scaffold:end payment_gateway.dodo
   // scaffold:end billing
   if (env.NEXT_PUBLIC_ALLOW_RATE_LIMIT === "upstash") {
     const keys = ["UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN"];
     add("upstash", "Upstash Redis", keys, () => probeUpstash(env, fetchImpl), true);
   }
+  // scaffold:begin image_storage.vercel_blob
   if (env.NEXT_PUBLIC_IMAGE_STORAGE === "vercel_blob") {
     add("vercel_blob", "Vercel Blob", ["BLOB_READ_WRITE_TOKEN"], () => probeBlob(env, root));
   }
+  // scaffold:end image_storage.vercel_blob
+  // scaffold:begin image_storage.cloudflare_r2
   if (env.NEXT_PUBLIC_IMAGE_STORAGE === "cloudflare_r2") {
     const keys = ["R2_ACCOUNT_ID", "R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY", "R2_BUCKET_NAME"];
     add("r2", "Cloudflare R2", keys, () => probeR2(env, root), true);
   }
+  // scaffold:end image_storage.cloudflare_r2
+  // scaffold:begin cms.notion
   if (env.NEXT_PUBLIC_CMS === "notion") {
     add("notion", "Notion", ["NOTION_API_TOKEN"], () => probeNotion(env, fetchImpl));
   }
+  // scaffold:end cms.notion
   return probes;
 }
 

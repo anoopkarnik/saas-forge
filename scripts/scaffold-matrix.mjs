@@ -3,7 +3,8 @@
  * Scaffold variant matrix: compiles buyer-facing variants of the staged starter
  * and runs the checks a buyer hits on day one.
  *
- *   node scripts/scaffold-matrix.mjs                 # PR mode: none, each single, each pair, all
+ *   node scripts/scaffold-matrix.mjs                 # PR mode: none, each single, each pair, all,
+ *                                                    # plus each provider choice (pairwise)
  *   node scripts/scaffold-matrix.mjs --full          # every module subset (nightly)
  *   node scripts/scaffold-matrix.mjs --only ai+billing   # or --only all / --only none
  *   node scripts/scaffold-matrix.mjs --static        # compile + leak checks only, no install
@@ -20,6 +21,7 @@ import {
   compileScaffoldVariant,
   findScaffoldLeaks,
   loadModuleManifest,
+  loadProviderRegistry,
   loadScaffoldRegistry,
   validateSelectedModules,
 } from "../apps/web/lib/scaffold-modules.ts";
@@ -80,9 +82,11 @@ function isValidCombination(selection) {
   }
 }
 
-function variantName({ modules: selection, platforms }) {
-  const base = selection.length ? selection.join("+") : "none";
-  return platforms.length === ALL_PLATFORMS.length ? base : `${base}@${platforms.join("+")}`;
+function variantName({ modules: selection, platforms, providers = {} }) {
+  let name = selection.length ? selection.join("+") : "none";
+  if (platforms.length !== ALL_PLATFORMS.length) name += `@${platforms.join("+")}`;
+  const chosen = Object.entries(providers).map(([toggle, value]) => `${toggle}=${value}`);
+  return chosen.length ? `${name}~${chosen.join(",")}` : name;
 }
 
 function planVariants() {
@@ -97,6 +101,25 @@ function planVariants() {
   const variants = moduleSets.map((selection) => ({ modules: selection, platforms: ALL_PLATFORMS }));
   for (const selection of [[], modules]) {
     variants.push({ modules: selection, platforms: ["web"] });
+  }
+  // Providers, pairwise: each choice alone inside its module, then all modules
+  // with every toggle on its first and on its last choice.
+  const toggles = loadProviderRegistry().providers;
+  for (const toggle of toggles) {
+    for (const value of toggle.values) {
+      variants.push({
+        modules: toggle.module ? [toggle.module] : [],
+        platforms: ALL_PLATFORMS,
+        providers: { [toggle.id]: value },
+      });
+    }
+  }
+  for (const pick of [(values) => values[0], (values) => values[values.length - 1]]) {
+    variants.push({
+      modules,
+      platforms: ALL_PLATFORMS,
+      providers: Object.fromEntries(toggles.map((toggle) => [toggle.id, pick(toggle.values)])),
+    });
   }
   const wanted = only === "all" ? variantName({ modules, platforms: ALL_PLATFORMS }) : only;
   return variants
@@ -146,6 +169,7 @@ function runCheck(check, variant, dir) {
           tempDir: dir,
           selectedModules: variant.modules,
           platforms: variant.platforms,
+          providers: variant.providers,
           registry,
         });
         return { ok: true, output: "" };
@@ -153,7 +177,7 @@ function runCheck(check, variant, dir) {
         return { ok: false, output: String(error?.stack ?? error) };
       }
     case "leaks": {
-      const leaks = findScaffoldLeaks(dir, variant.modules, registry);
+      const leaks = findScaffoldLeaks(dir, variant.modules, registry, variant.providers);
       return { ok: leaks.length === 0, output: leaks.join("\n") };
     }
     case "install":
@@ -180,10 +204,14 @@ function tail(text, lines = 60) {
 }
 
 function summarize(results) {
-  const header = `| Variant | ${CHECKS.join(" | ")} |\n|---|${CHECKS.map(() => "---").join("|")}|`;
-  const rows = results.map(
-    ({ name, checks }) => `| \`${name}\` | ${CHECKS.map((check) => ICON[checks[check]?.status ?? "skip"]).join(" | ")} |`,
-  );
+  // Installed package count: what a buyer's `pnpm install` pulls (provider pruning shrinks it).
+  const columns = staticOnly ? CHECKS : [...CHECKS, "packages"];
+  const header = `| Variant | ${columns.join(" | ")} |\n|---|${columns.map(() => "---").join("|")}|`;
+  const rows = results.map(({ name, checks, packages }) => {
+    const cells = CHECKS.map((check) => ICON[checks[check]?.status ?? "skip"]);
+    if (!staticOnly) cells.push(packages ?? "–");
+    return `| \`${name}\` | ${cells.join(" | ")} |`;
+  });
   const failures = results.flatMap(({ name, checks }) =>
     CHECKS.filter((check) => checks[check]?.status === "fail").map(
       (check) => `### \`${name}\` — ${check}\n\n\`\`\`\n${tail(checks[check].output)}\n\`\`\``,
@@ -235,7 +263,9 @@ for (const variant of variants) {
     }
   }
 
-  results.push({ name: variant.name, checks });
+  const store = path.join(dir, "node_modules/.pnpm");
+  const packages = checks.install?.status === "pass" && fs.existsSync(store) ? fs.readdirSync(store).length : null;
+  results.push({ name: variant.name, checks, packages });
   if (!keep && Object.values(checks).every((result) => result.status === "pass")) {
     fs.rmSync(dir, { recursive: true, force: true });
   }

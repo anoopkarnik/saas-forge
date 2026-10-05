@@ -49,10 +49,10 @@ const STARTER = "../../templates/saas-boilerplate/apps/**/*";
 const readsStarter = (source: string) => /@\/lib\/scaffold\/(service|build-cache)"/.test(source);
 
 describe("output file tracing", () => {
-  it("ships the module registry and release notes with every route", () => {
+  it("ships the module and provider registries and release notes with every route", () => {
     for (const { route } of apiRoutes()) {
       expect(traced(config.outputFileTracingIncludes, route), route).toEqual(
-        expect.arrayContaining(["../../scaffold-modules/**/*", "../../releases/**/*"]),
+        expect.arrayContaining(["../../scaffold-modules/**/*", "../../scaffold-providers/**/*", "../../releases/**/*"]),
       );
     }
   });

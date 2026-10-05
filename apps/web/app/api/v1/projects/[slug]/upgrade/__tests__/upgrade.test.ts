@@ -14,6 +14,7 @@ const {
   mockDelta,
   mockHash,
   mockPreview,
+  mockProviders,
 } = vi.hoisted(() => {
   class InvalidScaffoldModuleError extends Error {}
   class InsufficientCreditsError extends Error {}
@@ -39,6 +40,12 @@ const {
       deltaCredits: 23,
     })),
     mockHash: vi.fn(() => "hash-Z"),
+    mockProviders: vi.fn((config: Record<string, unknown>) => ({
+      fromProviders: {},
+      toProviders: {},
+      switched: [] as string[],
+      config,
+    })),
     mockPreview: vi.fn(() => ({
       delta: { addedModules: ["ai"], removedModules: [], tierSteps: 0, deltaCredits: 20 },
       files: { added: 40, modified: 3, removed: 0 },
@@ -74,6 +81,7 @@ vi.mock("@/lib/scaffold/service", () => ({
   computeUpgradeDelta: mockDelta,
   computeBuildHash: mockHash,
   previewUpgrade: mockPreview,
+  upgradeProviders: mockProviders,
 }));
 vi.mock("@/lib/scaffold/releases", () => ({
   loadReleases: () => [],
@@ -184,6 +192,36 @@ describe("POST /api/v1/projects/[slug]/upgrade", () => {
     );
     expect(mockBuildKit).toHaveBeenCalled();
     expect(mockUpdate).toHaveBeenCalled();
+  });
+});
+
+describe("POST /api/v1/projects/[slug]/upgrade provider switch", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("builds a kit for a provider switch alone, charging nothing extra", async () => {
+    mockAuth.mockResolvedValue({ ok: true, userId: "u1" });
+    mockFindFirst.mockResolvedValue(PROJECT);
+    mockValidate.mockImplementation((m: any) => m);
+    mockDelta.mockReturnValue({ addedModules: [], removedModules: [], tierSteps: 0, deltaCredits: 0 });
+    mockProviders.mockReturnValueOnce({
+      fromProviders: { payment_gateway: "stripe" },
+      toProviders: { payment_gateway: "dodo" },
+      switched: ["payment_gateway"],
+      config: { NEXT_PUBLIC_PAYMENT_GATEWAY: "dodo" },
+    });
+    mockCharge.mockResolvedValue({ charged: 0, alreadyProcessed: false, jobId: "j2" });
+    mockBuildKit.mockReturnValue({ stream: new ReadableStream({ start: (c) => c.close() }), delta: {}, cleanup: () => {} });
+
+    const res = await POST(makeReq({ providers: { payment_gateway: "dodo" } }), ctx);
+
+    expect(res.status).toBe(200);
+    expect(mockProviders).toHaveBeenCalledWith(PROJECT.config, ["billing"], ["billing"], { payment_gateway: "dodo" });
+    expect(mockBuildKit).toHaveBeenCalledWith(
+      expect.objectContaining({ fromProviders: { payment_gateway: "stripe" }, toProviders: { payment_gateway: "dodo" } }),
+    );
+    expect(mockUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ config: { NEXT_PUBLIC_PAYMENT_GATEWAY: "dodo" } }) }),
+    );
   });
 });
 

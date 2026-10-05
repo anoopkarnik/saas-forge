@@ -17,6 +17,13 @@ import { tierOrder } from "@/lib/scaffold/project-rules";
 import { isSecretEnvKey } from "@/lib/scaffold/secret-keys";
 import { getTemplateVersion } from "@/lib/scaffold/template-version";
 import { generateSetupGuide } from "@/lib/scaffold/setup-guide";
+import {
+  BASE_ROOT,
+  computeBuildKey,
+  getOrBuildBaseArchive,
+  templateFingerprint,
+} from "@/lib/scaffold/build-cache";
+import { appendFilesToZip, renameZipRoot } from "@workspace/ui/lib/zip-append";
 
 /**
  * Shared scaffold service: the one builder behind the session route
@@ -72,28 +79,6 @@ function getScaffoldRoot(): string {
   return found ?? path.join(cwd, "../../", scaffoldRoots[0]!);
 }
 
-function shouldIgnore(relPath: string): boolean {
-  const parts = relPath.split(path.sep);
-  const ignoreDirs = new Set([
-    "node_modules",
-    ".git",
-    ".next",
-    "dist",
-    "build",
-    "out",
-    ".turbo",
-    ".vercel",
-    ".cache",
-    "coverage",
-    "scaffold",
-  ]);
-  const ignoreFiles = new Set([".DS_Store", "Thumbs.db"]);
-  if (parts.some((p) => ignoreDirs.has(p))) return true;
-  if (ignoreFiles.has(path.basename(relPath))) return true;
-  if (path.basename(relPath) === ".env") return true;
-  return false;
-}
-
 export { computeBuildHash } from "@/lib/scaffold/project-rules";
 
 export type BuildProjectZipInput = {
@@ -109,12 +94,15 @@ export type BuildProjectZipInput = {
   versionId: string;
   /** Public wizard values written into the web, mobile and desktop .env files. Secrets are refused. */
   envVars?: Record<string, string>;
+  /** Serve this earlier cached build if it still exists (re-downloads). */
+  preferredBuildKey?: string | null;
 };
 
 export type BuildProjectZipResult = {
-  stream: ReadableStream;
+  bytes: Uint8Array<ArrayBuffer>;
   pricing: ScaffoldPricingOutput;
-  cleanup: () => void;
+  buildKey: string;
+  cacheHit: boolean;
 };
 
 /** Rebuilds the wizard's array fields from flat env vars (for SETUP.md). */
@@ -137,15 +125,14 @@ export function formValuesFromEnv(envVars: Record<string, string>): Record<strin
 }
 
 /** Fills a .env.example template with values, keeping comments and order. */
-function generateEnvContent(envExamplePath: string, envVars: Record<string, string>): string {
-  if (!fs.existsSync(envExamplePath)) {
+function generateEnvContent(envExample: string | undefined, envVars: Record<string, string>): string {
+  if (envExample === undefined) {
     return Object.entries(envVars)
       .map(([key, value]) => `${key}=${value}`)
       .join("\n");
   }
 
-  return fs
-    .readFileSync(envExamplePath, "utf-8")
+  return envExample
     .split("\n")
     .map((line) => {
       const key = line.match(/^([A-Z_][A-Z0-9_]*)=/)?.[1];
@@ -154,9 +141,9 @@ function generateEnvContent(envExamplePath: string, envVars: Record<string, stri
     .join("\n");
 }
 
-/** The web, mobile and desktop .env files for a compiled variant. */
+/** The web, mobile and desktop .env files, from the variant's .env.example templates. */
 function buildEnvFiles(
-  tempDir: string,
+  envExamples: Record<string, string>,
   envVars: Record<string, string>,
   modules: ScaffoldModuleId[],
   platforms: string[],
@@ -170,11 +157,11 @@ function buildEnvFiles(
   const quoted = (value: string) => `"${value}"`;
 
   const files = [
-    { path: "apps/web/.env", content: generateEnvContent(path.join(tempDir, "apps/web/.env.example"), envVars) },
+    { path: "apps/web/.env", content: generateEnvContent(envExamples["apps/web/.env.example"], envVars) },
   ];
 
-  const mobileExample = path.join(tempDir, "apps/mobile/.env.example");
-  if (platforms.includes("mobile") && fs.existsSync(mobileExample)) {
+  const mobileExample = envExamples["apps/mobile/.env.example"];
+  if (platforms.includes("mobile") && mobileExample !== undefined) {
     files.push({
       path: "apps/mobile/.env",
       content: generateEnvContent(mobileExample, {
@@ -194,8 +181,8 @@ function buildEnvFiles(
     });
   }
 
-  const desktopExample = path.join(tempDir, "apps/desktop/.env.example");
-  if (platforms.includes("desktop") && fs.existsSync(desktopExample)) {
+  const desktopExample = envExamples["apps/desktop/.env.example"];
+  if (platforms.includes("desktop") && desktopExample !== undefined) {
     files.push({
       path: "apps/desktop/.env",
       content: generateEnvContent(desktopExample, {
@@ -222,9 +209,14 @@ function buildEnvFiles(
   return files;
 }
 
-export function buildProjectZip(
+/**
+ * Builds a download: the cached base archive for the selection (built on a
+ * miss), renamed to the project and completed with its env files, SETUP.md and
+ * .boilerplate-version.
+ */
+export async function buildProjectZip(
   input: BuildProjectZipInput,
-): BuildProjectZipResult {
+): Promise<BuildProjectZipResult> {
   if (input.envVars) assertNoSecrets(input.envVars);
   const registry = loadScaffoldRegistry();
   const modules = validateSelectedModules(input.modules, registry);
@@ -235,77 +227,39 @@ export function buildProjectZip(
     throw new ScaffoldRootNotFoundError();
   }
 
-  const tempDir = createTempScaffoldDir();
-  let cleaned = false;
-  const cleanup = () => {
-    if (cleaned) return;
-    fs.rmSync(tempDir, { recursive: true, force: true });
-    cleaned = true;
-  };
+  const base = await getOrBuildBaseArchive({
+    scaffoldRoot,
+    modules,
+    platforms: input.platforms,
+    preferredBuildKey: input.preferredBuildKey,
+  });
+  const guide = generateSetupGuide({
+    name: input.name,
+    productTypeId: input.productTypeId,
+    tierId: input.tierId,
+    versionId: input.versionId,
+    modules,
+    config: input.config,
+  });
 
-  try {
-    compileScaffoldVariant({
-      baseRoot: scaffoldRoot,
-      tempDir,
-      selectedModules: modules,
-      platforms: input.platforms,
-      registry,
-    });
-
-    const guide = generateSetupGuide({
-      name: input.name,
-      productTypeId: input.productTypeId,
-      tierId: input.tierId,
-      versionId: input.versionId,
-      modules,
-      config: input.config,
-    });
-
-    const archive = archiver("zip", { zlib: { level: 9 } });
-    archive.directory(tempDir, input.projectName, (entry: archiver.EntryData) => {
-      const relInsideProject = entry.name.replace(`${input.projectName}/`, "");
-      return shouldIgnore(relInsideProject) ? false : entry;
-    });
-    archive.append(guide.markdown, {
-      name: `${input.projectName}/SETUP.md`,
-    });
-    if (input.envVars) {
-      for (const file of buildEnvFiles(tempDir, input.envVars, modules, input.platforms)) {
-        archive.append(file.content, { name: `${input.projectName}/${file.path}` });
-      }
-    }
-    const version = getTemplateVersion();
-    if (version && version !== "unknown") {
-      archive.append(version + "\n", {
-        name: `${input.projectName}/.boilerplate-version`,
-      });
-    }
-
-    const stream = new ReadableStream({
-      start(controller) {
-        archive.on("data", (chunk: Buffer) => controller.enqueue(chunk));
-        archive.on("end", () => {
-          controller.close();
-          cleanup();
-        });
-        archive.on("error", (err: Error) => {
-          cleanup();
-          controller.error(err);
-        });
-      },
-      cancel() {
-        archive.abort();
-        cleanup();
-      },
-    });
-
-    void archive.finalize();
-
-    return { stream, pricing, cleanup };
-  } catch (err) {
-    cleanup();
-    throw err;
+  const root = input.projectName;
+  const files = [{ name: `${root}/SETUP.md`, content: guide.markdown }];
+  const version = getTemplateVersion();
+  if (version && version !== "unknown") {
+    files.push({ name: `${root}/.boilerplate-version`, content: version + "\n" });
   }
+  if (input.envVars) {
+    for (const file of buildEnvFiles(base.manifest.envExamples, input.envVars, modules, input.platforms)) {
+      files.push({ name: `${root}/${file.path}`, content: file.content });
+    }
+  }
+
+  return {
+    bytes: appendFilesToZip(renameZipRoot(base.bytes, BASE_ROOT, root), files),
+    pricing,
+    buildKey: base.manifest.buildKey,
+    cacheHit: base.cacheHit,
+  };
 }
 
 export type ChargeScaffoldCreditsInput = {
@@ -321,6 +275,13 @@ export type ChargeScaffoldCreditsInput = {
     fromTierId?: string | null;
     toTierId: string;
     templateVersion: string;
+    /** Download builds start as "building"; omitted for upgrades (delivered at once). */
+    status?: "building" | "ready";
+    buildKey?: string;
+    platforms?: string[];
+    projectName?: string;
+    /** Public wizard values only; secrets never reach the ledger. */
+    envVars?: Record<string, string>;
   };
 };
 
@@ -378,6 +339,11 @@ export async function chargeScaffoldCredits(
           creditsSpent: input.amount,
           templateVersion: input.job.templateVersion,
           idempotencyKey: input.idempotencyKey ?? null,
+          status: input.job.status ?? "ready",
+          buildKey: input.job.buildKey ?? null,
+          platforms: input.job.platforms ?? [],
+          projectName: input.job.projectName ?? null,
+          envVars: input.job.envVars ?? undefined,
         },
         select: { id: true },
       });
@@ -409,6 +375,168 @@ export async function chargeScaffoldCredits(
     }
     throw err;
   }
+}
+
+/** Returns a failed build's credits, exactly once. */
+export async function refundScaffoldJob(jobId: string): Promise<boolean> {
+  return db.$transaction(async (tx) => {
+    const updated = await tx.scaffoldJob.updateMany({
+      where: { id: jobId, refundedAt: null },
+      data: { status: "failed", refundedAt: new Date() },
+    });
+    if (updated.count === 0) return false;
+    const job = await tx.scaffoldJob.findUniqueOrThrow({
+      where: { id: jobId },
+      select: { userId: true, creditsSpent: true },
+    });
+    if (job.creditsSpent > 0) {
+      await tx.user.update({
+        where: { id: job.userId },
+        data: { creditsUsed: { decrement: job.creditsSpent } },
+      });
+    }
+    return true;
+  });
+}
+
+/** Build key for a selection against the deployed starter. */
+export function scaffoldBuildKey(modules: string[], platforms: string[]): string {
+  return computeBuildKey({
+    templateFingerprint: templateFingerprint(getScaffoldRoot()),
+    modules,
+    platforms,
+  });
+}
+
+/** A delivered download job of the user's, for free re-download. */
+export async function getOwnedBuild(userId: string, jobId: string) {
+  return db.scaffoldJob.findFirst({
+    where: { id: jobId, userId, type: "download", status: "ready" },
+    select: {
+      id: true,
+      projectId: true,
+      projectName: true,
+      toModules: true,
+      toTierId: true,
+      platforms: true,
+      envVars: true,
+      buildKey: true,
+    },
+  });
+}
+
+/** Recent download jobs, newest first, for the "My downloads" list. */
+export async function listDownloads(userId: string) {
+  return db.scaffoldJob.findMany({
+    where: { userId, type: "download", buildKey: { not: null } },
+    orderBy: { createdAt: "desc" },
+    take: 20,
+    select: {
+      id: true,
+      projectName: true,
+      toModules: true,
+      platforms: true,
+      status: true,
+      creditsSpent: true,
+      refundedAt: true,
+      templateVersion: true,
+      createdAt: true,
+    },
+  });
+}
+
+/**
+ * Builds and caches the most requested selections (no modules and every
+ * implemented module, web-only and all platforms) so the first buyers after a
+ * deploy are served from cache. Run by an admin after each deploy.
+ */
+export async function prewarmBuildCache(): Promise<Array<{ modules: string[]; platforms: string[]; cacheHit: boolean }>> {
+  const registry = loadScaffoldRegistry();
+  const all = registry.modules.filter((module) => module.implemented !== false).map((module) => module.id);
+  const scaffoldRoot = getScaffoldRoot();
+  const results = [];
+  for (const modules of [[], all] as ScaffoldModuleId[][]) {
+    for (const platforms of [["web"], ["web", "desktop", "mobile"]]) {
+      const base = await getOrBuildBaseArchive({ scaffoldRoot, modules, platforms });
+      results.push({ modules, platforms, cacheHit: base.cacheHit });
+    }
+  }
+  return results;
+}
+
+/** True when the user already has a delivered build of this exact selection. */
+export async function ownsBuild(userId: string, buildKey: string): Promise<boolean> {
+  const job = await db.scaffoldJob.findFirst({
+    where: { userId, buildKey, status: "ready" },
+    select: { id: true },
+  });
+  return !!job;
+}
+
+export type DownloadScaffoldInput = BuildProjectZipInput & {
+  userId: string;
+  source: "web" | "api";
+  projectId?: string | null;
+  idempotencyKey?: string | null;
+  /** Free regardless of ownership (e.g. an unchanged saved project). */
+  free?: boolean;
+};
+
+export type DownloadScaffoldResult = {
+  bytes: Uint8Array<ArrayBuffer>;
+  charged: number;
+  jobId: string;
+  cacheHit: boolean;
+  /** A retried request with the same idempotency key: charged only once. */
+  alreadyProcessed: boolean;
+};
+
+/**
+ * The one download flow: charge (free when the buyer already owns this build),
+ * build from the cache, then mark the job ready, or refund it if the build fails.
+ */
+export async function downloadScaffold(input: DownloadScaffoldInput): Promise<DownloadScaffoldResult> {
+  if (input.envVars) assertNoSecrets(input.envVars);
+  const modules = validateSelectedModules(input.modules);
+  const pricing = calculateScaffoldCredits(modules);
+  const buildKey = scaffoldBuildKey(modules, input.platforms);
+  const free = input.free || (await ownsBuild(input.userId, buildKey));
+
+  const charge = await chargeScaffoldCredits({
+    userId: input.userId,
+    amount: free ? 0 : pricing.totalCredits,
+    idempotencyKey: input.idempotencyKey,
+    job: {
+      type: "download",
+      source: input.source,
+      projectId: input.projectId ?? null,
+      toModules: modules,
+      toTierId: input.tierId,
+      templateVersion: getTemplateVersion(),
+      status: "building",
+      buildKey,
+      platforms: input.platforms,
+      projectName: input.projectName,
+      envVars: input.envVars,
+    },
+  });
+
+  let build: BuildProjectZipResult;
+  try {
+    build = await buildProjectZip({ ...input, modules });
+  } catch (err) {
+    await refundScaffoldJob(charge.jobId);
+    throw err;
+  }
+
+  await db.scaffoldJob.update({ where: { id: charge.jobId }, data: { status: "ready" } });
+  return {
+    bytes: build.bytes,
+    charged: charge.charged,
+    jobId: charge.jobId,
+    cacheHit: build.cacheHit,
+    alreadyProcessed: charge.alreadyProcessed,
+  };
 }
 
 // ---------------------------------------------------------------------------

@@ -83,7 +83,8 @@ const { stored, projectConfig } = vi.hoisted(() => {
 });
 
 vi.mock("@workspace/database/client", () => {
-  const client: any = { projectConfig };
+  // No owned builds: downloads cost full price.
+  const client: any = { projectConfig, scaffoldJob: { findFirst: async () => null } };
   client.$extends = () => client;
   return { default: client };
 });

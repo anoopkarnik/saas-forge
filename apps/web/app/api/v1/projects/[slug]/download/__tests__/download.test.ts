@@ -10,8 +10,7 @@ const {
   mockCalc,
   InsufficientCreditsError,
   ScaffoldRootNotFoundError,
-  mockBuild,
-  mockCharge,
+  mockDownload,
   mockHash,
 } = vi.hoisted(() => {
   class InvalidScaffoldModuleError extends Error {}
@@ -26,12 +25,7 @@ const {
     mockCalc: vi.fn(() => ({ totalCredits: 30, baseCredits: 20, moduleCredits: [] })),
     InsufficientCreditsError,
     ScaffoldRootNotFoundError,
-    mockBuild: vi.fn(() => ({
-      stream: new ReadableStream({ start: (c) => c.close() }),
-      pricing: {},
-      cleanup: () => {},
-    })),
-    mockCharge: vi.fn(async () => ({ charged: 30, alreadyProcessed: false, jobId: "j1" })),
+    mockDownload: vi.fn(),
     mockHash: vi.fn(() => "hash-A"),
   };
 });
@@ -59,8 +53,7 @@ vi.mock("@/lib/scaffold/template-version", () => ({
 vi.mock("@/lib/scaffold/service", () => ({
   InsufficientCreditsError,
   ScaffoldRootNotFoundError,
-  buildProjectZip: mockBuild,
-  chargeScaffoldCredits: mockCharge,
+  downloadScaffold: mockDownload,
   computeBuildHash: mockHash,
 }));
 
@@ -97,11 +90,12 @@ describe("POST /api/v1/projects/[slug]/download", () => {
     mockValidate.mockImplementation((m: any) => m);
     mockHash.mockReturnValue("hash-A");
     mockCalc.mockReturnValue({ totalCredits: 30, baseCredits: 20, moduleCredits: [] });
-    mockCharge.mockResolvedValue({ charged: 30, alreadyProcessed: false, jobId: "j1" });
-    mockBuild.mockReturnValue({
-      stream: new ReadableStream({ start: (c) => c.close() }),
-      pricing: {},
-      cleanup: () => {},
+    mockDownload.mockResolvedValue({
+      bytes: new Uint8Array([80, 75, 5, 6]),
+      charged: 30,
+      jobId: "j1",
+      cacheHit: true,
+      alreadyProcessed: false,
     });
   });
 
@@ -121,7 +115,7 @@ describe("POST /api/v1/projects/[slug]/download", () => {
     mockFindFirst.mockResolvedValue(null);
     const res = await POST(reqWith(), ctx);
     expect(res.status).toBe(404);
-    expect(mockCharge).not.toHaveBeenCalled();
+    expect(mockDownload).not.toHaveBeenCalled();
   });
 
   it("400s on invalid stored modules before charging", async () => {
@@ -132,16 +126,15 @@ describe("POST /api/v1/projects/[slug]/download", () => {
     });
     const res = await POST(reqWith(), ctx);
     expect(res.status).toBe(400);
-    expect(mockCharge).not.toHaveBeenCalled();
+    expect(mockDownload).not.toHaveBeenCalled();
   });
 
   it("403s when credits are insufficient (no zip built)", async () => {
     mockAuth.mockResolvedValue({ ok: true, userId: "u1" });
     mockFindFirst.mockResolvedValue(PROJECT);
-    mockCharge.mockRejectedValueOnce(new InsufficientCreditsError());
+    mockDownload.mockRejectedValueOnce(new InsufficientCreditsError());
     const res = await POST(reqWith(), ctx);
     expect(res.status).toBe(403);
-    expect(mockBuild).not.toHaveBeenCalled();
   });
 
   it("charges base+modules and streams the zip", async () => {
@@ -151,10 +144,9 @@ describe("POST /api/v1/projects/[slug]/download", () => {
     expect(res.status).toBe(200);
     expect(res.headers.get("Content-Type")).toBe("application/zip");
     expect(res.headers.get("X-Credits-Charged")).toBe("30");
-    expect(mockCharge).toHaveBeenCalledWith(
-      expect.objectContaining({ userId: "u1", amount: 30, idempotencyKey: "idem-1" }),
+    expect(mockDownload).toHaveBeenCalledWith(
+      expect.objectContaining({ userId: "u1", source: "api", idempotencyKey: "idem-1", free: false }),
     );
-    expect(mockBuild).toHaveBeenCalled();
   });
 
   it("409s on a stale expected price without charging", async () => {
@@ -163,7 +155,7 @@ describe("POST /api/v1/projects/[slug]/download", () => {
     const res = await POST(reqWith(undefined, { expectedTotalCredits: 20 }), ctx);
     expect(res.status).toBe(409);
     expect((await res.json()).error.code).toBe("price_changed");
-    expect(mockCharge).not.toHaveBeenCalled();
+    expect(mockDownload).not.toHaveBeenCalled();
   });
 
   it("downloads when the expected price matches", async () => {
@@ -171,14 +163,15 @@ describe("POST /api/v1/projects/[slug]/download", () => {
     mockFindFirst.mockResolvedValue(PROJECT);
     const res = await POST(reqWith(undefined, { expectedTotalCredits: 30 }), ctx);
     expect(res.status).toBe(200);
-    expect(mockCharge).toHaveBeenCalledWith(expect.objectContaining({ amount: 30 }));
+    expect(mockDownload).toHaveBeenCalled();
   });
 
   it("re-downloads an unchanged project for free", async () => {
     mockAuth.mockResolvedValue({ ok: true, userId: "u1" });
     mockFindFirst.mockResolvedValue({ ...PROJECT, lastBuiltHash: "hash-A" });
-    const res = await POST(reqWith(), ctx);
+    // A client quoting the catalog price is not rejected for a free re-download.
+    const res = await POST(reqWith(undefined, { expectedTotalCredits: 30 }), ctx);
     expect(res.status).toBe(200);
-    expect(mockCharge).toHaveBeenCalledWith(expect.objectContaining({ amount: 0 }));
+    expect(mockDownload).toHaveBeenCalledWith(expect.objectContaining({ free: true }));
   });
 });

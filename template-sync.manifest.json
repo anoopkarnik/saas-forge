@@ -48,6 +48,8 @@
     "apps/web/tests/integration/scaffoldRoute.test.ts",
     "packages/database/prisma/scaffold.prisma",
     "packages/database/prisma/migrations/20260817001340_project_upgrade",
+    "packages/database/prisma/migrations/20261005162142_scaffold_build_cache",
+    "packages/database/prisma/migrations/20261005165906_scaffold_job_project_name",
     "apps/web/lib/scaffold",
     "apps/web/trpc/routers/projectProcedures.ts",
     "apps/web/trpc/routers/scaffoldCatalogProcedures.ts",

@@ -148,8 +148,8 @@ function ProjectRow({ project }: { project: ProjectListItem }) {
         | { config?: Record<string, unknown> }
         | undefined;
       const config = record?.config ?? {};
-      // The session download always builds and charges in full; free
-      // re-downloads of an unchanged build arrive with cached builds (#4).
+      // The server compares against the catalog price and charges nothing when
+      // this exact build is already owned.
       await downloadFromConfig(project.slug, config, project.modules, estimate.data?.fullCredits);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Download failed");
@@ -214,8 +214,9 @@ function ProjectRow({ project }: { project: ProjectListItem }) {
             <p className="text-muted-foreground">
               Download cost:{" "}
               <span className="font-medium text-foreground">
-                {estimate.data.fullCredits} credits
+                {estimate.data.credits} credits
               </span>
+              {estimate.data.alreadyBuilt ? " (you already own this build, so it is free)" : null}
             </p>
           ) : null}
 

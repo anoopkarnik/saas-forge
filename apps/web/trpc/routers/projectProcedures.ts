@@ -20,6 +20,7 @@ import {
 } from "@/lib/scaffold/project-service";
 import { computeBuildHash, tierOrder } from "@/lib/scaffold/project-rules";
 import { generateSetupGuide } from "@/lib/scaffold/setup-guide";
+import { ownsBuild, scaffoldBuildKey } from "@/lib/scaffold/service";
 
 // ---------------------------------------------------------------------------
 // Input schemas
@@ -178,9 +179,11 @@ export const projectRouter = createTRPCRouter({
       const project = await getOwnedProject(ctx.session.user.id, input.slug);
       const modules = await safeValidateModules(project.modules);
       const pricing = calculateScaffoldCredits(modules);
+      // Free when unchanged since the last API build, or when the user already
+      // owns this exact build (same modules, platforms and starter).
       const alreadyBuilt =
-        !!project.lastBuiltHash &&
-        project.lastBuiltHash === computeBuildHash(project);
+        (!!project.lastBuiltHash && project.lastBuiltHash === computeBuildHash(project)) ||
+        (await ownsBuild(ctx.session.user.id, scaffoldBuildKey(modules, project.platforms)));
 
       return {
         credits: alreadyBuilt ? 0 : pricing.totalCredits,

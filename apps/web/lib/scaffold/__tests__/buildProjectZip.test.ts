@@ -1,8 +1,11 @@
 // @vitest-environment node
 import JSZip from "jszip";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@workspace/database/client", () => ({ default: {} }));
+
+// Never reach a real bucket from tests: no R2 credentials means no cache.
+beforeEach(() => vi.stubEnv("R2_ACCOUNT_ID", ""));
 
 import {
   SecretNotAcceptedError,
@@ -10,8 +13,7 @@ import {
   formValuesFromEnv,
 } from "@/lib/scaffold/service";
 
-async function readZip(stream: ReadableStream): Promise<JSZip> {
-  const bytes = new Uint8Array(await new Response(stream).arrayBuffer());
+function readZip(bytes: Uint8Array): Promise<JSZip> {
   return JSZip.loadAsync(bytes, { checkCRC32: true });
 }
 
@@ -31,8 +33,11 @@ describe("buildProjectZip", () => {
       NEXT_PUBLIC_AUTH_GITHUB: "true",
       NEXT_PUBLIC_THEME: "orange",
     };
-    const { stream } = buildProjectZip({ ...base, platforms: ["web", "mobile"], envVars });
-    const zip = await readZip(stream);
+    const { bytes } = await buildProjectZip({ ...base, platforms: ["web", "mobile"], envVars });
+    const zip = await readZip(bytes);
+
+    // The cached base's neutral root is renamed to the project.
+    expect(Object.keys(zip.files).every((name) => name.startsWith("demo/"))).toBe(true);
 
     const webEnv = await zip.file("demo/apps/web/.env")!.async("string");
     expect(webEnv).toContain("NEXT_PUBLIC_URL=https://demo.example.com");
@@ -50,10 +55,10 @@ describe("buildProjectZip", () => {
     expect(zip.file("demo/SETUP.md")).not.toBeNull();
   });
 
-  it("refuses secrets before building anything", () => {
-    expect(() =>
+  it("refuses secrets before building anything", async () => {
+    await expect(
       buildProjectZip({ ...base, platforms: ["web"], envVars: { DATABASE_URL: "postgresql://canary" } }),
-    ).toThrow(SecretNotAcceptedError);
+    ).rejects.toThrow(SecretNotAcceptedError);
   });
 });
 

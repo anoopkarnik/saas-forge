@@ -29,9 +29,7 @@ vi.mock("@workspace/database/client", () => ({
   },
 }));
 
-const mockCharge = vi.fn();
-const mockBuild = vi.fn();
-const mockCleanup = vi.fn();
+const mockDownload = vi.fn();
 // The route's own logic is under test; the shared builder has its own tests.
 vi.mock("@/lib/scaffold/service", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/scaffold/service")>();
@@ -41,8 +39,7 @@ vi.mock("@/lib/scaffold/service", async (importOriginal) => {
     InsufficientCreditsError: actual.InsufficientCreditsError,
     ScaffoldRootNotFoundError: actual.ScaffoldRootNotFoundError,
     SecretNotAcceptedError: actual.SecretNotAcceptedError,
-    buildProjectZip: (...args: any[]) => mockBuild(...args),
-    chargeScaffoldCredits: (...args: any[]) => mockCharge(...args),
+    downloadScaffold: (...args: any[]) => mockDownload(...args),
   };
 });
 vi.mock("@/lib/scaffold/template-version", () => ({
@@ -122,14 +119,13 @@ describe("Scaffold Route Integration Tests", () => {
 
     vi.mocked(ratelimit.limit).mockResolvedValue({ success: true } as any);
 
-    mockBuild.mockImplementation(() => ({
-      stream: new ReadableStream({ start: (controller) => controller.close() }),
-      pricing: {},
-      cleanup: mockCleanup,
-    }));
-
-    mockUserUpdate.mockResolvedValue({});
-    mockCharge.mockResolvedValue({ charged: 20, alreadyProcessed: false, jobId: "j1" });
+    mockDownload.mockResolvedValue({
+      bytes: new Uint8Array([80, 75, 5, 6]),
+      charged: 20,
+      jobId: "j1",
+      cacheHit: true,
+      alreadyProcessed: false,
+    });
 
     mockLoadScaffoldRegistry.mockReturnValue({
       baseCreditsCost: 20,
@@ -214,7 +210,7 @@ describe("Scaffold Route Integration Tests", () => {
       expect(response.status).toBe(401);
       expect(data.error).toBe("Unauthorized");
       expect(ratelimit.limit).not.toHaveBeenCalled();
-      expect(mockCharge).not.toHaveBeenCalled();
+      expect(mockDownload).not.toHaveBeenCalled();
     });
 
     it("should return 403 for disallowed origins before auth work", async () => {
@@ -238,7 +234,7 @@ describe("Scaffold Route Integration Tests", () => {
       expect(data.error).toBe("Forbidden");
       expect(auth.api.getSession).not.toHaveBeenCalled();
       expect(ratelimit.limit).not.toHaveBeenCalled();
-      expect(mockCharge).not.toHaveBeenCalled();
+      expect(mockDownload).not.toHaveBeenCalled();
     });
 
     it("should return 429 when rate limit is exceeded", async () => {
@@ -288,14 +284,12 @@ describe("Scaffold Route Integration Tests", () => {
       expect(response.status).toBe(403);
       expect(data.error).toBe("This is a read-only demo account.");
       expect(ratelimit.limit).not.toHaveBeenCalled();
-      expect(mockCharge).not.toHaveBeenCalled();
+      expect(mockDownload).not.toHaveBeenCalled();
     });
 
     it("should return 403 when user has insufficient credits", async () => {
-      vi.mocked(auth.api.getSession).mockResolvedValue({
-        session: { id: "session_1" },
-        user: { id: "user_1", creditsTotal: 10, creditsUsed: 5 },
-      } as any);
+      const { InsufficientCreditsError } = await import("@/lib/scaffold/service");
+      mockDownload.mockRejectedValueOnce(new InsufficientCreditsError());
 
       const { POST } = await import("../../app/api/scaffold/route.js");
 
@@ -335,9 +329,7 @@ describe("Scaffold Route Integration Tests", () => {
 
     it("should return 500 when scaffold root is not found", async () => {
       const { ScaffoldRootNotFoundError } = await import("@/lib/scaffold/service");
-      mockBuild.mockImplementation(() => {
-        throw new ScaffoldRootNotFoundError();
-      });
+      mockDownload.mockRejectedValueOnce(new ScaffoldRootNotFoundError());
 
       const { POST } = await import("../../app/api/scaffold/route.js");
 
@@ -373,7 +365,7 @@ describe("Scaffold Route Integration Tests", () => {
 
       expect(response.status).toBe(400);
       expect(data.error).toContain("Unknown scaffold module");
-      expect(mockCharge).not.toHaveBeenCalled();
+      expect(mockDownload).not.toHaveBeenCalled();
     });
 
     it("should return 400 for modules that are not downloadable yet", async () => {
@@ -393,7 +385,7 @@ describe("Scaffold Route Integration Tests", () => {
 
       expect(response.status).toBe(400);
       expect(data.error).toContain("not available for download yet");
-      expect(mockCharge).not.toHaveBeenCalled();
+      expect(mockDownload).not.toHaveBeenCalled();
     });
 
     it("should successfully generate and stream a zip file", async () => {
@@ -422,36 +414,18 @@ describe("Scaffold Route Integration Tests", () => {
         "true",
       );
 
-      // One shared builder for every download path.
-      expect(mockBuild).toHaveBeenCalledWith(
+      // One shared download flow (charge, cached build, refund on failure).
+      expect(mockDownload).toHaveBeenCalledWith(
         expect.objectContaining({
+          userId: "user_1",
+          source: "web",
           projectName: "My-Test-Project",
           modules: [],
           platforms: ["web", "mobile"],
           envVars,
         }),
       );
-
-      // Verify credits were deducted via the shared transactional charge
-      expect(mockCharge).toHaveBeenCalledWith(
-        expect.objectContaining({ userId: "user_1", amount: 20 }),
-      );
-    });
-
-    it("should clean up the build when charging fails", async () => {
-      const { InsufficientCreditsError } = await import("@/lib/scaffold/service");
-      mockCharge.mockRejectedValueOnce(new InsufficientCreditsError());
-      const { POST } = await import("../../app/api/scaffold/route.js");
-
-      const response = await POST(
-        createScaffoldRequest("http://localhost:3000/api/scaffold", {
-          method: "POST",
-          body: JSON.stringify({ name: "test", envVars: {} }),
-        }) as any,
-      );
-
-      expect(response.status).toBe(403);
-      expect(mockCleanup).toHaveBeenCalled();
+      expect(response.headers.get("X-Credits-Charged")).toBe("20");
     });
 
     it("should add selected module credits to the scaffold total", async () => {
@@ -471,8 +445,8 @@ describe("Scaffold Route Integration Tests", () => {
       );
 
       expect(response.status).toBe(200);
-      expect(mockCharge).toHaveBeenCalledWith(
-        expect.objectContaining({ userId: "user_1", amount: 30 }),
+      expect(mockDownload).toHaveBeenCalledWith(
+        expect.objectContaining({ userId: "user_1", modules: ["billing"] }),
       );
     });
 
@@ -521,8 +495,7 @@ describe("Scaffold Route Integration Tests", () => {
       expect(response.status).toBe(400);
       expect(data).toEqual({ error: "secret_not_accepted", keys: key });
       expect(JSON.stringify(data)).not.toContain(value);
-      expect(mockBuild).not.toHaveBeenCalled();
-      expect(mockCharge).not.toHaveBeenCalled();
+      expect(mockDownload).not.toHaveBeenCalled();
     });
   });
 
@@ -544,7 +517,7 @@ describe("Scaffold Route Integration Tests", () => {
       expect(response.headers.get("Allow")).toBe("POST, OPTIONS");
       expect(data.error).toBe("Method Not Allowed");
       expect(auth.api.getSession).not.toHaveBeenCalled();
-      expect(mockCharge).not.toHaveBeenCalled();
+      expect(mockDownload).not.toHaveBeenCalled();
     });
   });
 

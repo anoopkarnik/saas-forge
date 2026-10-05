@@ -8,16 +8,14 @@ import {
   validateSelectedModules,
   type ScaffoldModuleId,
 } from "@/lib/scaffold-modules";
-import { getTemplateVersion } from "@/lib/scaffold/template-version";
 import { buildEnvVarsFromForm } from "@workspace/ui/lib/utils/scaffold";
 import { splitSecretEnv } from "@workspace/ui/lib/scaffold-secrets";
 import type { FormValues } from "@workspace/ui/lib/zod/download";
 import {
   InsufficientCreditsError,
   ScaffoldRootNotFoundError,
-  buildProjectZip,
-  chargeScaffoldCredits,
   computeBuildHash,
+  downloadScaffold,
 } from "@/lib/scaffold/service";
 
 export const runtime = "nodejs";
@@ -49,35 +47,13 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
   // Free re-download when nothing changed since the last build.
   const currentHash = computeBuildHash(project);
   const alreadyBuilt = !!project.lastBuiltHash && project.lastBuiltHash === currentHash;
-  const amount = alreadyBuilt ? 0 : calculateScaffoldCredits(modules).totalCredits;
 
   // Optional JSON body: { expectedTotalCredits } guards against price changes.
+  // It is compared with the catalog price; a free re-download never trips it.
   const body = (await req.json().catch(() => ({}))) as { expectedTotalCredits?: unknown };
-  if (isPriceChanged(body?.expectedTotalCredits, amount)) {
-    return jsonError("price_changed", `This download now costs ${amount} credits.`, 409);
-  }
-  const idempotencyKey = req.headers.get("Idempotency-Key") || undefined;
-
-  let charge;
-  try {
-    charge = await chargeScaffoldCredits({
-      userId: auth.userId,
-      amount,
-      idempotencyKey,
-      job: {
-        type: "download",
-        source: "api",
-        projectId: project.id,
-        toModules: modules,
-        toTierId: project.tierId,
-        templateVersion: getTemplateVersion(),
-      },
-    });
-  } catch (err) {
-    if (err instanceof InsufficientCreditsError) {
-      return jsonError("insufficient_credits", "Not enough credits.", 403);
-    }
-    throw err;
+  const fullPrice = calculateScaffoldCredits(modules).totalCredits;
+  if (isPriceChanged(body?.expectedTotalCredits, fullPrice)) {
+    return jsonError("price_changed", `This download now costs ${fullPrice} credits.`, 409);
   }
 
   // Same env files as the web download of this config; saved configs hold no
@@ -85,9 +61,14 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
   const config = (project.config ?? {}) as Record<string, unknown>;
   const { publicEnv } = splitSecretEnv(buildEnvVarsFromForm(config as FormValues));
 
-  let build;
+  let download;
   try {
-    build = buildProjectZip({
+    download = await downloadScaffold({
+      userId: auth.userId,
+      source: "api",
+      projectId: project.id,
+      idempotencyKey: req.headers.get("Idempotency-Key") || undefined,
+      free: alreadyBuilt,
       name: project.name,
       projectName: project.slug,
       modules,
@@ -99,6 +80,9 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
       envVars: publicEnv,
     });
   } catch (err) {
+    if (err instanceof InsufficientCreditsError) {
+      return jsonError("insufficient_credits", "Not enough credits.", 403);
+    }
     if (err instanceof ScaffoldRootNotFoundError) {
       return jsonError("scaffold_root_missing", err.message, 500);
     }
@@ -111,13 +95,13 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
   // Mark built so an unchanged re-download is free next time (best-effort).
   markProjectBuilt(project.id, currentHash);
 
-  return new NextResponse(build.stream as any, {
+  return new NextResponse(download.bytes, {
     headers: {
       "Content-Type": "application/zip",
       "Content-Disposition": `attachment; filename="${project.slug}.zip"`,
       "Cache-Control": "no-store",
-      "X-Credits-Charged": String(charge.charged),
-      "X-Idempotent-Replay": charge.alreadyProcessed ? "true" : "false",
+      "X-Credits-Charged": String(download.charged),
+      "X-Idempotent-Replay": download.alreadyProcessed ? "true" : "false",
     },
   });
 }

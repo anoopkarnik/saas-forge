@@ -56,10 +56,31 @@ model ScaffoldJob {
     /// Guards against double-charging on retried API calls.
     idempotencyKey  String?             @unique
 
+    /// Build lifecycle. Rows created before build tracking are delivered builds.
+    status          SCAFFOLD_JOB_STATUS @default(ready)
+    /// Cache key of the compiled base archive (template version, modules, platforms, builder).
+    buildKey        String?
+    platforms       String[]            @default([])
+    /// Folder name inside the ZIP, reused for free re-downloads.
+    projectName     String?
+    /// Public wizard values for the per-download env files. Never secrets.
+    envVars         Json?
+    /// Set when a failed build's credits were returned.
+    refundedAt      DateTime?
+
     createdAt       DateTime            @default(now())
 
     @@index([userId])
     @@index([projectId])
+    @@index([userId, buildKey])
+    @@schema("scaffold_schema")
+}
+
+enum SCAFFOLD_JOB_STATUS {
+    building
+    ready
+    failed
+
     @@schema("scaffold_schema")
 }
 

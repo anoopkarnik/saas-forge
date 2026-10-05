@@ -150,6 +150,8 @@ export const API_REGISTRY: ApiGroup[] = [
     calls: [
       { name: "catalog", type: "query", access: "public" },
       { name: "quote", type: "query", access: "public" },
+      { name: "downloads", type: "query", access: "authenticated" },
+      { name: "prewarm", type: "mutation", access: "admin" },
     ],
   },
   ...ORGANIZATION_API_GROUPS,

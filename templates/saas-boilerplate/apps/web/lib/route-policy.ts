@@ -104,6 +104,7 @@ export const routePolicies = [
   { path: "/api/ai/agents/[agentId]/stream", match: "exact", auth: "session", rateLimit: "none", maxBodyBytes: 256 * KB, input: "forwarded" },
   { path: "/api/scaffold", match: "exact", auth: "session", rateLimit: "default", maxBodyBytes: 256 * KB, input: "manual", cors: "self-managed" },
   { path: "/api/scaffold/upgrade", match: "exact", auth: "session", rateLimit: "none", maxBodyBytes: 64 * KB, input: "zod" },
+  { path: "/api/scaffold/builds/[jobId]", match: "exact", auth: "session", rateLimit: "default", maxBodyBytes: 1 * KB, input: "none" },
 
   // Public REST API (API keys)
   { path: "/api/v1/me", match: "exact", auth: "api-key", rateLimit: "api-key", input: "none" },

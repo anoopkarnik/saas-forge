@@ -2,7 +2,10 @@
 import archiver from "archiver";
 import JSZip from "jszip";
 import { describe, expect, it } from "vitest";
-import { appendFilesToZip } from "@workspace/ui/lib/zip-append";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import { appendFilesToZip, renameZipRoot } from "@workspace/ui/lib/zip-append";
 import {
   SECRET_ENV_KEYS,
   isSecretEnvKey,
@@ -83,3 +86,31 @@ describe("appendFilesToZip", () => {
     expect(() => appendFilesToZip(new Uint8Array(64), [{ name: "x", content: "y" }])).toThrow("Not a ZIP archive");
   });
 });
+
+describe("renameZipRoot", () => {
+  it("renames the top folder of a streamed archive without touching file data", async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "zip-rename-"));
+    fs.mkdirSync(path.join(dir, "apps/web"), { recursive: true });
+    fs.writeFileSync(path.join(dir, "README.md"), "# Starter\n".repeat(500));
+    fs.writeFileSync(path.join(dir, "apps/web/page.tsx"), "export default function Page() {}\n");
+
+    const archive = archiver("zip", { zlib: { level: 6 } });
+    const chunks: Buffer[] = [];
+    archive.on("data", (chunk: Buffer) => chunks.push(chunk));
+    const done = new Promise((resolve) => archive.on("end", resolve));
+    archive.directory(dir, "scaffold");
+    await archive.finalize();
+    await done;
+    fs.rmSync(dir, { recursive: true, force: true });
+
+    const renamed = renameZipRoot(new Uint8Array(Buffer.concat(chunks)), "scaffold", "my-app");
+    const zip = await JSZip.loadAsync(appendFilesToZip(renamed, [{ name: "my-app/SETUP.md", content: "setup" }]), {
+      checkCRC32: true,
+    });
+
+    const names = Object.keys(zip.files).filter((name) => !zip.files[name]!.dir).sort();
+    expect(names).toEqual(["my-app/README.md", "my-app/SETUP.md", "my-app/apps/web/page.tsx"]);
+    expect(await zip.file("my-app/README.md")!.async("string")).toBe("# Starter\n".repeat(500));
+  });
+});
+

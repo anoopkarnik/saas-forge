@@ -45,13 +45,7 @@ function findEndOfCentralDirectory(view: DataView): number {
   throw new Error("Not a ZIP archive");
 }
 
-export function appendFilesToZip(
-  zip: Uint8Array<ArrayBuffer>,
-  files: Array<{ name: string; content: string }>,
-  now = new Date(),
-): Uint8Array<ArrayBuffer> {
-  if (files.length === 0) return zip;
-
+function readCentralDirectory(zip: Uint8Array) {
   const view = new DataView(zip.buffer, zip.byteOffset, zip.byteLength);
   const eocd = findEndOfCentralDirectory(view);
   const entryCount = view.getUint16(eocd + 10, true);
@@ -60,6 +54,106 @@ export function appendFilesToZip(
   if (entryCount === 0xffff || centralOffset === 0xffffffff) {
     throw new Error("ZIP64 archives are not supported");
   }
+  return { view, eocd, entryCount, centralSize, centralOffset };
+}
+
+/**
+ * Renames the archive's top-level folder (e.g. a cached build's neutral root to
+ * the buyer's project name). Compressed data is copied as-is; only names and
+ * offsets change, so this is cheap even for large archives.
+ */
+export function renameZipRoot(
+  zip: Uint8Array<ArrayBuffer>,
+  fromRoot: string,
+  toRoot: string,
+): Uint8Array<ArrayBuffer> {
+  if (fromRoot === toRoot) return zip;
+  const { view, eocd, entryCount, centralOffset } = readCentralDirectory(zip);
+  const encoder = new TextEncoder();
+  const decoder = new TextDecoder();
+  const from = `${fromRoot}/`;
+  const to = `${toRoot}/`;
+
+  type Entry = { central: number; nameLength: number; extraLength: number; commentLength: number; localOffset: number; name: string };
+  const entries: Entry[] = [];
+  let cursor = centralOffset;
+  for (let index = 0; index < entryCount; index++) {
+    if (view.getUint32(cursor, true) !== CENTRAL_HEADER) throw new Error("Corrupt central directory");
+    const nameLength = view.getUint16(cursor + 28, true);
+    const extraLength = view.getUint16(cursor + 30, true);
+    const commentLength = view.getUint16(cursor + 32, true);
+    const name = decoder.decode(zip.subarray(cursor + 46, cursor + 46 + nameLength));
+    entries.push({ central: cursor, nameLength, extraLength, commentLength, localOffset: view.getUint32(cursor + 42, true), name });
+    cursor += 46 + nameLength + extraLength + commentLength;
+  }
+
+  // Each local record runs to the next one (data descriptors included).
+  const byOffset = [...entries].sort((a, b) => a.localOffset - b.localOffset);
+  const localEnd = new Map<number, number>();
+  byOffset.forEach((entry, index) => {
+    localEnd.set(entry.localOffset, byOffset[index + 1]?.localOffset ?? centralOffset);
+  });
+
+  const renamed = (name: string) => encoder.encode(name.startsWith(from) ? to + name.slice(from.length) : name);
+  const locals: Uint8Array[] = [];
+  const centrals: Uint8Array[] = [];
+  const newLocalOffset = new Map<number, number>();
+  let offset = 0;
+
+  for (const entry of byOffset) {
+    const start = entry.localOffset;
+    const oldNameLength = view.getUint16(start + 26, true);
+    const name = renamed(decoder.decode(zip.subarray(start + 30, start + 30 + oldNameLength)));
+    const rest = zip.subarray(start + 30 + oldNameLength, localEnd.get(start)!);
+    const local = new Uint8Array(30 + name.length + rest.length);
+    local.set(zip.subarray(start, start + 30), 0);
+    new DataView(local.buffer).setUint16(26, name.length, true);
+    local.set(name, 30);
+    local.set(rest, 30 + name.length);
+    newLocalOffset.set(start, offset);
+    locals.push(local);
+    offset += local.length;
+  }
+
+  for (const entry of entries) {
+    const name = renamed(entry.name);
+    const tail = zip.subarray(
+      entry.central + 46 + entry.nameLength,
+      entry.central + 46 + entry.nameLength + entry.extraLength + entry.commentLength,
+    );
+    const central = new Uint8Array(46 + name.length + tail.length);
+    central.set(zip.subarray(entry.central, entry.central + 46), 0);
+    const cv = new DataView(central.buffer);
+    cv.setUint16(28, name.length, true);
+    cv.setUint32(42, newLocalOffset.get(entry.localOffset)!, true);
+    central.set(name, 46);
+    central.set(tail, 46 + name.length);
+    centrals.push(central);
+  }
+
+  const newCentralSize = centrals.reduce((sum, part) => sum + part.length, 0);
+  const tail = zip.subarray(eocd);
+  const out = new Uint8Array(offset + newCentralSize + tail.length);
+  let position = 0;
+  for (const part of [...locals, ...centrals, tail]) {
+    out.set(part, position);
+    position += part.length;
+  }
+  const ov = new DataView(out.buffer);
+  const eocdStart = offset + newCentralSize;
+  ov.setUint32(eocdStart + 12, newCentralSize, true);
+  ov.setUint32(eocdStart + 16, offset, true);
+  return out;
+}
+
+export function appendFilesToZip(
+  zip: Uint8Array<ArrayBuffer>,
+  files: Array<{ name: string; content: string }>,
+  now = new Date(),
+): Uint8Array<ArrayBuffer> {
+  if (files.length === 0) return zip;
+
+  const { eocd, entryCount, centralSize, centralOffset } = readCentralDirectory(zip);
 
   const encoder = new TextEncoder();
   const { time, date } = dosDateTime(now);

@@ -11,14 +11,12 @@ import {
 } from "@/lib/scaffold-modules";
 import {
   assertNoSecrets,
-  buildProjectZip,
-  chargeScaffoldCredits,
+  downloadScaffold,
   formValuesFromEnv,
   InsufficientCreditsError,
   ScaffoldRootNotFoundError,
   SecretNotAcceptedError,
 } from "@/lib/scaffold/service";
-import { getTemplateVersion } from "@/lib/scaffold/template-version";
 
 const scaffoldAllowedOrigins = [
   DESKTOP_APP_ORIGIN,
@@ -131,16 +129,16 @@ export async function POST(req: NextRequest) {
       return jsonWithCors(req, { error: "price_changed", totalCredits: pricing.totalCredits }, 409);
     }
 
-    if (session.user.creditsTotal - session.user.creditsUsed < pricing.totalCredits) {
-      return jsonWithCors(req, { error: "Not enough credits" }, 403);
-    }
-
     // Selected platforms arrive as a public env var (default web-only).
     const platforms = envVars.NEXT_PUBLIC_PLATFORM
       ? envVars.NEXT_PUBLIC_PLATFORM.split(",").map((s) => s.trim())
       : ["web"];
 
-    const build = buildProjectZip({
+    // Charges (free when this exact build is already owned), builds from the
+    // cache, and refunds automatically if the build fails.
+    const download = await downloadScaffold({
+      userId: session.user.id,
+      source: "web",
       name: projectName,
       projectName,
       modules,
@@ -151,29 +149,12 @@ export async function POST(req: NextRequest) {
       envVars,
     });
 
-    // Deduct credits atomically and record the download in the ScaffoldJob ledger.
-    try {
-      await chargeScaffoldCredits({
-        userId: session.user.id,
-        amount: pricing.totalCredits,
-        job: {
-          type: "download",
-          source: "web",
-          toModules: modules,
-          toTierId: "custom",
-          templateVersion: getTemplateVersion(),
-        },
-      });
-    } catch (err) {
-      build.cleanup();
-      throw err;
-    }
-
     revalidatePath("/(home)");
 
-    return new NextResponse(build.stream, {
+    return new NextResponse(download.bytes, {
       headers: {
         ...getCorsHeaders(req),
+        "X-Credits-Charged": String(download.charged),
         "Content-Type": "application/zip",
         "Content-Disposition": `attachment; filename="${projectName}.zip"`,
         "Cache-Control": "no-store",

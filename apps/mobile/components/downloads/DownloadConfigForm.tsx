@@ -28,6 +28,7 @@ import {
 } from "./constants";
 import { parseMobileEnvFile } from "./envParser";
 import { PriceChangedError, fetchScaffoldCatalog, totalCredits, type ScaffoldCatalog } from "./catalog";
+import { isSecretEnvKey } from "./secrets";
 
 export default function DownloadConfigForm({ templateTitle, onBack }: Props) {
     const [isDownloading, setIsDownloading] = useState(false);
@@ -154,6 +155,7 @@ export default function DownloadConfigForm({ templateTitle, onBack }: Props) {
             // Map all string fields
             for (const key of STRING_FIELD_KEYS) {
                 const val = formValues[key];
+                if (isSecretEnvKey(key as string)) continue;
                 if (!selectedBilling && PAYMENT_ENV_KEYS.includes(key)) {
                     continue;
                 }
@@ -273,7 +275,9 @@ export default function DownloadConfigForm({ templateTitle, onBack }: Props) {
         </View>
     );
 
-    const renderField = (label: string, key: keyof FormState, placeholder: string, secure = false) => (
+    // Secrets are never collected here: buyers add them after download (SETUP.md).
+    const renderField = (label: string, key: keyof FormState, placeholder: string, secure = false) =>
+        isSecretEnvKey(key as string) ? null : (
         <View key={key as string}>
             <MutedText className="text-xs mb-1.5 font-medium">{label}</MutedText>
             <Input
@@ -411,6 +415,12 @@ export default function DownloadConfigForm({ templateTitle, onBack }: Props) {
                         <Label className="text-base mt-1">Total: {totalCreditsCost ?? "…"} credits</Label>
                     </View>
                 </View>
+            </View>
+
+            <View className="mx-4 rounded-lg bg-muted/40 px-3 py-3">
+                <MutedText className="text-xs">
+                    🔒 Keys and secrets are never sent to SaaS Forge. Add them after download by following SETUP.md in the ZIP.
+                </MutedText>
             </View>
 
             {/* ── Project Settings ──────────────────────────────────────── */}

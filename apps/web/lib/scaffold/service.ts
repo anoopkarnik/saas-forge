@@ -14,16 +14,18 @@ import {
   type ScaffoldPricingOutput,
 } from "@/lib/scaffold-modules";
 import { tierOrder } from "@/lib/scaffold/project-rules";
+import { isSecretEnvKey } from "@/lib/scaffold/secret-keys";
 import { getTemplateVersion } from "@/lib/scaffold/template-version";
 import { generateSetupGuide } from "@/lib/scaffold/setup-guide";
 
 /**
- * Shared scaffold service — used by the API-key/credits v1 routes (and, later,
- * the upgrade kit). Platform-only; excluded from the boilerplate.
+ * Shared scaffold service: the one builder behind the session route
+ * (`/api/scaffold`), the API-key v1 routes and the upgrade kit. Platform-only;
+ * excluded from the boilerplate.
  *
- * Unlike the interactive session route (`/api/scaffold`), the programmatic path
- * never injects real secrets: it ships `.env.example` untouched plus a generated
- * `SETUP.md` describing how to obtain each env var.
+ * Builds never contain secrets. Public wizard choices become `.env` files, and
+ * a generated `SETUP.md` explains how to obtain each secret. Clients add any
+ * secrets the buyer typed to the ZIP on their own device.
  */
 
 export class ScaffoldRootNotFoundError extends Error {
@@ -31,6 +33,20 @@ export class ScaffoldRootNotFoundError extends Error {
     super("Scaffold root not found");
     this.name = "ScaffoldRootNotFoundError";
   }
+}
+
+export class SecretNotAcceptedError extends Error {
+  readonly code = "secret_not_accepted";
+  constructor(readonly keys: string[]) {
+    super(`Secret values are not accepted: ${keys.join(", ")}`);
+    this.name = "SecretNotAcceptedError";
+  }
+}
+
+/** Throws when any key is a secret; secrets must never reach the server. */
+export function assertNoSecrets(envVars: Record<string, string>) {
+  const keys = Object.keys(envVars).filter(isSecretEnvKey);
+  if (keys.length > 0) throw new SecretNotAcceptedError(keys);
 }
 
 export class InsufficientCreditsError extends Error {
@@ -70,7 +86,6 @@ function shouldIgnore(relPath: string): boolean {
     ".cache",
     "coverage",
     "scaffold",
-    "pnpm-lock.yaml",
   ]);
   const ignoreFiles = new Set([".DS_Store", "Thumbs.db"]);
   if (parts.some((p) => ignoreDirs.has(p))) return true;
@@ -92,6 +107,8 @@ export type BuildProjectZipInput = {
   productTypeId?: string | null;
   tierId: string;
   versionId: string;
+  /** Public wizard values written into the web, mobile and desktop .env files. Secrets are refused. */
+  envVars?: Record<string, string>;
 };
 
 export type BuildProjectZipResult = {
@@ -100,9 +117,115 @@ export type BuildProjectZipResult = {
   cleanup: () => void;
 };
 
+/** Rebuilds the wizard's array fields from flat env vars (for SETUP.md). */
+export function formValuesFromEnv(envVars: Record<string, string>): Record<string, unknown> {
+  const list = (key: string) =>
+    envVars[key] ? envVars[key]!.split(",").map((value) => value.trim()) : [];
+  const flags: Array<[string, string]> = [
+    ["NEXT_PUBLIC_AUTH_EMAIL", "email_verification"],
+    ["NEXT_PUBLIC_AUTH_GOOGLE", "google"],
+    ["NEXT_PUBLIC_AUTH_GITHUB", "github"],
+    ["NEXT_PUBLIC_AUTH_LINKEDIN", "linkedin"],
+  ];
+  return {
+    ...envVars,
+    NEXT_PUBLIC_AUTH_PROVIDERS: flags.filter(([key]) => envVars[key] === "true").map(([, id]) => id),
+    NEXT_PUBLIC_PLATFORM: list("NEXT_PUBLIC_PLATFORM"),
+    NEXT_PUBLIC_SUPPORT_FEATURES: list("NEXT_PUBLIC_SUPPORT_FEATURES"),
+    NEXT_PUBLIC_OBSERVABILITY_FEATURES: list("NEXT_PUBLIC_OBSERVABILITY_FEATURES"),
+  };
+}
+
+/** Fills a .env.example template with values, keeping comments and order. */
+function generateEnvContent(envExamplePath: string, envVars: Record<string, string>): string {
+  if (!fs.existsSync(envExamplePath)) {
+    return Object.entries(envVars)
+      .map(([key, value]) => `${key}=${value}`)
+      .join("\n");
+  }
+
+  return fs
+    .readFileSync(envExamplePath, "utf-8")
+    .split("\n")
+    .map((line) => {
+      const key = line.match(/^([A-Z_][A-Z0-9_]*)=/)?.[1];
+      return key && key in envVars ? `${key}=${envVars[key]}` : line;
+    })
+    .join("\n");
+}
+
+/** The web, mobile and desktop .env files for a compiled variant. */
+function buildEnvFiles(
+  tempDir: string,
+  envVars: Record<string, string>,
+  modules: ScaffoldModuleId[],
+  platforms: string[],
+): Array<{ path: string; content: string }> {
+  const billingSelected = modules.includes("billing");
+  const aiSelected = modules.includes("ai");
+  const support = envVars.NEXT_PUBLIC_SUPPORT_FEATURES
+    ? envVars.NEXT_PUBLIC_SUPPORT_FEATURES.split(",").map((s) => s.trim())
+    : [];
+  const flag = (key: string) => (envVars[key] === "true" ? "true" : "false");
+  const quoted = (value: string) => `"${value}"`;
+
+  const files = [
+    { path: "apps/web/.env", content: generateEnvContent(path.join(tempDir, "apps/web/.env.example"), envVars) },
+  ];
+
+  const mobileExample = path.join(tempDir, "apps/mobile/.env.example");
+  if (platforms.includes("mobile") && fs.existsSync(mobileExample)) {
+    files.push({
+      path: "apps/mobile/.env",
+      content: generateEnvContent(mobileExample, {
+        EXPO_PUBLIC_API_URL: envVars.NEXT_PUBLIC_URL || "http://localhost:3000",
+        EXPO_PUBLIC_APP_URL: "http://localhost:8081",
+        EXPO_PUBLIC_AUTH_EMAIL: flag("NEXT_PUBLIC_AUTH_EMAIL"),
+        EXPO_PUBLIC_AUTH_GOOGLE: flag("NEXT_PUBLIC_AUTH_GOOGLE"),
+        EXPO_PUBLIC_AUTH_GITHUB: flag("NEXT_PUBLIC_AUTH_GITHUB"),
+        EXPO_PUBLIC_AUTH_LINKEDIN: flag("NEXT_PUBLIC_AUTH_LINKEDIN"),
+        EXPO_PUBLIC_SUPPORT_MAIL: support.includes("support_mail") ? "true" : "false",
+        EXPO_PUBLIC_THEME: envVars.NEXT_PUBLIC_THEME || "green",
+        EXPO_PUBLIC_THEME_TYPE: envVars.NEXT_PUBLIC_THEME_TYPE || "light",
+        EXPO_PUBLIC_PAYMENT_GATEWAY: billingSelected ? envVars.NEXT_PUBLIC_PAYMENT_GATEWAY || "none" : "none",
+        EXPO_PUBLIC_CALENDLY_BOOKING_URL: envVars.NEXT_PUBLIC_CALENDLY_BOOKING_URL || '""',
+        EXPO_PUBLIC_AI_ENABLED: aiSelected ? envVars.NEXT_PUBLIC_AI_ENABLED || "false" : "false",
+      }),
+    });
+  }
+
+  const desktopExample = path.join(tempDir, "apps/desktop/.env.example");
+  if (platforms.includes("desktop") && fs.existsSync(desktopExample)) {
+    files.push({
+      path: "apps/desktop/.env",
+      content: generateEnvContent(desktopExample, {
+        VITE_API_URL: quoted(envVars.NEXT_PUBLIC_URL || "http://localhost:3000"),
+        NEXT_PUBLIC_AUTH_FRAMEWORK: quoted(envVars.NEXT_PUBLIC_AUTH_FRAMEWORK || "better-auth"),
+        VITE_AUTH_EMAIL: flag("NEXT_PUBLIC_AUTH_EMAIL"),
+        VITE_AUTH_GOOGLE: flag("NEXT_PUBLIC_AUTH_GOOGLE"),
+        VITE_AUTH_GITHUB: flag("NEXT_PUBLIC_AUTH_GITHUB"),
+        VITE_AUTH_LINKEDIN: flag("NEXT_PUBLIC_AUTH_LINKEDIN"),
+        VITE_PAYMENT_GATEWAY: quoted(billingSelected ? envVars.NEXT_PUBLIC_PAYMENT_GATEWAY || "none" : "none"),
+        VITE_SUPPORT_MAIL: quoted(
+          support.includes("support_mail") ? envVars.NEXT_PUBLIC_SUPPORT_MAIL || "" : "",
+        ),
+        VITE_CALENDLY_BOOKING_URL: quoted(
+          support.includes("calendly") ? envVars.NEXT_PUBLIC_CALENDLY_BOOKING_URL || "" : "",
+        ),
+        VITE_THEME: envVars.NEXT_PUBLIC_THEME || "green",
+        VITE_THEME_TYPE: envVars.NEXT_PUBLIC_THEME_TYPE || "light",
+        VITE_AI_ENABLED: aiSelected ? envVars.NEXT_PUBLIC_AI_ENABLED || "false" : "false",
+      }),
+    });
+  }
+
+  return files;
+}
+
 export function buildProjectZip(
   input: BuildProjectZipInput,
 ): BuildProjectZipResult {
+  if (input.envVars) assertNoSecrets(input.envVars);
   const registry = loadScaffoldRegistry();
   const modules = validateSelectedModules(input.modules, registry);
   const pricing = calculateScaffoldCredits(modules, registry);
@@ -146,6 +269,11 @@ export function buildProjectZip(
     archive.append(guide.markdown, {
       name: `${input.projectName}/SETUP.md`,
     });
+    if (input.envVars) {
+      for (const file of buildEnvFiles(tempDir, input.envVars, modules, input.platforms)) {
+        archive.append(file.content, { name: `${input.projectName}/${file.path}` });
+      }
+    }
     const version = getTemplateVersion();
     if (version && version !== "unknown") {
       archive.append(version + "\n", {

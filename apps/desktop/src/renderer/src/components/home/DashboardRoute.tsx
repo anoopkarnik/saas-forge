@@ -10,6 +10,8 @@ import DashboardPage from "@workspace/ui/blocks/dashboard/DashboardPage";
 import Support from "../support/Support";
 import { useTRPC } from "../../lib/trpc";
 import { useQuery } from "@tanstack/react-query";
+import { secretEnvFiles, splitSecretEnv } from "@workspace/ui/lib/scaffold-secrets";
+import { appendFilesToZip } from "@workspace/ui/lib/zip-append";
 
 
 export default function DashboardRoute() {
@@ -38,11 +40,13 @@ export default function DashboardRoute() {
     const handleSubmitConfiguration = async (safeName: string, envVars: Record<string, string>, modules: string[], expectedTotalCredits: number) => {
         try {
             const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000'
+            // Secrets stay on this machine: build from public values, then add them to the ZIP here.
+            const { publicEnv, secrets } = splitSecretEnv(envVars);
             const response = await fetch(`${apiUrl}/api/scaffold`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 credentials: "include",
-                body: JSON.stringify({ name: safeName, envVars, modules, expectedTotalCredits }),
+                body: JSON.stringify({ name: safeName, envVars: publicEnv, modules, expectedTotalCredits }),
             });
 
             if (response.status === 409) {
@@ -53,8 +57,8 @@ export default function DashboardRoute() {
                 throw new Error("Failed to download");
             }
 
-            const arrayBuffer = await response.arrayBuffer();
-            const saved = await window.api.saveFile(`${safeName}.zip`, arrayBuffer);
+            const zip = appendFilesToZip(new Uint8Array(await response.arrayBuffer()), secretEnvFiles(safeName, secrets));
+            const saved = await window.api.saveFile(`${safeName}.zip`, zip.buffer);
             if (!saved) {
                 throw new Error("Download cancelled");
             }

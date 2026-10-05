@@ -9,6 +9,9 @@ import {
   type ScaffoldModuleId,
 } from "@/lib/scaffold-modules";
 import { getTemplateVersion } from "@/lib/scaffold/template-version";
+import { buildEnvVarsFromForm } from "@workspace/ui/lib/utils/scaffold";
+import { splitSecretEnv } from "@workspace/ui/lib/scaffold-secrets";
+import type { FormValues } from "@workspace/ui/lib/zod/download";
 import {
   InsufficientCreditsError,
   ScaffoldRootNotFoundError,
@@ -77,6 +80,11 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
     throw err;
   }
 
+  // Same env files as the web download of this config; saved configs hold no
+  // secrets, and splitting guards that.
+  const config = (project.config ?? {}) as Record<string, unknown>;
+  const { publicEnv } = splitSecretEnv(buildEnvVarsFromForm(config as FormValues));
+
   let build;
   try {
     build = buildProjectZip({
@@ -84,10 +92,11 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
       projectName: project.slug,
       modules,
       platforms: project.platforms,
-      config: (project.config ?? {}) as Record<string, unknown>,
+      config,
       productTypeId: project.productTypeId,
       tierId: project.tierId,
       versionId: project.versionId,
+      envVars: publicEnv,
     });
   } catch (err) {
     if (err instanceof ScaffoldRootNotFoundError) {

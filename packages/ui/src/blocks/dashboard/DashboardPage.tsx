@@ -11,6 +11,7 @@ import {
   ExternalLink,
   FileUp,
   Layers3,
+  Lock,
   Rocket,
   Save,
   Settings2,
@@ -47,6 +48,7 @@ import {
   type ScaffoldCatalog,
   type ScaffoldModuleId,
 } from "../../lib/constants/scaffold-modules";
+import { isSecretEnvKey } from "../../lib/scaffold-secrets";
 import {
   type ProductTypeId,
   type ResolvedPreset,
@@ -206,6 +208,7 @@ export default function DashboardPage({
   const [currentStepIndex, setCurrentStepIndex] = React.useState(0);
   const [entryChoice, setEntryChoice] = React.useState<EntryChoice>("manual");
   const [importedFieldCount, setImportedFieldCount] = React.useState(0);
+  const [importedSecretCount, setImportedSecretCount] = React.useState(0);
   const importInputRef = React.useRef<HTMLInputElement | null>(null);
 
   const form = useForm<FormValues>({
@@ -373,6 +376,13 @@ export default function DashboardPage({
 
         const count = parseEnvFile(content, form.setValue);
         setImportedFieldCount(count);
+        const importedKeys = content
+          .split("\n")
+          .map((line) => line.match(/^([A-Z_][A-Z0-9_]*)=(.+)$/))
+          .filter((match) => match && match[2]!.trim().replace(/^["']|["']$/g, ""));
+        setImportedSecretCount(
+          importedKeys.filter((match) => isSecretEnvKey(match![1]!)).length,
+        );
         setEntryChoice("import");
         setSelectedPreset(null);
       };
@@ -897,6 +907,17 @@ export default function DashboardPage({
                       <div className="rounded-2xl border border-emerald-500/40 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-700 dark:text-emerald-300">
                         Imported {importedFieldCount} fields from your `.env`
                         file. You can still edit everything in the next steps.
+                      </div>
+                    ) : null}
+                    {importedSecretCount > 0 ? (
+                      <div className="flex items-start gap-2 rounded-2xl border border-border/60 bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
+                        <Lock className="mt-0.5 h-4 w-4 shrink-0" />
+                        <span>
+                          {importedSecretCount} secret value
+                          {importedSecretCount === 1 ? "" : "s"} stay on this
+                          device. They are added to your ZIP in the browser and
+                          never sent to SaaS Forge.
+                        </span>
                       </div>
                     ) : null}
 

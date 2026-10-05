@@ -30,10 +30,21 @@ vi.mock("@workspace/database/client", () => ({
 }));
 
 const mockCharge = vi.fn();
-vi.mock("@/lib/scaffold/service", () => ({
-  chargeScaffoldCredits: (...args: any[]) => mockCharge(...args),
-  InsufficientCreditsError: class InsufficientCreditsError extends Error {},
-}));
+const mockBuild = vi.fn();
+const mockCleanup = vi.fn();
+// The route's own logic is under test; the shared builder has its own tests.
+vi.mock("@/lib/scaffold/service", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/scaffold/service")>();
+  return {
+    assertNoSecrets: actual.assertNoSecrets,
+    formValuesFromEnv: actual.formValuesFromEnv,
+    InsufficientCreditsError: actual.InsufficientCreditsError,
+    ScaffoldRootNotFoundError: actual.ScaffoldRootNotFoundError,
+    SecretNotAcceptedError: actual.SecretNotAcceptedError,
+    buildProjectZip: (...args: any[]) => mockBuild(...args),
+    chargeScaffoldCredits: (...args: any[]) => mockCharge(...args),
+  };
+});
 vi.mock("@/lib/scaffold/template-version", () => ({
   getTemplateVersion: () => "1.4.1",
 }));
@@ -58,8 +69,6 @@ vi.mock("next/cache", () => ({
 const mockLoadScaffoldRegistry = vi.fn();
 const mockValidateSelectedModules = vi.fn();
 const mockCalculateScaffoldCredits = vi.fn();
-const mockCreateTempScaffoldDir = vi.fn();
-const mockCompileScaffoldVariant = vi.fn();
 
 vi.mock("@/lib/scaffold-modules", async (importOriginal) => ({
   isPriceChanged: (await importOriginal<typeof import("@/lib/scaffold-modules")>()).isPriceChanged,
@@ -69,63 +78,6 @@ vi.mock("@/lib/scaffold-modules", async (importOriginal) => ({
     mockValidateSelectedModules(...args),
   calculateScaffoldCredits: (...args: any[]) =>
     mockCalculateScaffoldCredits(...args),
-  createTempScaffoldDir: (...args: any[]) => mockCreateTempScaffoldDir(...args),
-  compileScaffoldVariant: (...args: any[]) => mockCompileScaffoldVariant(...args),
-}));
-
-// Mock archiver - each call creates a fresh callback set to avoid cross-test leakage
-const mockDirectory = vi.fn();
-const mockAppend = vi.fn();
-const mockFinalize = vi.fn();
-const mockAbort = vi.fn();
-
-vi.mock("archiver", () => ({
-  default: vi.fn(() => {
-    const callbacks: Record<string, Function[]> = {};
-    const instance = {
-      directory: (...args: any[]) => {
-        mockDirectory(...args);
-        return instance;
-      },
-      append: (...args: any[]) => {
-        mockAppend(...args);
-        return instance;
-      },
-      finalize: () => {
-        mockFinalize();
-        // Fire end synchronously (no data in mock - we only test that archive methods were called)
-        setTimeout(() => {
-          callbacks["end"]?.forEach((cb) => cb());
-        }, 5);
-        return Promise.resolve();
-      },
-      on: (event: string, cb: any) => {
-        if (!callbacks[event]) callbacks[event] = [];
-        callbacks[event].push(cb);
-        return instance;
-      },
-      abort: (...args: any[]) => {
-        mockAbort(...args);
-        return instance;
-      },
-    };
-    return instance;
-  }),
-}));
-
-// Mock fs
-const mockExistsSync = vi.fn();
-const mockReadFileSync = vi.fn();
-const mockRmSync = vi.fn();
-vi.mock("node:fs", () => ({
-  default: {
-    existsSync: (...args: any[]) => mockExistsSync(...args),
-    readFileSync: (...args: any[]) => mockReadFileSync(...args),
-    rmSync: (...args: any[]) => mockRmSync(...args),
-  },
-  existsSync: (...args: any[]) => mockExistsSync(...args),
-  readFileSync: (...args: any[]) => mockReadFileSync(...args),
-  rmSync: (...args: any[]) => mockRmSync(...args),
 }));
 
 function createScaffoldRequest(url: string, init: RequestInit = {}) {
@@ -170,10 +122,11 @@ describe("Scaffold Route Integration Tests", () => {
 
     vi.mocked(ratelimit.limit).mockResolvedValue({ success: true } as any);
 
-    // Default: scaffold root exists, .env.example exists
-    mockExistsSync.mockReturnValue(true);
-    mockReadFileSync.mockReturnValue("DATABASE_URL=\nNEXT_PUBLIC_URL=\n");
-    mockRmSync.mockReturnValue(undefined);
+    mockBuild.mockImplementation(() => ({
+      stream: new ReadableStream({ start: (controller) => controller.close() }),
+      pricing: {},
+      cleanup: mockCleanup,
+    }));
 
     mockUserUpdate.mockResolvedValue({});
     mockCharge.mockResolvedValue({ charged: 20, alreadyProcessed: false, jobId: "j1" });
@@ -239,8 +192,6 @@ describe("Scaffold Route Integration Tests", () => {
           20 + modules.reduce((sum: number, entry: any) => sum + entry.credits, 0),
       };
     });
-    mockCreateTempScaffoldDir.mockReturnValue("/tmp/saas-forge-scaffold-test");
-    mockCompileScaffoldVariant.mockImplementation(({ tempDir }: any) => tempDir);
   });
 
   describe("POST handler", () => {
@@ -383,16 +334,9 @@ describe("Scaffold Route Integration Tests", () => {
     });
 
     it("should return 500 when scaffold root is not found", async () => {
-      mockExistsSync.mockImplementation((target: string) => {
-        const value = String(target);
-        if (
-          value.includes(".generated/saas-boilerplate") ||
-          value.includes("templates/saas-boilerplate")
-        ) {
-          return false;
-        }
-
-        return true;
+      const { ScaffoldRootNotFoundError } = await import("@/lib/scaffold/service");
+      mockBuild.mockImplementation(() => {
+        throw new ScaffoldRootNotFoundError();
       });
 
       const { POST } = await import("../../app/api/scaffold/route.js");
@@ -456,8 +400,8 @@ describe("Scaffold Route Integration Tests", () => {
       const { POST } = await import("../../app/api/scaffold/route.js");
 
       const envVars = {
-        DATABASE_URL: "postgresql://localhost:5432/mydb",
         NEXT_PUBLIC_URL: "http://localhost:3000",
+        NEXT_PUBLIC_PLATFORM: "web,mobile",
       };
 
       const response = await POST(
@@ -478,29 +422,36 @@ describe("Scaffold Route Integration Tests", () => {
         "true",
       );
 
-      // Verify archive methods were called
-      expect(mockDirectory).toHaveBeenCalled();
-      expect(mockCreateTempScaffoldDir).toHaveBeenCalled();
-      expect(mockCompileScaffoldVariant).toHaveBeenCalledWith({
-        baseRoot: expect.any(String),
-        tempDir: "/tmp/saas-forge-scaffold-test",
-        selectedModules: [],
-        platforms: ["web"],
-        registry: expect.any(Object),
-      });
-      expect(mockAppend).toHaveBeenCalled(); // .env files
-      expect(mockFinalize).toHaveBeenCalled();
+      // One shared builder for every download path.
+      expect(mockBuild).toHaveBeenCalledWith(
+        expect.objectContaining({
+          projectName: "My-Test-Project",
+          modules: [],
+          platforms: ["web", "mobile"],
+          envVars,
+        }),
+      );
 
       // Verify credits were deducted via the shared transactional charge
       expect(mockCharge).toHaveBeenCalledWith(
         expect.objectContaining({ userId: "user_1", amount: 20 }),
       );
+    });
 
-      await new Promise((resolve) => setTimeout(resolve, 10));
-      expect(mockRmSync).toHaveBeenCalledWith(
-        "/tmp/saas-forge-scaffold-test",
-        { recursive: true, force: true },
+    it("should clean up the build when charging fails", async () => {
+      const { InsufficientCreditsError } = await import("@/lib/scaffold/service");
+      mockCharge.mockRejectedValueOnce(new InsufficientCreditsError());
+      const { POST } = await import("../../app/api/scaffold/route.js");
+
+      const response = await POST(
+        createScaffoldRequest("http://localhost:3000/api/scaffold", {
+          method: "POST",
+          body: JSON.stringify({ name: "test", envVars: {} }),
+        }) as any,
       );
+
+      expect(response.status).toBe(403);
+      expect(mockCleanup).toHaveBeenCalled();
     });
 
     it("should add selected module credits to the scaffold total", async () => {
@@ -549,89 +500,29 @@ describe("Scaffold Route Integration Tests", () => {
       expect(disposition).not.toContain("#");
     });
 
-    it("should generate .env content by merging with .env.example", async () => {
-      mockReadFileSync.mockReturnValue(
-        "# Database\nDATABASE_URL=\n\n# App\nNEXT_PUBLIC_URL=\nSOME_OTHER_VAR=default\n",
-      );
-
+    it.each([
+      ["DATABASE_URL", "postgresql://canary-user:canary-pass@db/app"],
+      ["STRIPE_SECRET_KEY", "sk_live_canary"],
+      ["SOME_FUTURE_API_KEY", "canary"],
+    ])("should reject %s with 400 before building or charging", async (key, value) => {
       const { POST } = await import("../../app/api/scaffold/route.js");
 
-      const envVars = {
-        DATABASE_URL: "postgres://prod:5432/db",
-        NEXT_PUBLIC_URL: "https://myapp.com",
-      };
-
-      const request = createScaffoldRequest(
-        "http://localhost:3000/api/scaffold",
-        {
+      const response = await POST(
+        createScaffoldRequest("http://localhost:3000/api/scaffold", {
           method: "POST",
-          body: JSON.stringify({ name: "test", envVars }),
-        },
+          body: JSON.stringify({
+            name: "test",
+            envVars: { NEXT_PUBLIC_URL: "https://myapp.com", [key]: value },
+          }),
+        }) as any,
       );
+      const data = await response.json();
 
-      const response = await POST(request as any);
-      expect(response.status).toBe(200);
-
-      // Verify append was called with .env content
-      expect(mockAppend).toHaveBeenCalled();
-    });
-
-    it("should generate .env from vars when no .env.example exists", async () => {
-      mockExistsSync.mockImplementation((target: string) => {
-        const value = String(target);
-        if (value.endsWith("apps/web/.env.example")) {
-          return false;
-        }
-
-        return true;
-      });
-
-      const { POST } = await import("../../app/api/scaffold/route.js");
-
-      const envVars = {
-        DATABASE_URL: "postgres://localhost/db",
-        NEXT_PUBLIC_URL: "http://localhost:3000",
-      };
-
-      const request = createScaffoldRequest(
-        "http://localhost:3000/api/scaffold",
-        {
-          method: "POST",
-          body: JSON.stringify({ name: "test", envVars }),
-        },
-      );
-
-      const response = await POST(request as any);
-      expect(response.status).toBe(200);
-    });
-
-    it("should add DATABASE_URL .env in packages/database/", async () => {
-      const { POST } = await import("../../app/api/scaffold/route.js");
-
-      const envVars = {
-        DATABASE_URL: "postgresql://localhost:5432/mydb",
-      };
-
-      const request = createScaffoldRequest(
-        "http://localhost:3000/api/scaffold",
-        {
-          method: "POST",
-          body: JSON.stringify({ name: "test", envVars }),
-        },
-      );
-
-      const response = await POST(request as any);
-      expect(response.status).toBe(200);
-
-      // Verify database .env was appended
-      const appendCalls = mockAppend.mock.calls;
-      const dbEnvCall = appendCalls.find(
-        (call: any[]) =>
-          typeof call[1] === "object" &&
-          call[1].name?.includes("packages/database/.env"),
-      );
-      expect(dbEnvCall).toBeTruthy();
-      expect(dbEnvCall![0]).toContain("postgresql://localhost:5432/mydb");
+      expect(response.status).toBe(400);
+      expect(data).toEqual({ error: "secret_not_accepted", keys: key });
+      expect(JSON.stringify(data)).not.toContain(value);
+      expect(mockBuild).not.toHaveBeenCalled();
+      expect(mockCharge).not.toHaveBeenCalled();
     });
   });
 

@@ -8,6 +8,7 @@ import { Badge } from "@workspace/ui/components/shadcn/badge";
 import { buildEnvVarsFromForm } from "@workspace/ui/lib/utils/scaffold";
 import type { FormValues } from "@workspace/ui/lib/zod/download";
 import { useTRPC } from "@/trpc/client";
+import { splitSecretEnv } from "@workspace/ui/lib/scaffold-secrets";
 
 type ProjectListItem = {
   id: string;
@@ -32,7 +33,8 @@ async function downloadFromConfig(
   modules: string[],
   expectedTotalCredits: number | undefined,
 ) {
-  const envVars = buildEnvVarsFromForm(config as FormValues);
+  // Saved configs hold no secrets; splitting keeps any stray one off the wire.
+  const { publicEnv: envVars } = splitSecretEnv(buildEnvVarsFromForm(config as FormValues));
   const response = await fetch("/api/scaffold", {
     method: "POST",
     headers: { "Content-Type": "application/json" },

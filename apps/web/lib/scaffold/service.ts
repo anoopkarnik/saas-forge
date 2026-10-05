@@ -622,9 +622,12 @@ export type BuildUpgradeKitResult = {
  * `/upgrade-boilerplate` command to integrate into the user's customized code.
  * Runs on the user's own Claude Code — the platform only generates the kit.
  */
-export function buildUpgradeKit(
-  input: BuildUpgradeKitInput,
-): BuildUpgradeKitResult {
+/**
+ * Compiles the current and target variants into temp dirs and diffs them. The
+ * upgrade kit stages `diff.added` and `diff.modified` from `targetDir`; the
+ * preview only counts them, so both always agree. Call `cleanup` when done.
+ */
+function compileUpgradeDiff(input: { fromModules: string[]; toModules: string[]; platforms: string[] }) {
   const registry = loadScaffoldRegistry();
   const fromModules = validateSelectedModules(input.fromModules, registry);
   const toModules = validateSelectedModules(input.toModules, registry);
@@ -659,8 +662,54 @@ export function buildUpgradeKit(
       platforms: input.platforms,
       registry,
     });
+    return { fromModules, toModules, targetDir: tempB, diff: diffTrees(tempA, tempB), cleanup };
+  } catch (err) {
+    cleanup();
+    throw err;
+  }
+}
 
-    const diff = diffTrees(tempA, tempB);
+export type UpgradePreview = {
+  delta: UpgradeDelta;
+  /** The kit's staged files (added, modified) and the files it lists as removed. */
+  files: { added: number; modified: number; removed: number };
+  /** Migration folders the kit adds; the owner runs `pnpm migrate` after applying it. */
+  migrations: string[];
+};
+
+/** What an upgrade kit would contain, without charging or packaging it. */
+export function previewUpgrade(input: {
+  fromModules: string[];
+  toModules: string[];
+  fromTierId: string;
+  toTierId: string;
+  platforms: string[];
+}): UpgradePreview {
+  const { fromModules, toModules, diff, cleanup } = compileUpgradeDiff(input);
+  try {
+    const migrationsDir = "packages/database/prisma/migrations/";
+    const migrations = new Set(
+      diff.added
+        .map((rel) => rel.split(path.sep).join("/"))
+        .filter((rel) => rel.startsWith(migrationsDir))
+        .map((rel) => rel.slice(migrationsDir.length).split("/")[0]!),
+    );
+    return {
+      delta: computeUpgradeDelta({ fromModules, toModules, fromTierId: input.fromTierId, toTierId: input.toTierId }),
+      files: { added: diff.added.length, modified: diff.modified.length, removed: diff.removed.length },
+      migrations: [...migrations].sort(),
+    };
+  } finally {
+    cleanup();
+  }
+}
+
+export function buildUpgradeKit(
+  input: BuildUpgradeKitInput,
+): BuildUpgradeKitResult {
+  const { fromModules, toModules, targetDir: tempB, diff, cleanup } = compileUpgradeDiff(input);
+
+  try {
     const delta = computeUpgradeDelta({
       fromModules,
       toModules,

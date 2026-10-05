@@ -1,7 +1,7 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { logger } from "@workspace/observability/winston-logger";
-import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
+import { adminProcedure, createTRPCRouter, protectedProcedure } from "@/trpc/init";
 import {
   InvalidScaffoldModuleError,
   calculateModulesCredits,
@@ -19,8 +19,17 @@ import {
   updateProject,
 } from "@/lib/scaffold/project-service";
 import { computeBuildHash, tierOrder } from "@/lib/scaffold/project-rules";
+import {
+  ReleaseNotFoundError,
+  getReleaseEmailStatus,
+  isSubscribedToReleaseEmails,
+  sendReleaseEmails,
+  setReleaseEmailSubscription,
+} from "@/lib/scaffold/release-emails";
+import { getProjectReleases, loadReleases } from "@/lib/scaffold/releases";
 import { generateSetupGuide } from "@/lib/scaffold/setup-guide";
-import { ownsBuild, scaffoldBuildKey } from "@/lib/scaffold/service";
+import { ownsBuild, previewUpgrade, scaffoldBuildKey } from "@/lib/scaffold/service";
+import { getTemplateVersion } from "@/lib/scaffold/template-version";
 
 // ---------------------------------------------------------------------------
 // Input schemas
@@ -104,7 +113,13 @@ async function getOwnedProject(userId: string, slug: string) {
 
 export const projectRouter = createTRPCRouter({
   list: protectedProcedure.query(async ({ ctx }) => {
-    return listProjects(ctx.session.user.id);
+    const projects = await listProjects(ctx.session.user.id);
+    const releases = loadReleases();
+    const latestVersion = getTemplateVersion();
+    return projects.map((project) => {
+      const { behind, advisories } = getProjectReleases(project, releases, latestVersion);
+      return { ...project, releasesBehind: behind, securityAdvisories: advisories.length };
+    });
   }),
 
   get: protectedProcedure.input(slugInput).query(async ({ ctx, input }) => {
@@ -224,6 +239,68 @@ export const projectRouter = createTRPCRouter({
         addedModules,
         removedModules,
       };
+    }),
+
+  /** Releases since the project's starter version, for its modules. */
+  releases: protectedProcedure.input(slugInput).query(async ({ ctx, input }) => {
+    const project = await getOwnedProject(ctx.session.user.id, input.slug);
+    return getProjectReleases(project, loadReleases(), getTemplateVersion());
+  }),
+
+  /**
+   * What an upgrade kit would stage, plus the breaking and migration notes since
+   * the project's version. Compiles the starter: call it through useScaffoldTRPC().
+   */
+  upgradePreview: protectedProcedure
+    .input(upgradeEstimateInput)
+    .query(async ({ ctx, input }) => {
+      const project = await getOwnedProject(ctx.session.user.id, input.slug);
+      const toModules = input.targetModules
+        ? await safeValidateModules(input.targetModules)
+        : project.modules;
+      const preview = await withModuleValidation(() =>
+        previewUpgrade({
+          fromModules: project.modules,
+          toModules,
+          fromTierId: project.tierId,
+          toTierId: input.targetTierId ?? project.tierId,
+          platforms: project.platforms,
+        }),
+      );
+      const { releases } = getProjectReleases(project, loadReleases(), getTemplateVersion());
+      const warnings = releases.flatMap((release) =>
+        release.entries
+          .filter((entry) => entry.type === "breaking" || entry.migration)
+          .map((entry) => ({ ...entry, version: release.version })),
+      );
+      return { ...preview, warnings };
+    }),
+
+  releaseEmails: protectedProcedure.query(async ({ ctx }) => ({
+    subscribed: await isSubscribedToReleaseEmails(ctx.session.user.id),
+  })),
+
+  setReleaseEmails: protectedProcedure
+    .input(z.object({ subscribed: z.boolean() }))
+    .mutation(async ({ ctx, input }) => {
+      await setReleaseEmailSubscription(ctx.session.user.id, input.subscribed);
+      return { subscribed: input.subscribed };
+    }),
+
+  releaseEmailStatus: adminProcedure.query(() => getReleaseEmailStatus()),
+
+  /** Emails opted-in owners about a deployed release; safe to run again. */
+  sendReleaseEmails: adminProcedure
+    .input(z.object({ version: z.string().min(1) }))
+    .mutation(async ({ input }) => {
+      try {
+        return await sendReleaseEmails(input.version);
+      } catch (error) {
+        if (error instanceof ReleaseNotFoundError) {
+          throw new TRPCError({ code: "NOT_FOUND", message: error.message });
+        }
+        throw error;
+      }
     }),
 
   setupGuide: protectedProcedure

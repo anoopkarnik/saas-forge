@@ -122,6 +122,14 @@ function fakeClient(overrides = {}) {
       charged: 80,
     })),
     upgrade: vi.fn(),
+    upgradePreview: vi.fn(async () => ({
+      preview: { files: { added: 40, modified: 2, removed: 0 }, migrations: ["20260601000000_ai_chat"] },
+      releases: {
+        behind: 1,
+        currentVersion: "1.4.0",
+        releases: [{ version: "1.4.1", entries: [{ type: "security", title: "Verify webhooks" }] }],
+      },
+    })),
     ...overrides,
   };
 }
@@ -179,9 +187,19 @@ describe("runUpgrade", () => {
     const cwd = tempDir();
     fs.writeFileSync(path.join(cwd, ".saas-forge.json"), JSON.stringify({ project: "my-app" }));
     const client = fakeClient();
-    const quote = await runUpgrade({ add: "ai_agents", tier: "tier-3", "dry-run": true }, io(cwd, client));
+    const lines = [];
+    const quote = await runUpgrade(
+      { add: "ai_agents", tier: "tier-3", "dry-run": true },
+      { ...io(cwd, client), log: (line) => lines.push(line) },
+    );
     expect(quote).toMatchObject({ dryRun: true, tierSteps: 2, credits: 20 + 30 + 2 * 3 });
     expect(quote.added.sort()).toEqual(["ai", "ai_agents"]);
+    expect(client.upgradePreview).toHaveBeenCalledWith("my-app", {
+      modules: expect.arrayContaining(["billing", "ai", "ai_agents"]),
+      tierId: "tier-3",
+    });
+    expect(lines.join("\n")).toMatch(/40 added, 2 changed, 0 removed; 1 new migration/);
+    expect(lines.join("\n")).toContain("[security] Verify webhooks");
     expect(client.upgrade).not.toHaveBeenCalled();
   });
 });

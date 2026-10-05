@@ -66,7 +66,10 @@
     "apps/web/app/api/v1/scaffold",
     "apps/web/app/(home)/projects",
     "apps/web/components/projects",
-    "apps/web/trpc/scaffold-client.ts"
+    "apps/web/trpc/scaffold-client.ts",
+    "packages/database/prisma/migrations/20261005224052_release_emails",
+    "packages/email/src/resend/release.ts",
+    "packages/email/src/templates/ReleaseNotes.tsx"
   ],
   "templateOverrides": [
     "AGENTS.md",

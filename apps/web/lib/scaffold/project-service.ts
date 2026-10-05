@@ -157,6 +157,14 @@ export function markProjectUpgraded(projectId: string, upgrade: ProjectUpgrade):
     .catch(() => {});
 }
 
+/** The projects of several owners, for release emails. */
+export function listProjectsForOwners(userIds: string[]) {
+  return db.projectConfig.findMany({
+    where: { userId: { in: userIds } },
+    select: { userId: true, name: true, modules: true, templateVersion: true },
+  });
+}
+
 /** Returns the number of deleted rows (0 if it doesn't exist / isn't owned). */
 export async function deleteProject(userId: string, slug: string) {
   const result = await db.projectConfig.deleteMany({ where: { userId, slug } });

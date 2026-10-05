@@ -7,6 +7,7 @@ import {
   createTempScaffoldDir,
   loadScaffoldRegistry,
 } from "../apps/web/lib/scaffold-modules.ts";
+import { parseRelease } from "../apps/web/lib/scaffold/release-notes.ts";
 
 const BRANCH = "template/saas-boilerplate";
 const TAG_PREFIX = "template/v";
@@ -107,6 +108,23 @@ const worktreePath = path.join(os.tmpdir(), `template-publish-${Date.now()}`);
 // Validate staged output exists
 if (!fs.existsSync(stageDir) || fs.readdirSync(stageDir).length === 0) {
   console.error(`Staged output not found at ${STAGE_ROOT}. Run "pnpm template:stage" first.`);
+  process.exit(1);
+}
+
+// Every published version needs reviewed release notes (the Upgrade Center and
+// release emails read them).
+const releaseFile = path.join(repoRoot, "releases", `${version}.json`);
+if (!fs.existsSync(releaseFile)) {
+  console.error(`Missing releases/${version}.json. Draft it with "pnpm release:notes --version ${version}", review it, and set "draft": false.`);
+  process.exit(1);
+}
+try {
+  const moduleIds = loadScaffoldRegistry().modules.map((module) => module.id);
+  const release = parseRelease(JSON.parse(fs.readFileSync(releaseFile, "utf-8")), moduleIds);
+  if (release.version !== version) throw new Error(`version is ${release.version}, expected ${version}`);
+  if (release.draft) throw new Error('it is still a draft; review it and set "draft": false');
+} catch (error) {
+  console.error(`releases/${version}.json is not ready: ${error.message}`);
   process.exit(1);
 }
 

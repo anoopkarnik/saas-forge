@@ -97,3 +97,23 @@ enum SCAFFOLD_JOB_SOURCE {
 
     @@schema("scaffold_schema")
 }
+
+/// Owners who asked for release emails from the Upgrade Center.
+model ReleaseEmailSubscription {
+    userId    String   @id
+    user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+    createdAt DateTime @default(now())
+
+    @@schema("scaffold_schema")
+}
+
+/// One row per release email sent, so an owner gets each release once.
+model ReleaseEmail {
+    userId  String
+    user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+    version String
+    sentAt  DateTime @default(now())
+
+    @@id([userId, version])
+    @@schema("scaffold_schema")
+}

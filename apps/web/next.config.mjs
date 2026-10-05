@@ -128,9 +128,9 @@ const nextConfig = {
   // Keys are globs matched anywhere in the route ("contains"), so "/api/scaffold"
   // also covers /api/scaffold/*, including the tRPC endpoint there.
   outputFileTracingIncludes: {
-    // Read with fs at runtime (module registry, pricing, template version),
-    // which tracing cannot follow. Small, so every route gets them.
-    "**": ["../../scaffold-modules/**/*", "../../template-sync.manifest.json"],
+    // Read with fs at runtime (module registry, pricing, template version,
+    // release notes), which tracing cannot follow. Small, so every route gets them.
+    "**": ["../../scaffold-modules/**/*", "../../template-sync.manifest.json", "../../releases/**/*"],
     "/api/scaffold": scaffoldTraceIncludes,
     "/api/v1/projects/*/download": scaffoldTraceIncludes,
     "/api/v1/projects/*/upgrade": scaffoldTraceIncludes,

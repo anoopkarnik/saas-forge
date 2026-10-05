@@ -10,6 +10,12 @@ import type { FormValues } from "@workspace/ui/lib/zod/download";
 import { useTRPC } from "@/trpc/client";
 import { useScaffoldTRPC } from "@/trpc/scaffold-client";
 import { splitSecretEnv } from "@workspace/ui/lib/scaffold-secrets";
+import {
+  ReleaseEmailSettings,
+  ReleaseNotesPanel,
+  SecurityBanner,
+  UpgradePreview,
+} from "@/components/projects/UpgradeCenter";
 
 type ProjectListItem = {
   id: string;
@@ -21,6 +27,8 @@ type ProjectListItem = {
   platforms: string[];
   modules: string[];
   templateVersion: string;
+  releasesBehind: number;
+  securityAdvisories: number;
   lastBuiltAt: Date | string | null;
   createdAt: Date | string;
   updatedAt: Date | string;
@@ -91,6 +99,7 @@ function ProjectRow({ project }: { project: ProjectListItem }) {
   const scaffoldTrpc = useScaffoldTRPC();
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
+  const [notesOpen, setNotesOpen] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [targetTier, setTargetTier] = useState(project.tierId);
@@ -171,6 +180,11 @@ function ProjectRow({ project }: { project: ProjectListItem }) {
             {project.modules.map((m) => (
               <Badge key={m}>{m}</Badge>
             ))}
+            {project.releasesBehind > 0 ? (
+              <Badge variant="outline">
+                {project.releasesBehind} release{project.releasesBehind === 1 ? "" : "s"} behind
+              </Badge>
+            ) : null}
           </div>
           <p className="text-xs text-muted-foreground">
             {project.platforms.join(", ")} · boilerplate v{project.templateVersion} · updated{" "}
@@ -183,6 +197,9 @@ function ProjectRow({ project }: { project: ProjectListItem }) {
           </Button>
           <Button size="sm" variant="outline" onClick={() => setOpen((v) => !v)}>
             {open ? "Hide setup" : "Setup guide"}
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => setNotesOpen((v) => !v)}>
+            {notesOpen ? "Hide what's new" : "What's new"}
           </Button>
           <Button
             size="sm"
@@ -209,6 +226,14 @@ function ProjectRow({ project }: { project: ProjectListItem }) {
           </Button>
         </div>
       </div>
+
+      <SecurityBanner slug={project.slug} count={project.securityAdvisories} />
+
+      {notesOpen ? (
+        <div className="rounded-md bg-muted/40 p-4 text-sm">
+          <ReleaseNotesPanel slug={project.slug} />
+        </div>
+      ) : null}
 
       {open ? (
         <div className="flex flex-col gap-4 rounded-md bg-muted/40 p-4 text-sm">
@@ -312,6 +337,7 @@ function ProjectRow({ project }: { project: ProjectListItem }) {
               </p>
             ) : null}
           </div>
+          <UpgradePreview slug={project.slug} targetModules={targetModules} targetTierId={targetTier} />
           {upgradeEstimate.data ? (
             <p className="text-muted-foreground">
               Upgrade cost:{" "}
@@ -384,6 +410,8 @@ export function ProjectList() {
           project ships with a setup guide for the env vars it needs.
         </p>
       </div>
+
+      <ReleaseEmailSettings />
 
       {rows.length === 0 ? (
         <p className="rounded-md border border-dashed p-6 text-sm text-muted-foreground">

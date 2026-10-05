@@ -142,6 +142,12 @@ export const API_REGISTRY: ApiGroup[] = [
       { name: "estimateDownload", type: "query", access: "authenticated" },
       { name: "estimateUpgrade", type: "query", access: "authenticated" },
       { name: "setupGuide", type: "query", access: "authenticated" },
+      { name: "releases", type: "query", access: "authenticated" },
+      { name: "upgradePreview", type: "query", access: "authenticated" },
+      { name: "releaseEmails", type: "query", access: "authenticated" },
+      { name: "setReleaseEmails", type: "mutation", access: "authenticated" },
+      { name: "releaseEmailStatus", type: "query", access: "admin" },
+      { name: "sendReleaseEmails", type: "mutation", access: "admin" },
     ],
   },
   {

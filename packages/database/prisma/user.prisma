@@ -30,6 +30,8 @@ model User {
     organizationInvitations OrganizationInvitation[] @relation("OrganizationInvitationInviter")
     projectConfigs   ProjectConfig[]
     scaffoldJobs     ScaffoldJob[]
+    releaseEmailSubscription ReleaseEmailSubscription?
+    releaseEmails    ReleaseEmail[]
 
     createdAt  DateTime @default(now())
     updatedAt  DateTime @updatedAt

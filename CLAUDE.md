@@ -351,6 +351,14 @@ pnpm version:bump <semver>
 
 This atomically updates `package.json`, `apps/web/package.json`, `apps/desktop/package.json`, `apps/mobile/package.json`, `apps/mobile/app.json`, `template-overrides/saas-boilerplate/package.json`, and `template-sync.manifest.json`, then re-stages the template.
 
+Then draft the release notes:
+
+```bash
+pnpm release:notes --version <semver>
+```
+
+This writes `releases/<semver>.json` from the conventional commits that changed the starter since the last release (`feat` → feature, `fix` → fix, `security` → security, `!` → breaking; the module comes from the scope or the module named or touched). Add highlights, check each entry's module and wording, and set `"draft": false`. `pnpm template:publish` refuses a missing or draft file. The Upgrade Center on `/projects` shows these notes per project; `security` entries put a banner on affected projects.
+
 ### 2. Validate the template
 
 ```bash
@@ -411,14 +419,19 @@ This runs `template:stage` then `scripts/publish-template-branch.mjs --version <
 
 Projects scaffolded from this boilerplate track `template/saas-boilerplate` and receive updates when this branch is pushed. Use `--dry-run` to preview without making changes, or `--no-push` to commit locally only.
 
+### 7. After the deploy
+
+Nothing in the build migrates the production database: run `pnpm --dir packages/database migrate:deploy` with the production `DATABASE_URL` (migrations stay additive). Then an admin sends the release emails from **My Projects → Release emails** (`project.sendReleaseEmails`); each opted-in owner whose projects the release changes gets one email, so running it again is safe.
+
 ### Release checklist summary
 
-1. `pnpm version:bump <semver>`
+1. `pnpm version:bump <semver>`, then `pnpm release:notes --version <semver>` and review the draft
 2. `pnpm template:check-sync && pnpm template:build && pnpm template:test`
 3. `git commit -m "chore: release v<semver>" && git tag v<semver> && git push origin main --tags`
 4. `pnpm desktop:publish:linux:edge` (or `:stable`)
 5. `npm publish` in `packages/create-saas-forge` (when the CLI changed)
 6. `pnpm template:publish --version <semver>`
+7. After the deploy: `migrate:deploy` on production, then send release emails
 
 ## Gotchas
 

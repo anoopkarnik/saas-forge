@@ -13,6 +13,7 @@ const {
   mockCharge,
   mockDelta,
   mockHash,
+  mockPreview,
 } = vi.hoisted(() => {
   class InvalidScaffoldModuleError extends Error {}
   class InsufficientCreditsError extends Error {}
@@ -38,6 +39,11 @@ const {
       deltaCredits: 23,
     })),
     mockHash: vi.fn(() => "hash-Z"),
+    mockPreview: vi.fn(() => ({
+      delta: { addedModules: ["ai"], removedModules: [], tierSteps: 0, deltaCredits: 20 },
+      files: { added: 40, modified: 3, removed: 0 },
+      migrations: ["20260601000000_ai_chat"],
+    })),
   };
 });
 
@@ -67,9 +73,14 @@ vi.mock("@/lib/scaffold/service", () => ({
   chargeScaffoldCredits: mockCharge,
   computeUpgradeDelta: mockDelta,
   computeBuildHash: mockHash,
+  previewUpgrade: mockPreview,
+}));
+vi.mock("@/lib/scaffold/releases", () => ({
+  loadReleases: () => [],
+  getProjectReleases: () => ({ currentVersion: "1.4.1", latestVersion: "1.4.1", behind: 0, releases: [], advisories: [] }),
 }));
 
-import { POST } from "../route";
+import { GET, POST } from "../route";
 
 const PROJECT = {
   id: "p1",
@@ -173,5 +184,36 @@ describe("POST /api/v1/projects/[slug]/upgrade", () => {
     );
     expect(mockBuildKit).toHaveBeenCalled();
     expect(mockUpdate).toHaveBeenCalled();
+  });
+});
+
+describe("GET /api/v1/projects/[slug]/upgrade", () => {
+  const getReq = (query = "") => ({ headers: new Headers(), nextUrl: new URL(`https://x.test/api${query}`) }) as any;
+
+  beforeEach(() => vi.clearAllMocks());
+
+  it("previews the target without charging", async () => {
+    mockAuth.mockResolvedValue({ ok: true, userId: "u1" });
+    mockFindFirst.mockResolvedValue(PROJECT);
+    const req = getReq("?modules=billing,ai&tierId=tier-2");
+
+    const res = await GET(req, ctx);
+
+    expect(res.status).toBe(200);
+    expect(mockAuth).toHaveBeenCalledWith(req, { scopes: ["read:projects"] });
+    expect(mockPreview).toHaveBeenCalledWith(
+      expect.objectContaining({ fromModules: ["billing"], toModules: ["billing", "ai"], toTierId: "tier-2" }),
+    );
+    expect((await res.json()).preview.files).toEqual({ added: 40, modified: 3, removed: 0 });
+    expect(mockCharge).not.toHaveBeenCalled();
+  });
+
+  it("400s on an unknown module", async () => {
+    mockAuth.mockResolvedValue({ ok: true, userId: "u1" });
+    mockFindFirst.mockResolvedValue(PROJECT);
+    mockPreview.mockImplementationOnce(() => {
+      throw new InvalidScaffoldModuleError("Unknown module: crm");
+    });
+    expect((await GET(getReq("?modules=crm"), ctx)).status).toBe(400);
   });
 });

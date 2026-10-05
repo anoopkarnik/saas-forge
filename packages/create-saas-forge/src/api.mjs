@@ -52,5 +52,9 @@ export function createClient({ baseUrl, apiKey, fetchImpl = globalThis.fetch }) 
     download: (slug, expectedTotalCredits) =>
       zip(`/api/v1/projects/${encodeURIComponent(slug)}/download`, { expectedTotalCredits }),
     upgrade: (slug, input) => zip(`/api/v1/projects/${encodeURIComponent(slug)}/upgrade`, input),
+    upgradePreview: (slug, { modules, tierId }) => {
+      const query = new URLSearchParams({ modules: modules.join(","), tierId });
+      return json("GET", `/api/v1/projects/${encodeURIComponent(slug)}/upgrade?${query}`);
+    },
   };
 }

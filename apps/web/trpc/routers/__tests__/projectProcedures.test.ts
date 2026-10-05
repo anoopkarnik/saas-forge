@@ -82,9 +82,37 @@ const { stored, projectConfig } = vi.hoisted(() => {
   return { stored, projectConfig };
 });
 
+// Published release notes: 1.4.1 fixes a billing security issue.
+vi.mock("@/lib/scaffold/releases", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/scaffold/releases")>()),
+  loadReleases: () => [
+    {
+      version: "1.4.1",
+      date: "2026-10-01",
+      highlights: [],
+      entries: [
+        { module: "billing", type: "security", title: "Verify webhook signatures" },
+        { module: "core", type: "breaking", title: "New env var", migration: true },
+      ],
+    },
+  ],
+}));
+
+const { subscriptions } = vi.hoisted(() => ({ subscriptions: new Set<string>() }));
+
 vi.mock("@workspace/database/client", () => {
   // No owned builds: downloads cost full price.
-  const client: any = { projectConfig, scaffoldJob: { findFirst: async () => null } };
+  const client: any = {
+    projectConfig,
+    scaffoldJob: { findFirst: async () => null },
+    releaseEmailSubscription: {
+      findUnique: async ({ where }: any) => (subscriptions.has(where.userId) ? { userId: where.userId } : null),
+      upsert: async ({ create }: any) => subscriptions.add(create.userId),
+      deleteMany: async ({ where }: any) => subscriptions.delete(where.userId),
+      count: async () => subscriptions.size,
+    },
+    releaseEmail: { count: async () => 0 },
+  };
   client.$extends = () => client;
   return { default: client };
 });
@@ -101,6 +129,7 @@ const ctx = {
 describe("project router", () => {
   beforeEach(() => {
     stored.clear();
+    subscriptions.clear();
     vi.clearAllMocks();
   });
 
@@ -230,5 +259,44 @@ describe("project router", () => {
     expect(est.tierSteps).toBe(2);
     expect(est.tierCredits).toBe(6); // 2 steps * 3
     expect(est.deltaCredits).toBe(16);
+  });
+
+  it("list flags projects behind a release and its security fixes", async () => {
+    const caller = projectRouter.createCaller(ctx);
+    await caller.save({ name: "Shop", modules: ["billing"] });
+    await caller.save({ name: "Plain", modules: [] });
+    for (const row of stored.values()) row.templateVersion = "1.4.0";
+
+    const rows = await caller.list();
+    expect(rows.find((row) => row.name === "Shop")).toMatchObject({ releasesBehind: 1, securityAdvisories: 1 });
+    expect(rows.find((row) => row.name === "Plain")).toMatchObject({ releasesBehind: 1, securityAdvisories: 0 });
+  });
+
+  it("releases lists only the entries for the project's modules", async () => {
+    const caller = projectRouter.createCaller(ctx);
+    const saved = await caller.save({ name: "Plain", modules: [] });
+    stored.get(saved.project.id).templateVersion = "1.4.0";
+
+    const result = await caller.releases({ slug: saved.project.slug });
+    expect(result.releases[0]!.entries.map((entry) => entry.title)).toEqual(["New env var"]);
+    expect(result.advisories).toEqual([]);
+  });
+
+  it("stores the release email preference", async () => {
+    const caller = projectRouter.createCaller(ctx);
+    expect(await caller.releaseEmails()).toEqual({ subscribed: false });
+    await caller.setReleaseEmails({ subscribed: true });
+    expect(await caller.releaseEmails()).toEqual({ subscribed: true });
+    await caller.setReleaseEmails({ subscribed: false });
+    expect(await caller.releaseEmails()).toEqual({ subscribed: false });
+  });
+
+  it("keeps release email sending admin-only", async () => {
+    const caller = projectRouter.createCaller(ctx);
+    await expect(caller.sendReleaseEmails({ version: "1.4.1" })).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(caller.releaseEmailStatus()).rejects.toMatchObject({ code: "FORBIDDEN" });
+
+    const admin = projectRouter.createCaller({ ...ctx, session: { user: { ...ctx.session.user, role: "admin" } } });
+    expect(await admin.releaseEmailStatus()).toEqual({ version: "1.4.1", subscribers: 0, sent: 0 });
   });
 });

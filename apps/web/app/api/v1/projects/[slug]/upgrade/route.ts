@@ -9,6 +9,7 @@ import {
   type ScaffoldModuleId,
 } from "@/lib/scaffold-modules";
 import { getTemplateVersion } from "@/lib/scaffold/template-version";
+import { getProjectReleases, loadReleases } from "@/lib/scaffold/releases";
 import {
   InsufficientCreditsError,
   ScaffoldRootNotFoundError,
@@ -16,6 +17,7 @@ import {
   chargeScaffoldCredits,
   computeBuildHash,
   computeUpgradeDelta,
+  previewUpgrade,
 } from "@/lib/scaffold/service";
 
 export const runtime = "nodejs";
@@ -32,6 +34,42 @@ const upgradeInput = z.object({
 
 function jsonError(code: string, message: string, status: number) {
   return NextResponse.json({ error: { code, message } }, { status });
+}
+
+/**
+ * The upgrade without buying it (`create-saas-forge upgrade --dry-run`): the
+ * kit's file counts and price, plus the release notes since the project's
+ * version. `?modules=a,b&tierId=tier-3` set the target.
+ */
+export async function GET(req: NextRequest, ctx: RouteContext) {
+  const auth = await authenticateApiKey(req, { scopes: ["read:projects"] });
+  if (!auth.ok) return auth.response;
+
+  const { slug } = await ctx.params;
+  const project = await getProject(auth.userId, slug);
+  if (!project) return jsonError("not_found", "Project not found.", 404);
+
+  const params = req.nextUrl.searchParams;
+  const modules = params.get("modules")?.split(",").map((id) => id.trim()).filter(Boolean);
+  try {
+    const preview = previewUpgrade({
+      fromModules: project.modules,
+      toModules: modules ?? project.modules,
+      fromTierId: project.tierId,
+      toTierId: params.get("tierId") || project.tierId,
+      platforms: project.platforms,
+    });
+    const releases = getProjectReleases(project, loadReleases(), getTemplateVersion());
+    return NextResponse.json({ preview, releases });
+  } catch (err) {
+    if (err instanceof InvalidScaffoldModuleError) {
+      return jsonError("invalid_modules", err.message, 400);
+    }
+    if (err instanceof ScaffoldRootNotFoundError) {
+      return jsonError("scaffold_root_missing", err.message, 500);
+    }
+    throw err;
+  }
 }
 
 export async function POST(req: NextRequest, ctx: RouteContext) {

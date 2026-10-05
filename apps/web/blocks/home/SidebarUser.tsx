@@ -8,7 +8,9 @@ import UISidebarUser from "@workspace/ui/components/home/SidebarUser"
 // scaffold:begin billing
 import ProgressWithCredits from "@workspace/ui/components/home/ProgressWithCredits"
 // scaffold:end billing
+// scaffold:begin api_keys
 import { ApiKeysScreen } from "@/components/api-keys/ApiKeysScreen"
+// scaffold:end api_keys
 
 const SidebarUser = () => {
   const router = useRouter();
@@ -143,7 +145,9 @@ const SidebarUser = () => {
         isBillingLoading={isCreditsLoading || isPurchasesLoading}
         onCreateCheckoutSession={onCreateCheckoutSession}
         // scaffold:end billing
+        // scaffold:begin api_keys
         apiKeysContent={<ApiKeysScreen />}
+        // scaffold:end api_keys
       />
     </>
   )

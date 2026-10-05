@@ -7,6 +7,7 @@ import {
   compileScaffoldVariant,
   createTempScaffoldDir,
   loadScaffoldRegistry,
+  resolveWorkspacePath,
   type ScaffoldModuleId,
 } from "@/lib/scaffold-modules";
 
@@ -22,7 +23,7 @@ import {
  * Bump whenever the output of buildBaseArchive or compileScaffoldVariant
  * changes; build-cache.test.ts fails when their sources change without it.
  */
-export const BUILDER_VERSION = 2;
+export const BUILDER_VERSION = 3;
 
 /** Neutral top-level folder of a cached archive, renamed per download. */
 export const BASE_ROOT = "saas-forge-app";
@@ -65,7 +66,10 @@ export interface BuildCacheStore {
 
 const fingerprints = new Map<string, string>();
 
-/** Content hash of the starter, so edits without a version bump never hit a stale build. */
+/**
+ * Content hash of the starter plus the module manifests and overrides that
+ * shape a variant, so edits to either never hit a stale build.
+ */
 export function templateFingerprint(scaffoldRoot: string): string {
   const cached = fingerprints.get(scaffoldRoot);
   if (cached) return cached;
@@ -81,6 +85,18 @@ export function templateFingerprint(scaffoldRoot: string): string {
     }
   };
   walk(scaffoldRoot);
+  const modulesDir = resolveWorkspacePath("scaffold-modules");
+  if (fs.existsSync(modulesDir)) {
+    hash.update("scaffold-modules\0");
+    const walkModules = (dir: string) => {
+      for (const entry of fs.readdirSync(dir, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) walkModules(full);
+        else if (entry.isFile()) hash.update(path.relative(modulesDir, full)).update("\0").update(fs.readFileSync(full)).update("\0");
+      }
+    };
+    walkModules(modulesDir);
+  }
 
   const fingerprint = hash.digest("hex");
   fingerprints.set(scaffoldRoot, fingerprint);

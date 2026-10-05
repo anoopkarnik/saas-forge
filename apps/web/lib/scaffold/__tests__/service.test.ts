@@ -140,12 +140,22 @@ describe("computeUpgradeDelta", () => {
   it("charges 0 for a not-yet-implemented module", () => {
     const d = computeUpgradeDelta({
       fromModules: ["billing"],
+      toModules: ["billing", "notifications"],
+      fromTierId: "tier-1",
+      toTierId: "tier-1",
+    });
+    expect(d.addedModules).toEqual(["notifications"]);
+    expect(d.deltaCredits).toBe(0);
+  });
+
+  it("charges 5 credits to add API Keys", () => {
+    const d = computeUpgradeDelta({
+      fromModules: ["billing"],
       toModules: ["billing", "api_keys"],
       fromTierId: "tier-1",
       toTierId: "tier-1",
     });
-    expect(d.addedModules).toEqual(["api_keys"]);
-    expect(d.deltaCredits).toBe(0);
+    expect(d.deltaCredits).toBe(5);
   });
 
   it("charges 50 credits to add Organizations / Teams", () => {

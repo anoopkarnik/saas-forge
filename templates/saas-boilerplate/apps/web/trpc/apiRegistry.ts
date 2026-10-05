@@ -139,6 +139,7 @@ export const API_REGISTRY: ApiGroup[] = [
   },
   // scaffold:end ai_agents
   // scaffold:end ai
+  // scaffold:begin api_keys
   {
     group: "apiKey",
     label: "API Keys",
@@ -148,6 +149,7 @@ export const API_REGISTRY: ApiGroup[] = [
       { name: "revoke", type: "mutation", access: "authenticated" },
     ],
   },
+  // scaffold:end api_keys
   ...ORGANIZATION_API_GROUPS,
   {
     group: "admin.settings",

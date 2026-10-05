@@ -51,13 +51,13 @@
     {
       "id": "api_keys",
       "label": "API Keys",
-      "description": "Programmable access with scoped key management.",
+      "description": "Scoped API keys users create in Settings, hashed at rest, with per-key rate limits and an /api/v1/me endpoint.",
       "default": false,
       "creditsCost": 5,
       "requires": [],
       "incompatibleWith": [],
       "downloadEnabled": true,
-      "implemented": false
+      "implemented": true
     },
     {
       "id": "notifications",

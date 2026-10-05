@@ -1,5 +1,41 @@
 {
   "id": "api_keys",
+  "ownedIdentifiers": [
+    "apiKeyRouter",
+    "apiKeyProcedures",
+    "trpc.apiKey.",
+    "authenticateApiKey",
+    "apiKeyRateLimit",
+    "API_KEY_STATUS",
+    "ApiKeysScreen",
+    "components/api-keys",
+    "@workspace/auth/api-keys",
+    "model ApiKey"
+  ],
   "selected": {},
-  "unselected": {}
+  "unselected": {
+    "remove": [
+      "apps/web/app/api/v1/me",
+      "apps/web/components/api-keys",
+      "apps/web/server/authenticateApiKey.ts",
+      "apps/web/server/apiKeyRateLimit.ts",
+      "apps/web/server/__tests__/authenticateApiKey.test.ts",
+      "apps/web/trpc/routers/apiKeyProcedures.ts",
+      "apps/web/trpc/routers/__tests__/apiKeys.test.ts",
+      "packages/auth/src/api-keys",
+      "packages/database/prisma/api-keys.prisma",
+      "packages/database/prisma/migrations/20260608090000_add_api_keys"
+    ],
+    "jsonRemove": [
+      {
+        "file": "packages/auth/package.json",
+        "keys": {
+          "exports": [
+            "./api-keys",
+            "./api-keys/scopes"
+          ]
+        }
+      }
+    ]
+  }
 }

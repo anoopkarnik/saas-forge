@@ -39,7 +39,9 @@ const data = {
     // scaffold:begin billing
     { name: "Plans & Billing", icon: ReceiptIcon },
     // scaffold:end billing
+    // scaffold:begin api_keys
     { name: "API Keys", icon: KeyRound },
+    // scaffold:end api_keys
     // { name: "Notifications", icon: Bell },
     // { name: "Language & Region", icon: Globe },
     // { name: "Privacy & Visibility", icon: Lock },
@@ -173,6 +175,7 @@ export function SettingsDialog({
                 paymentGateway={paymentGateway}
               />}
             {/* scaffold:end billing */}
+            {/* scaffold:begin api_keys */}
             {currentOpenedTab === "API Keys" && (
               <div className="p-6">
                 {apiKeysContent ?? (
@@ -182,6 +185,7 @@ export function SettingsDialog({
                 )}
               </div>
             )}
+            {/* scaffold:end api_keys */}
 
           </main>
         </SidebarProvider>

@@ -30,7 +30,7 @@ export type RouteAuth =
    * verified server-side by `guardRoute`, which answers 401 itself.
    */
   | "session"
-  /** `Authorization: Bearer sk_...`, verified by `authenticateApiKey`. */
+  /** `Authorization: Bearer sk_...`, verified by the API-key authenticator. */
   | "api-key"
   /** Provider signature, verified in the handler. */
   | "webhook"
@@ -59,7 +59,7 @@ export type RoutePolicy = {
   roles?: readonly string[];
   /** Session routes reject the read-only demo guest unless this is true. */
   allowGuest?: boolean;
-  /** "api-key" is enforced inside `authenticateApiKey`. */
+  /** "api-key" is enforced by the API-key authenticator, not the middleware. */
   rateLimit: "default" | "chat" | "api-key" | "none";
   /** Requests declaring a larger Content-Length get a 413 in middleware. */
   maxBodyBytes?: number;

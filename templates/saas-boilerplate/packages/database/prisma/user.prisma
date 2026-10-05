@@ -28,7 +28,9 @@ model User {
     aiCollections    AiCollection[]    @relation("AiCollections")
     // scaffold:end ai_agents
     // scaffold:end ai
+    // scaffold:begin api_keys
     apiKeys          ApiKey[]
+    // scaffold:end api_keys
     sentInvitations  Invitation[]     @relation("InvitationInvitedBy")
     // scaffold:begin multi_tenancy
     members          Member[]
@@ -120,34 +122,6 @@ model jwks {
   createdAt DateTime @default(now())
 
   @@schema("user_schema")
-}
-
-model ApiKey {
-    id          String         @id @default(cuid())
-    userId      String
-    label       String
-    keyPrefix   String         @unique
-    keyHash     String
-    scopes      String[]
-    status      API_KEY_STATUS @default(active)
-    lastUsedAt  DateTime?
-    expiresAt   DateTime?
-    revokedAt   DateTime?
-    createdAt   DateTime       @default(now())
-    updatedAt   DateTime       @updatedAt
-
-    user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-    @@index([userId])
-    @@index([status])
-    @@schema("user_schema")
-}
-
-enum API_KEY_STATUS {
-    active
-    revoked
-
-    @@schema("user_schema")
 }
 
 enum INVITATION_STATUS {

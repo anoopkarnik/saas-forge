@@ -54,8 +54,10 @@ describe("scaffold.catalog", () => {
       expect(entry.description.length).toBeGreaterThan(0);
     }
     // Unimplemented modules are hidden from buyers and cost nothing.
+    const notifications = catalog.modules.find((module) => module.id === "notifications");
+    expect(notifications).toMatchObject({ available: false, creditsCost: 0 });
     const apiKeys = catalog.modules.find((module) => module.id === "api_keys");
-    expect(apiKeys).toMatchObject({ available: false, creditsCost: 0 });
+    expect(apiKeys).toMatchObject({ available: true, creditsCost: 5 });
   });
 
   it("quotes exactly what every module combination is charged", async () => {

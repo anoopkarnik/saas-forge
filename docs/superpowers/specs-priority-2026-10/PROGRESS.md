@@ -19,7 +19,7 @@ Rules for every spec:
 |---|------|--------|--------|-------|
 | 01 | Scaffold variant matrix CI | done | 1cae886 | Marker engine, matrix, boot smoke, lockfile pruning |
 | 02 | Single-source pricing & module catalog | done | 5df88a2 | 409 price_changed guard on all four charging routes |
-| 03 | Secret-free downloads | todo | | |
+| 03 | Secret-free downloads | done | e9fa901 | Shared buildProjectZip now ships the pruned lockfile; .env.secrets.template left to #9 |
 | 04 | Cached & async scaffold builds | todo | | Restore free re-downloads on the session path (/api/scaffold ignores lastBuiltHash; ProjectList now shows full price) |
 | 05 | AI backend module split (ai_agents) | todo | | |
 | 06 | API Keys module manifest | todo | | |

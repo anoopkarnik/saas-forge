@@ -22,7 +22,7 @@ Rules for every spec:
 | 03 | Secret-free downloads | done | e9fa901 | Shared buildProjectZip now ships the pruned lockfile; .env.secrets.template left to #9 |
 | 04 | Cached & async scaffold builds | done | 62e0d3a | R2 cache, refunds, free re-downloads; builds stay synchronous until #12; admin prewarm instead of publish-script prewarm |
 | 05 | AI backend module split (ai_agents) | done | 93371c4 | Saved projects with `ai` now download without the Python service; owners add ai_agents |
-| 06 | API Keys module manifest | todo | | |
+| 06 | API Keys module manifest | done | 6808954 | Saved projects listing api_keys now pay 5 credits |
 | 07 | Pre-purchase file-tree preview | todo | | |
 | 08 | create-saas-forge CLI v2 | todo | | |
 | 09 | Post-download setup doctor | todo | | |

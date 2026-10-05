@@ -27,8 +27,8 @@ Rules for every spec:
 | 08 | create-saas-forge CLI v2 | done | 1c2607f | npm publish is a release step (not run); `upgrade` ignores the server URL in .saas-forge.json unless it matches the configured one |
 | 09 | Post-download setup doctor | done | f369d08 | Doctor imports env.ts itself (no separate requirements module) and fills apps/web/.env directly (no .env.secrets.template). E2E: fresh `none` variant → doctor → production boot + sign-up. Found apps/web/.env on prod-boilerplate, 3 additive migrations behind (owner to deploy) |
 | 10 | Upgrade center | done | 4bfac2b | No releases/*.json yet (history had no usable notes); the next release drafts one with `pnpm release:notes`. Emails are sent by an admin from My Projects, not on publish. UI not clicked through in a browser (local web uses the prod DB) |
-| 11 | Provider-level pruning | todo | | |
-| 12 | Jobs & cron module | todo | | Inngest, not QStash (owner decision) |
+| 11 | Provider-level pruning | done | 73d8394 | `packageJsonRemove` not added: existing `jsonRemove` covers dependencies. Keep-all output differs from pre-#11 only in the refactored provider files (no pruning). Minimal providers (all modules): 2,012 vs 2,210 installed packages, 1,872 vs 1,921 MB. Wizard file preview (#7) still counts keep-all files |
+| 12 | Jobs & cron module | todo | | Inngest, not QStash (owner decision). apps/web/.env already names INNGEST_BASE_URL, INNGEST_EVENT_KEY, INNGEST_SIGNING_KEY, INNGEST_SERVE_ORIGIN, INNGEST_DEV; self-hosted container on :8288; `inngest` SDK not installed yet |
 | 13 | Notifications module | todo | | |
 | 14 | Runtime site config | todo | | |
 | 15 | Audit log module | todo | | |
@@ -43,3 +43,4 @@ Rules for every spec:
 - 1db9b85 fix(doctor): env files written 0600 (security review of #9).
 - 7f1f4de fix(scaffold): Vercel never shipped `scaffold-modules/` (registry, manifests) with any route, so pricing, the catalog and downloads threw ENOENT in production; the v1 download/upgrade routes and the preview procedures also lacked the starter. Registry now traced everywhere, starter on archive routes, template-reading tRPC calls go to `/api/scaffold/trpc`. Predates the roadmap.
 - Production database (`prod-boilerplate`) is 4 additive migrations behind dev and nothing in the build migrates it; owner runs `migrate:deploy` (documented in the release workflow, step 7).
+- 73d8394 (with #11): local env files (`.env.production`, `.env.local`…) were copied into the synced starter and only a file named exactly `.env` was kept out of archives. Audit (read-only) of the R2 bucket found no build archives ever written, so nothing leaked.

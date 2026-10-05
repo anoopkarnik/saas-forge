@@ -8,7 +8,9 @@ import SessionsSection from "@/components/settings/SessionsSection";
 import ThemeSection from "@/components/settings/ThemeSection";
 import DangerZoneSection from "@/components/settings/DangerZoneSection";
 import OrgSelector from "@/components/organizations/OrgSelector";
+// scaffold:begin billing
 import BillingSection from "@/components/settings/BillingSection";
+// scaffold:end billing
 
 export default function Settings() {
     const router = useRouter();
@@ -65,8 +67,10 @@ export default function Settings() {
             {/* Active Sessions */}
             <SessionsSection />
 
+            {/* scaffold:begin billing */}
             {/* Plans & Billing */}
             <BillingSection />
+            {/* scaffold:end billing */}
 
             {/* Support Section */}
             <View className="mb-6">

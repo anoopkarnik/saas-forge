@@ -2,6 +2,11 @@ import { execFileSync } from "child_process";
 import fs from "fs";
 import os from "os";
 import path from "path";
+import {
+  compileScaffoldVariant,
+  createTempScaffoldDir,
+  loadScaffoldRegistry,
+} from "../apps/web/lib/scaffold-modules.ts";
 
 const BRANCH = "template/saas-boilerplate";
 const TAG_PREFIX = "template/v";
@@ -140,8 +145,20 @@ try {
   // Clear worktree contents (keep .git)
   removeContents(worktreePath);
 
-  // Copy staged template into worktree
-  copyRecursive(stageDir, worktreePath);
+  // Publish the all-modules variant: the staged template with scaffold
+  // markers stripped, so tracking projects never see marker comments.
+  const variantDir = createTempScaffoldDir();
+  try {
+    compileScaffoldVariant({
+      baseRoot: stageDir,
+      tempDir: variantDir,
+      selectedModules: loadScaffoldRegistry().modules.map((module) => module.id),
+      platforms: ["web", "desktop", "mobile"],
+    });
+    copyRecursive(variantDir, worktreePath);
+  } finally {
+    fs.rmSync(variantDir, { recursive: true, force: true });
+  }
 
   // Write .boilerplate-version
   fs.writeFileSync(path.join(worktreePath, ".boilerplate-version"), `${version}\n`);

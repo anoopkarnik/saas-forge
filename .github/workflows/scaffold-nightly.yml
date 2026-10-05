@@ -1,0 +1,85 @@
+name: Scaffold Nightly
+
+on:
+  schedule:
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
+
+env:
+  CI: true
+
+jobs:
+  full-matrix:
+    name: Full Variant Sweep
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.4.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          check-latest: true
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Compile and check every module subset
+        run: pnpm scaffold:matrix --full
+      - name: Upload matrix summary and logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scaffold-matrix-full
+          path: |
+            .generated/variants/summary.md
+            .generated/variants/*.log
+          if-no-files-found: ignore
+
+  boot-smoke:
+    name: Boot Smoke (${{ matrix.variant }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Without the ai module no migration needs pgvector, so plain Postgres must work.
+          - variant: none
+            postgres: postgres:16
+          - variant: all
+            postgres: pgvector/pgvector:pg16
+    services:
+      postgres:
+        image: ${{ matrix.postgres }}
+        env:
+          POSTGRES_PASSWORD: smoke
+          POSTGRES_DB: smoke
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.4.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          check-latest: true
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Compile and install the variant
+        run: pnpm scaffold:matrix --only ${{ matrix.variant }} --keep
+      - name: Migrate, check drift, seed, build, start and sign up
+        env:
+          DATABASE_URL: postgresql://postgres:smoke@localhost:5432/smoke
+        run: node scripts/scaffold-boot-smoke.mjs .generated/variants/${{ matrix.variant }}

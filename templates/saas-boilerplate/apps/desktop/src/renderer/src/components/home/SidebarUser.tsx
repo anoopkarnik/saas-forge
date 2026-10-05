@@ -4,12 +4,16 @@ import { useTRPC } from '../../lib/trpc';
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useSession } from "@workspace/auth/better-auth/auth-client";
 import UISidebarUser from "@workspace/ui/components/home/SidebarUser"
+// scaffold:begin billing
 import ProgressWithCredits from "@workspace/ui/components/home/ProgressWithCredits"
+// scaffold:end billing
 
 const SidebarUser = () => {
     const navigate = useNavigate();
     const trpc = useTRPC() as any;
+    // scaffold:begin billing
     const [awaitingPayment, setAwaitingPayment] = React.useState(false);
+    // scaffold:end billing
 
     const { data: session, status, refetch: refetchSession } = useSession({
         fetchOptions: {
@@ -18,6 +22,7 @@ const SidebarUser = () => {
         }
     });
 
+    // scaffold:begin billing
     const { data: creditsData, isLoading: isCreditsLoading } = useQuery({
         ...trpc.billing.getCreditsBalance.queryOptions(),
         enabled: !!session?.user?.id,
@@ -29,9 +34,12 @@ const SidebarUser = () => {
         enabled: !!session?.user?.id,
         refetchInterval: awaitingPayment ? 5000 : false,
     });
+    // scaffold:end billing
 
     const setPasswordMutation = useMutation(trpc.home.setPassword.mutationOptions());
+    // scaffold:begin billing
     const checkoutMutation = useMutation(trpc.billing.createCheckoutSession.mutationOptions());
+    // scaffold:end billing
 
     const onNavigate = (path: string) => {
         navigate(path);
@@ -73,6 +81,7 @@ const SidebarUser = () => {
         }
     }
 
+    // scaffold:begin billing
     // Stop polling once credits actually change after payment
     const creditsRef = React.useRef(creditsData as any);
     React.useEffect(() => {
@@ -105,12 +114,15 @@ const SidebarUser = () => {
             return {};
         }
     }
+    // scaffold:end billing
 
     return (
         <>
+            {/* scaffold:begin billing */}
             {import.meta.env.VITE_PAYMENT_GATEWAY !== "none" && (
                 <ProgressWithCredits creditsData={creditsData as any} />
             )}
+            {/* scaffold:end billing */}
             <UISidebarUser
                 session={session}
                 status={status}
@@ -120,11 +132,13 @@ const SidebarUser = () => {
                 onUpdateAvatar={onUpdateAvatar}
                 guestMail={import.meta.env.VITE_GUEST_MAIL}
                 adminMail={import.meta.env.VITE_ADMIN_MAIL}
+                // scaffold:begin billing
                 paymentGateway={import.meta.env.VITE_PAYMENT_GATEWAY}
                 creditsData={creditsData as any}
                 purchases={purchases as any}
                 isBillingLoading={isCreditsLoading || isPurchasesLoading}
                 onCreateCheckoutSession={onCreateCheckoutSession}
+                // scaffold:end billing
             />
         </>
     )

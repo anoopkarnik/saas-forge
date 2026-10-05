@@ -1,14 +1,18 @@
-import {Resend} from 'resend';
+import { getResendClient, warnEmailSkipped } from './client';
 import EmailVerification from '../templates/EmailVerification';
 import ResetPassword from '../templates/ResetPassword';
 import Invitation from '../templates/Invitation';
 import { render } from "@react-email/render";
 
 export const sendVerificationEmail = async (email: string, verificationUrl: string) => {
-    const resend = new Resend(process.env.RESEND_API_KEY)
+    const subject = "Verify Your Email Address";
+    const resend = getResendClient()
+    if (!resend) {
+        warnEmailSkipped(subject, email, verificationUrl);
+        return null;
+    }
     const from = process.env.NEXT_PUBLIC_SUPPORT_MAIL!;
     const company = process.env.NEXT_PUBLIC_COMPANY_NAME || "Company";
-    const subject = "Verify Your Email Address";
     const html = await render(EmailVerification({ verificationLink: verificationUrl, company }))
     return resend.emails.send({
         from: from,
@@ -19,10 +23,14 @@ export const sendVerificationEmail = async (email: string, verificationUrl: stri
 }
 
 export const sendResetEmail = async (email: string, resetUrl: string) => {
-  const resend = new Resend(process.env.RESEND_API_KEY)
+  let subject = "Reset your password";
+  const resend = getResendClient()
+  if (!resend) {
+    warnEmailSkipped(subject, email, resetUrl);
+    return null;
+  }
 
   let from = process.env.NEXT_PUBLIC_SUPPORT_MAIL!;
-  let subject = "Reset your password";
   const company = process.env.NEXT_PUBLIC_COMPANY_NAME || "Company";
   const html = await render(ResetPassword({ resetPasswordLink: resetUrl, company }))
   return resend.emails.send({
@@ -34,9 +42,13 @@ export const sendResetEmail = async (email: string, resetUrl: string) => {
 }
 
 export const sendInvitationEmail = async (email: string, inviteUrl: string, company: string) => {
-  const resend = new Resend(process.env.RESEND_API_KEY)
-  const from = process.env.NEXT_PUBLIC_SUPPORT_MAIL!;
   const subject = `You're invited to ${company}`;
+  const resend = getResendClient()
+  if (!resend) {
+    warnEmailSkipped(subject, email, inviteUrl);
+    return null;
+  }
+  const from = process.env.NEXT_PUBLIC_SUPPORT_MAIL!;
   const html = await render(Invitation({ inviteLink: inviteUrl, company }))
   return resend.emails.send({
     from,
@@ -47,7 +59,11 @@ export const sendInvitationEmail = async (email: string, inviteUrl: string, comp
 }
 
 export const sendSupportEmail = async (subject:string,body:string) => {
-  const resend = new Resend(process.env.RESEND_API_KEY)
+  const resend = getResendClient()
+  if (!resend) {
+    warnEmailSkipped(subject, "support");
+    return null;
+  }
   const from = process.env.NEXT_PUBLIC_SUPPORT_MAIL!
   const to = process.env.NEXT_PUBLIC_SUPPORT_MAIL!
 
@@ -62,7 +78,11 @@ export const sendSupportEmail = async (subject:string,body:string) => {
 
 
 export const createContact = async( email: string) => {
-    const resend = new Resend(process.env.RESEND_API_KEY)
+    const resend = getResendClient()
+    if (!resend) {
+        warnEmailSkipped("newsletter sign-up", email);
+        return null;
+    }
     const response = await resend.contacts.create({
         email: email,
         audienceId: process.env.RESEND_AUDIENCE_ID || "",

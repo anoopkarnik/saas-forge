@@ -1,5 +1,17 @@
 {
   "id": "multi_tenancy",
+  "ownedIdentifiers": [
+    "organizationRouter",
+    "organizationProcedures",
+    "trpc.organization.",
+    "organization-helpers",
+    "resend/organization",
+    "organization-api",
+    "OrganizationInvitation",
+    "Member[]",
+    "activeOrganizationId String?",
+    "backfill:orgs"
+  ],
   "selected": {},
   "unselected": {
     "remove": [
@@ -48,14 +60,16 @@
       {
         "from": "overrides/unselected/apps/web/trpc/apiRegistry.organization.ts",
         "to": "apps/web/trpc/apiRegistry.organization.ts"
-      },
+      }
+    ],
+    "jsonRemove": [
       {
-        "from": "overrides/unselected/packages/database/prisma/user.prisma",
-        "to": "packages/database/prisma/user.prisma"
-      },
-      {
-        "from": "overrides/unselected/packages/database/package.json",
-        "to": "packages/database/package.json"
+        "file": "packages/database/package.json",
+        "keys": {
+          "scripts": [
+            "backfill:orgs"
+          ]
+        }
       }
     ]
   }

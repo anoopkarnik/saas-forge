@@ -106,6 +106,7 @@ async function main() {
 
   const pageId = landingPage.id;
 
+  // scaffold:begin ai
   const seedPrompt = async ({
     key,
     name,
@@ -167,6 +168,7 @@ async function main() {
     content:
       "You help admins write concise, conversion-focused SaaS landing page content. When asked to fill a CMS form, return only JSON matching the requested section fields and preserve existing image URLs unless better URLs are provided.",
   });
+  // scaffold:end ai
 
   // Sync related models (overwrite existing completely)
   

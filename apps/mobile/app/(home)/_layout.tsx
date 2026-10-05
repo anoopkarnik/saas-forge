@@ -1,7 +1,9 @@
 import { Tabs, Redirect } from "expo-router";
 import { View, ActivityIndicator, StyleSheet, Platform } from "react-native";
 import { useAuth } from "@/lib/auth-provider";
+// scaffold:begin billing
 import { CreditsProvider } from "@/lib/credits-provider";
+// scaffold:end billing
 import { Ionicons } from "@expo/vector-icons";
 import TabHeader from "@/components/home/TabHeader";
 
@@ -24,7 +26,9 @@ export default function HomeLayout() {
     }
 
     return (
+        // scaffold:begin billing
         <CreditsProvider>
+        {/* scaffold:end billing */}
         <View style={styles.root}>
             <TabHeader />
             <Tabs
@@ -88,7 +92,9 @@ export default function HomeLayout() {
                 <Tabs.Screen name="documentation" options={{ href: null }} />
             </Tabs>
         </View>
+        {/* scaffold:begin billing */}
         </CreditsProvider>
+        // scaffold:end billing
     );
 }
 

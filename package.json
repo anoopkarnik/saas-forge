@@ -26,6 +26,7 @@
     "template:test": "pnpm template:check-sync && pnpm template:prepare && pnpm --dir .generated/saas-boilerplate test",
     "template:test:coverage": "pnpm template:check-sync && pnpm template:prepare && pnpm --dir .generated/saas-boilerplate test:coverage",
     "template:publish": "pnpm template:stage && node scripts/publish-template-branch.mjs",
+    "scaffold:matrix": "pnpm template:stage && node scripts/scaffold-matrix.mjs",
     "docker:build:web": "docker build -f Dockerfile.web -t saas-forge-web .",
     "docker:up": "docker compose up --build --detach",
     "backend:deploy": "bash scripts/deploy-backend.sh",

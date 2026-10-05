@@ -22,11 +22,13 @@ export default function CMSAdminPage() {
     const { isPending, isAdmin } = useAdminGuard();
     const trpc = useTRPC();
     const queryClient = useQueryClient();
+    // scaffold:begin ai
     const [aiDraft, setAiDraft] = React.useState<{
         section: CmsAssistantSection;
         values: Partial<CmsFormValues>;
         nonce: number;
     } | null>(null);
+    // scaffold:end ai
 
     const { data: landingInfo, isLoading: isLoadingCMS } = useQuery(trpc.landing.getLandingInfoFromNotion.queryOptions());
 
@@ -47,6 +49,7 @@ export default function CMSAdminPage() {
         })
     );
 
+    // scaffold:begin ai
     const fillCmsWithAiMutation = useMutation(
         trpc.ai.generateAdminDraft.mutationOptions({
             onSuccess: (draft) => {
@@ -66,11 +69,13 @@ export default function CMSAdminPage() {
             },
         }),
     );
+    // scaffold:end ai
 
     const handleSave = (values: Partial<CmsFormValues>) => {
         updateLandingInfoMutation.mutate(values as any);
     };
 
+    // scaffold:begin ai
     const handleAIFill = (section: CmsAssistantSection, currentValues: Partial<CmsFormValues>, instruction?: string) => {
         fillCmsWithAiMutation.mutate({
             kind: "cms",
@@ -79,6 +84,7 @@ export default function CMSAdminPage() {
             instruction,
         });
     };
+    // scaffold:end ai
 
     if (isPending || (!isAdmin && isLoadingCMS)) {
         return (
@@ -94,9 +100,11 @@ export default function CMSAdminPage() {
         initialData: landingInfo,
         onSave: handleSave,
         isSaving: updateLandingInfoMutation.isPending,
+        // scaffold:begin ai
         aiDraft,
         isAiFilling: fillCmsWithAiMutation.isPending,
         onAIFill: handleAIFill,
+        // scaffold:end ai
     };
 
     return (

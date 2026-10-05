@@ -32,6 +32,34 @@ jobs:
       - name: Verify template sync
         run: pnpm template:check-sync
 
+  scaffold-matrix:
+    name: Scaffold Variant Matrix
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.4.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          check-latest: true
+          cache: pnpm
+      # Fills the pnpm store so each variant installs with --prefer-offline.
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Compile and check variants (pairwise)
+        run: pnpm scaffold:matrix
+      - name: Upload matrix summary and logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scaffold-matrix
+          path: |
+            .generated/variants/summary.md
+            .generated/variants/*.log
+          if-no-files-found: ignore
+
   lint:
     name: Lint
     runs-on: ubuntu-latest

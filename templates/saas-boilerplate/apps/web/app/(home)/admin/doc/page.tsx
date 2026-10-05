@@ -11,7 +11,9 @@ import { Input } from "@workspace/ui/components/shadcn/input";
 import { Textarea } from "@workspace/ui/components/shadcn/textarea";
 import { Badge } from "@workspace/ui/components/shadcn/badge";
 import { Loader2, FileText, Plus, RefreshCw, Trash2, Save } from "lucide-react";
+// scaffold:begin ai
 import { AIFillPromptDialog } from "@workspace/ui/components/admin/AIFillPromptDialog";
+// scaffold:end ai
 
 type DocFormState = {
     title: string;
@@ -132,6 +134,7 @@ export default function DocumentationAdminPage() {
         }),
     );
 
+    // scaffold:begin ai
     const fillDocWithAiMutation = useMutation(
         trpc.ai.generateAdminDraft.mutationOptions({
             onSuccess: (draft) => {
@@ -153,6 +156,7 @@ export default function DocumentationAdminPage() {
             },
         }),
     );
+    // scaffold:end ai
 
     const isSaving = createDocMutation.isPending || updateDocMutation.isPending;
     const activeDoc = docsQuery.data?.find((doc) => doc.id === selectedId) ?? null;
@@ -202,6 +206,7 @@ export default function DocumentationAdminPage() {
         deleteDocMutation.mutate({ id: selectedId });
     };
 
+    // scaffold:begin ai
     const handleAiFill = (instruction: string) => {
         fillDocWithAiMutation.mutate({
             kind: "documentation",
@@ -215,6 +220,7 @@ export default function DocumentationAdminPage() {
             instruction,
         });
     };
+    // scaffold:end ai
 
     if (isPending || (isPostgresCms && docsQuery.isLoading)) {
         return (
@@ -371,10 +377,12 @@ export default function DocumentationAdminPage() {
                                                 : "This page has not been saved yet."}
                                         </p>
                                         <div className="flex items-center gap-2">
+                                            {/* scaffold:begin ai */}
                                             <AIFillPromptDialog
                                                 isPending={fillDocWithAiMutation.isPending}
                                                 onFill={handleAiFill}
                                             />
+                                            {/* scaffold:end ai */}
                                             <Button onClick={handleSave} disabled={isSaving}>
                                                 {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                                                 Save

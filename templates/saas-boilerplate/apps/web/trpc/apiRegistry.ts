@@ -80,6 +80,7 @@ export const API_REGISTRY: ApiGroup[] = [
       { name: "setPassword", type: "mutation", access: "authenticated" },
     ],
   },
+  // scaffold:begin billing
   {
     group: "billing",
     label: "Billing",
@@ -90,6 +91,7 @@ export const API_REGISTRY: ApiGroup[] = [
       { name: "getCreditsBalance", type: "query", access: "authenticated" },
     ],
   },
+  // scaffold:end billing
   {
     group: "seo",
     label: "SEO",
@@ -104,6 +106,7 @@ export const API_REGISTRY: ApiGroup[] = [
       { name: "getRealtimeUsers", type: "query", access: "adminGuestRead" },
     ],
   },
+  // scaffold:begin ai
   {
     group: "ai",
     label: "AI",
@@ -133,6 +136,7 @@ export const API_REGISTRY: ApiGroup[] = [
       { name: "cancel", type: "mutation", access: "authenticated" },
     ],
   },
+  // scaffold:end ai
   {
     group: "apiKey",
     label: "API Keys",

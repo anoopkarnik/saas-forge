@@ -90,6 +90,14 @@ export function findServerEnvIssues(env: Env): ServerEnvIssue[] {
     if (hmacIssue) issues.push(hmacIssue);
   }
 
+  // Email/password sign-up requires a verification email, so it needs a sender.
+  if (env.NEXT_PUBLIC_AUTH_EMAIL === "true" && (isBlank(env.NEXT_PUBLIC_EMAIL_CLIENT) || env.NEXT_PUBLIC_EMAIL_CLIENT === "none")) {
+    issues.push({
+      key: "NEXT_PUBLIC_EMAIL_CLIENT",
+      message: "is required when NEXT_PUBLIC_AUTH_EMAIL=true (sign-up sends a verification email)",
+    });
+  }
+
   for (const { toggle, value, keys } of INTEGRATION_REQUIREMENTS) {
     if (env[toggle] !== value) continue;
     for (const key of keys) {

@@ -67,6 +67,9 @@ pnpm template:test
 pnpm template:test:coverage
 pnpm template:publish --version <semver>
 
+# Scaffold variants
+pnpm scaffold:matrix
+
 ```
 
 ## Repo Truth
@@ -113,6 +116,19 @@ Other directories under `templates/` may exist in-tree, but should not be treate
 - `pnpm template:prepare` stages the starter, installs dependencies in the staged copy, and runs Prisma generate there.
 - `pnpm template:build`, `pnpm template:test`, and `pnpm template:test:coverage` should be run against the staged starter, not the managed template source.
 - `/api/scaffold` packages the clean staged or managed starter source. It is not meant to walk a nested installed workspace under `templates/saas-boilerplate`.
+
+## Scaffold Modules
+
+A buyer downloads one variant: the staged starter compiled by `compileScaffoldVariant()` (`apps/web/lib/scaffold-modules.ts`) for their module and platform selection. Modules are listed in `scaffold-modules/registry.json`, each with a `scaffold-modules/<id>/manifest.json`.
+
+- Module code inside a shared file goes in a marker region written in that file's comment syntax: `// scaffold:begin billing` ... `// scaffold:end billing` (`{/* ... */}` between JSX children, `#` in `.env.example`). Regions of unselected modules are dropped; marker lines never ship. Regions may nest.
+- Files and folders a module owns outright go in the manifest's `unselected.remove`. JSON keys use `jsonRemove`; one-line edits markers cannot express use `textReplace`, which must match exactly once.
+- Whole-file `replace`/`copy` is only for module-owned slot stubs such as `WorkspaceSlot.tsx`. Never snapshot a shared file: snapshots go stale and break other modules.
+- `ownedIdentifiers` lists strings that must not survive when the module is unselected. Model access through `(db as any)` hides from typecheck, so it needs a marker region too.
+- A module owns its migrations: list migration folders that only touch its tables in `unselected.remove`, and strip a module statement from a mixed migration with `textReplace` in the variant (repo migration files are never edited). The boot smoke's drift check proves the remaining migrations match the variant schema.
+- `pnpm-lock.yaml` importers are pruned to each variant's `package.json` files at compile time, so frozen installs (Vercel, CI) work; the matrix installs with `--frozen-lockfile`.
+- Validate with `pnpm scaffold:matrix`: every module alone, every pair and all modules, each installed, generated, typechecked and arch-checked. Use `--full` for every subset, `--only <name|all|none>` for one variant and `--static` for compile and leak checks only. The matrix reads the registry, so a new module is covered automatically; a module marked `implemented: false` must keep an empty manifest.
+- CI runs the pairwise matrix on every PR. `.github/workflows/scaffold-nightly.yml` runs the full sweep plus `scripts/scaffold-boot-smoke.mjs` (migrate, seed, production build, start, sign up) for the `none` and `all` variants.
 
 ## Imports and Boundaries
 
@@ -176,6 +192,7 @@ Reference: `apps/web/app/api/payments/stripe/webhook/route.ts`
 Boot-time env validation lives in `apps/web/lib/env.ts` (called from `apps/web/instrumentation.ts`) and `apps/backend/src/saas_forge_backend/config.py`. Production refuses to start on missing core vars, weak or placeholder secrets (`BETTER_AUTH_SECRET`, `BACKEND_HMAC_SECRET`), missing credentials for an enabled integration toggle, or a secret-looking `NEXT_PUBLIC_*` name; development only warns. The backend enforces this when `APP_ENV=production`. Code still reads `process.env` directly at call sites.
 
 - When an integration toggle gains a required credential, add it to `INTEGRATION_REQUIREMENTS` in `apps/web/lib/env.ts`.
+- Email sign-up (`NEXT_PUBLIC_AUTH_EMAIL=true`) requires `NEXT_PUBLIC_EMAIL_CLIENT`. Without a configured client, `packages/email` helpers skip sending with a warning (including the link outside production) instead of calling Resend.
 - `docker-compose.yml` has no secret defaults; Compose requires `BETTER_AUTH_SECRET` and `BACKEND_HMAC_SECRET` from a sibling `.env`.
 
 Use these files as the source of truth:
@@ -302,6 +319,7 @@ Useful default checks:
 - `pnpm --dir apps/web typecheck`
 - `pnpm --dir apps/web test`
 - `pnpm template:check-sync` after starter-related changes
+- `pnpm scaffold:matrix` after changes to scaffold modules or files they mark
 - `pnpm template:build` when starter behavior may have changed
 
 ## Release Workflow

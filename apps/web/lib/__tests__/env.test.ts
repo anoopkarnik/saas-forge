@@ -94,6 +94,33 @@ describe("findServerEnvIssues", () => {
     ).toEqual([]);
   });
 
+  it.each([undefined, "", "none"])(
+    "requires an email client when email sign-up is on (client %s)",
+    (client) => {
+      const issues = findServerEnvIssues({
+        ...baseEnv,
+        NEXT_PUBLIC_AUTH_EMAIL: "true",
+        NEXT_PUBLIC_EMAIL_CLIENT: client,
+      });
+      expect(issues.map((i) => i.key)).toEqual(["NEXT_PUBLIC_EMAIL_CLIENT"]);
+    },
+  );
+
+  it("accepts email sign-up with a configured client, and no client when it is off", () => {
+    expect(
+      findServerEnvIssues({
+        ...baseEnv,
+        NEXT_PUBLIC_AUTH_EMAIL: "true",
+        NEXT_PUBLIC_EMAIL_CLIENT: "resend",
+        RESEND_API_KEY: "re_123",
+        NEXT_PUBLIC_SUPPORT_MAIL: "support@example.com",
+      }),
+    ).toEqual([]);
+    expect(
+      findServerEnvIssues({ ...baseEnv, NEXT_PUBLIC_AUTH_EMAIL: "false", NEXT_PUBLIC_EMAIL_CLIENT: "none" }),
+    ).toEqual([]);
+  });
+
   it("flags secrets exposed through NEXT_PUBLIC_ variables", () => {
     const issues = findServerEnvIssues({
       ...baseEnv,

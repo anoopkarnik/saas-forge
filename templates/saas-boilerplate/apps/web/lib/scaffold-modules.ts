@@ -44,17 +44,37 @@ type MergeJsonAction = {
   to: string;
 };
 
+/** Removes keys from a JSON file, e.g. `{ dependencies: ["stripe"] }`. */
+type JsonRemoveAction = {
+  file: string;
+  keys: Record<string, string[]>;
+};
+
+/** One-off text edit for syntax markers cannot express (e.g. a one-line array). */
+type TextReplaceAction = {
+  file: string;
+  find: string;
+  replace: string;
+};
+
 type ModuleActions = {
   copy?: ReplaceAction[];
   replace?: ReplaceAction[];
   remove?: string[];
   packageJsonMerge?: MergeJsonAction[];
+  jsonRemove?: JsonRemoveAction[];
+  textReplace?: TextReplaceAction[];
 };
 
 type ModuleManifest = {
   id: ScaffoldModuleId;
   selected?: ModuleActions;
   unselected?: ModuleActions;
+  /**
+   * Strings that must not appear in a variant where this module is unselected.
+   * Checked by the scaffold variant matrix (scripts/scaffold-matrix.mjs).
+   */
+  ownedIdentifiers?: string[];
 };
 
 export type ScaffoldPricingOutput = {
@@ -88,7 +108,7 @@ export function loadScaffoldRegistry(): RegistryShape {
   return JSON.parse(fs.readFileSync(registryPath, "utf-8")) as RegistryShape;
 }
 
-function loadModuleManifest(moduleId: ScaffoldModuleId): ModuleManifest {
+export function loadModuleManifest(moduleId: ScaffoldModuleId): ModuleManifest {
   const manifestPath = resolveWorkspacePath(
     path.join("scaffold-modules", moduleId, "manifest.json"),
   );
@@ -259,60 +279,253 @@ function applyModuleActions(
   for (const merge of actions.packageJsonMerge ?? []) {
     mergePackageJsonIfNeeded(tempDir, moduleRoot, merge);
   }
+
+  for (const action of actions.jsonRemove ?? []) {
+    removeJsonKeys(tempDir, action);
+  }
+
+  for (const action of actions.textReplace ?? []) {
+    replaceTextOnce(tempDir, action);
+  }
+}
+
+function replaceTextOnce(tempDir: string, action: TextReplaceAction) {
+  const filePath = path.join(tempDir, action.file);
+  const content = fs.readFileSync(filePath, "utf-8");
+  const occurrences = content.split(action.find).length - 1;
+  if (occurrences !== 1) {
+    throw new InvalidScaffoldModuleError(
+      `textReplace: expected exactly one ${JSON.stringify(action.find)} in ${action.file}, found ${occurrences}`,
+    );
+  }
+  fs.writeFileSync(filePath, content.replace(action.find, () => action.replace));
 }
 
 /**
- * After module actions, _app.ts may reference router files that were deleted by
- * another module's unselected actions. This function removes those dead imports
- * and their router registrations so the scaffold compiles cleanly.
+ * Throws when a key is already gone: a silent no-op would hide manifest drift.
  */
-function cleanDeadRouterImports(tempDir: string) {
-  const appRouterPath = path.join(tempDir, "apps/web/trpc/routers/_app.ts");
-  if (!fs.existsSync(appRouterPath)) return;
+function removeJsonKeys(tempDir: string, action: JsonRemoveAction) {
+  const filePath = path.join(tempDir, action.file);
+  const json = JSON.parse(fs.readFileSync(filePath, "utf-8"));
 
-  const content = fs.readFileSync(appRouterPath, "utf-8");
-  const lines = content.split("\n");
-
-  // Collect which local procedure files actually exist
-  const routersDir = path.dirname(appRouterPath);
-  const deadImports = new Set<string>();
-
-  for (const line of lines) {
-    const match = line.match(
-      /import\s+\{[^}]+\}\s+from\s+['"]\.\/([\w]+)['"]/,
-    );
-    if (match?.[1]) {
-      const importedFile = path.join(routersDir, `${match[1]}.ts`);
-      if (!fs.existsSync(importedFile)) {
-        deadImports.add(match[1]);
+  for (const [section, keys] of Object.entries(action.keys)) {
+    for (const key of keys) {
+      if (!json[section] || !(key in json[section])) {
+        throw new InvalidScaffoldModuleError(
+          `jsonRemove: "${section}.${key}" not found in ${action.file}`,
+        );
       }
+      delete json[section][key];
     }
   }
 
-  if (deadImports.size === 0) return;
+  fs.writeFileSync(filePath, JSON.stringify(json, null, 2) + "\n");
+}
 
-  const cleaned = lines.filter((line) => {
-    for (const dead of deadImports) {
-      // Remove the import line
-      if (line.match(new RegExp(`from\\s+['"]\\./${dead}['"]`))) return false;
-      // Remove the router registration line (e.g. "    billing: billingRouter,")
-      if (line.match(new RegExp(`^\\s+\\w+:\\s+\\w+Router`))) {
-        // Extract the router variable name from the dead import line in original content
-        const importLine = content
-          .split("\n")
-          .find((l) => l.includes(`./${dead}`));
-        if (importLine) {
-          const routerMatch = importLine.match(
-            /import\s+\{\s*(\w+)\s*\}\s+from/,
-          );
-          if (routerMatch?.[1] && line.includes(routerMatch[1])) return false;
-        }
-      }
+// Shared files mark module-owned lines with a region in their own comment
+// syntax (`//`, `{/* */}`, `#`): a "scaffold:begin" line naming the module id,
+// then a matching "scaffold:end" line. When the module is unselected the region
+// is dropped; either way the marker lines themselves never ship.
+const MARKER_PATTERN = /\bscaffold:(begin|end)\s+([a-z_]+)\b/;
+const MARKER_EXTENSIONS = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".prisma"]);
+
+function isMarkerCandidate(fileName: string) {
+  return fileName === ".env.example" || MARKER_EXTENSIONS.has(path.extname(fileName));
+}
+
+/** Pure: returns `content` with marker lines removed and unselected regions dropped. */
+export function stripScaffoldMarkers(
+  content: string,
+  selectedModules: ReadonlySet<string>,
+  knownModules: ReadonlySet<string>,
+  fileLabel = "<input>",
+): string {
+  const lines = content.split("\n");
+  const open: Array<{ id: string; line: number }> = [];
+  const kept: string[] = [];
+
+  lines.forEach((line, index) => {
+    const match = line.match(MARKER_PATTERN);
+    if (!match) {
+      if (open.every((region) => selectedModules.has(region.id))) kept.push(line);
+      return;
     }
-    return true;
+
+    const [, kind, id] = match as unknown as [string, "begin" | "end", string];
+    const where = `${fileLabel}:${index + 1}`;
+    if (!knownModules.has(id)) {
+      throw new InvalidScaffoldModuleError(`Unknown module "${id}" in scaffold marker at ${where}`);
+    }
+    if (kind === "begin") {
+      open.push({ id, line: index + 1 });
+    } else if (open.pop()?.id !== id) {
+      throw new InvalidScaffoldModuleError(`Unmatched scaffold:end ${id} at ${where}`);
+    }
   });
 
-  fs.writeFileSync(appRouterPath, cleaned.join("\n"));
+  if (open.length > 0) {
+    const region = open[open.length - 1]!;
+    throw new InvalidScaffoldModuleError(
+      `Unclosed scaffold:begin ${region.id} at ${fileLabel}:${region.line}`,
+    );
+  }
+
+  return kept.join("\n");
+}
+
+function walkFiles(rootDir: string, visit: (filePath: string) => void) {
+  for (const entry of fs.readdirSync(rootDir, { withFileTypes: true })) {
+    if (SCAFFOLD_IGNORE_DIRS.has(entry.name)) continue;
+    const fullPath = path.join(rootDir, entry.name);
+    if (entry.isDirectory()) walkFiles(fullPath, visit);
+    else if (entry.isFile()) visit(fullPath);
+  }
+}
+
+function applyScaffoldMarkers(
+  tempDir: string,
+  selectedModules: ReadonlySet<string>,
+  knownModules: ReadonlySet<string>,
+) {
+  walkFiles(tempDir, (filePath) => {
+    if (!isMarkerCandidate(path.basename(filePath))) return;
+    const content = fs.readFileSync(filePath, "utf-8");
+    if (!content.includes("scaffold:")) return;
+
+    const stripped = stripScaffoldMarkers(
+      content,
+      selectedModules,
+      knownModules,
+      path.relative(tempDir, filePath),
+    );
+    if (stripped !== content) fs.writeFileSync(filePath, stripped);
+  });
+}
+
+const LEAK_SCAN_EXTENSIONS = new Set([...MARKER_EXTENSIONS, ".json", ".sql"]);
+
+/**
+ * Lists leftovers in a compiled variant: marker lines that survived, and
+ * `ownedIdentifiers` of unselected modules. Empty means clean.
+ */
+export function findScaffoldLeaks(
+  variantDir: string,
+  selectedModules: ScaffoldModuleId[],
+  registry = loadScaffoldRegistry(),
+): string[] {
+  const selected = new Set(selectedModules);
+  const owned = registry.modules
+    .filter((module) => !selected.has(module.id))
+    .flatMap((module) =>
+      (loadModuleManifest(module.id).ownedIdentifiers ?? []).map((identifier) => ({
+        moduleId: module.id,
+        identifier,
+      })),
+    );
+
+  const leaks: string[] = [];
+  walkFiles(variantDir, (filePath) => {
+    const relativePath = path.relative(variantDir, filePath).split(path.sep).join("/");
+    const fileName = path.basename(filePath);
+    if (fileName !== ".env.example" && !LEAK_SCAN_EXTENSIONS.has(path.extname(fileName))) return;
+
+    const content = fs.readFileSync(filePath, "utf-8");
+    if (MARKER_PATTERN.test(content)) {
+      leaks.push(`${relativePath}: scaffold marker left in output`);
+    }
+    for (const { moduleId, identifier } of owned) {
+      if (content.includes(identifier)) {
+        leaks.push(`${relativePath}: "${identifier}" (owned by unselected ${moduleId})`);
+      }
+    }
+  });
+  return leaks;
+}
+
+const DEPENDENCY_SECTIONS = new Set(["dependencies", "devDependencies", "optionalDependencies"]);
+
+type DependencyManifest = Partial<Record<string, Record<string, string>>>;
+
+/**
+ * Frozen installs (CI, Vercel) reject a lockfile whose importers disagree with
+ * the workspace's package.json files, and the starter ships the root repo's
+ * lockfile. Pure: drops importers whose manifest is gone (`readManifest`
+ * returns null) and dependency entries a manifest no longer declares. Orphaned
+ * package entries are accepted by pnpm and pruned on the buyer's next install.
+ * Edits only the `importers:` block, which pnpm writes with fixed 2-space nesting.
+ */
+export function pruneLockfileImporters(
+  lockfile: string,
+  readManifest: (importerDir: string) => DependencyManifest | null,
+): string {
+  const lines = lockfile.split("\n");
+  const start = lines.indexOf("importers:");
+  if (start === -1) return lockfile;
+  const blockEnd = lines.findIndex((line, index) => index > start && /^\S/.test(line));
+  const end = blockEnd === -1 ? lines.length : blockEnd;
+
+  const kept: string[] = [];
+  let manifest: DependencyManifest | null = null;
+  let skipImporter = false;
+  let section: string | null = null;
+  let pendingSectionHeader: string | null = null;
+  let skipDependency = false;
+
+  for (const line of lines.slice(start + 1, end)) {
+    if (line.trim() === "") {
+      if (!skipImporter) kept.push(line);
+      continue;
+    }
+    const indent = line.length - line.trimStart().length;
+    const key = line.trim().replace(/:.*$/, "").replace(/^(['"])(.*)\1$/, "$2");
+
+    if (indent === 2) {
+      manifest = readManifest(key);
+      skipImporter = manifest === null;
+      section = null;
+      pendingSectionHeader = null;
+      skipDependency = false;
+      if (!skipImporter) kept.push(line);
+      continue;
+    }
+    if (skipImporter) continue;
+
+    if (indent === 4) {
+      skipDependency = false;
+      section = DEPENDENCY_SECTIONS.has(key) ? key : null;
+      // A dependency section is written only once it keeps an entry.
+      pendingSectionHeader = section ? line : null;
+      if (!section) kept.push(line);
+      continue;
+    }
+
+    if (section && indent === 6) {
+      skipDependency = !(manifest?.[section] && key in manifest[section]!);
+      if (skipDependency) continue;
+      if (pendingSectionHeader) {
+        kept.push(pendingSectionHeader);
+        pendingSectionHeader = null;
+      }
+    } else if (section && skipDependency) {
+      continue;
+    }
+    kept.push(line);
+  }
+
+  return [...lines.slice(0, start + 1), ...kept, ...lines.slice(end)].join("\n");
+}
+
+function pruneVariantLockfile(tempDir: string) {
+  const lockPath = path.join(tempDir, "pnpm-lock.yaml");
+  if (!fs.existsSync(lockPath)) return;
+
+  const pruned = pruneLockfileImporters(fs.readFileSync(lockPath, "utf-8"), (importerDir) => {
+    const manifestPath = path.join(tempDir, importerDir, "package.json");
+    return fs.existsSync(manifestPath)
+      ? (JSON.parse(fs.readFileSync(manifestPath, "utf-8")) as DependencyManifest)
+      : null;
+  });
+  fs.writeFileSync(lockPath, pruned);
 }
 
 export function prunePlatforms(tempDir: string, platforms: string[]) {
@@ -376,8 +589,13 @@ export function compileScaffoldVariant({
     }
   }
 
-  cleanDeadRouterImports(tempDir);
   prunePlatforms(tempDir, platforms);
+  pruneVariantLockfile(tempDir);
+  applyScaffoldMarkers(
+    tempDir,
+    selectedModuleSet,
+    new Set(registry.modules.map((module) => module.id)),
+  );
 
   return tempDir;
 }

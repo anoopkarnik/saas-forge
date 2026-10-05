@@ -3,7 +3,9 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { Label } from "@/components/common";
 import { useAuth } from "@/lib/auth-provider";
+// scaffold:begin billing
 import { useCredits } from "@/lib/credits-provider";
+// scaffold:end billing
 
 type TabHeaderProps = {
     title?: string;
@@ -12,11 +14,15 @@ type TabHeaderProps = {
 const TabHeader = ({ title = "SaaS Forge" }: TabHeaderProps) => {
     const insets = useSafeAreaInsets();
     const { user } = useAuth();
+    // scaffold:begin billing
     const { credits } = useCredits();
+    // scaffold:end billing
 
     const displayName = user?.name?.split(" ")[0] ?? "User";
     const initial = (user?.name ?? "U").charAt(0).toUpperCase();
+    // scaffold:begin billing
     const available = credits ? credits.creditsTotal - credits.creditsUsed : null;
+    // scaffold:end billing
 
     return (
         <View
@@ -57,6 +63,7 @@ const TabHeader = ({ title = "SaaS Forge" }: TabHeaderProps) => {
 
                 {/* Right: credits badge */}
                 <View className="flex-row items-center justify-end flex-1">
+                    {/* scaffold:begin billing */}
                     {available !== null && (
                         <View className="flex-row items-center gap-1.5 bg-primary/10 rounded-full px-3 py-1.5">
                             <Ionicons
@@ -69,6 +76,7 @@ const TabHeader = ({ title = "SaaS Forge" }: TabHeaderProps) => {
                             </Label>
                         </View>
                     )}
+                    {/* scaffold:end billing */}
                 </View>
             </View>
         </View>

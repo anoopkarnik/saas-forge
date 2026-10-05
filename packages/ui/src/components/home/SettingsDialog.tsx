@@ -28,13 +28,17 @@ import { cn } from "@workspace/ui/lib/utils"
 import { Button } from "@workspace/ui/components/shadcn/button"
 import MyAccountSettings from "./MyAccountSettings"
 import SessionSettings from "./SessionSettings"
+// scaffold:begin billing
 import PlansBilling from "./PlansBilling"
+// scaffold:end billing
 
 const data = {
   nav: [
     { name: "My Account", icon: CircleUserIcon },
     { name: "Sessions", icon: RadioIcon },
+    // scaffold:begin billing
     { name: "Plans & Billing", icon: ReceiptIcon },
+    // scaffold:end billing
     { name: "API Keys", icon: KeyRound },
     // { name: "Notifications", icon: Bell },
     // { name: "Language & Region", icon: Globe },
@@ -159,6 +163,7 @@ export function SettingsDialog({
             }
             {currentOpenedTab === "Sessions" &&
               <SessionSettings onNavigate={onNavigate} />}
+            {/* scaffold:begin billing */}
             {currentOpenedTab === "Plans & Billing" && paymentGateway !== "none" &&
               <PlansBilling
                 creditsData={creditsData}
@@ -167,6 +172,7 @@ export function SettingsDialog({
                 onCreateCheckoutSession={onCreateCheckoutSession}
                 paymentGateway={paymentGateway}
               />}
+            {/* scaffold:end billing */}
             {currentOpenedTab === "API Keys" && (
               <div className="p-6">
                 {apiKeysContent ?? (

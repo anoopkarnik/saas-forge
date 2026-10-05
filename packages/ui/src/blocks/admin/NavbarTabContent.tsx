@@ -93,7 +93,7 @@ export function NavbarTabContent({ initialData, onSave, isSaving, uploadUrl, aiD
                         {form.formState.isDirty ? "You have unsaved changes." : "All changes are saved."}
                     </p>
                     <div className="flex items-center gap-2">
-                        <AIFillPromptDialog isPending={Boolean(isAiFilling)} disabled={!onAIFill} onFill={(instruction) => onAIFill?.("navbar", form.getValues(), instruction)} buttonSize="sm" />
+                        {onAIFill && <AIFillPromptDialog isPending={Boolean(isAiFilling)} onFill={(instruction) => onAIFill("navbar", form.getValues(), instruction)} buttonSize="sm" />}
                         <Button type="submit" disabled={isSaving || !form.formState.isDirty} size="sm">
                             {isSaving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</> : <><Save className="mr-2 h-4 w-4" />Save Navbar</>}
                         </Button>

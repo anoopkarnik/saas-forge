@@ -18,16 +18,20 @@ model User {
     accounts      Account[]
     sessions      Session[]
     transactions  Transaction[]
+    // scaffold:begin ai
     aiPromptVersions AiPromptVersion[] @relation("AiPromptVersionCreatedBy")
     aiConversations  AiConversation[]  @relation("AiConversations")
     aiMessages       AiMessage[]       @relation("AiMessages")
     aiUsageEvents    AiUsageEvent[]    @relation("AiUsageEvents")
     aiJobRuns        AiJobRun[]        @relation("AiJobRuns")
     aiCollections    AiCollection[]    @relation("AiCollections")
+    // scaffold:end ai
     apiKeys          ApiKey[]
     sentInvitations  Invitation[]     @relation("InvitationInvitedBy")
+    // scaffold:begin multi_tenancy
     members          Member[]
     organizationInvitations OrganizationInvitation[] @relation("OrganizationInvitationInviter")
+    // scaffold:end multi_tenancy
 
     createdAt  DateTime @default(now())
     updatedAt  DateTime @updatedAt
@@ -82,7 +86,9 @@ model Session {
   userAgent    String?
   ipAddress      String?
   impersonatedBy String?
+  // scaffold:begin multi_tenancy
   activeOrganizationId String?
+  // scaffold:end multi_tenancy
 
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt

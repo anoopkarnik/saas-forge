@@ -8,6 +8,7 @@ import { Badge } from "@workspace/ui/components/shadcn/badge";
 import { buildEnvVarsFromForm } from "@workspace/ui/lib/utils/scaffold";
 import type { FormValues } from "@workspace/ui/lib/zod/download";
 import { useTRPC } from "@/trpc/client";
+import { useScaffoldTRPC } from "@/trpc/scaffold-client";
 import { splitSecretEnv } from "@workspace/ui/lib/scaffold-secrets";
 
 type ProjectListItem = {
@@ -87,6 +88,7 @@ async function upgradeProject(
 
 function ProjectRow({ project }: { project: ProjectListItem }) {
   const trpc = useTRPC();
+  const scaffoldTrpc = useScaffoldTRPC();
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
@@ -107,7 +109,7 @@ function ProjectRow({ project }: { project: ProjectListItem }) {
     enabled: open,
   });
   const estimate = useQuery({
-    ...trpc.project.estimateDownload.queryOptions({ slug: project.slug }),
+    ...scaffoldTrpc.project.estimateDownload.queryOptions({ slug: project.slug }),
     enabled: open,
   });
   const upgradeEstimate = useQuery({

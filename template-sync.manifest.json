@@ -65,7 +65,8 @@
     "apps/web/app/api/v1/credits",
     "apps/web/app/api/v1/scaffold",
     "apps/web/app/(home)/projects",
-    "apps/web/components/projects"
+    "apps/web/components/projects",
+    "apps/web/trpc/scaffold-client.ts"
   ],
   "templateOverrides": [
     "AGENTS.md",

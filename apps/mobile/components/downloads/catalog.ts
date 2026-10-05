@@ -60,7 +60,8 @@ export function toggleModule(catalog: ScaffoldCatalog, selected: string[], modul
 }
 
 // Counts-only preview of a selection, from the server's `scaffold.previewIndex`
-// (the web wizard shows the full file tree).
+// (the web wizard shows the full file tree). It is served by /api/scaffold/trpc,
+// the only tRPC endpoint deployed with the starter source.
 type PreviewIndex = {
     files: Array<{ path: string; module: string | null; category: string }>;
     envVars: Array<{ key: string; module: string | null }>;
@@ -68,7 +69,7 @@ type PreviewIndex = {
 };
 
 export async function fetchPreviewIndex(apiUrl: string): Promise<PreviewIndex> {
-    const res = await fetch(`${apiUrl}/api/trpc/scaffold.previewIndex`);
+    const res = await fetch(`${apiUrl}/api/scaffold/trpc/scaffold.previewIndex`);
     if (!res.ok) throw new Error("Failed to load the file preview");
     const json = await res.json();
     return json.result.data as PreviewIndex;

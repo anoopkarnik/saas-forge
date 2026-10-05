@@ -17,7 +17,7 @@ import {
   diffPreview,
   type PreviewFile,
 } from "@workspace/ui/lib/scaffold-preview";
-import { useTRPC } from "@/trpc/client";
+import { useScaffoldTRPC } from "@/trpc/scaffold-client";
 
 type Selection = { modules: string[]; platforms: Array<"web" | "desktop" | "mobile"> };
 
@@ -45,7 +45,7 @@ function folderOf(file: PreviewFile) {
  * Root-only (passed to the wizard through `renderPreview`).
  */
 export function ScaffoldPreview({ modules, platforms }: Selection) {
-  const trpc = useTRPC();
+  const trpc = useScaffoldTRPC();
   const index = useQuery({ ...trpc.scaffold.previewIndex.queryOptions(), staleTime: Infinity });
   const [exact, setExact] = React.useState(false);
   const [openFolder, setOpenFolder] = React.useState<string | null>(null);

@@ -125,13 +125,22 @@ const nextConfig = {
     // CPU-heavy sharp re-encode from running on every cold cache slot.
     minimumCacheTTL: 60 * 60 * 24 * 31,
   },
+  // Keys are globs matched anywhere in the route ("contains"), so "/api/scaffold"
+  // also covers /api/scaffold/*, including the tRPC endpoint there.
   outputFileTracingIncludes: {
+    // Read with fs at runtime (module registry, pricing, template version),
+    // which tracing cannot follow. Small, so every route gets them.
+    "**": ["../../scaffold-modules/**/*", "../../template-sync.manifest.json"],
     "/api/scaffold": scaffoldTraceIncludes,
+    "/api/v1/projects/*/download": scaffoldTraceIncludes,
+    "/api/v1/projects/*/upgrade": scaffoldTraceIncludes,
   },
   outputFileTracingExcludes: {
     "**": globalTraceExcludes,
     "/api/trpc/[trpc]": nonScaffoldTraceExcludes,
     "/api/scaffold": scaffoldTraceExcludes,
+    "/api/v1/projects/*/download": scaffoldTraceExcludes,
+    "/api/v1/projects/*/upgrade": scaffoldTraceExcludes,
   },
   async headers() {
     return [

@@ -105,6 +105,8 @@ export const routePolicies = [
   { path: "/api/scaffold", match: "exact", auth: "session", rateLimit: "default", maxBodyBytes: 256 * KB, input: "manual", cors: "self-managed" },
   { path: "/api/scaffold/upgrade", match: "exact", auth: "session", rateLimit: "none", maxBodyBytes: 64 * KB, input: "zod" },
   { path: "/api/scaffold/builds/[jobId]", match: "exact", auth: "session", rateLimit: "default", maxBodyBytes: 1 * KB, input: "none" },
+  // The tRPC router again, from the function that ships the starter source.
+  { path: "/api/scaffold/trpc", match: "prefix", auth: "procedure", rateLimit: "none", input: "trpc" },
 
   // Public REST API (API keys)
   { path: "/api/v1/me", match: "exact", auth: "api-key", rateLimit: "api-key", input: "none" },

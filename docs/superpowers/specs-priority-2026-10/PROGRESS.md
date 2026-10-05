@@ -24,7 +24,7 @@ Rules for every spec:
 | 05 | AI backend module split (ai_agents) | done | 93371c4 | Saved projects with `ai` now download without the Python service; owners add ai_agents |
 | 06 | API Keys module manifest | done | 6808954 | Saved projects listing api_keys now pay 5 credits |
 | 07 | Pre-purchase file-tree preview | done | 1b11dec | Index built lazily per deployed starter; preview UI not yet clicked through in a browser |
-| 08 | create-saas-forge CLI v2 | todo | | |
+| 08 | create-saas-forge CLI v2 | done | 1c2607f | npm publish is a release step (not run); `upgrade` ignores the server URL in .saas-forge.json unless it matches the configured one |
 | 09 | Post-download setup doctor | todo | | |
 | 10 | Upgrade center | todo | | |
 | 11 | Provider-level pruning | todo | | |

@@ -411,7 +411,10 @@ async function interactive(project, io, { probes = activeProbes, fetchImpl = fet
       for (const plan of plans) {
         const file = path.join(project.root, plan.file);
         fs.mkdirSync(path.dirname(file), { recursive: true });
-        fs.writeFileSync(file, plan.content);
+        // Env files hold secrets: owner-only, also when the file already existed
+        // (writeFileSync's mode only applies on creation).
+        fs.writeFileSync(file, plan.content, { mode: 0o600 });
+        fs.chmodSync(file, 0o600);
       }
       io.log("  ✓ written");
     }

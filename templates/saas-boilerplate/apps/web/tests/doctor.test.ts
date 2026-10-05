@@ -116,7 +116,9 @@ describe("pnpm doctor", () => {
       "packages/database/.env.example": 'DATABASE_URL=""\n',
       "apps/mobile/.env.example": "EXPO_PUBLIC_API_URL=http://localhost:3000\nEXPO_PUBLIC_AUTH_EMAIL=true\n",
       "apps/desktop/.env.example": 'VITE_API_URL="http://localhost:3000"\nVITE_THEME=orange\n',
+      "apps/desktop/.env": 'VITE_API_URL="http://localhost:9999"\n',
     });
+    fs.chmodSync(path.join(root, "apps/desktop/.env"), 0o644);
     const { io, output } = fakeIo({
       // The first database URL is not a Postgres URL, so the doctor asks again.
       DATABASE_URL: ["mysql://app@localhost/app", DATABASE_URL],
@@ -139,6 +141,10 @@ describe("pnpm doctor", () => {
       EXPO_PUBLIC_AUTH_EMAIL: "false",
     });
     expect(read(root, "apps/desktop/.env")).toContain('VITE_API_URL="http://localhost:3000"');
+    // Env files hold secrets: owner-only, including files that already existed.
+    for (const file of ["apps/web/.env", "packages/database/.env", "apps/desktop/.env"]) {
+      expect(fs.statSync(path.join(root, file)).mode & 0o777).toBe(0o600);
+    }
     expect(output()).toContain("must be a postgresql:// URL");
     for (const secret of ["db-password-1", "upstash-token-1", web.BETTER_AUTH_SECRET!]) {
       expect(output()).not.toContain(secret);

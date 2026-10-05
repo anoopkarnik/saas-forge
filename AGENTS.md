@@ -374,7 +374,15 @@ pnpm desktop:publish:linux:stable
 
 Each command runs `electron-vite build --mode production`, then `electron-builder --linux snap`, then calls `snapcraft upload` (or `snap install --dangerous` for local). Snapcraft must be authenticated (`snapcraft login`) before publishing.
 
-### 5. Publish the template branch
+### 5. Publish the CLI
+
+```bash
+cd packages/create-saas-forge && npm version <semver> --no-git-tag-version && npm publish
+```
+
+`create-saas-forge` is a zero-dependency package; publish it whenever the v1 API or its commands change.
+
+### 6. Publish the template branch
 
 ```bash
 pnpm template:publish --version <semver>
@@ -396,7 +404,8 @@ Projects scaffolded from this boilerplate track `template/saas-boilerplate` and 
 2. `pnpm template:check-sync && pnpm template:build && pnpm template:test`
 3. `git commit -m "chore: release v<semver>" && git tag v<semver> && git push origin main --tags`
 4. `pnpm desktop:publish:linux:edge` (or `:stable`)
-5. `pnpm template:publish --version <semver>`
+5. `npm publish` in `packages/create-saas-forge` (when the CLI changed)
+6. `pnpm template:publish --version <semver>`
 
 ## Gotchas
 

@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { authenticateApiKey } from "@/server/authenticateApiKey";
 import { getProject, markProjectBuilt } from "@/lib/scaffold/project-service";
@@ -102,6 +103,8 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
       "Cache-Control": "no-store",
       "X-Credits-Charged": String(download.charged),
       "X-Idempotent-Replay": download.alreadyProcessed ? "true" : "false",
+      // Lets clients (the create-saas-forge CLI) verify the archive they saved.
+      "X-Content-SHA256": createHash("sha256").update(download.bytes).digest("hex"),
     },
   });
 }

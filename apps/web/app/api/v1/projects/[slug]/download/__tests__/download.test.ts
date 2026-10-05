@@ -144,6 +144,7 @@ describe("POST /api/v1/projects/[slug]/download", () => {
     expect(res.status).toBe(200);
     expect(res.headers.get("Content-Type")).toBe("application/zip");
     expect(res.headers.get("X-Credits-Charged")).toBe("30");
+    expect(res.headers.get("X-Content-SHA256")).toMatch(/^[0-9a-f]{64}$/);
     expect(mockDownload).toHaveBeenCalledWith(
       expect.objectContaining({ userId: "u1", source: "api", idempotencyKey: "idem-1", free: false }),
     );

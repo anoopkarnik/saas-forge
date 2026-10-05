@@ -55,6 +55,7 @@
     "apps/web/trpc/routers/scaffoldCatalogProcedures.ts",
     "packages/ui/src/lib/zip-append.ts",
     "packages/ui/src/lib/scaffold-preview.ts",
+    "packages/create-saas-forge",
     "apps/web/components/scaffold-preview",
     "apps/web/trpc/routers/__tests__/scaffoldCatalog.test.ts",
     "apps/web/trpc/routers/__tests__/projectProcedures.test.ts",

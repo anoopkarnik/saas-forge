@@ -1,0 +1,20 @@
+{
+  "name": "create-saas-forge",
+  "version": "0.1.0",
+  "description": "Create a SaaS Forge project with only the modules you bought.",
+  "type": "module",
+  "bin": {
+    "create-saas-forge": "bin/create-saas-forge.mjs"
+  },
+  "files": [
+    "bin",
+    "src"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "MIT",
+  "scripts": {
+    "test": "vitest run"
+  }
+}

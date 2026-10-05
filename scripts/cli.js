@@ -7,6 +7,11 @@ const path = require('path');
 const repoUrl = 'https://github.com/anoopkarnik/saas-forge.git';
 
 const main = () => {
+  console.warn(
+    '\x1b[33mnpx saas-forge is deprecated and clones the whole platform repo.\n' +
+      'Use `npx create-saas-forge my-app` to download only the modules you bought.\x1b[0m\n',
+  );
+
   // Parse args
   const args = process.argv.slice(2);
   const targetDir = args[0] && !args[0].startsWith('--') ? args[0] : 'saas-forge';

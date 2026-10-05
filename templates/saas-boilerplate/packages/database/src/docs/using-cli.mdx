@@ -29,7 +29,7 @@ npx create-saas-forge new my-app --project my-saved-project --yes
 
 The CLI shows the price before charging, adds modules a selection requires (AI Agents needs AI), verifies the archive's checksum, and extracts it into `my-app`. Downloading a build you already own is free. Add `--install` to also run `git init`, `pnpm install` and `pnpm generate`.
 
-Your keys never leave your machine: add them to `apps/web/.env` by following `SETUP.md` in the project.
+Your keys never leave your machine: run `pnpm doctor` in the project. It asks for each value, checks it against the service and writes the `.env` files.
 
 
 ## Upgrade

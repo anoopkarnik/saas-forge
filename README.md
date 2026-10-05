@@ -52,10 +52,7 @@ Choose this if you want to validate or inspect the clean SaaS starter that the s
 npx saas-forge my-saas-app
 cd my-saas-app
 
-# review and fill in apps/web/.env
-pnpm generate
-pnpm migrate
-pnpm seed
+pnpm doctor   # fills the .env files, checks each service, offers to set up the database
 pnpm dev
 ```
 
@@ -71,12 +68,11 @@ pnpm install
 # Linux only: if Electron fails to start because the binary was skipped
 node node_modules/.pnpm/electron@<version>/node_modules/electron/install.js
 
-cp apps/web/.env.example apps/web/.env
-pnpm generate
-pnpm migrate
-pnpm seed
+pnpm doctor
 pnpm dev
 ```
+
+`pnpm doctor` asks for each missing value, generates secrets, checks every configured service with a live call, and writes `apps/web/.env`, `packages/database/.env` and the native apps' env files. It then offers to run `pnpm generate`, `pnpm migrate` and `pnpm seed`. In CI, `pnpm doctor --check` exits non-zero when something would stop the app, and `--json` prints the same report for tooling. Secret values are never printed.
 
 If you plan to run the native clients too, review `apps/desktop/.env.example` and `apps/mobile/.env.example` after the web env is set up.
 
@@ -102,7 +98,7 @@ Default local URLs:
 
 The canonical config surface for the root repo is [`apps/web/.env.example`](apps/web/.env.example). The scaffold/download flow uses the same model to populate the starter template and the mobile/desktop env files.
 
-Start by copying:
+Run `pnpm doctor` to fill these in, or copy them by hand:
 
 ```bash
 cp apps/web/.env.example apps/web/.env
@@ -295,6 +291,7 @@ Only `templates/saas-boilerplate` is part of the released template workflow toda
 | Task | Command |
 |---|---|
 | Generate Prisma client | `pnpm generate` |
+| Check env and services | `pnpm doctor --check` |
 | Run local migrations | `pnpm migrate` |
 | Deploy production migrations | `pnpm --dir packages/database migrate:deploy` |
 | Seed database | `pnpm seed` |

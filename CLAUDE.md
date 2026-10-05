@@ -38,6 +38,7 @@ pnpm arch:check
 pnpm test
 pnpm test:coverage
 pnpm format
+pnpm doctor --check   # env and live service checks; plain `pnpm doctor` fixes them interactively
 
 # Single apps
 pnpm --dir apps/web dev
@@ -204,6 +205,7 @@ Reference: `apps/web/app/api/payments/stripe/webhook/route.ts`
 Boot-time env validation lives in `apps/web/lib/env.ts` (called from `apps/web/instrumentation.ts`) and `apps/backend/src/saas_forge_backend/config.py`. Production refuses to start on missing core vars, weak or placeholder secrets (`BETTER_AUTH_SECRET`, `BACKEND_HMAC_SECRET`), missing credentials for an enabled integration toggle, or a secret-looking `NEXT_PUBLIC_*` name; development only warns. The backend enforces this when `APP_ENV=production`. Code still reads `process.env` directly at call sites.
 
 - When an integration toggle gains a required credential, add it to `INTEGRATION_REQUIREMENTS` in `apps/web/lib/env.ts`.
+- `pnpm doctor` (`scripts/doctor.mjs`) runs the same `findServerEnvIssues`, adds live probes (`scripts/doctor-probes.mjs`) and writes env files through `apps/web/lib/env-files.ts`, the mapping the download builder also uses. Give a new credential a `HINTS` entry there, and a probe when the provider has a cheap authenticated read.
 - Email sign-up (`NEXT_PUBLIC_AUTH_EMAIL=true`) requires `NEXT_PUBLIC_EMAIL_CLIENT`. Without a configured client, `packages/email` helpers skip sending with a warning (including the link outside production) instead of calling Resend.
 - `docker-compose.yml` has no secret defaults; Compose requires `BETTER_AUTH_SECRET` and `BACKEND_HMAC_SECRET` from a sibling `.env`.
 

@@ -91,7 +91,11 @@ export async function runNew(dir, flags, io) {
     run("pnpm", ["install"]);
     run("pnpm", ["generate"]);
   }
-  io.log("Next: open SETUP.md, fill apps/web/.env, then run pnpm install, pnpm generate and pnpm dev.");
+  io.log(
+    flags.install
+      ? `Next: cd ${path.relative(io.cwd, target) || "."} && pnpm doctor`
+      : `Next: cd ${path.relative(io.cwd, target) || "."} && pnpm install && pnpm doctor`,
+  );
   return { slug, target, charged };
 }
 

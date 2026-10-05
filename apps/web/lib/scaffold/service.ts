@@ -13,6 +13,7 @@ import {
   type ScaffoldModuleId,
   type ScaffoldPricingOutput,
 } from "@/lib/scaffold-modules";
+import { fillEnvTemplate, nativeEnvValues } from "@/lib/env-files";
 import { tierOrder } from "@/lib/scaffold/project-rules";
 import { isSecretEnvKey } from "@/lib/scaffold/secret-keys";
 import { getTemplateVersion } from "@/lib/scaffold/template-version";
@@ -125,23 +126,6 @@ export function formValuesFromEnv(envVars: Record<string, string>): Record<strin
   };
 }
 
-/** Fills a .env.example template with values, keeping comments and order. */
-function generateEnvContent(envExample: string | undefined, envVars: Record<string, string>): string {
-  if (envExample === undefined) {
-    return Object.entries(envVars)
-      .map(([key, value]) => `${key}=${value}`)
-      .join("\n");
-  }
-
-  return envExample
-    .split("\n")
-    .map((line) => {
-      const key = line.match(/^([A-Z_][A-Z0-9_]*)=/)?.[1];
-      return key && key in envVars ? `${key}=${envVars[key]}` : line;
-    })
-    .join("\n");
-}
-
 /** The web, mobile and desktop .env files, from the variant's .env.example templates. */
 function buildEnvFiles(
   envExamples: Record<string, string>,
@@ -149,62 +133,19 @@ function buildEnvFiles(
   modules: ScaffoldModuleId[],
   platforms: string[],
 ): Array<{ path: string; content: string }> {
-  const billingSelected = modules.includes("billing");
-  const aiSelected = modules.includes("ai");
-  const support = envVars.NEXT_PUBLIC_SUPPORT_FEATURES
-    ? envVars.NEXT_PUBLIC_SUPPORT_FEATURES.split(",").map((s) => s.trim())
-    : [];
-  const flag = (key: string) => (envVars[key] === "true" ? "true" : "false");
-  const quoted = (value: string) => `"${value}"`;
-
   const files = [
-    { path: "apps/web/.env", content: generateEnvContent(envExamples["apps/web/.env.example"], envVars) },
+    { path: "apps/web/.env", content: fillEnvTemplate(envExamples["apps/web/.env.example"], envVars) },
   ];
+  const native = nativeEnvValues(envVars, modules);
 
   const mobileExample = envExamples["apps/mobile/.env.example"];
   if (platforms.includes("mobile") && mobileExample !== undefined) {
-    files.push({
-      path: "apps/mobile/.env",
-      content: generateEnvContent(mobileExample, {
-        EXPO_PUBLIC_API_URL: envVars.NEXT_PUBLIC_URL || "http://localhost:3000",
-        EXPO_PUBLIC_APP_URL: "http://localhost:8081",
-        EXPO_PUBLIC_AUTH_EMAIL: flag("NEXT_PUBLIC_AUTH_EMAIL"),
-        EXPO_PUBLIC_AUTH_GOOGLE: flag("NEXT_PUBLIC_AUTH_GOOGLE"),
-        EXPO_PUBLIC_AUTH_GITHUB: flag("NEXT_PUBLIC_AUTH_GITHUB"),
-        EXPO_PUBLIC_AUTH_LINKEDIN: flag("NEXT_PUBLIC_AUTH_LINKEDIN"),
-        EXPO_PUBLIC_SUPPORT_MAIL: support.includes("support_mail") ? "true" : "false",
-        EXPO_PUBLIC_THEME: envVars.NEXT_PUBLIC_THEME || "green",
-        EXPO_PUBLIC_THEME_TYPE: envVars.NEXT_PUBLIC_THEME_TYPE || "light",
-        EXPO_PUBLIC_PAYMENT_GATEWAY: billingSelected ? envVars.NEXT_PUBLIC_PAYMENT_GATEWAY || "none" : "none",
-        EXPO_PUBLIC_CALENDLY_BOOKING_URL: envVars.NEXT_PUBLIC_CALENDLY_BOOKING_URL || '""',
-        EXPO_PUBLIC_AI_ENABLED: aiSelected ? envVars.NEXT_PUBLIC_AI_ENABLED || "false" : "false",
-      }),
-    });
+    files.push({ path: "apps/mobile/.env", content: fillEnvTemplate(mobileExample, native.mobile) });
   }
 
   const desktopExample = envExamples["apps/desktop/.env.example"];
   if (platforms.includes("desktop") && desktopExample !== undefined) {
-    files.push({
-      path: "apps/desktop/.env",
-      content: generateEnvContent(desktopExample, {
-        VITE_API_URL: quoted(envVars.NEXT_PUBLIC_URL || "http://localhost:3000"),
-        NEXT_PUBLIC_AUTH_FRAMEWORK: quoted(envVars.NEXT_PUBLIC_AUTH_FRAMEWORK || "better-auth"),
-        VITE_AUTH_EMAIL: flag("NEXT_PUBLIC_AUTH_EMAIL"),
-        VITE_AUTH_GOOGLE: flag("NEXT_PUBLIC_AUTH_GOOGLE"),
-        VITE_AUTH_GITHUB: flag("NEXT_PUBLIC_AUTH_GITHUB"),
-        VITE_AUTH_LINKEDIN: flag("NEXT_PUBLIC_AUTH_LINKEDIN"),
-        VITE_PAYMENT_GATEWAY: quoted(billingSelected ? envVars.NEXT_PUBLIC_PAYMENT_GATEWAY || "none" : "none"),
-        VITE_SUPPORT_MAIL: quoted(
-          support.includes("support_mail") ? envVars.NEXT_PUBLIC_SUPPORT_MAIL || "" : "",
-        ),
-        VITE_CALENDLY_BOOKING_URL: quoted(
-          support.includes("calendly") ? envVars.NEXT_PUBLIC_CALENDLY_BOOKING_URL || "" : "",
-        ),
-        VITE_THEME: envVars.NEXT_PUBLIC_THEME || "green",
-        VITE_THEME_TYPE: envVars.NEXT_PUBLIC_THEME_TYPE || "light",
-        VITE_AI_ENABLED: aiSelected ? envVars.NEXT_PUBLIC_AI_ENABLED || "false" : "false",
-      }),
-    });
+    files.push({ path: "apps/desktop/.env", content: fillEnvTemplate(desktopExample, native.desktop) });
   }
 
   return files;

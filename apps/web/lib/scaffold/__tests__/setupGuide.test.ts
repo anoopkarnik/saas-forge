@@ -11,4 +11,10 @@ describe("generateSetupGuide", () => {
     expect(guide(["ai"])).not.toContain("uv sync");
     expect(guide([])).not.toContain("BACKEND_HMAC_SECRET");
   });
+
+  it("starts with pnpm doctor", () => {
+    const [title, , first] = guide([]).split("\n");
+    expect(title).toBe("# Setup guide — Demo");
+    expect(first).toMatch(/^Run `pnpm install`, then `pnpm doctor`/);
+  });
 });

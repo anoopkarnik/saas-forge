@@ -13,6 +13,7 @@
     "migrate": "cd packages/database && pnpm run migrate",
     "seed": "cd packages/database && pnpm run seed",
     "reset": "cd packages/database && pnpm run reset",
+    "doctor": "node scripts/doctor.mjs",
     "docker:build:web": "docker build -f Dockerfile.web -t saas-forge-web .",
     "docker:up": "docker compose up --build --detach",
     "desktop:publish:linux:edge": "pnpm --dir apps/desktop build:prod && pnpm --dir apps/desktop package:snap && pnpm --dir apps/desktop publish:snapstore:edge",

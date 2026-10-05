@@ -120,7 +120,7 @@ export function generateSetupGuide(input: SetupGuideInput): SetupGuide {
           title: "Run the AI agents service (Python)",
           details: [
             "Install uv (https://docs.astral.sh/uv/) and Python 3.12, then run `uv sync` in apps/backend.",
-            "Set BACKEND_URL and BACKEND_HMAC_SECRET (`openssl rand -hex 32`) in apps/web/.env; use the same secret for the backend.",
+            "Set BACKEND_URL and BACKEND_HMAC_SECRET (`openssl rand -hex 32`) in apps/web/.env; use the same secret for the backend. `pnpm doctor` generates it and copies it to apps/backend/.env.",
             "Postgres needs the pgvector extension for RAG collections.",
             "Start it with `docker compose up backend-api backend-worker`, or follow apps/backend/README.md.",
           ],
@@ -139,6 +139,10 @@ function renderMarkdown(
 ): string {
   const lines: string[] = [];
   lines.push(`# Setup guide — ${input.name}`);
+  lines.push("");
+  lines.push(
+    "Run `pnpm install`, then `pnpm doctor`. It asks for each value below, generates secrets, checks every service with a live call, writes the `.env` files and offers to set up the database. The rest of this guide is the same work by hand.",
+  );
   lines.push("");
   if (preset) {
     lines.push(`**Blueprint:** ${preset.name} · ${preset.tagline}`);

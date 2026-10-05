@@ -34,7 +34,9 @@
     "turbo.json",
     "vitest.workspace.ts",
     "scripts/publish-desktop.mjs",
-    "scripts/bump-version.mjs"
+    "scripts/bump-version.mjs",
+    "scripts/doctor.mjs",
+    "scripts/doctor-probes.mjs"
   ],
   "exclude": [
     ".claude/settings.local.json",

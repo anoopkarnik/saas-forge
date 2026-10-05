@@ -35,6 +35,7 @@ pnpm lint
 pnpm test
 pnpm test:coverage
 pnpm format
+pnpm doctor --check   # env and live service checks; plain `pnpm doctor` fixes them interactively
 
 # Single apps
 pnpm --dir apps/web dev
@@ -143,6 +144,7 @@ The Python backend validates its own env in `apps/backend/src/saas_forge_backend
 <!-- scaffold:end ai_agents -->
 
 - When an integration toggle gains a required credential, add it to `INTEGRATION_REQUIREMENTS` in `apps/web/lib/env.ts`.
+- `pnpm doctor` (`scripts/doctor.mjs`) runs the same `findServerEnvIssues`, adds live probes (`scripts/doctor-probes.mjs`) and writes env files through `apps/web/lib/env-files.ts`, the mapping the download builder also uses. Give a new credential a `HINTS` entry there, and a probe when the provider has a cheap authenticated read.
 - `docker-compose.yml` has no secret defaults; Compose requires `BETTER_AUTH_SECRET` from a sibling `.env`.
 <!-- scaffold:begin ai_agents -->
 - The AI agents services in `docker-compose.yml` also require `BACKEND_HMAC_SECRET` in that `.env`.

@@ -1,0 +1,55 @@
+# 15 — Audit Log Module (`audit_log`)
+
+_Rank 15 · Track: new module · Effort: M · Supersedes April #13_
+
+## Context
+
+There is no audit trail. Privileged actions already exist that B2B buyers expect to be logged: role changes (user / admin / guest), bans and removals, registration-mode changes, invitation create, revoke and resend, organization member and role changes (multi-tenancy), API key create and revoke, CMS edits, AI prompt version changes, and credit adjustments.
+
+`packages/observability` produces operational logs, which are mutable, unstructured, vendor-held and not queryable by admins. `ScaffoldJob` is a scaffold ledger only (root platform).
+
+## Why This Priority
+
+"Who changed what, when" is a standard B2B and compliance checkbox, and it pairs naturally with `multi_tenancy` (org-scoped trails). It is self-contained (no jobs dependency) and a clean strippable module. It ranks after notifications because notifications have broader buyer pull.
+
+## Overview
+
+An append-only `AuditEvent` model, an `audit()` helper called inside the same transaction as the mutation, an admin audit viewer with filters, and an org-scoped activity view when `multi_tenancy` is selected.
+
+## Main Approach
+
+- **Model** (`audit.prisma`): `AuditEvent` with id, occurredAt, actorUserId?, actorType (`user` / `apiKey` / `system`), actorApiKeyId?, organizationId?, action (dotted, e.g. `org.member.role_changed`), targetType, targetId, metadata Json, ip?, userAgent?. Index on `(organizationId, occurredAt)` and `(actorUserId, occurredAt)`.
+- **Typed action catalogue** in `apps/web/lib/audit/actions.ts` gives each action its metadata schema and a **redaction** list (never store tokens, secrets or raw keys).
+- **Emit**: `audit(tx, event)` takes a Prisma transaction client so the event commits atomically with the change. For Better Auth plugin mutations (roles, bans, org changes), emit from the tRPC wrapper after `auth.api.*` succeeds, and from `databaseHooks` where the hook exists.
+- **Append-only**: no update or delete procedures. Retention is a scheduled `cleanup.auditRetention` job (when `jobs` is selected), with retention days in site config (#14).
+- **UI**: `/admin/audit` with filters (actor, action prefix, target, date range), cursor pagination and CSV export (`adminProcedure`, not guest-readable, because it contains PII). An org activity tab in Team Settings shows org-scoped events to org `admin+`, through a slot.
+- **API keys**: when `api_keys` is selected, `actorType = apiKey` is recorded for v1 route actions.
+- **Module**: `unselected` replaces `audit()` with a no-op stub (emit sites compile) and removes the model, router, pages and slots.
+
+## Deliverables
+
+1. `audit.prisma`, the action catalogue with redaction, and the `audit()` helper with tests.
+2. Instrumentation of roughly 15 high-value actions across admin, invites, orgs, API keys, CMS and prompts.
+3. `/admin/audit` viewer with CSV export, and an org activity tab slot.
+4. Retention job hook (conditional on `jobs`).
+5. `scaffold-modules/audit_log` manifest, registry entry (suggested 10 credits), and matrix coverage, including pairs with `multi_tenancy` and `api_keys`.
+
+## Likely Files / Systems Affected
+
+- `packages/database/prisma/audit.prisma`, `apps/web/lib/audit/*`
+- `apps/web/trpc/routers/adminProcedures.ts`, `organizationProcedures.ts`, `apiKeyProcedures.ts`, `aiProcedures.ts` (emit sites)
+- `apps/web/app/(home)/admin/audit/*`, `packages/ui/src/components/admin/*`
+- `apps/web/trpc/apiRegistry.ts` (new group)
+
+## Risks / Dependencies
+
+- Emit sites span modules, so the stub-in-slot pattern is required (same as `notify()` in #13).
+- Volume: AI and API traffic must not be audited per call. Audit **configuration** changes, not usage (usage belongs to #17).
+- PII: IP and user agent are optional and configurable. Export is admin-only.
+
+## Verification
+
+1. Changing a member's org role writes exactly one `AuditEvent` in the same transaction (rollback test: a failed mutation leaves no event).
+2. Redacted fields never appear in stored metadata (snapshot test with a canary secret).
+3. Org admins see only their org's events, and a global admin sees all.
+4. The variant without `audit_log` compiles with emit sites intact and has no audit tables.

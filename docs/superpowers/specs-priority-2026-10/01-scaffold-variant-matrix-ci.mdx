@@ -1,0 +1,54 @@
+# 01 — Scaffold Variant Matrix CI
+
+_Rank 1 · Track: engine trust · Effort: M · New spec (no April predecessor)_
+
+## Context
+
+A buyer never downloads "the template". They download one **variant**: the managed starter after `compileScaffoldVariant()` (`apps/web/lib/scaffold-modules.ts`) applies each module's `selected`/`unselected` manifest actions, then `prunePlatforms()` and `cleanDeadRouterImports()`.
+
+With 5 modules (`billing`, `multi_tenancy`, `ai`, `api_keys`, `notifications`) and 3 platforms, there are 32 module subsets × 7 platform subsets. CI today (`.github/workflows/ci.yml`) checks template sync and builds the **root** web app. Only `apps/web/lib/scaffold/__tests__/multiTenancyVariant.test.ts` covers a single module. A broken override or a missing slot stub in one combination ships silently and is only found by a paying customer.
+
+## Why This Priority
+
+Every other item in this folder adds modules, pruning rules or manifest actions, and each one grows the variant space. Without a matrix guard, the defect rate grows with the catalogue. This is the cheapest insurance for the core product promise: "what you download compiles".
+
+## Overview
+
+Add a script and CI job that materialise a representative set of variants and run the checks a buyer would hit on day one.
+
+## Main Approach
+
+- `scripts/scaffold-matrix.mjs` stages the starter once (`pnpm template:stage`) and then calls `compileScaffoldVariant` for each combination into `.generated/variants/<hash>`.
+- **Coverage strategy:** test every module **singly selected**, **all selected**, **none selected**, and every **pair** that shares a host file (pairwise covering array). This avoids running all 32 subsets on every PR. Run the full 32-subset sweep nightly.
+- Per variant, run: `prisma validate`, `pnpm generate`, `tsc --noEmit` for web (plus desktop/mobile when those platforms are kept), and `pnpm arch:check`.
+- Use **static leak checks**: grep the variant for identifiers owned by an unselected module (for example `organizationProcedures`, `packages/ai`, `apiKey`). Each module manifest declares `ownedIdentifiers` for this.
+- Share one pnpm store and install with `--offline` after the first variant to keep runtime bounded.
+- Nightly job: boot the `none` and `all` variants with `next build` and a sign-up smoke test against a throwaway Postgres service container.
+
+## Deliverables
+
+1. `scripts/scaffold-matrix.mjs` with `--pairwise` (PR) and `--full` (nightly) modes.
+2. `ownedIdentifiers` field in each `scaffold-modules/*/manifest.json`, plus a leak checker.
+3. CI job `scaffold-matrix` in `ci.yml` (pairwise), and `scaffold-nightly.yml` (full sweep plus boot smoke).
+4. A Markdown summary table posted as a CI artefact (variant → pass/fail per check).
+5. Contributor docs in `CLAUDE.md`: "adding a module means adding it to the matrix".
+
+## Likely Files / Systems Affected
+
+- `apps/web/lib/scaffold-modules.ts` (export a pure, CLI-callable compile entry)
+- `scaffold-modules/*/manifest.json`
+- `.github/workflows/ci.yml`, new `.github/workflows/scaffold-nightly.yml`
+- `package.json` scripts (`scaffold:matrix`)
+
+## Risks / Dependencies
+
+- CI time. Pairwise plus a shared store should keep PR runs under ~10 minutes. The full sweep is nightly only.
+- `compileScaffoldVariant` currently resolves paths from `process.cwd()`. It needs an explicit `baseRoot` for script use (already a parameter).
+- Mobile and desktop typechecks need their own `tsconfig` paths inside the variant.
+
+## Verification
+
+1. Deliberately deleting a slot stub from a manifest makes the pairwise job fail with the variant named.
+2. Leaving `organizationProcedures` referenced when `multi_tenancy` is unselected fails the leak check.
+3. The nightly job boots the `none` and `all` variants and completes a sign-up against Postgres.
+4. A new module without matrix coverage fails a registry-vs-matrix consistency test.

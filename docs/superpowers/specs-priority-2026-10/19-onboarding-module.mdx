@@ -1,0 +1,59 @@
+# 19 — Onboarding Module (`onboarding`)
+
+_Rank 19 · Track: new module · Effort: S–M · Supersedes April #09_
+
+## Context
+
+After sign-up, a starter user lands on `(home)/page.tsx` with no guidance. There is no welcome flow, profile capture, setup checklist or activation tracking. Each starter buyer rebuilds this. The pieces it would orchestrate already exist: profile and avatar settings, org creation (multi-tenancy), credits purchase (billing), first AI chat (ai), API key creation (api_keys).
+
+## Why This Priority
+
+Activation is high-ROI for buyers' own products, and the module is small because it mostly links to existing surfaces. It ranks low because it is not foundational and is most useful once flags (#18) and config (#14) let buyers customise steps without code.
+
+## Overview
+
+A dismissible, resumable first-run wizard (2–3 short steps) plus a dashboard checklist whose items are contributed by the **selected modules**. Each module contributes the items it can fulfil, so the checklist is always accurate for the variant.
+
+## Main Approach
+
+- **State**: `OnboardingState` (userId unique, step, answers Json, dismissedAt?, completedAt?) plus `OnboardingTask` completion rows (userId, taskKey, completedAt). Completion is **derived** where possible (for example "avatar set" means `user.image` is not null) and stored only for actions without a natural signal.
+- **Task contribution**: a registry `onboardingTasks` where each module's slot file contributes tasks.
+  - base: complete profile, verify email
+  - `multi_tenancy`: invite a teammate
+  - `billing`: buy credits
+  - `ai`: start a chat
+  - `api_keys`: create a key
+  - Unselected modules' slot stubs contribute an empty array, so there are no dead tasks.
+- **Wizard**: a modal on first session with role / team size / use case. It is skippable, and answers are stored for personalisation and analytics (#20).
+- **Checklist card** on the dashboard with progress, deep links, dismiss and "show again" in settings.
+- **Customisation**: steps can be enabled or disabled via site config (#14) keys. If `feature_flags` is selected, the checklist can be flag-gated.
+- **Welcome email**: optional, through `jobs` (#12) if present (delayed 1 h, skipped if onboarding is already complete).
+- **Backfill**: existing users get `dismissedAt = now`, so nobody is suddenly nagged.
+
+## Deliverables
+
+1. `onboarding.prisma`, `onboardingProcedures.ts` (`state`, `answer`, `dismiss`, `complete`), with guest writes blocked.
+2. Task registry plus per-module slot contributions.
+3. Wizard modal and checklist card in `packages/ui/src/components/onboarding`.
+4. Backfill script.
+5. `scaffold-modules/onboarding` manifest, registry entry (suggested 5 credits) and matrix coverage.
+
+## Likely Files / Systems Affected
+
+- `packages/database/prisma/onboarding.prisma`, `apps/web/trpc/routers/onboardingProcedures.ts`
+- `apps/web/app/(home)/page.tsx` (checklist slot), `apps/web/app/(home)/layout.tsx` (wizard slot)
+- each module's slot directory for task contributions
+- `packages/database/scripts/backfill-onboarding.ts`
+
+## Risks / Dependencies
+
+- Must never block access. The wizard is always skippable, with no middleware redirects.
+- Task contributions cross modules, so the slot/stub discipline is essential.
+- The guest demo user should see a pre-completed or hidden onboarding.
+
+## Verification
+
+1. A new user sees the wizard once, and can skip and resume it later from settings.
+2. Checklist items exist only for selected modules (matrix assertion on the variant's task registry).
+3. Setting an avatar marks the profile task complete without an explicit write.
+4. Existing users are not shown the wizard after backfill.

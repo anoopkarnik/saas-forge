@@ -1,0 +1,58 @@
+# 08 — `create-saas-forge` CLI v2
+
+_Rank 8 · Track: distribution · Effort: M · New spec_
+
+## Context
+
+`scripts/cli.js` (the `npx saas-forge` entry) runs `git clone --depth=1` on **the root repository**: the downloader platform itself, with `scaffold-modules/`, `template-overrides/`, root-only routes and so on. It is not the purchased starter. It ignores modules, tiers, platforms and credits, and it only understands `--theme`.
+
+Meanwhile, a complete programmatic API already exists: `/api/v1/scaffold/pricing`, `/api/v1/projects` (create/update), `/api/v1/projects/[slug]/download`, `/upgrade` and `/api/v1/credits`, all with API-key auth.
+
+## Why This Priority
+
+The terminal is where developers start projects. A CLI that mirrors the wizard turns SaaS Forge into a `create-*` tool like its competitors, enables CI-driven scaffolding, and reuses the v1 API that is already built. The current CLI actively misleads people by delivering the wrong artefact.
+
+## Overview
+
+Publish `create-saas-forge` as its own small npm package. It authenticates with an API key, picks or creates a saved project config, quotes the price, downloads the build, extracts it, installs dependencies, and wires the upgrade remote.
+
+## Main Approach
+
+- **Package**: new `packages/create-saas-forge` (root-only, excluded from the template). It is a single-file Node 20+ ESM bundle with no heavy dependencies (`@clack/prompts` for the UX).
+- **Auth**: `SAAS_FORGE_API_KEY` env var or `--api-key`. An optional `login` command opens the browser to Settings → API Keys.
+- **Flows**:
+  - `npx create-saas-forge my-app` runs an interactive mode: product type → tier → version → platforms → modules, showing the server quote (#2).
+  - `npx create-saas-forge my-app --project <slug>` downloads a saved config.
+  - `npx create-saas-forge my-app --modules billing,ai --platforms web,mobile --yes` is non-interactive for CI.
+- **Download**: create the job, poll `jobStatus` (#4), stream the zip to disk, verify its checksum, extract.
+- **Post-steps**: `pnpm install`, `pnpm generate`, `git init`, add the `saas-forge` remote and `template/saas-boilerplate` tracking (per `completed/2026-04-06-template-branch-upgrade-workflow-design.md`), write `.saas-forge.json` (project slug, build key, template version), then run `pnpm doctor` (#9).
+- **Upgrade**: `npx create-saas-forge upgrade` calls `/api/v1/projects/[slug]/upgrade` and drops the Claude Code upgrade kit in place.
+- **Deprecate** `scripts/cli.js`: print a notice and forward to the new package for one release.
+
+## Deliverables
+
+1. `create-saas-forge` package with `new`, `login`, `upgrade` and `credits` commands.
+2. `.saas-forge.json` project marker, read by the upgrade center (#10).
+3. npm publish step added to the release checklist in `CLAUDE.md`.
+4. Docs page (landing docs) with copy-paste commands.
+5. Deprecation shim in `scripts/cli.js`.
+
+## Likely Files / Systems Affected
+
+- new `packages/create-saas-forge/*`, `template-sync.manifest.json` (exclude)
+- `apps/web/app/api/v1/*` (minor: add the job-status endpoint from #4)
+- `scripts/cli.js`, root `package.json` `bin`
+- `apps/web/lib/route-policy.ts`
+
+## Risks / Dependencies
+
+- API keys in shell history: prefer an env var or an `~/.config/saas-forge` credentials file with `0600` permissions.
+- Depends on #3 (no secrets) and #4 (async jobs). It can ship earlier against the synchronous download route, with polling added later.
+- Windows path handling for extraction: test on a Windows runner in CI.
+
+## Verification
+
+1. `npx create-saas-forge demo --modules billing --yes` produces a project identical to the web download for the same selection (archive hash).
+2. Insufficient credits produce a clear error with a top-up link and a non-zero exit code.
+3. The generated project has the upgrade remote configured, and `.saas-forge.json` is present.
+4. The old `npx saas-forge` prints the deprecation notice and still works.

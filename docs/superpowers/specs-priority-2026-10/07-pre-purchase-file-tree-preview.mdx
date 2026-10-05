@@ -1,0 +1,51 @@
+# 07 — Pre-Purchase File-Tree Preview & Selection Diff
+
+_Rank 7 · Track: conversion · Effort: M · New spec_
+
+## Context
+
+Today the wizard (`packages/ui/src/blocks/dashboard/DashboardPage.tsx`, `WizardSummary.tsx`) shows a preset's architecture, cost estimates, `includedInScaffold` bullets and a credit total. A buyer cannot see **what code they will actually receive**: which folders, how many files, which Prisma models, which env vars and which routes. Toggling a module changes the price, but not any visible evidence of what that money buys.
+
+## Why This Priority
+
+Showing the concrete output is the strongest conversion tool a code product has ("+42 files, 3 Prisma models, 6 routes"), and it lowers refund risk. With cached builds (#4) and a single catalogue (#2), the data already exists. This is mostly presentation.
+
+## Overview
+
+Add an interactive, read-only **file explorer** to the wizard summary. It is built from build manifests and highlights what each module adds or removes, plus a "what changed" diff when a toggle flips.
+
+## Main Approach
+
+- **Manifest per variant**: `<buildKey>.manifest.json` from #4 lists each file path, size, owning module (from the manifest actions) and a category (route, procedure, Prisma model, component, env var).
+- **Cheap estimate without a build**: compute a **module delta index** offline at `template:publish`. For each module, record the files it adds, removes or replaces relative to the base. The wizard composes base plus deltas client-side, which is instant with no server build. Request the real manifest only when the user opens "exact view".
+- **UI**: a collapsible tree with module colour chips, totals (files, LOC, models, routes, env vars), and a "Show diff" mode after toggling a module (green added, red removed).
+- **Read-only snippets**: up to N allow-listed files can be previewed (for example `README.md`, `SETUP.md`, `.env.example`, the Prisma schema). This shows quality without giving away the product. The allow-list lives in `registry.json`.
+- **Env-var impact**: list the new env vars a selection requires, linked to setup docs (reuses the `setup-guide.ts` data).
+
+## Deliverables
+
+1. Module delta index generated in `scripts/publish-template-branch.mjs` / `template:stage`, stored next to the cached builds.
+2. `scaffold.previewManifest` query (anonymous, rate-limited, cached).
+3. `FileTreePreview` and `SelectionDiff` components in `packages/ui` (root-only slot so the starter does not carry them).
+4. A snippet viewer for allow-listed files.
+5. "What you get" stats in the summary and on the mobile wizard (counts only).
+
+## Likely Files / Systems Affected
+
+- `packages/ui/src/components/dashboard/WizardSummary.tsx`, `ModuleToggleCard.tsx`
+- `apps/web/lib/scaffold-modules.ts` (delta index generator)
+- `scripts/publish-template-branch.mjs`, `scripts/sync-template.mjs`
+- `apps/web/lib/route-policy.ts` (new public read route)
+
+## Risks / Dependencies
+
+- Leaking source: keep snippets to an explicit allow-list and never serve arbitrary paths.
+- The delta index must be regenerated on every template change. Gate it in `template:check-sync`.
+- Large trees on mobile: show stats and top-level folders only.
+
+## Verification
+
+1. For every matrix variant (#1), the composed delta preview equals the real build manifest (CI test).
+2. Toggling a module updates the stats in under 100 ms with no network request.
+3. Requesting a non-allow-listed snippet returns `404`.
+4. Conversion tracking (#20) shows whether opening the preview correlates with purchase.

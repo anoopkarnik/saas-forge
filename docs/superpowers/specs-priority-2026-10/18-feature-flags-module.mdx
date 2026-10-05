@@ -1,0 +1,53 @@
+# 18 — Feature Flags Module (`feature_flags`)
+
+_Rank 18 · Track: new module · Effort: M · Supersedes April #08_
+
+## Context
+
+Starters have no way to ship dark features, gate by plan or role, roll out by percentage, or flip a kill switch without a redeploy. Behaviour is controlled by code and env toggles. Runtime site config (#14) covers **global settings**. Flags are a separate concern: **per-subject evaluation** (user, org, role, plan, percentage).
+
+## Why This Priority
+
+It is a solid buyer feature and a release-safety tool, but it is most valuable once site config (#14) exists to share the cache and admin patterns. It is lower urgency than the modules that add new product surfaces.
+
+## Overview
+
+DB-backed flags with simple rule types, a server-side evaluator as the source of truth, a client hook fed by server evaluation, an admin CRUD page, and change history.
+
+## Main Approach
+
+- **Model** (`flags.prisma`): `FeatureFlag` (key unique, description, enabled, rules Json, updatedBy, updatedAt) and `FeatureFlagChange` (flagKey, before, after, actorId, at). The change table is a lightweight history. When `audit_log` (#15) is selected, `audit()` is also emitted.
+- **Rules**, evaluated in order, first match wins: `role in [...]`, `userId in [...]`, `orgId in [...]` (with `multi_tenancy`), `plan in [...]` (with `billing`), `percentage N` (stable hash of `flagKey + subjectId`), then the default `enabled`.
+- **Evaluator**: `isEnabled(key, subject)` on the server, using the same Redis-plus-memory cache pattern as `site-config.ts`. There is a typed key registry in code (`flags.ts`), so unknown keys fail typecheck, and flags missing from the DB fall back to the code default.
+- **Server enforcement**: a `flagProcedure(key)` middleware for tRPC and `requireFlag(key)` for routes. Privileged access is **never** client-only.
+- **Client**: the server evaluates all flags for the session in the layout and hydrates `FlagsProvider`. `useFlag(key)` reads it, so there is no flicker and no rule logic leaks to the client.
+- **Admin**: `/admin/flags` lists flags, toggles them, and edits rules (form-based, not raw JSON), with an evaluation preview ("as user X → on/off") and history.
+- **Module**: `unselected` replaces `flags.ts` with a stub where `isEnabled` returns the code default and the provider and hook stubs return defaults. It removes the model, router and admin page.
+
+## Deliverables
+
+1. `flags.prisma`, the typed flag registry, the evaluator with stable bucketing, and tests.
+2. `flagProcedure` / `requireFlag` and `FlagsProvider` / `useFlag`.
+3. `/admin/flags` page with rule editor, preview and history.
+4. Two example flags wired into the starter (for example `ai.voice` and `beta.dashboardWidgets`).
+5. `scaffold-modules/feature_flags` manifest, registry entry and matrix coverage.
+
+## Likely Files / Systems Affected
+
+- `packages/database/prisma/flags.prisma`, `apps/web/lib/flags/*`
+- `apps/web/trpc/init.ts` (or a separate `flags-procedure.ts` so it can be stripped, as `org.ts` is)
+- `apps/web/app/layout.tsx`, `apps/web/app/(home)/admin/flags/*`
+- `apps/web/trpc/apiRegistry.ts`
+
+## Risks / Dependencies
+
+- Flags vs config boundary: config holds global values, flags give per-subject booleans. Document this, and refuse non-boolean flags in v1.
+- Percentage rollouts need a stable subject id. Anonymous users get a cookie id.
+- Desktop and mobile read evaluated flags through a `flags.forSession` query (follow-on).
+
+## Verification
+
+1. Toggling a flag in admin hides or shows the gated UI within one page load, with no redeploy.
+2. Percentage 30 enables the flag for about 30% of 10,000 synthetic users, stably across evaluations.
+3. A flagged tRPC procedure returns `FORBIDDEN` when off, even if called directly.
+4. The variant without the module compiles, and every `useFlag` call returns its code default.

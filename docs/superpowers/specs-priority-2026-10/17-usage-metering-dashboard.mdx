@@ -1,0 +1,57 @@
+# 17 — Usage Metering & Credits Dashboard
+
+_Rank 17 · Track: new module (starter) + root platform · Effort: M · Supersedes April #15_
+
+## Context
+
+Credits exist (`User.creditsTotal` / `creditsUsed`, `Transaction` in `billing.prisma`), and AI usage is recorded in `AiUsageEvent`. But consumption is **not explainable**: a user sees a balance, not *why* it changed. Each consumer (AI tokens, scaffold downloads on the root platform, future API calls) records usage differently or not at all.
+
+The root platform has the same gap for its own buyers. Credits are spent on downloads and upgrades (`ScaffoldJob.creditsSpent`), but there is no unified "credits history" view combining purchases, downloads, upgrades and refunds (#4).
+
+## Why This Priority
+
+Clear usage builds trust in any credit-based product, and the SaaS Forge platform itself sells credits. One design serves both: a module for starters and a dashboard for the platform's own buyers. It ranks after audit because audit establishes the "immutable event" pattern this spec reuses.
+
+## Overview
+
+A single immutable `UsageEvent` ledger with typed meters, a balance derived from (or reconciled with) it, a user-facing usage dashboard with charts, and threshold alerts.
+
+## Main Approach
+
+- **Model** (in `billing.prisma`, owned by the `billing` module): `UsageEvent` (id, userId, organizationId?, meter, quantity, credits, sourceType, sourceId, idempotencyKey unique, occurredAt).
+  - Meters are a typed registry: `ai.tokens`, `ai.requests`, `api.calls`, `storage.bytes`, plus starter-defined custom meters.
+- **Write path**: `recordUsage(tx, { meter, quantity, sourceId, idempotencyKey })` converts to credits through the meter's rate, inserts the event and increments `creditsUsed` **in the same transaction**. The idempotency key prevents double charges on retries, the same way as `ScaffoldJob`.
+- **AI**: migrate the `AiUsageEvent` → credits path to call `recordUsage`. Keep `AiUsageEvent` for model-level cost analytics (different purpose), linked by `sourceId`.
+- **Dashboard** (`/usage`, or a Billing tab): balance, a 30/90-day stacked chart by meter, a recent events table with source links, and a "why did my balance change" view joining `Transaction` (purchases) and `UsageEvent` (spend).
+- **Alerts**: thresholds (for example 80% and 95% of the last purchase), evaluated in `recordUsage` with a dedupe flag per (user, threshold, cycle). Delivered via `notify()` (#13) when present, or email otherwise.
+- **Root platform**: the same dashboard on SaaS Forge itself, with meters `scaffold.download`, `scaffold.upgrade` and `scaffold.refund`, so buyers see where their credits went.
+- **Org-ready**: an `organizationId` column from day one. Org-owned balances remain the follow-up noted in the multi-tenancy spec.
+
+## Deliverables
+
+1. `UsageEvent` model, meter registry and `recordUsage()` with idempotency and transaction tests.
+2. AI metering migrated onto `recordUsage`.
+3. Usage dashboard UI (`packages/ui` chart components following the existing chart conventions).
+4. Threshold alerts with dedupe.
+5. Root-platform credits history combining `Transaction` and `ScaffoldJob`.
+6. Shipped with the `billing` module (no new module id). Registry description updated.
+
+## Likely Files / Systems Affected
+
+- `packages/database/prisma/billing.prisma`, `apps/web/trpc/routers/billingProcedures.ts`
+- `packages/ai` / `apps/web/app/api/ai/chat/route.ts` (metering call site)
+- `apps/web/app/(home)/*` usage page, `packages/ui/src/components/payments/*`
+- `scaffold-modules/billing/*` (overrides)
+
+## Risks / Dependencies
+
+- Balance drift between `creditsUsed` and the sum of events. Add a reconciliation script (and a cron job with `jobs`) that reports mismatches.
+- Charging rules must be explicit and visible (rate table shown in the UI) to avoid disputes.
+- `billing` unselected: `recordUsage` must stub cleanly, because AI metering calls it.
+
+## Verification
+
+1. A retried AI request with the same idempotency key charges once.
+2. The dashboard sum of events equals `creditsUsed` for seeded data (reconciliation test).
+3. Crossing 80% fires one alert per cycle.
+4. Root-platform users see each download, upgrade and refund as a line item.

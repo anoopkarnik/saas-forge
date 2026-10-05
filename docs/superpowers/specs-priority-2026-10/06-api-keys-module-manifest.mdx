@@ -1,0 +1,59 @@
+# 06 — API Keys Module Manifest
+
+_Rank 6 · Track: module hygiene · Effort: S–M · Completes April #17 and the 2026-06-08 foundations spec_
+
+## Context
+
+API-key foundations are fully built in the root app: the `ApiKey` model and `API_KEY_STATUS`, `packages/auth/src/api-keys/*`, `apps/web/server/authenticateApiKey.ts`, the per-key Upstash limiter, `apiKeyProcedures.ts`, Settings → API Keys UI, and `/api/v1/me`. The starter template already contains `apiKeyProcedures.ts`.
+
+But `scaffold-modules/api_keys/manifest.json` is `{ "selected": {}, "unselected": {} }` and the registry has `implemented: false`. As a result:
+
+- every download ships the API-key code whether or not the buyer selects it, and
+- the module is charged 0 or shown as unavailable (see #2), so a finished feature earns nothing.
+
+## Why This Priority
+
+The feature is done. Only the manifest is missing. It is the cheapest new revenue in the catalogue, and it removes unrequested code from every download.
+
+## Overview
+
+Author `api_keys` `unselected` actions so the feature strips cleanly, and flip it to `implemented: true` at 5 credits (or re-price, for example to 10, alongside #2).
+
+## Main Approach
+
+- Inventory the API-key surface in the starter (`grep -r apiKey templates/saas-boilerplate`), then classify each file as **owned** (remove) or **host** (needs a slot or an override).
+- **Owned, to remove:** `apiKeyProcedures.ts` plus its tests, `server/authenticateApiKey.ts`, `packages/auth/src/api-keys`, the settings API-key components, `/api/v1/me`, the rate-limiter entry and the `ApiKey` model.
+- **Host files:**
+  - `SettingsDialog.tsx`: add an "API Keys" tab **slot** whose stub renders nothing.
+  - `user.prisma`: `ApiKey` relation on `User`. Move `ApiKey` into `api-keys.prisma` so `user.prisma` only needs a back-relation override (or use the `replace` pattern multi-tenancy uses).
+  - `route-policy.ts`: the `api-key` auth mode stays generic. Remove the `/api/v1/me` row via an override, or make route-policy tolerate missing routes for stripped modules.
+  - `apiRegistry.ts`: the admin API-management registry needs the `apiKey` group removed (registry fragment file, like `apiRegistry.organization.ts`).
+- `cleanDeadRouterImports` already drops the router from `_app.ts` once its file is gone.
+- Add to the matrix (#1) with `ownedIdentifiers: ["apiKey", "authenticateApiKey", "API_KEY_STATUS"]`.
+
+## Deliverables
+
+1. `api-keys.prisma` split, and a `user.prisma` replace for the unselected case.
+2. `scaffold-modules/api_keys/manifest.json` with `remove`, `copy` (slot stubs) and `replace` actions.
+3. Settings-tab slot and `apiRegistry.apiKeys.ts` fragment, mirroring the organization fragment.
+4. `registry.json`: `implemented: true`, final price, and an updated description.
+5. Matrix coverage, plus `route-policy` and `apiRegistry` drift tests passing in both variants.
+
+## Likely Files / Systems Affected
+
+- `scaffold-modules/api_keys/*`, `scaffold-modules/registry.json`
+- `packages/database/prisma/user.prisma` → `api-keys.prisma`
+- `apps/web/trpc/apiRegistry*.ts`, `apps/web/lib/route-policy.ts`
+- `packages/ui/src/components/home/SettingsDialog.tsx`
+- `template-sync.manifest.json` (new file includes)
+
+## Risks / Dependencies
+
+- `tests/integration/routePolicy.test.ts` asserts that every API route has a row. In the stripped variant it must not fail on a missing route, so filter the rows by existing files.
+- The root platform's own `/api/v1/projects` and credits routes depend on API keys. Those are root-only, so they are unaffected.
+
+## Verification
+
+1. The variant without `api_keys` has no API-key identifiers and passes typecheck, `routePolicy` and `apiRegistry` drift tests.
+2. The variant with `api_keys` can create a key and call `/api/v1/me` successfully.
+3. Pricing shows and charges the module consistently (depends on #2).

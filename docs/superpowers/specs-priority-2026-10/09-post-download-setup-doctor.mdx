@@ -1,0 +1,61 @@
+# 09 — Post-Download Setup Doctor (`pnpm doctor`)
+
+_Rank 9 · Track: activation · Effort: M · New spec_
+
+## Context
+
+After download, buyers get `.env.example` and a generated `SETUP.md` (`apps/web/lib/scaffold/setup-guide.ts`). They must then work out, by hand, which of dozens of env vars their selection needs, create accounts (Neon, Resend, Stripe/Dodo, Upstash, Blob/R2, Notion), and debug boot failures.
+
+`apps/web/lib/env.ts` already knows the rules (`INTEGRATION_REQUIREMENTS`, weak-secret detection, `NEXT_PUBLIC_*` secret-name check), but it only reports at boot, and in development it only warns.
+
+## Why This Priority
+
+The most expensive moment for a boilerplate business is a buyer who downloads, fails to boot, and asks for a refund or writes a bad review. A guided doctor turns "time to first run" into minutes. It is also the local half of secret-free downloads (#3).
+
+## Overview
+
+Ship an interactive `pnpm doctor` in the starter. It reads the selected modules and toggles, prompts for missing values, generates strong secrets, verifies each integration with a live check, and writes the `.env` files.
+
+## Main Approach
+
+- **Script**: `scripts/doctor.mjs` in the starter (synced from root, so the root repo benefits too).
+- **Requirements source**: export `INTEGRATION_REQUIREMENTS` and the core-var list from `env.ts` into a JSON-serialisable module consumed by both boot validation and the doctor. One source, so they cannot drift.
+- **Steps per integration**: explain where to get the value (deep link to the provider dashboard), prompt with input masking, validate the format, then run a **live probe**:
+  - Postgres: connect and `select 1`, and check the required schemas.
+  - Resend: verify the domain status via API.
+  - Stripe/Dodo: retrieve the account, and check that the webhook endpoint exists.
+  - Upstash: `PING`.
+  - Blob/R2: put and delete a probe object.
+  - OAuth: format checks only.
+- **Generators**: `BETTER_AUTH_SECRET`, `BACKEND_HMAC_SECRET` (if `ai_agents`) via `crypto.randomBytes`.
+- **Writes**: `apps/web/.env`, `apps/mobile/.env`, `apps/desktop/.env` and `packages/database/.env`, with values mapped exactly as `/api/scaffold` does today (move that mapping into a shared helper).
+- **Modes**: `pnpm doctor` (interactive fix), `pnpm doctor --check` (CI-friendly, non-zero on failure), and `pnpm doctor --json` for tooling.
+- **Finish**: offer to run `pnpm generate && pnpm migrate && pnpm seed`.
+
+## Deliverables
+
+1. `scripts/doctor.mjs` plus a `doctor` script in the starter `package.json` (template override).
+2. A shared env-requirements module consumed by `env.ts` and the doctor.
+3. Live probes per integration, each with a timeout and an actionable error.
+4. Shared web→mobile/desktop env-mapping helper, also used by the server builder.
+5. `SETUP.md` updated to start with "Run `pnpm doctor`".
+
+## Likely Files / Systems Affected
+
+- `apps/web/lib/env.ts`, new `apps/web/lib/env-requirements.ts`
+- `apps/web/app/api/scaffold/route.ts` (mapping extraction)
+- new `scripts/doctor.mjs`, `template-sync.manifest.json`
+- `apps/web/lib/scaffold/setup-guide.ts`
+
+## Risks / Dependencies
+
+- Probes must never print secrets. Redact in all output and in the `--json` mode.
+- Provider APIs change. Keep probes minimal and fall back to "could not verify" (a warning, not a failure).
+- Must work in stripped variants: requirements are filtered by the modules present (read from `.saas-forge.json` or by file detection).
+
+## Verification
+
+1. On a fresh download with an empty `.env`, `pnpm doctor` produces a booting app in one pass when given valid credentials.
+2. `pnpm doctor --check` exits non-zero for a placeholder `BETTER_AUTH_SECRET` and zero after the fix.
+3. Boot validation and the doctor report the same missing vars (shared-source test).
+4. A wrong Postgres URL gives a specific message (auth vs host vs schema), not a stack trace.

@@ -1,0 +1,100 @@
+# SaaS Forge Downloader: Re-Prioritized Top 20 Specs
+
+_Date: 2026-10-04. Supersedes the ranking in `docs/superpowers/specs/2026-04-07-*` and `docs/plan.md`. The original specs stay as background reading; each new spec below says which old spec it supersedes or narrows._
+
+## Why re-prioritize
+
+The April ranking assumed SaaS Forge was a boilerplate repo. It is now a **boilerplate downloader**: buyers pick a product type, tier, version, platforms and paid **scaffold modules** in a wizard, pay credits, and download a compiled starter. Upgrades come later through the template branch or the Claude Code upgrade kit.
+
+That changes what "improvement" means. A spec is worth building when it does at least one of these:
+
+1. **Makes every download correct and trustworthy.** It compiles, it is priced correctly, and it contains only what was bought.
+2. **Adds a sellable, strippable module** that buyers can toggle in the wizard.
+3. **Makes the post-download and upgrade experience smoother**, which drives repeat purchases and credit top-ups.
+
+Features that only make the root app nicer, and never reach a download, rank low.
+
+## Status of existing specs (audited against the code on 2026-10-04)
+
+| # | Spec | Status | Evidence / what is left |
+| --- | --- | --- | --- |
+| 01 | Multi-tenancy / Orgs / RBAC | **Done** | `org.prisma`, `trpc/org.ts`, `organizationProcedures.ts`, `scaffold-modules/multi_tenancy` (50 credits) |
+| 02 | Runtime site config | **Not started** | Only `AppSetting` key/value (registration mode). No `SiteConfig`, provider or admin page. → **New #14** |
+| 03 | Security hardening | **Mostly done** | `route-policy.ts`, `routeGuard.ts`, `env.ts`, image normalization, `windowConfig.ts` sandbox, scaffold origin check. Gap: secrets still sent to `/api/scaffold`. → **New #3** |
+| 04 | AI SDK / chat / metering | **Done** | `packages/ai`, `ai.prisma`, `scaffold-modules/ai` |
+| 05 | Mobile parity | **Mostly done** | Home, settings, support, docs, admin and downloads screens exist. Phase 3 (push, biometrics, offline) is left. Deferred. |
+| 06 | Background jobs | **Partial** | Python ARQ worker for AI jobs only. No JS `packages/jobs`; email still sent inline. → **New #12** |
+| 07 | i18n | **Not started** | Deferred (see below) |
+| 08 | Feature flags | **Not started** | → **New #18** |
+| 09 | Onboarding | **Not started** | → **New #19** |
+| 10 | Notifications | **Stub only** | Registry entry plus an empty manifest (`implemented: false`, charged 0). → **New #13** |
+| 11 | File upload / storage manager | **Partial** | Secure image normalization (`server/uploads/image-upload.ts`). No presigned uploads or file manager. Deferred. |
+| 12 | Desktop parity | **Mostly done** | Admin users, admin CMS and docs routes exist. Auto-update is only mentioned in the README. Deferred. |
+| 13 | Audit logging | **Not started** | `ScaffoldJob` is a scaffold ledger only. → **New #15** |
+| 14 | CI/CD / Docker | **Done** | In `completed/`, plus `ci.yml`, `Dockerfile.web`, `docker-compose*.yml` |
+| 15 | Usage metering dashboard | **Partial** | `AiUsageEvent` and `Transaction` exist, but there is no unified usage model or dashboard. → **New #17** |
+| 16 | Outgoing webhooks | **Not started** | `AiWebhookConfig` is AI-specific config, not customer endpoints. → **New #16** |
+| 17 | API keys | **Done in root, not shippable** | Foundations shipped (`ApiKey`, `/api/v1/*`), but the `api_keys` module manifest is empty, so key code ships in every download and is never sold. → **New #6** |
+| 18 | Real-time (SSE/WS) | **Partial** | SSE agent stream proxy exists; job status uses polling. Deferred. |
+| 19 | Product analytics (PostHog) | **Not started** | → **New #20** |
+| 20 | Cron / scheduled tasks | **Not started** | Merged into **New #12** |
+| 21 | FastAPI AI backend | **Done** (Phase 1) | `apps/backend`, but unselecting `ai` does not strip it. → **New #5** |
+| — | API key foundations (2026-06-08) | **Done** | — |
+| — | Admin invites / invite-only (2026-08-02) | **Done** | — |
+| — | Guest read-only role (2026-08-03) | **Done** | — |
+| — | Admin API management (2026-08-04) | **Done** | — |
+| — | Project configs + delta upgrades (`docs/plans/`) | **Done** (code) | Dedupe `project-write.ts` against `projectProcedures.ts` is noted as left |
+
+## Defects found during the audit (they drive the top of the ranking)
+
+- **Price shown ≠ price charged.** `packages/ui/src/lib/constants/scaffold-modules.ts` and `apps/mobile/components/downloads/constants.ts` hardcode `BASE_SCAFFOLD_CREDITS_COST = 10`, but `scaffold-modules/registry.json` has `baseCreditsCost: 20`. The wizard says "Base starter costs 10 credits" and the server charges 20.
+- **Module availability drift.** The UI marks `api_keys`/`notifications` `available: false`. The registry marks them `downloadEnabled: true, implemented: false`.
+- **Unselected modules still ship code.** `api_keys` has an empty manifest. The `ai` unselected manifest does not remove `apps/backend`, `Dockerfile.backend`, `docker-compose.backend.yml`, `aiJobsProcedures.ts` or `apps/web/lib/backend`.
+- **No combinatorial build guard.** CI builds the root app, but no CI job compiles the module × platform variants that buyers actually download. Only `multiTenancyVariant.test.ts` covers one module.
+- **Secrets transit the server.** `/api/scaffold` accepts `envVars` (including `DATABASE_URL`) and writes them into the zip. This contradicts the "never collect secrets" decision of the v1 API path.
+- **CPU-heavy downloads.** Every download copies the template, applies manifests and zips at `zlib level 9` inside the request. Identical selections are rebuilt from scratch.
+- **The CLI clones the wrong thing.** `scripts/cli.js` runs `git clone` on the **root** repo (the downloader platform), not the starter.
+
+## Top 20 (ranked)
+
+| Rank | Spec | Track | Effort | Depends on |
+| --- | --- | --- | --- | --- |
+| 1 | [Scaffold variant matrix CI](./01-scaffold-variant-matrix-ci.mdx) | Engine trust | M | — |
+| 2 | [Single-source pricing & module catalog](./02-single-source-pricing-module-catalog.mdx) | Engine trust | S | — |
+| 3 | [Secret-free downloads](./03-secret-free-downloads.mdx) | Engine trust | M | 9 (soft) |
+| 4 | [Cached & async scaffold builds](./04-cached-async-scaffold-builds.mdx) | Engine perf | M | 1, 2, 3 |
+| 5 | [AI backend as its own module (`ai_agents`)](./05-ai-backend-module-split.mdx) | Module hygiene | M | 1 |
+| 6 | [API Keys module manifest](./06-api-keys-module-manifest.mdx) | Module hygiene | S–M | 1, 2 |
+| 7 | [Pre-purchase file-tree preview & diff](./07-pre-purchase-file-tree-preview.mdx) | Conversion | M | 2, 4 |
+| 8 | [create-saas-forge CLI v2](./08-create-saas-forge-cli-v2.mdx) | Distribution | M | 3, 4 |
+| 9 | [Post-download setup doctor](./09-post-download-setup-doctor.mdx) | Activation | M | — |
+| 10 | [Upgrade center](./10-upgrade-center-changelog-preview.mdx) | Retention | M | 4, 7 |
+| 11 | [Provider-level pruning](./11-provider-level-pruning.mdx) | Download quality | M | 1 |
+| 12 | [Jobs & cron module](./12-jobs-and-cron-module.mdx) | New module | L | 1 |
+| 13 | [Notifications module](./13-notifications-module.mdx) | New module | L | 12 |
+| 14 | [Runtime site config](./14-runtime-site-config.mdx) | Starter base | M | — |
+| 15 | [Audit log module](./15-audit-log-module.mdx) | New module | M | 1 |
+| 16 | [Outgoing webhooks module](./16-outgoing-webhooks-module.mdx) | New module | M | 12, 15 (soft) |
+| 17 | [Usage metering dashboard](./17-usage-metering-dashboard.mdx) | New module / root | M | 15 (soft) |
+| 18 | [Feature flags module](./18-feature-flags-module.mdx) | New module | M | 14 |
+| 19 | [Onboarding module](./19-onboarding-module.mdx) | New module | S–M | 14, 18 (soft) |
+| 20 | [Product analytics module + downloader funnel](./20-product-analytics-module.mdx) | Growth | S–M | 19 (soft) |
+
+### Ranking logic
+
+- **1–4 fix the engine before anything else is added.** Each new module multiplies the variant count. Adding modules on top of an unguarded, mispriced, CPU-heavy build path would multiply defects.
+- **5–6 make the existing catalogue honest.** Buyers must get only what they paid for. Both also make the ranks below cheaper, because every new module follows the same manifest and slot pattern.
+- **7–11 improve the buyer journey end to end**: what you see before paying, how you get it, how you make it run, how you upgrade, and how clean the code is.
+- **12–20 are new sellable modules**, ordered by dependency (jobs come before notifications and webhooks) and by buyer demand from `docs/plan.md`.
+
+### Deliberately deferred (outside the top 20)
+
+- **i18n (#07).** It touches every string in every module override. Doing it before the module set stabilises would force rewrites of every `template-overrides` and `scaffold-modules/*/overrides` file. Revisit after rank 13.
+- **Storage manager (#11 remainder), real-time (#18 remainder), desktop auto-update (#12 remainder), mobile push/biometrics (#05 phase 3).** These are valuable but narrower. Their foundations (secure uploads, SSE proxy, desktop/mobile screens) already exist.
+
+## Conventions for every spec in this folder
+
+- Each new module ships with a `scaffold-modules/<id>/manifest.json` whose `unselected` actions strip it cleanly, uses the **slot/stub rule** from the multi-tenancy spec, and is added to the variant matrix (#1).
+- Prisma changes: edit the schema and run `pnpm generate`. The project owner runs `pnpm migrate`. Each migration folder goes into the module's `unselected.remove`.
+- Every new API route gets a `route-policy.ts` row. Every new env var goes into the relevant `.env.example` and, if it is required by a toggle, into `INTEGRATION_REQUIREMENTS`.
+- Validate with `pnpm template:check-sync`, `pnpm template:build` and the variant matrix.

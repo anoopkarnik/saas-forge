@@ -1,0 +1,61 @@
+# 14 — Runtime Site Config / Admin Settings (starter base)
+
+_Rank 14 · Track: starter base · Effort: M · Supersedes April #02_
+
+## Context
+
+User-facing behaviour in the starter is driven by build-time `NEXT_PUBLIC_*` variables: theme, theme type, SaaS/company name, auth provider visibility, support email, Calendly URL, GA measurement ID. Next.js inlines these into client bundles at build, so changing a brand colour or hiding a sign-in provider requires an env edit **and a redeploy**.
+
+The only runtime setting today is the `AppSetting` key/value row used for registration mode (`OPEN` / `INVITE_ONLY`), edited from the admin users page.
+
+For the downloader this has a second cost. Buyers pick these values in the wizard, so changing their mind means re-downloading or hand-editing envs.
+
+## Why This Priority
+
+It makes every downloaded starter **reconfigurable after purchase without a redeploy**, which reduces support load and "wrong choice" re-download requests. It is also the base layer for feature flags (#18) and onboarding customisation (#19). It ships in the base starter rather than as a paid module, because it changes how many shared components read config.
+
+## Overview
+
+A typed `SiteConfig` service with resolution order **DB → env → default**, a Redis-cached public read, an admin-only write, and a `/admin/settings` page. The existing `AppSetting` registration mode moves under it.
+
+## Main Approach
+
+- **Storage**: reuse `AppSetting` (key/value) with a typed schema layer, rather than adding a new single-row model. Keys are namespaced (`branding.saasName`, `auth.google.visible`, …). Values are validated by a Zod schema per key and stored as JSON strings.
+- **Service**: `apps/web/lib/site-config.ts` exposes `getSiteConfig()` (server, cached in Upstash with a version key, falling back to an in-memory TTL when Redis is off) and `updateSiteConfig(patch)` (admin, which invalidates the cache).
+- **tRPC**: `siteConfig.get` (public, returns **only** keys marked `public`), and `siteConfig.update` on `adminProcedure`, with a `route-policy` row. Guest users can read but not write (existing guard).
+- **Client**: `SiteConfigProvider` and `useSiteConfig()`, hydrated from the server layout so there is no flash. Replace the direct `process.env.NEXT_PUBLIC_*` reads in shared components one area at a time:
+  - Phase 1: branding (name, company, theme, theme type)
+  - Phase 2: auth provider visibility and support links
+  - Phase 3: analytics ID
+- **Theme at runtime**: the theme class is set server-side from config in `app/layout.tsx`.
+- **Caching interplay**: public pages already read headers through the tRPC proxy (see the project memory on Vercel caching), so config reads hit Redis, not Postgres. Keep it that way.
+- **Secrets never move**: an allow-list of keys. Any key whose name matches the secret heuristics in `env.ts` is rejected at schema-definition time.
+- **Desktop/mobile**: read the same public `siteConfig.get` on launch (follow-on).
+
+## Deliverables
+
+1. `site-config.ts` service with typed key registry, resolution order and cache.
+2. `siteConfig` router, policy rows and tests (anonymous read, admin write, guest write blocked, no secret leakage).
+3. `SiteConfigProvider` / `useSiteConfig()` and the phase-1 component migration.
+4. `/admin/settings` page (grouped: Branding, Auth, Support, Analytics, Registration). Registration mode moves here from the users page.
+5. Docs: "env is the default, admin overrides at runtime".
+
+## Likely Files / Systems Affected
+
+- `packages/database/prisma/user.prisma` (`AppSetting` unchanged; no migration needed)
+- `apps/web/lib/site-config.ts`, `apps/web/trpc/routers/adminProcedures.ts` or a new `siteConfigProcedures.ts`
+- `apps/web/app/layout.tsx`, `apps/web/app/(home)/admin/settings/*`
+- `packages/ui/src/components/**` (env reads → hook), `packages/ui/src/components/sidebar/AppSidebar.tsx`
+
+## Risks / Dependencies
+
+- Partial migration leaves hybrid reads. Track the remaining `process.env.NEXT_PUBLIC_*` reads in UI with a lint rule that has an allow-list.
+- Auth provider visibility only hides buttons. Server-side provider enablement still follows env (credentials are env), so document that difference.
+- Cache invalidation must be synchronous on update, or admins will see stale UI.
+
+## Verification
+
+1. Changing the SaaS name and theme in `/admin/settings` updates the live site with no redeploy.
+2. With no DB rows, the site renders exactly as before (env fallback).
+3. `siteConfig.get` never returns a non-public key (snapshot test).
+4. A guest can view the settings page but cannot save.

@@ -1,0 +1,58 @@
+# 16 — Outgoing Webhooks Module (`webhooks`)
+
+_Rank 16 · Track: new module · Effort: M · Supersedes April #16_
+
+## Context
+
+Starters built with SaaS Forge cannot notify their customers' systems about events. There is no `WebhookEndpoint`, event envelope, signing or delivery log. (`AiWebhookConfig` in `ai.prisma` is a single platform-level AI integration config, not customer-managed endpoints.)
+
+Incoming webhook handling (Stripe/Dodo) already follows a strong idempotency pattern documented in `CLAUDE.md`. Outgoing webhooks are its mirror image.
+
+## Why This Priority
+
+It is a standard expectation for "platform" SaaS and pairs with `api_keys` (#6) as the developer-access story (pull via API, push via webhooks). It depends on `jobs` (#12) for retries, so it ranks after it. It ranks after audit because audit is self-contained.
+
+## Overview
+
+Customer-managed webhook endpoints (user-owned, or org-owned with `multi_tenancy`) subscribe to typed events. Deliveries are HMAC-signed, queued, retried with backoff, logged, and replayable.
+
+## Main Approach
+
+- **Models** (`webhooks.prisma`):
+  - `WebhookEndpoint` (id, ownerUserId?, organizationId?, url, description, secretHash plus `secretPrefix` for display, events[], enabled, createdAt, disabledReason?)
+  - `WebhookDelivery` (id, endpointId, eventId, eventType, attempt, status, responseCode?, durationMs?, nextAttemptAt?, createdAt)
+- **Event envelope** (versioned): `{ id, type, apiVersion, createdAt, data }`. The event registry in `apps/web/lib/webhooks/events.ts` defines a Zod schema per type (`user.created`, `org.member.added`, `payment.succeeded`, `credits.low`, `ai.job.completed`, …).
+- **Signing**: a `SaaSForge-Signature: t=timestamp,v1=hmac_sha256(secret, t + "." + body)` header, with a 5-minute replay tolerance documented. The secret is shown once on creation (the same reveal pattern as `RevealKeyDialog`), and rotation is supported with a 24 h overlap of the old secret.
+- **Delivery**: `emit(event)` fans out to the matching endpoints and enqueues `webhook.deliver` per endpoint through `packages/jobs`. Retries back off exponentially for 24 h. After N consecutive failures the endpoint is auto-disabled, with a notification (#13) if present.
+- **SSRF protection**: resolve the target and reject private, loopback and link-local ranges. Enforce HTTPS in production. Use timeouts and a response size cap.
+- **UI**: a Developer → Webhooks tab in `SettingsDialog` (slot) to create, edit, rotate the secret, send a test event, view recent deliveries and replay.
+- **Docs**: a verification snippet in Node and Python, plus a local testing guide (for example, a tunnel URL).
+- **Module**: `requires: ["jobs"]`. When unselected, `emit()` is a no-op stub.
+
+## Deliverables
+
+1. `webhooks.prisma`, the event registry and envelope, and signing and verification utilities with tests.
+2. Delivery job with retry, auto-disable and SSRF guard.
+3. `webhookProcedures.ts` (CRUD, rotate, test, deliveries, replay) with guest-write blocking and org-role checks.
+4. Settings UI tab via slot.
+5. Docs page, `scaffold-modules/webhooks` manifest, registry entry (`requires: ["jobs"]`), and matrix coverage.
+
+## Likely Files / Systems Affected
+
+- `packages/database/prisma/webhooks.prisma`, `apps/web/lib/webhooks/*`
+- `apps/web/trpc/routers/webhookProcedures.ts`, `packages/ui/src/components/home/SettingsDialog.tsx` (slot)
+- emit sites in billing webhooks, organization hooks and AI job completion
+- `packages/jobs` (from #12)
+
+## Risks / Dependencies
+
+- SSRF is the main security risk, so it must be covered by tests with hostile URLs.
+- Event schema versioning: never change an existing `apiVersion` payload shape; add a new version instead.
+- Secrets are stored hashed. HMAC needs the raw secret, so store it **encrypted** (AES-GCM with an env key) rather than hashed. Decide this and document it explicitly.
+
+## Verification
+
+1. Creating an endpoint, triggering `payment.succeeded`, and verifying the signature with the documented snippet succeeds.
+2. A `500`-returning endpoint retries on schedule and auto-disables after the threshold.
+3. URLs resolving to `127.0.0.1` or `10.0.0.0/8` are rejected at create and at delivery.
+4. The variant without `webhooks` compiles with emit sites intact.

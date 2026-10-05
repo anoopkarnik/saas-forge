@@ -1,0 +1,57 @@
+# 20 — Product Analytics Module + Downloader Funnel
+
+_Rank 20 · Track: growth · Effort: S–M · Supersedes April #19_
+
+## Context
+
+Only Google Analytics (`NEXT_PUBLIC_GOOGLE_ANALYTICS_MEASUREMENT_ID`) and the admin SEO/GA4 report (`/admin/seo`) exist. These measure marketing traffic, not product behaviour: there are no activation funnels, feature adoption or retention cohorts.
+
+This matters twice:
+
+1. **Starter buyers** want product analytics wired in.
+2. **SaaS Forge itself** cannot answer its most important questions. Where do people drop off in the wizard? Which presets and modules convert? Does the file-tree preview (#7) increase purchases? How many downloads lead to an upgrade (#10)?
+
+## Why This Priority
+
+It is cheap, and the downloader-funnel half directly informs re-ranking this list next quarter. It ranks last because it measures improvements rather than making them, and it is most useful once #7, #10 and #19 exist to be measured.
+
+## Overview
+
+A vendor-neutral typed `track()` wrapper with PostHog as the reference adapter (self-host friendly), shipped as an `analytics` module for starters. The same wrapper is used in the root platform to instrument the scaffold funnel.
+
+## Main Approach
+
+- **Wrapper**: `packages/analytics` (new, small) with `track(event, props)`, `identify(user)` and `group(org)` on client and server. A typed event map (`events.ts`) means unknown events and wrong props fail typecheck. Adapters: `posthog`, `console` (dev) and `none`.
+- **Privacy defaults**: no autocapture of inputs, IP anonymised, a consent banner hook (off by default, toggled via site config #14), and opt-out honoured. Never send emails or names, only ids.
+- **Starter instrumentation**: `auth.signed_up`, `auth.signed_in`, `onboarding.step_completed` (#19), `billing.checkout_started` / `completed`, `ai.chat_sent`, `org.created`, `org.member_invited`. Each module's events live in its own slot file and are stripped with it.
+- **Root downloader funnel** (root-only events, excluded from the template): `wizard.opened`, `wizard.step_viewed` (step id), `wizard.preset_selected`, `wizard.module_toggled`, `wizard.preview_opened` (#7), `scaffold.quote_shown`, `scaffold.download_started` / `completed` / `failed` (with build-cache hit/miss from #4), `cli.download` (#8), `upgrade.preview_viewed` and `upgrade.purchased` (#10), `doctor.completed` (#9, opt-in anonymous ping).
+- **Dashboards**: a documented PostHog dashboard template (JSON export) for activation and the downloader funnel, kept in `docs/analytics/`.
+- **Separation**: GA and SEO stay as they are for marketing. Product analytics is a separate env var (`NEXT_PUBLIC_POSTHOG_KEY`, `NEXT_PUBLIC_POSTHOG_HOST`), added to `.env.example`.
+
+## Deliverables
+
+1. `packages/analytics` with typed events, adapters and tests.
+2. Starter instrumentation via per-module slots.
+3. Root downloader funnel instrumentation plus a PostHog dashboard export.
+4. Consent and opt-out handling with privacy docs.
+5. `scaffold-modules/analytics` manifest, registry entry (suggested 5 credits) and matrix coverage.
+
+## Likely Files / Systems Affected
+
+- new `packages/analytics/*`, `apps/web/app/layout.tsx` (provider)
+- `packages/ui/src/blocks/dashboard/DashboardPage.tsx` and wizard components (root-only funnel events through a slot)
+- `apps/web/app/api/scaffold/route.ts`, `apps/web/lib/scaffold/service.ts` (server events)
+- `apps/web/.env.example`, `apps/web/lib/env.ts`
+
+## Risks / Dependencies
+
+- Do not mix with the SEO/GA admin report. They are separate concerns, and the docs must say so.
+- Event naming must stay stable. The typed map and a `docs/analytics/events.md` registry enforce this.
+- Server-side events must not block requests: fire-and-forget with a short timeout, or through `jobs` when present.
+
+## Verification
+
+1. With the `console` adapter, every listed starter event fires once per action in an e2e run.
+2. The root funnel shows wizard step drop-off and download conversion in the dashboard export.
+3. With analytics unset or opted out, no network calls are made to the analytics host.
+4. The variant without `analytics` has no `posthog` dependency and no tracking calls.

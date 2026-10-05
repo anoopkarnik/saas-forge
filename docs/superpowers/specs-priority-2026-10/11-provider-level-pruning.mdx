@@ -1,0 +1,61 @@
+# 11 — Provider-Level Pruning
+
+_Rank 11 · Track: download quality · Effort: M · New spec_
+
+## Context
+
+Modules are pruned (`billing`, `ai`, …) but **providers inside a module are not**. Choices like these are selected in the wizard as env toggles:
+
+- payment gateway: Stripe vs Dodo (`NEXT_PUBLIC_PAYMENT_GATEWAY`)
+- CMS: Notion vs none (`NEXT_PUBLIC_CMS`)
+- image storage: Vercel Blob vs Cloudflare R2 (`NEXT_PUBLIC_IMAGE_STORAGE`)
+- auth providers: email / Google / GitHub / LinkedIn
+- email client, rate limiter, analytics
+
+Every download still contains **every** provider's SDKs, webhook routes, env vars and code paths, switched at runtime. A Stripe-only buyer gets the Dodo webhook route, the Dodo SDK in `package.json`, and Dodo env vars in `.env.example` and `env.ts`. That means more surface to understand, more dependencies to audit, and larger installs.
+
+## Why This Priority
+
+"Only the code you chose" is a visible quality signal and a common complaint about boilerplates ("half the code is for things I don't use"). The manifest engine already supports `remove`/`replace`/`packageJsonMerge`, so this is an engine extension rather than a rewrite. It ranks below #1–#10 because runtime toggles already work correctly.
+
+## Overview
+
+Introduce **provider manifests**, small manifests keyed by `(toggle, value)` that the builder applies after module manifests. They strip unchosen provider code, dependencies and env vars, and pin the toggle to the chosen value.
+
+## Main Approach
+
+- New folder `scaffold-providers/<toggle>/<value>/manifest.json`, for example `payment_gateway/stripe` with `unselected` actions for Dodo, and vice versa. Same action types as modules.
+- The builder (`compileScaffoldVariant`) gains a `providers` input (from the wizard's public toggles) and applies provider manifests after module manifests. Only when the owning module is selected (billing providers are irrelevant without `billing`).
+- The **`packageJsonRemove`** action is new: drop dependencies (`dodopayments`, `@vercel/blob`, …) from the relevant `package.json`.
+- **Env pruning**: strip unchosen-provider lines from `.env.example` and the `INTEGRATION_REQUIREMENTS` entries (with the shared requirements module from #9 this is data, not code).
+- **"Keep all providers" option** (default **off**) for buyers who want runtime switching. It maps to today's behaviour.
+- The `providers` input becomes part of the build key (#4) and of the matrix dimensions (#1, pairwise on providers).
+- Start with the highest-value toggles: payment gateway, image storage, CMS. Add auth providers later (they are lighter, mostly config).
+
+## Deliverables
+
+1. Builder support for provider manifests plus a `packageJsonRemove` action, with unit tests.
+2. Provider manifests for payment gateway, image storage and CMS.
+3. Wizard copy explaining "unchosen providers are removed", plus the keep-all toggle.
+4. Matrix and leak-check extensions (`ownedIdentifiers` per provider).
+5. Upgrade-kit awareness: switching a provider later is an upgrade (delta) action.
+
+## Likely Files / Systems Affected
+
+- `apps/web/lib/scaffold-modules.ts`
+- new `scaffold-providers/*`
+- `apps/web/app/api/payments/*`, `apps/web/server/uploads/*`, `packages/cms/*` (factor provider code into removable files)
+- `apps/web/lib/env.ts` / `env-requirements.ts`
+
+## Risks / Dependencies
+
+- Some provider code is interleaved in shared files. Each needs a small refactor into a provider adapter file plus a registry before it can be pruned. Do that refactor first, in the root, and keep behaviour identical.
+- Upgrade complexity: provider changes become part of the upgrade delta model.
+- Depends on #1 so that pruning bugs are caught before shipping.
+
+## Verification
+
+1. A Stripe-only billing variant has no Dodo route, SDK or env var, and still processes Stripe webhooks (tests).
+2. The keep-all variant is byte-identical to today's output.
+3. Matrix pairwise over (module × provider) passes typecheck and leak checks.
+4. `pnpm install` size for a minimal-provider variant is measurably smaller (record in a CI artefact).

@@ -1,0 +1,57 @@
+# 10 — Upgrade Center: Changelog, Upgrade Preview & Release Notifications
+
+_Rank 10 · Track: retention · Effort: M · Builds on `completed/2026-04-06-template-branch-upgrade-workflow-design.md` and `docs/plans/project-configs-and-upgrades.md`_
+
+## Context
+
+Two upgrade mechanisms exist:
+
+1. A **git orphan branch** `template/saas-boilerplate` with `template/v*` tags, for `git merge` upgrades.
+2. A **Claude Code upgrade kit** (`/api/scaffold/upgrade`, `/api/v1/projects/[slug]/upgrade`) that delivers a staged delta plus `UPGRADE_SPEC.json` for tier bumps and added modules, charging only the delta.
+
+What is missing is the **reason to upgrade** and the **confidence to do it**. Buyers cannot see what changed since their version, cannot preview an upgrade's file impact before paying, and are never told that a release exists. `docs/CHANGELOG.md` is root-repo oriented, not per-module or buyer-facing.
+
+## Why This Priority
+
+Upgrades and add-on modules are repeat revenue. Without visibility, owned projects go stale, which hurts both revenue and the brand ("my SaaS Forge project is 6 versions behind").
+
+## Overview
+
+Add an **Upgrade Center** on `/projects`. Each saved project shows its current version, the releases since, a per-module changelog, a file-impact preview of the upgrade (reusing #7), the delta price, and one-click kit generation. Opt-in email goes out on new releases.
+
+## Main Approach
+
+- **Structured release notes**: on `template:publish`, write `releases/<version>.json` containing a version, date, highlights and per-module entries, each tagged `feature` / `fix` / `security` / `breaking`, with a migration flag. Store these in the root repo and serve them through a cached query. Generate a draft from conventional commits that touch `templates/` and `scaffold-modules/`; a human edits it before publishing.
+- **Project version tracking**: `ProjectConfig.templateVersion` already exists. Use it for "N releases behind" badges.
+- **Upgrade preview**: diff the cached build manifests (#4) of `(current version, current selection)` → `(target version, target selection)`. Show added, removed and modified file counts plus `breaking`/migration warnings before charging.
+- **Security advisories**: entries tagged `security` show a banner on every affected project, regardless of the email opt-in.
+- **Notifications**: a weekly digest or immediate email (Resend, `packages/email`) to project owners when a release affects their modules. Unsubscribe link, preference stored per user.
+- **CLI parity**: `create-saas-forge upgrade --dry-run` (#8) prints the same preview.
+
+## Deliverables
+
+1. `releases/*.json` schema, generator draft script and validation in `template:publish`.
+2. `projects.releasesSince` and `projects.upgradePreview` procedures (root-only).
+3. Upgrade Center UI on `/projects` (version badge, changelog accordion, preview, buy-delta button).
+4. Release email template, preference toggle, and dedupe per (user, version).
+5. Security advisory banner.
+
+## Likely Files / Systems Affected
+
+- `apps/web/app/(home)/projects/page.tsx`, `apps/web/components/projects/*`
+- `apps/web/trpc/routers/projectProcedures.ts`, `apps/web/lib/scaffold/project-service.ts`
+- `scripts/publish-template-branch.mjs`, new `releases/`
+- `packages/email/src/*` (root-only template)
+
+## Risks / Dependencies
+
+- Release-note quality: an auto-draft is a starting point only, and the publish step requires a human-reviewed file.
+- Preview accuracy depends on #4 manifests. Until then, fall back to module-level deltas from #7.
+- Email must respect opt-in. Security advisories are shown in-app and only emailed if opted in.
+
+## Verification
+
+1. A project on v1.3.0 shows the correct list of releases and per-module changes up to the latest.
+2. The upgrade preview counts equal the actual upgrade kit's staged files.
+3. Publishing a release emails each opted-in affected owner exactly once.
+4. A `security` entry surfaces a banner on affected projects only.

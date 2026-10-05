@@ -1,0 +1,54 @@
+# 04 — Cached & Async Scaffold Builds
+
+_Rank 4 · Track: engine performance · Effort: M · New spec_
+
+## Context
+
+Every download runs the whole pipeline inside the HTTP request: `createTempScaffoldDir()`, a recursive copy of the starter, manifest actions, platform pruning, then `archiver("zip", { zlib: { level: 9 } })` streamed back. Identical selections (the same template version, modules and platforms) are rebuilt from scratch every time. On Vercel this is billed Active CPU, and it competes with the work already done to cut Fluid CPU on public pages. Large variants also risk function timeouts. Re-downloading an earlier purchase means paying the build cost again, and possibly credits too.
+
+## Why This Priority
+
+This is the main cost lever of the business and a latency win for every buyer. It is also the foundation for the file-tree preview (#7: it reads the cached manifest), the CLI (#8: it downloads by build id) and the upgrade center (#10: it diffs two cached builds).
+
+## Overview
+
+Make a build a content-addressed artefact. Hash the inputs, look up the cache, and build asynchronously on a miss. Downloads are served from object storage through short-lived signed URLs.
+
+## Main Approach
+
+- **Build key** = `sha256(templateVersion, sorted(modules), sorted(platforms), providerPruning (#11), builderVersion)`. Secrets are never part of the build (#3), so builds are shareable across users.
+- **Cache store**: the existing storage abstraction (Vercel Blob or R2, `NEXT_PUBLIC_IMAGE_STORAGE` providers), under the key `scaffold-builds/<key>.zip`, plus `<key>.manifest.json` (file list, sizes, module ownership).
+- **Async on miss**: create a `ScaffoldJob` with a `status` (`queued → building → ready | failed`) and a `buildKey`. Run the build in a background function: Vercel `waitUntil` for small builds, a queue (#12) once it exists. The client polls `scaffold.jobStatus` (this matches the existing 1.5 s AI-job polling pattern).
+- **Charging** stays atomic and idempotent through `ScaffoldJob.idempotencyKey`. Credits are deducted when the job is created, and refunded automatically on `failed`.
+- **Prewarm** popular keys (the `none` variant and each preset's module set) on every `template:publish`.
+- Lower zlib to level 6. The archive is cached, so ratio matters less than build time.
+- **Re-download** of an owned build key is free: the ledger shows prior ownership.
+
+## Deliverables
+
+1. `buildKey` computation, plus `status`, `buildKey` and `artifactUrl` fields on `ScaffoldJob` (root-only `scaffold.prisma`).
+2. Storage adapter usage for build artefacts, with signed, expiring download URLs.
+3. Async build runner and `scaffold.jobStatus` query, plus wizard UI states (queued / building / ready).
+4. Automatic refund on failure, with a test.
+5. Prewarm step in `scripts/publish-template-branch.mjs`.
+6. A "My downloads" list (re-download free) on `/projects`.
+
+## Likely Files / Systems Affected
+
+- `apps/web/lib/scaffold/service.ts`, `apps/web/app/api/scaffold/route.ts`, `apps/web/app/api/v1/projects/[slug]/download/route.ts`
+- `packages/database/prisma/scaffold.prisma` (root-only)
+- `apps/web/server/uploads/*` storage helpers
+- `scripts/publish-template-branch.mjs`
+
+## Risks / Dependencies
+
+- Cache invalidation: `builderVersion` must bump whenever `compileScaffoldVariant` logic changes. Add a test that fails if `scaffold-modules.ts` changes without a bump (hash the source file).
+- Storage cost is bounded with a TTL (for example, delete unaccessed builds after 30 days) and by keying on the template version.
+- Depends on #3, because cached archives must never contain secrets.
+
+## Verification
+
+1. A second identical download is served from cache with no `compileScaffoldVariant` call (spy test).
+2. A forced build failure sets `failed` and refunds the credits exactly once.
+3. p95 download latency for cached keys is under 2 s, and function CPU per download drops measurably.
+4. Bumping the template version produces new keys, and old keys stay downloadable for their owners.

@@ -1,0 +1,63 @@
+# 05 — AI Backend as Its Own Module (`ai_agents`)
+
+_Rank 5 · Track: module hygiene · Effort: M · Follows April #21 (FastAPI AI backend)_
+
+## Context
+
+`apps/backend` (FastAPI, LangGraph, ARQ, RAG) ships in `templates/saas-boilerplate` through `template-sync.manifest.json`. The `ai` module's `unselected.remove` list strips `packages/ai`, the AI pages, routes and `ai.prisma`, but **not**:
+
+- `apps/backend/**`, `Dockerfile.backend`, `docker-compose.backend.yml`
+- `apps/web/trpc/routers/aiJobsProcedures.ts`, `apps/web/lib/backend/*`
+- `apps/web/app/api/ai/agents/*` (covered by `apps/web/app/api/ai`), plus backend env vars such as `BACKEND_HMAC_SECRET` in `.env.example` and `env.ts`
+
+A buyer who deselects AI still gets a Python service, a Python toolchain requirement and backend secrets that production boot validation may demand. A buyer who wants simple chat but not agents/RAG has no way to say so.
+
+## Why This Priority
+
+It is the largest "paid for less, got more" leak in the catalogue, and the Python service is the heaviest operational surprise for a buyer. Splitting it out also creates a natural premium upsell.
+
+## Overview
+
+Split the current `ai` module into two:
+
+| Module | Contents | Suggested price |
+| --- | --- | --- |
+| `ai` | `packages/ai`, chat UI, prompts, TTS/STT, token metering | 20 (unchanged) |
+| `ai_agents` (requires `ai`) | `apps/backend`, LangGraph agents, ARQ jobs, RAG collections/documents, `aiJobsProcedures`, agent stream proxy | 30 |
+
+## Main Approach
+
+- Add `ai_agents` to `registry.json` with `requires: ["ai"]`. The wizard enforces it through the catalogue (#2).
+- Move agent/RAG Prisma models (`AiJobRun`, `AiJobEvent`, `AiCollection`, `AiDocument`, `AiDocumentChunk`, plus their enums) into `ai-agents.prisma` so the module can remove the file.
+- `ai_agents.unselected.remove` covers the backend app, Docker files, `aiJobsProcedures.ts`, `lib/backend`, `api/ai/agents`, agent UI components and `ai-agents.prisma`.
+- `ai_agents.unselected.replace` swaps in `.env.example`, `env.ts` requirement entries, the root `package.json` scripts and the `docker-compose.yml` without the backend service.
+- Use slots for any shared host (AI page tabs, admin AI page) that links to agents, following the slot/stub rule from the multi-tenancy spec.
+- Add both modules and the `ai` + no-`ai_agents` combination to the variant matrix (#1).
+
+## Deliverables
+
+1. `ai-agents.prisma` split (no migration authored by agents; the owner runs `pnpm migrate`).
+2. `scaffold-modules/ai_agents/manifest.json` with overrides, and an `ai` manifest updated to also strip agent files when `ai` is off.
+3. Registry, catalogue and wizard entry ("AI Agents & RAG (Python)").
+4. `SETUP.md` generator sections that mention Python/uv only when `ai_agents` is selected.
+5. Matrix coverage and leak identifiers (`saas_forge_backend`, `aiJobs`).
+
+## Likely Files / Systems Affected
+
+- `scaffold-modules/ai/*`, new `scaffold-modules/ai_agents/*`, `scaffold-modules/registry.json`
+- `packages/database/prisma/ai.prisma` → split
+- `apps/web/lib/env.ts`, `apps/web/.env.example`, `docker-compose.yml`, root `package.json`
+- `apps/web/lib/scaffold/setup-guide.ts`
+
+## Risks / Dependencies
+
+- Existing downloaded projects that include the backend are unaffected. Upgrades through the kit need a migration note.
+- Prisma model split across files is cosmetic for Postgres (same `ai_schema`), but the migration folder ownership must be recorded per module.
+- `requires` validation already exists in `validateSelectedModules`. Confirm that it rejects `ai_agents` without `ai`.
+
+## Verification
+
+1. A variant with `ai` but no `ai_agents` contains no `apps/backend`, no `BACKEND_*` env vars, and boots in production mode.
+2. A variant with neither has no AI identifiers (leak check).
+3. A variant with both matches today's full AI behaviour (agents stream, job polling).
+4. The catalogue rejects `ai_agents` without `ai`.

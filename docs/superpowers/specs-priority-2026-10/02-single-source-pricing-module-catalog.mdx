@@ -1,0 +1,59 @@
+# 02 — Single-Source Pricing & Module Catalog
+
+_Rank 2 · Track: engine trust · Effort: S · New spec (fixes a live defect)_
+
+## Context
+
+Module pricing and availability are defined in **three** places that have drifted:
+
+| Source | Base cost | `api_keys` / `notifications` |
+| --- | --- | --- |
+| `scaffold-modules/registry.json` (server; what is charged) | **20** | `downloadEnabled: true`, `implemented: false` (charged 0) |
+| `packages/ui/src/lib/constants/scaffold-modules.ts` (web wizard, `ProjectList.tsx`) | **10** | `available: false`, 5 credits |
+| `apps/mobile/components/downloads/constants.ts` (mobile wizard) | **10** | 5 credits |
+
+The web wizard (`packages/ui/src/blocks/dashboard/DashboardPage.tsx`) renders "Base starter costs 10 credits", and `/api/scaffold` then charges 20. That is a billing-trust defect. The registry also has `tierUpgradeCreditsPerStep`, which no client displays from the source.
+
+## Why This Priority
+
+Charging a different price from the one shown is the fastest way to lose a buyer's trust and create refund requests. The fix is small, and it is a prerequisite for the preview (#7), CLI (#8) and upgrade center (#10), which all need authoritative prices.
+
+## Overview
+
+Make `registry.json` the **only** source of pricing and availability. Every client reads a catalogue endpoint, and the server returns the computed quote alongside every download.
+
+## Main Approach
+
+- Add `scaffold.catalog` as a public tRPC query (session or anonymous), backed by `loadScaffoldRegistry()`. It returns base cost, per-module cost, labels, descriptions, `available` (derived as `downloadEnabled && implemented`), `requires`/`incompatibleWith` and the tier-step cost. Cache it in Redis with the template version as part of the key.
+- Move module **descriptions** into `registry.json` so copy lives next to price.
+- Replace `SCAFFOLD_MODULE_OPTIONS` / `BASE_SCAFFOLD_CREDITS_COST` in `packages/ui` and mobile with a `useScaffoldCatalog()` hook. Keep a typed `ScaffoldModuleId` union only.
+- Add `scaffold.quote` (modules, tier, platforms → `ScaffoldPricingOutput`) so the wizard summary shows the server's exact number.
+- Download/upgrade requests send an `expectedTotalCredits` value. The server rejects with `409 price_changed` if it differs. This removes races between viewing and paying.
+- Decide the policy for unimplemented modules: hide them (`available: false`) rather than letting buyers select a free no-op.
+
+## Deliverables
+
+1. `scaffold.catalog` and `scaffold.quote` procedures, plus `route-policy` rows.
+2. Registry schema extended with `description`, and a JSON-schema test for `registry.json`.
+3. Web wizard, `ProjectList.tsx` and the mobile wizard consume the catalogue. Hardcoded constants are deleted.
+4. `expectedTotalCredits` check in `/api/scaffold`, `/api/scaffold/upgrade` and the v1 download/upgrade routes.
+5. A drift test that fails if any client file defines a numeric credit constant for scaffolds.
+
+## Likely Files / Systems Affected
+
+- `scaffold-modules/registry.json`, `apps/web/lib/scaffold-modules.ts`
+- new `apps/web/trpc/routers/scaffoldCatalogProcedures.ts` (root-only; excluded from the template)
+- `packages/ui/src/lib/constants/scaffold-modules.ts`, `packages/ui/src/blocks/dashboard/DashboardPage.tsx`
+- `apps/mobile/components/downloads/*`, `apps/web/components/projects/ProjectList.tsx`
+
+## Risks / Dependencies
+
+- `packages/ui` syncs into the starter. The catalogue hook must sit behind a root-only slot, or ship as a harmless static fallback in the template.
+- Mobile caches. The quote check (`409 price_changed`) is the safety net.
+
+## Verification
+
+1. The wizard total equals the amount deducted for every module combination (integration test).
+2. Changing `baseCreditsCost` in `registry.json` changes the web and mobile UI with no code edit.
+3. A stale client with a lower `expectedTotalCredits` receives `409` and no credits are deducted.
+4. Unimplemented modules are not selectable on any client.

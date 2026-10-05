@@ -1,0 +1,59 @@
+# 13 — Notifications Module (`notifications`)
+
+_Rank 13 · Track: new module · Effort: L · Supersedes April #10_
+
+## Context
+
+`notifications` is already listed in `scaffold-modules/registry.json` (5 credits, `implemented: false`), with an empty manifest. The UI marks it unavailable. There is no `Notification` model, inbox or preference system. Events that should notify users already exist: organization invitations (multi-tenancy), admin invites, payment success or failure (Stripe/Dodo webhooks), credits running low, AI job completion, and the guest/demo flows.
+
+## Why This Priority
+
+It turns a placeholder in the catalogue into a real product. It is one of the most-rebuilt features in any SaaS, and it is the first consumer of jobs (#12) for multi-channel delivery. It ranks after jobs because email fan-out with retries depends on them.
+
+## Overview
+
+A durable notification system: domain events create `Notification` rows, an in-app bell and inbox on web and desktop (and a list on mobile) shows unread state, per-type and per-channel preferences are respected, and the email channel is delivered through jobs.
+
+## Main Approach
+
+- **Model** (`notifications.prisma`):
+  - `Notification` (id, userId, organizationId?, type, title, body, data Json, readAt?, createdAt; index on `userId, readAt`)
+  - `NotificationPreference` (userId, type, channel, enabled)
+- **Typed catalogue**: `defineNotification(type, { channels, defaultEnabled, render })` in `apps/web/lib/notifications/`, with renderers for in-app text and React Email.
+- **Emit API**: `notify(userId, type, data)` writes the row (in the caller's transaction when given) and enqueues `notification.deliver` per enabled channel through `packages/jobs`. Without the `jobs` module it falls back to inline delivery.
+- **First events**: org invitation received/accepted, payment succeeded/failed, credits below threshold, AI job finished, admin invitation sent.
+- **UI**:
+  - `NotificationBell` plus inbox popover in `packages/ui/src/components/notifications`, mounted via a **slot** in `AppSidebar` (web) and the desktop sidebar.
+  - Mobile gets a Notifications screen in Settings via a slot.
+  - "Mark all read" and a preferences tab in `SettingsDialog`, via a slot.
+- **Freshness**: poll `notifications.unreadCount` every 30 s, with refetch on window focus. SSE is a later enhancement (deferred April #18).
+- **Org scope**: when `multi_tenancy` is selected, notifications carry `organizationId` and the inbox filters by active org plus personal.
+- **Module**: `unselected` removes the model, router, components and slots (stubs), and makes `notify()` a no-op stub, so emitting call sites in other modules compile unchanged.
+
+## Deliverables
+
+1. `notifications.prisma`, `notificationProcedures.ts` (`list`, `unreadCount`, `markRead`, `markAllRead`, `preferences.get/set`).
+2. `notify()` helper and catalogue, plus email renderer templates.
+3. Bell, inbox and preferences UI for web and desktop, and a mobile list screen, all via slots.
+4. Five initial event integrations.
+5. `scaffold-modules/notifications` manifest, `implemented: true`, catalogue description, and matrix coverage, including pairs with `multi_tenancy`, `billing` and `jobs`.
+
+## Likely Files / Systems Affected
+
+- `packages/database/prisma/notifications.prisma`, `apps/web/trpc/routers/notificationProcedures.ts`
+- `apps/web/lib/notifications/*`, `packages/ui/src/components/notifications/*`
+- `packages/ui/src/components/sidebar/AppSidebar.tsx`, desktop sidebar, `apps/mobile/app/(home)/settings.tsx` (slot imports)
+- payment webhook routes, `organization.ts` hooks, billing procedures (emit sites)
+
+## Risks / Dependencies
+
+- Emit sites live in other modules' files. The `notify()` stub must exist in every variant, so it sits in a slot file that the module replaces.
+- Notification spam: use per-type defaults and a digest-friendly design.
+- Guest role: guests can read their inbox, but `markRead` is a mutation and is blocked. Hide the write controls, or allowlist it in the guest guard deliberately.
+
+## Verification
+
+1. A Stripe test payment creates an in-app notification and, if enabled, an email delivered via a job.
+2. Unread counts update after `markRead` on web and desktop consistently.
+3. Disabling the email channel for a type stops email but keeps in-app.
+4. The variant without `notifications` compiles with emit sites intact (stub) and has no notification UI.

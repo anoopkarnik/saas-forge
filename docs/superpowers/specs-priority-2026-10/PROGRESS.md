@@ -18,9 +18,9 @@ Rules for every spec:
 | # | Spec | Status | Commit | Notes |
 |---|------|--------|--------|-------|
 | 01 | Scaffold variant matrix CI | done | 1cae886 | Marker engine, matrix, boot smoke, lockfile pruning |
-| 02 | Single-source pricing & module catalog | todo | | |
+| 02 | Single-source pricing & module catalog | done | 5df88a2 | 409 price_changed guard on all four charging routes |
 | 03 | Secret-free downloads | todo | | |
-| 04 | Cached & async scaffold builds | todo | | |
+| 04 | Cached & async scaffold builds | todo | | Restore free re-downloads on the session path (/api/scaffold ignores lastBuiltHash; ProjectList now shows full price) |
 | 05 | AI backend module split (ai_agents) | todo | | |
 | 06 | API Keys module manifest | todo | | |
 | 07 | Pre-purchase file-tree preview | todo | | |

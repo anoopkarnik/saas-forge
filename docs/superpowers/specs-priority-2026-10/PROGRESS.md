@@ -25,7 +25,7 @@ Rules for every spec:
 | 06 | API Keys module manifest | done | 6808954 | Saved projects listing api_keys now pay 5 credits |
 | 07 | Pre-purchase file-tree preview | done | 1b11dec | Index built lazily per deployed starter; preview UI not yet clicked through in a browser |
 | 08 | create-saas-forge CLI v2 | done | 1c2607f | npm publish is a release step (not run); `upgrade` ignores the server URL in .saas-forge.json unless it matches the configured one |
-| 09 | Post-download setup doctor | todo | | |
+| 09 | Post-download setup doctor | done | f369d08 | Doctor imports env.ts itself (no separate requirements module) and fills apps/web/.env directly (no .env.secrets.template). E2E: fresh `none` variant → doctor → production boot + sign-up. Found apps/web/.env on prod-boilerplate, 3 additive migrations behind (owner to deploy) |
 | 10 | Upgrade center | todo | | |
 | 11 | Provider-level pruning | todo | | |
 | 12 | Jobs & cron module | todo | | Inngest, not QStash (owner decision) |

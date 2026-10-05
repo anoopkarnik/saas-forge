@@ -39,6 +39,7 @@ describe("findServerEnvIssues", () => {
     },
   );
 
+  // scaffold:begin ai_agents
   it("rejects the dev-only backend HMAC secret", () => {
     const issues = findServerEnvIssues({
       ...baseEnv,
@@ -52,6 +53,7 @@ describe("findServerEnvIssues", () => {
     const issues = findServerEnvIssues({ ...baseEnv, BACKEND_URL: "http://backend:8000" });
     expect(issues.map((i) => i.key)).toEqual(["BACKEND_HMAC_SECRET"]);
   });
+  // scaffold:end ai_agents
 
   it("requires credentials for enabled integrations", () => {
     const issues = findServerEnvIssues({

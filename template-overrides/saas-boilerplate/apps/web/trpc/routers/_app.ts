@@ -11,7 +11,9 @@ import { billingRouter } from './billingProcedures';
 // scaffold:end billing
 // scaffold:begin ai
 import { aiRouter } from './aiProcedures';
+// scaffold:begin ai_agents
 import { aiJobsRouter } from './aiJobsProcedures';
+// scaffold:end ai_agents
 // scaffold:end ai
 // scaffold:begin multi_tenancy
 import { organizationRouter } from './organizationProcedures';
@@ -30,7 +32,9 @@ export const appRouter = createTRPCRouter({
     // scaffold:end billing
     // scaffold:begin ai
     ai: aiRouter,
+    // scaffold:begin ai_agents
     aiJobs: aiJobsRouter,
+    // scaffold:end ai_agents
     // scaffold:end ai
     // scaffold:begin multi_tenancy
     organization: organizationRouter,

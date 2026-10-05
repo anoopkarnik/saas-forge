@@ -8,6 +8,7 @@ export type ScaffoldModuleId =
   | "billing"
   | "multi_tenancy"
   | "ai"
+  | "ai_agents"
   | "api_keys"
   | "notifications";
 
@@ -46,7 +47,10 @@ type MergeJsonAction = {
   to: string;
 };
 
-/** Removes keys from a JSON file, e.g. `{ dependencies: ["stripe"] }`. */
+/**
+ * Removes keys from a JSON object section, or values from a JSON array
+ * section: `{ dependencies: ["stripe"] }`, `{ globalEnv: ["BACKEND_URL"] }`.
+ */
 type JsonRemoveAction = {
   file: string;
   keys: Record<string, string[]>;
@@ -358,12 +362,15 @@ function removeJsonKeys(tempDir: string, action: JsonRemoveAction) {
 
   for (const [section, keys] of Object.entries(action.keys)) {
     for (const key of keys) {
-      if (!json[section] || !(key in json[section])) {
+      const target = json[section];
+      const present = Array.isArray(target) ? target.includes(key) : !!target && key in target;
+      if (!present) {
         throw new InvalidScaffoldModuleError(
           `jsonRemove: "${section}.${key}" not found in ${action.file}`,
         );
       }
-      delete json[section][key];
+      if (Array.isArray(target)) json[section] = target.filter((value: unknown) => value !== key);
+      else delete target[key];
     }
   }
 
@@ -375,7 +382,7 @@ function removeJsonKeys(tempDir: string, action: JsonRemoveAction) {
 // then a matching "scaffold:end" line. When the module is unselected the region
 // is dropped; either way the marker lines themselves never ship.
 const MARKER_PATTERN = /\bscaffold:(begin|end)\s+([a-z_]+)\b/;
-const MARKER_EXTENSIONS = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".prisma"]);
+const MARKER_EXTENSIONS = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".prisma", ".yml", ".yaml", ".md"]);
 
 function isMarkerCandidate(fileName: string) {
   return fileName === ".env.example" || MARKER_EXTENSIONS.has(path.extname(fileName));
@@ -451,6 +458,9 @@ function applyScaffoldMarkers(
 }
 
 const LEAK_SCAN_EXTENSIONS = new Set([...MARKER_EXTENSIONS, ".json", ".sql"]);
+// Not module code: agent tooling allow-lists, and the lockfile's orphaned package
+// entries (only its importers are pruned per variant).
+const LEAK_SCAN_SKIP = [".claude/", ".codex/", "pnpm-lock.yaml"];
 
 /**
  * Lists leftovers in a compiled variant: marker lines that survived, and
@@ -474,6 +484,7 @@ export function findScaffoldLeaks(
   const leaks: string[] = [];
   walkFiles(variantDir, (filePath) => {
     const relativePath = path.relative(variantDir, filePath).split(path.sep).join("/");
+    if (LEAK_SCAN_SKIP.some((prefix) => relativePath.startsWith(prefix))) return;
     const fileName = path.basename(filePath);
     if (fileName !== ".env.example" && !LEAK_SCAN_EXTENSIONS.has(path.extname(fileName))) return;
 

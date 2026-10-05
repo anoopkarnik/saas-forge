@@ -136,10 +136,17 @@ Reference: `apps/web/app/api/payments/stripe/webhook/route.ts`
 
 ## Environment and Config
 
-Boot-time env validation lives in `apps/web/lib/env.ts` (called from `apps/web/instrumentation.ts`) and `apps/backend/src/saas_forge_backend/config.py`. Production refuses to start on missing core vars, weak or placeholder secrets (`BETTER_AUTH_SECRET`, `BACKEND_HMAC_SECRET`), missing credentials for an enabled integration toggle, or a secret-looking `NEXT_PUBLIC_*` name; development only warns. The backend enforces this when `APP_ENV=production`. Code still reads `process.env` directly at call sites.
+Boot-time env validation lives in `apps/web/lib/env.ts` (called from `apps/web/instrumentation.ts`). Production refuses to start on missing core vars, weak or placeholder secrets (such as `BETTER_AUTH_SECRET`), missing credentials for an enabled integration toggle, or a secret-looking `NEXT_PUBLIC_*` name; development only warns. Code still reads `process.env` directly at call sites.
+<!-- scaffold:begin ai_agents -->
+
+The Python backend validates its own env in `apps/backend/src/saas_forge_backend/config.py` when `APP_ENV=production`, including a strong `BACKEND_HMAC_SECRET`.
+<!-- scaffold:end ai_agents -->
 
 - When an integration toggle gains a required credential, add it to `INTEGRATION_REQUIREMENTS` in `apps/web/lib/env.ts`.
-- `docker-compose.yml` has no secret defaults; Compose requires `BETTER_AUTH_SECRET` and `BACKEND_HMAC_SECRET` from a sibling `.env`.
+- `docker-compose.yml` has no secret defaults; Compose requires `BETTER_AUTH_SECRET` from a sibling `.env`.
+<!-- scaffold:begin ai_agents -->
+- The AI agents services in `docker-compose.yml` also require `BACKEND_HMAC_SECRET` in that `.env`.
+<!-- scaffold:end ai_agents -->
 
 Use these files as the source of truth:
 

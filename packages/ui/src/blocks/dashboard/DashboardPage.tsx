@@ -45,6 +45,7 @@ import { formSchema, FormValues } from "../../lib/zod/download";
 import { MODULE_CONFIG } from "../../lib/constants/module";
 import {
   quoteFromCatalog,
+  toggleModule,
   type ScaffoldCatalog,
   type ScaffoldModuleId,
 } from "../../lib/constants/scaffold-modules";
@@ -340,9 +341,7 @@ export default function DashboardPage({
   const toggleScaffoldModule = React.useCallback(
     (moduleId: ScaffoldModuleId) => {
       const currentModules = form.getValues("SELECTED_MODULES") || [];
-      const nextModules = currentModules.includes(moduleId)
-        ? currentModules.filter((id) => id !== moduleId)
-        : [...currentModules, moduleId];
+      const nextModules = toggleModule(catalog, currentModules, moduleId);
 
       form.setValue("SELECTED_MODULES", nextModules, {
         shouldDirty: true,
@@ -356,7 +355,7 @@ export default function DashboardPage({
         });
       }
     },
-    [form],
+    [catalog, form],
   );
 
   const openImportPicker = React.useCallback(() => {
@@ -1054,7 +1053,7 @@ export default function DashboardPage({
                       description="Enable this for model integrations, streaming responses, and the starter AI workspace."
                     >
                       {availableModules.filter(
-                        (module) => module.id === "ai",
+                        (module) => module.id === "ai" || module.id === "ai_agents",
                       ).map((module) => (
                         <ModuleToggleCard
                           key={module.id}

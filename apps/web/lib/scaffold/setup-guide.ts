@@ -94,7 +94,7 @@ export function generateSetupGuide(input: SetupGuideInput): SetupGuide {
   const secrets = Array.from(
     new Set(envGroups.flatMap((group) => group.fields)),
   );
-  const steps: SetupStep[] = preset
+  const baseSteps: SetupStep[] = preset
     ? preset.steps
     : [
         {
@@ -112,6 +112,21 @@ export function generateSetupGuide(input: SetupGuideInput): SetupGuide {
           details: ["pnpm install", "pnpm generate", "pnpm migrate", "pnpm dev"],
         },
       ];
+  // The Python service only ships with the ai_agents module.
+  const steps: SetupStep[] = input.modules.includes("ai_agents")
+    ? [
+        ...baseSteps,
+        {
+          title: "Run the AI agents service (Python)",
+          details: [
+            "Install uv (https://docs.astral.sh/uv/) and Python 3.12, then run `uv sync` in apps/backend.",
+            "Set BACKEND_URL and BACKEND_HMAC_SECRET (`openssl rand -hex 32`) in apps/web/.env; use the same secret for the backend.",
+            "Postgres needs the pgvector extension for RAG collections.",
+            "Start it with `docker compose up backend-api backend-worker`, or follow apps/backend/README.md.",
+          ],
+        },
+      ]
+    : baseSteps;
 
   const markdown = renderMarkdown(input, { accounts, secrets, steps }, preset);
   return { accounts, secrets, steps, markdown };

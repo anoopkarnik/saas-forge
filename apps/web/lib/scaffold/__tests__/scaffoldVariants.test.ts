@@ -8,6 +8,7 @@ import {
   findScaffoldLeaks,
   loadScaffoldRegistry,
   resolveWorkspacePath,
+  validateSelectedModules,
   type ScaffoldModuleId,
 } from "@/lib/scaffold-modules";
 
@@ -19,9 +20,17 @@ const templateRoot = resolveWorkspacePath("templates/saas-boilerplate");
 const modules = loadScaffoldRegistry()
   .modules.filter((module) => module.implemented !== false)
   .map((module) => module.id);
+// Only combinations buyers can select (e.g. ai_agents requires ai).
 const subsets = Array.from({ length: 2 ** modules.length }, (_, mask) =>
   modules.filter((_, index) => mask & (1 << index)),
-);
+).filter((selection) => {
+  try {
+    validateSelectedModules(selection);
+    return true;
+  } catch {
+    return false;
+  }
+});
 
 describe("scaffold variants", () => {
   it.each(subsets.map((selection) => [selection.join("+") || "none", selection] as const))(

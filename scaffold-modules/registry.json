@@ -36,6 +36,19 @@
       "implemented": true
     },
     {
+      "id": "ai_agents",
+      "label": "AI Agents & RAG (Python)",
+      "description": "FastAPI service with LangGraph agents, background AI jobs, RAG collections over pgvector, and the streaming agent proxy. Requires the AI Platform.",
+      "default": false,
+      "creditsCost": 30,
+      "requires": [
+        "ai"
+      ],
+      "incompatibleWith": [],
+      "downloadEnabled": true,
+      "implemented": true
+    },
+    {
       "id": "api_keys",
       "label": "API Keys",
       "description": "Programmable access with scoped key management.",

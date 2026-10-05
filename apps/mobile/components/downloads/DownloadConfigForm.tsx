@@ -27,7 +27,7 @@ import {
     FormState, DEFAULT_FORM, STRING_FIELD_KEYS
 } from "./constants";
 import { parseMobileEnvFile } from "./envParser";
-import { PriceChangedError, fetchScaffoldCatalog, totalCredits, type ScaffoldCatalog } from "./catalog";
+import { PriceChangedError, fetchScaffoldCatalog, toggleModule, totalCredits, type ScaffoldCatalog } from "./catalog";
 import { isSecretEnvKey } from "./secrets";
 
 export default function DownloadConfigForm({ templateTitle, onBack }: Props) {
@@ -395,7 +395,12 @@ export default function DownloadConfigForm({ templateTitle, onBack }: Props) {
                                 key={module.id}
                                 className={`rounded-xl border p-3 ${selected ? "border-primary bg-primary/10" : "border-border/30 bg-card"}`}
                                 activeOpacity={0.8}
-                                onPress={() => toggleArrayField("SELECTED_MODULES", module.id)}
+                                onPress={() =>
+                                    setFormValues((prev) => ({
+                                        ...prev,
+                                        SELECTED_MODULES: toggleModule(catalog!, prev.SELECTED_MODULES, module.id),
+                                    }))
+                                }
                             >
                                 <View className="flex-row items-center justify-between gap-3">
                                     <Label className="text-sm">{module.label}</Label>

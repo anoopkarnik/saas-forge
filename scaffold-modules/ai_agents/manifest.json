@@ -1,0 +1,70 @@
+{
+  "id": "ai_agents",
+  "ownedIdentifiers": [
+    "aiJobsRouter",
+    "aiJobsProcedures",
+    "trpc.aiJobs.",
+    "lib/backend/client",
+    "observability/signed-fetch",
+    "\"./signed-fetch\"",
+    "BACKEND SERVICE VARIABLES",
+    "BACKEND_HMAC_SECRET",
+    "saas_forge_backend",
+    "Dockerfile.backend",
+    "AiJobRun",
+    "AiCollection",
+    "CREATE EXTENSION IF NOT EXISTS vector"
+  ],
+  "selected": {},
+  "unselected": {
+    "remove": [
+      "apps/backend",
+      "Dockerfile.backend",
+      "docker-compose.backend.yml",
+      "apps/web/app/api/ai/agents",
+      "apps/web/trpc/routers/aiJobsProcedures.ts",
+      "apps/web/trpc/routers/__tests__/aiJobs.test.ts",
+      "apps/web/lib/backend",
+      "packages/observability/src/signed-fetch.ts",
+      "packages/observability/src/signed-fetch.test.ts",
+      "packages/database/prisma/ai-agents.prisma",
+      "packages/database/prisma/migrations/20260601142139_ai_events_tables",
+      "packages/database/prisma/migrations/20260601143928_pgvector_embedding",
+      "packages/database/prisma/migrations/20260608123000_drop_ai_document_chunk_embedding_idx",
+      "packages/database/prisma/migrations/20261005133657_modified_the_schema_so_that_modules_can_be_deleted"
+    ],
+    "jsonRemove": [
+      {
+        "file": "packages/observability/package.json",
+        "keys": {
+          "exports": [
+            "./signed-fetch"
+          ]
+        }
+      },
+      {
+        "file": "turbo.json",
+        "keys": {
+          "globalEnv": [
+            "BACKEND_DATABASE_URL",
+            "BACKEND_HMAC_SECRET",
+            "BACKEND_HMAC_SECRET_NEXT",
+            "BACKEND_URL"
+          ]
+        }
+      }
+    ],
+    "textReplace": [
+      {
+        "file": "packages/database/prisma/migrations/20260802054831_added_user_invite_database/migration.sql",
+        "find": "/*\n  Warnings:\n\n  - You are about to drop the column `embedding` on the `AiDocumentChunk` table. All the data in the column will be lost.\n\n*/\n",
+        "replace": ""
+      },
+      {
+        "file": "packages/database/prisma/migrations/20260802054831_added_user_invite_database/migration.sql",
+        "find": "-- AlterTable\nALTER TABLE \"ai_schema\".\"AiDocumentChunk\" DROP COLUMN \"embedding\";\n\n",
+        "replace": ""
+      }
+    ]
+  }
+}

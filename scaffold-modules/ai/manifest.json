@@ -2,23 +2,16 @@
   "id": "ai",
   "ownedIdentifiers": [
     "aiRouter",
-    "aiJobsRouter",
     "aiProcedures",
-    "aiJobsProcedures",
     "trpc.ai.",
-    "trpc.aiJobs.",
     "@workspace/ai",
     "components/ai/",
     "observability/ai-logger",
-    "observability/signed-fetch",
-    "lib/backend/client",
     "AI MODULE VARIABLES",
-    "BACKEND SERVICE VARIABLES",
     "\"ai_schema\"",
     "AiConversation",
     "aiPrompt",
-    "\"ai_schema\".",
-    "CREATE EXTENSION IF NOT EXISTS vector"
+    "\"ai_schema\"."
   ],
   "selected": {},
   "unselected": {
@@ -36,20 +29,11 @@
       "packages/ui/src/components/ai",
       "packages/database/prisma/ai.prisma",
       "packages/observability/src/ai-logger.ts",
-      "apps/web/trpc/routers/aiJobsProcedures.ts",
-      "apps/web/trpc/routers/__tests__/aiJobs.test.ts",
-      "apps/web/lib/backend",
-      "packages/observability/src/signed-fetch.ts",
-      "packages/observability/src/signed-fetch.test.ts",
       "packages/database/prisma/migrations/20260413120000_add_ai_platform",
       "packages/database/prisma/migrations/20260414030543_added_ai",
       "packages/database/prisma/migrations/20260414110000_add_ai_speech_config",
       "packages/database/prisma/migrations/20260415100000_update_bsamaritan_speech_defaults",
-      "packages/database/prisma/migrations/20260430120000_add_ai_webhook_config",
-      "packages/database/prisma/migrations/20260601142139_ai_events_tables",
-      "packages/database/prisma/migrations/20260601143928_pgvector_embedding",
-      "packages/database/prisma/migrations/20260608123000_drop_ai_document_chunk_embedding_idx",
-      "packages/database/prisma/migrations/20261005133657_modified_the_schema_so_that_modules_can_be_deleted"
+      "packages/database/prisma/migrations/20260430120000_add_ai_webhook_config"
     ],
     "jsonRemove": [
       {
@@ -65,8 +49,7 @@
         "file": "packages/observability/package.json",
         "keys": {
           "exports": [
-            "./ai-logger",
-            "./signed-fetch"
+            "./ai-logger"
           ]
         }
       }
@@ -76,16 +59,6 @@
         "file": "packages/database/prisma/schema.prisma",
         "find": ",\"ai_schema\"]",
         "replace": "]"
-      },
-      {
-        "file": "packages/database/prisma/migrations/20260802054831_added_user_invite_database/migration.sql",
-        "find": "/*\n  Warnings:\n\n  - You are about to drop the column `embedding` on the `AiDocumentChunk` table. All the data in the column will be lost.\n\n*/\n",
-        "replace": ""
-      },
-      {
-        "file": "packages/database/prisma/migrations/20260802054831_added_user_invite_database/migration.sql",
-        "find": "-- AlterTable\nALTER TABLE \"ai_schema\".\"AiDocumentChunk\" DROP COLUMN \"embedding\";\n\n",
-        "replace": ""
       }
     ]
   }

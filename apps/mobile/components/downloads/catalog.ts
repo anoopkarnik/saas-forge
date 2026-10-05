@@ -7,6 +7,7 @@ export type ScaffoldCatalogModule = {
     description: string;
     creditsCost: number;
     available: boolean;
+    requires: string[];
 };
 
 export type ScaffoldCatalog = {
@@ -32,3 +33,29 @@ export function totalCredits(catalog: ScaffoldCatalog, selectedModules: string[]
         .filter((module) => selectedModules.includes(module.id))
         .reduce((sum, module) => sum + module.creditsCost, catalog.baseCredits);
 }
+
+/** Same rule as the web wizard: selecting adds requirements, deselecting drops dependents. */
+export function toggleModule(catalog: ScaffoldCatalog, selected: string[], moduleId: string): string[] {
+    const requires = new Map(catalog.modules.map((module) => [module.id, module.requires]));
+    const next = new Set(selected);
+    if (next.has(moduleId)) {
+        const drop = [moduleId];
+        while (drop.length > 0) {
+            const id = drop.pop()!;
+            next.delete(id);
+            for (const [dependent, needs] of requires) {
+                if (next.has(dependent) && needs.includes(id)) drop.push(dependent);
+            }
+        }
+    } else {
+        const add = [moduleId];
+        while (add.length > 0) {
+            const id = add.pop()!;
+            if (next.has(id)) continue;
+            next.add(id);
+            add.push(...(requires.get(id) ?? []));
+        }
+    }
+    return [...next];
+}
+

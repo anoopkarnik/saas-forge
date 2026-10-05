@@ -16,7 +16,7 @@ export const formSchema = z.object({
   // Project Settings Variables
   NEXT_PUBLIC_THEME: z.enum(["blue", "green", "neutral", "orange", "red", "rose", "violet", "yellow"]),
   NEXT_PUBLIC_THEME_TYPE: z.enum(["light", "dark", "system"]),
-  SELECTED_MODULES: z.array(z.enum(["billing", "multi_tenancy", "ai", "api_keys", "notifications"])).optional(),
+  SELECTED_MODULES: z.array(z.enum(["billing", "multi_tenancy", "ai", "ai_agents", "api_keys", "notifications"])).optional(),
   NEXT_PUBLIC_SAAS_NAME: z.string(),
   NEXT_PUBLIC_COMPANY_NAME: z.string(),
   NEXT_PUBLIC_URL: z.string(),

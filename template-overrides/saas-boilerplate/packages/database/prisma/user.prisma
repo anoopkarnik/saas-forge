@@ -23,8 +23,10 @@ model User {
     aiConversations  AiConversation[]  @relation("AiConversations")
     aiMessages       AiMessage[]       @relation("AiMessages")
     aiUsageEvents    AiUsageEvent[]    @relation("AiUsageEvents")
+    // scaffold:begin ai_agents
     aiJobRuns        AiJobRun[]        @relation("AiJobRuns")
     aiCollections    AiCollection[]    @relation("AiCollections")
+    // scaffold:end ai_agents
     // scaffold:end ai
     apiKeys          ApiKey[]
     sentInvitations  Invitation[]     @relation("InvitationInvitedBy")

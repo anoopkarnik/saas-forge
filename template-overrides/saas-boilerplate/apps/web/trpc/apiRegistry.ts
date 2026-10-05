@@ -126,6 +126,7 @@ export const API_REGISTRY: ApiGroup[] = [
       { name: "getUsageEvents", type: "query", access: "admin" },
     ],
   },
+  // scaffold:begin ai_agents
   {
     group: "aiJobs",
     label: "AI Jobs",
@@ -136,6 +137,7 @@ export const API_REGISTRY: ApiGroup[] = [
       { name: "cancel", type: "mutation", access: "authenticated" },
     ],
   },
+  // scaffold:end ai_agents
   // scaffold:end ai
   {
     group: "apiKey",

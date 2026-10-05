@@ -1,5 +1,8 @@
-# Secrets have no defaults: put BETTER_AUTH_SECRET and BACKEND_HMAC_SECRET in a
-# .env file next to this compose file (Compose loads it automatically).
+# Secrets have no defaults: put BETTER_AUTH_SECRET in a .env file next to this
+# compose file (Compose loads it automatically).
+# scaffold:begin ai_agents
+# The AI agents backend also needs BACKEND_HMAC_SECRET in that file.
+# scaffold:end ai_agents
 # The images run in production mode and refuse to boot with weak secrets.
 
 services:
@@ -37,17 +40,22 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      # scaffold:begin ai_agents
       backend-api:
         condition: service_started
+      # scaffold:end ai_agents
     environment:
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/saas_forge
       NEXT_PUBLIC_URL: http://localhost:3000
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?set BETTER_AUTH_SECRET in .env (openssl rand -base64 32)}
+      # scaffold:begin ai_agents
       BACKEND_URL: http://backend-api:8000
       BACKEND_HMAC_SECRET: ${BACKEND_HMAC_SECRET:?set BACKEND_HMAC_SECRET in .env (openssl rand -hex 32)}
+      # scaffold:end ai_agents
     ports:
       - "${WEB_PORT:-3000}:3000"
 
+  # scaffold:begin ai_agents
   backend-api:
     build:
       context: .
@@ -104,6 +112,7 @@ services:
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
       OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-}
+  # scaffold:end ai_agents
 
 volumes:
   postgres-data:

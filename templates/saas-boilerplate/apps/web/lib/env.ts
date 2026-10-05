@@ -83,12 +83,14 @@ export function findServerEnvIssues(env: Env): ServerEnvIssue[] {
   const authSecretIssue = secretIssue("BETTER_AUTH_SECRET", env.BETTER_AUTH_SECRET);
   if (authSecretIssue) issues.push(authSecretIssue);
 
+  // scaffold:begin ai_agents
   // The FastAPI backend is optional; once BACKEND_URL points at one, every
   // request to it is HMAC-signed with this secret.
   if (!isBlank(env.BACKEND_URL) || !isBlank(env.BACKEND_HMAC_SECRET)) {
     const hmacIssue = secretIssue("BACKEND_HMAC_SECRET", env.BACKEND_HMAC_SECRET);
     if (hmacIssue) issues.push(hmacIssue);
   }
+  // scaffold:end ai_agents
 
   // Email/password sign-up requires a verification email, so it needs a sender.
   if (env.NEXT_PUBLIC_AUTH_EMAIL === "true" && (isBlank(env.NEXT_PUBLIC_EMAIL_CLIENT) || env.NEXT_PUBLIC_EMAIL_CLIENT === "none")) {

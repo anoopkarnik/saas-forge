@@ -1,0 +1,106 @@
+// @vitest-environment node
+import fs from "node:fs";
+import path from "node:path";
+import { describe, expect, it } from "vitest";
+import { z } from "zod";
+import { quoteFromCatalog } from "@workspace/ui/lib/constants/scaffold-modules";
+import {
+  calculateScaffoldCredits,
+  resolveWorkspacePath,
+  type ScaffoldModuleId,
+} from "@/lib/scaffold-modules";
+import { scaffoldCatalogRouter } from "../scaffoldCatalogProcedures";
+
+const caller = scaffoldCatalogRouter.createCaller({} as never);
+
+const moduleIdSchema = z.enum(["billing", "multi_tenancy", "ai", "api_keys", "notifications"]);
+const registrySchema = z
+  .object({
+    baseCreditsCost: z.number().int().nonnegative(),
+    tierUpgradeCreditsPerStep: z.number().int().nonnegative(),
+    modules: z.array(
+      z
+        .object({
+          id: moduleIdSchema,
+          label: z.string().min(1),
+          description: z.string().min(1),
+          default: z.boolean(),
+          creditsCost: z.number().int().nonnegative(),
+          requires: z.array(moduleIdSchema),
+          incompatibleWith: z.array(moduleIdSchema),
+          downloadEnabled: z.boolean().optional(),
+          implemented: z.boolean().optional(),
+        })
+        .strict(),
+    ),
+  })
+  .strict();
+
+describe("scaffold-modules/registry.json", () => {
+  it("matches the registry schema", () => {
+    const registry = JSON.parse(
+      fs.readFileSync(resolveWorkspacePath("scaffold-modules/registry.json"), "utf-8"),
+    );
+    expect(() => registrySchema.parse(registry)).not.toThrow();
+  });
+});
+
+describe("scaffold.catalog", () => {
+  it("serves prices, copy and availability from the registry", async () => {
+    const catalog = await caller.catalog();
+    expect(catalog.baseCredits).toBeGreaterThan(0);
+    for (const entry of catalog.modules) {
+      expect(entry.description.length).toBeGreaterThan(0);
+    }
+    // Unimplemented modules are hidden from buyers and cost nothing.
+    const apiKeys = catalog.modules.find((module) => module.id === "api_keys");
+    expect(apiKeys).toMatchObject({ available: false, creditsCost: 0 });
+  });
+
+  it("quotes exactly what every module combination is charged", async () => {
+    const catalog = await caller.catalog();
+    const ids = catalog.modules.filter((module) => module.available).map((module) => module.id);
+    const subsets = Array.from({ length: 2 ** ids.length }, (_, mask) =>
+      ids.filter((_, index) => mask & (1 << index)),
+    );
+
+    for (const selection of subsets) {
+      const charged = calculateScaffoldCredits(selection as ScaffoldModuleId[]).totalCredits;
+      expect(quoteFromCatalog(catalog, selection).totalCredits, selection.join("+") || "none").toBe(charged);
+      expect((await caller.quote({ modules: selection })).totalCredits).toBe(charged);
+    }
+  });
+});
+
+describe("scaffold.quote", () => {
+  it("rejects unknown modules", async () => {
+    await expect(caller.quote({ modules: ["payments"] })).rejects.toMatchObject({ code: "BAD_REQUEST" });
+  });
+});
+
+// Clients must read prices from scaffold.catalog; a literal credit amount in
+// client code is how the 10-vs-20 base price drift happened.
+describe("client pricing drift", () => {
+  const roots = ["packages/ui/src", "apps/mobile", "apps/desktop/src", "apps/web/components", "apps/web/app/(home)"];
+  const pattern = /(?:CREDITS?_COST|creditsCost|baseCredits)\s*[:=]\s*\d/;
+
+  function walk(dir: string, out: string[] = []): string[] {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      if (entry.name === "node_modules" || entry.name.startsWith(".")) continue;
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) walk(full, out);
+      else if (/\.tsx?$/.test(entry.name) && !/\.test\.tsx?$/.test(entry.name)) out.push(full);
+    }
+    return out;
+  }
+
+  it("has no hardcoded scaffold credit amounts", () => {
+    const offenders = roots
+      .map((root) => resolveWorkspacePath(root))
+      .filter((root) => fs.existsSync(root))
+      .flatMap((root) => walk(root))
+      .filter((file) => pattern.test(fs.readFileSync(file, "utf-8")))
+      .map((file) => path.relative(resolveWorkspacePath("."), file));
+    expect(offenders).toEqual([]);
+  });
+});

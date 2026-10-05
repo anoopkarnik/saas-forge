@@ -4,6 +4,7 @@ import { authenticateApiKey } from "@/server/authenticateApiKey";
 import { getProject, markProjectUpgraded } from "@/lib/scaffold/project-service";
 import {
   InvalidScaffoldModuleError,
+  isPriceChanged,
   validateSelectedModules,
   type ScaffoldModuleId,
 } from "@/lib/scaffold-modules";
@@ -25,6 +26,8 @@ const upgradeInput = z.object({
   modules: z.array(z.string()).optional(),
   tierId: z.string().trim().min(1).optional(),
   versionId: z.string().trim().min(1).optional(),
+  /** The delta the buyer saw; a mismatch is rejected with 409 price_changed. */
+  expectedTotalCredits: z.number().int().nonnegative().optional(),
 });
 
 function jsonError(code: string, message: string, status: number) {
@@ -77,6 +80,13 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
       "nothing_to_upgrade",
       "Target matches the current configuration.",
       400,
+    );
+  }
+  if (isPriceChanged(parsed.data.expectedTotalCredits, delta.deltaCredits)) {
+    return jsonError(
+      "price_changed",
+      `The upgrade now costs ${delta.deltaCredits} credits.`,
+      409,
     );
   }
 

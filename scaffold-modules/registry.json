@@ -5,6 +5,7 @@
     {
       "id": "billing",
       "label": "Billing & Payments",
+      "description": "Checkout, transactions, credits purchase UI, and payment webhooks.",
       "default": false,
       "creditsCost": 10,
       "requires": [],
@@ -15,6 +16,7 @@
     {
       "id": "multi_tenancy",
       "label": "Organizations / Teams",
+      "description": "Workspaces, member invites, workspace switching, and owner/admin/member/viewer roles.",
       "default": false,
       "creditsCost": 50,
       "requires": [],
@@ -25,6 +27,7 @@
     {
       "id": "ai",
       "label": "AI Platform",
+      "description": "Chat UI, prompt management, multi-provider abstraction, speech (TTS/STT), and token-aware credit metering.",
       "default": false,
       "creditsCost": 20,
       "requires": [],
@@ -35,6 +38,7 @@
     {
       "id": "api_keys",
       "label": "API Keys",
+      "description": "Programmable access with scoped key management.",
       "default": false,
       "creditsCost": 5,
       "requires": [],
@@ -45,6 +49,7 @@
     {
       "id": "notifications",
       "label": "Notifications",
+      "description": "In-app notifications and future multi-channel delivery hooks.",
       "default": false,
       "creditsCost": 5,
       "requires": [],

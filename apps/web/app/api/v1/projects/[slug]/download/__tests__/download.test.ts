@@ -47,10 +47,11 @@ vi.mock("@workspace/database/client", () => ({
     },
   },
 }));
-vi.mock("@/lib/scaffold-modules", () => ({
+vi.mock("@/lib/scaffold-modules", async (importOriginal) => ({
   InvalidScaffoldModuleError,
   validateSelectedModules: mockValidate,
   calculateScaffoldCredits: mockCalc,
+  isPriceChanged: (await importOriginal<typeof import("@/lib/scaffold-modules")>()).isPriceChanged,
 }));
 vi.mock("@/lib/scaffold/template-version", () => ({
   getTemplateVersion: () => "1.4.1",
@@ -80,10 +81,14 @@ const PROJECT = {
 };
 
 const ctx = { params: Promise.resolve({ slug: "my-app" }) };
-function reqWith(idem?: string) {
+function reqWith(idem?: string, body?: unknown) {
   const headers = new Headers();
   if (idem) headers.set("Idempotency-Key", idem);
-  return { headers } as any;
+  const json = async () => {
+    if (body === undefined) throw new SyntaxError("Unexpected end of JSON input");
+    return body;
+  };
+  return { headers, json } as any;
 }
 
 describe("POST /api/v1/projects/[slug]/download", () => {
@@ -150,6 +155,23 @@ describe("POST /api/v1/projects/[slug]/download", () => {
       expect.objectContaining({ userId: "u1", amount: 30, idempotencyKey: "idem-1" }),
     );
     expect(mockBuild).toHaveBeenCalled();
+  });
+
+  it("409s on a stale expected price without charging", async () => {
+    mockAuth.mockResolvedValue({ ok: true, userId: "u1" });
+    mockFindFirst.mockResolvedValue(PROJECT);
+    const res = await POST(reqWith(undefined, { expectedTotalCredits: 20 }), ctx);
+    expect(res.status).toBe(409);
+    expect((await res.json()).error.code).toBe("price_changed");
+    expect(mockCharge).not.toHaveBeenCalled();
+  });
+
+  it("downloads when the expected price matches", async () => {
+    mockAuth.mockResolvedValue({ ok: true, userId: "u1" });
+    mockFindFirst.mockResolvedValue(PROJECT);
+    const res = await POST(reqWith(undefined, { expectedTotalCredits: 30 }), ctx);
+    expect(res.status).toBe(200);
+    expect(mockCharge).toHaveBeenCalledWith(expect.objectContaining({ amount: 30 }));
   });
 
   it("re-downloads an unchanged project for free", async () => {

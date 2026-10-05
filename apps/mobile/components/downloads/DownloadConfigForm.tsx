@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
     View,
     ScrollView,
@@ -24,9 +24,10 @@ import {
     THEME_OPTIONS, THEME_TYPE_OPTIONS, PLATFORM_OPTIONS, CMS_OPTIONS, AUTH_FRAMEWORK_OPTIONS,
     AUTH_PROVIDER_OPTIONS, EMAIL_CLIENT_OPTIONS, SUPPORT_FEATURE_OPTIONS, IMAGE_STORAGE_OPTIONS,
     OBSERVABILITY_FEATURE_OPTIONS, RATE_LIMIT_OPTIONS, PAYMENT_ENV_KEYS, PAYMENT_GATEWAY_OPTIONS, DODO_ENV_OPTIONS,
-    FormState, DEFAULT_FORM, STRING_FIELD_KEYS, SCAFFOLD_MODULE_OPTIONS, BASE_SCAFFOLD_CREDITS_COST
+    FormState, DEFAULT_FORM, STRING_FIELD_KEYS
 } from "./constants";
 import { parseMobileEnvFile } from "./envParser";
+import { PriceChangedError, fetchScaffoldCatalog, totalCredits, type ScaffoldCatalog } from "./catalog";
 
 export default function DownloadConfigForm({ templateTitle, onBack }: Props) {
     const [isDownloading, setIsDownloading] = useState(false);
@@ -41,11 +42,25 @@ export default function DownloadConfigForm({ templateTitle, onBack }: Props) {
     });
     const [formValues, setFormValues] = useState<FormState>({ ...DEFAULT_FORM });
     const selectedBilling = formValues.SELECTED_MODULES.includes("billing");
-    const totalCreditsCost =
-        BASE_SCAFFOLD_CREDITS_COST +
-        SCAFFOLD_MODULE_OPTIONS.filter((module) =>
-            formValues.SELECTED_MODULES.includes(module.value)
-        ).reduce((sum, module) => sum + module.creditsCost, 0);
+    const [catalog, setCatalog] = useState<ScaffoldCatalog | null>(null);
+    const [catalogError, setCatalogError] = useState(false);
+
+    const loadCatalog = async () => {
+        const apiUrl = process.env.EXPO_PUBLIC_API_URL;
+        if (!apiUrl) return;
+        try {
+            setCatalog(await fetchScaffoldCatalog(apiUrl));
+            setCatalogError(false);
+        } catch {
+            setCatalogError(true);
+        }
+    };
+
+    useEffect(() => {
+        loadCatalog();
+    }, []);
+
+    const totalCreditsCost = catalog ? totalCredits(catalog, formValues.SELECTED_MODULES) : null;
 
     const toggleSection = (section: string) => {
         setExpandedSections((prev) => ({ ...prev, [section]: !prev[section] }));
@@ -120,6 +135,11 @@ export default function DownloadConfigForm({ templateTitle, onBack }: Props) {
             Alert.alert("Error", "API URL not configured");
             return;
         }
+        if (totalCreditsCost === null) {
+            Alert.alert("Prices unavailable", "Scaffold prices have not loaded yet. Try again in a moment.");
+            loadCatalog();
+            return;
+        }
 
         setIsDownloading(true);
         try {
@@ -168,9 +188,10 @@ export default function DownloadConfigForm({ templateTitle, onBack }: Props) {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     credentials: "include",
-                    body: JSON.stringify({ name: safeName, envVars, modules: selectedModules }),
+                    body: JSON.stringify({ name: safeName, envVars, modules: selectedModules, expectedTotalCredits: totalCreditsCost }),
                 });
 
+                if (response.status === 409) throw new PriceChangedError();
                 if (!response.ok) throw new Error("Failed to generate boilerplate");
 
                 const blob = await response.blob();
@@ -187,9 +208,10 @@ export default function DownloadConfigForm({ templateTitle, onBack }: Props) {
                 const response = await fetch(`${apiUrl}/api/scaffold`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ name: safeName, envVars, modules: selectedModules }),
+                    body: JSON.stringify({ name: safeName, envVars, modules: selectedModules, expectedTotalCredits: totalCreditsCost }),
                 });
 
+                if (response.status === 409) throw new PriceChangedError();
                 if (!response.ok) throw new Error("Failed to generate boilerplate");
 
                 const arrayBuffer = await response.arrayBuffer();
@@ -210,6 +232,11 @@ export default function DownloadConfigForm({ templateTitle, onBack }: Props) {
                 }
             }
         } catch (error) {
+            if (error instanceof PriceChangedError) {
+                await loadCatalog();
+                Alert.alert("Prices changed", "Check the new total and download again.");
+                return;
+            }
             Alert.alert("Error", "Download failed. Please try again or use the web dashboard.");
         } finally {
             setIsDownloading(false);
@@ -354,15 +381,17 @@ export default function DownloadConfigForm({ templateTitle, onBack }: Props) {
                     </MutedText>
                 </View>
                 <View className="p-4 gap-3">
-                    {SCAFFOLD_MODULE_OPTIONS.map((module) => {
-                        const selected = formValues.SELECTED_MODULES.includes(module.value);
+                    {catalogError ? (
+                        <MutedText className="text-xs">Could not load scaffold prices. Pull to refresh or try again later.</MutedText>
+                    ) : null}
+                    {(catalog?.modules ?? []).filter((module) => module.available).map((module) => {
+                        const selected = formValues.SELECTED_MODULES.includes(module.id);
                         return (
                             <TouchableOpacity
-                                key={module.value}
-                                className={`rounded-xl border p-3 ${selected ? "border-primary bg-primary/10" : "border-border/30 bg-card"} ${module.disabled ? "opacity-50" : ""}`}
+                                key={module.id}
+                                className={`rounded-xl border p-3 ${selected ? "border-primary bg-primary/10" : "border-border/30 bg-card"}`}
                                 activeOpacity={0.8}
-                                disabled={module.disabled}
-                                onPress={() => toggleArrayField("SELECTED_MODULES", module.value)}
+                                onPress={() => toggleArrayField("SELECTED_MODULES", module.id)}
                             >
                                 <View className="flex-row items-center justify-between gap-3">
                                     <Label className="text-sm">{module.label}</Label>
@@ -372,14 +401,14 @@ export default function DownloadConfigForm({ templateTitle, onBack }: Props) {
                                 </View>
                                 <MutedText className="text-xs mt-1">{module.description}</MutedText>
                                 <MutedText className="text-[11px] mt-2">
-                                    {module.disabled ? "Coming soon" : selected ? "Selected" : "Optional"}
+                                    {selected ? "Selected" : "Optional"}
                                 </MutedText>
                             </TouchableOpacity>
                         );
                     })}
                     <View className="rounded-lg bg-muted/40 px-3 py-3">
-                        <MutedText className="text-xs">Base starter: {BASE_SCAFFOLD_CREDITS_COST} credits</MutedText>
-                        <Label className="text-base mt-1">Total: {totalCreditsCost} credits</Label>
+                        <MutedText className="text-xs">Base starter: {catalog ? `${catalog.baseCredits} credits` : "…"}</MutedText>
+                        <Label className="text-base mt-1">Total: {totalCreditsCost ?? "…"} credits</Label>
                     </View>
                 </View>
             </View>

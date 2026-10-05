@@ -4,26 +4,34 @@ import * as React from "react";
 import DashboardPage from "@workspace/ui/blocks/dashboard/DashboardPage";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { Loader2 } from "lucide-react";
 import { useTRPC } from "@/trpc/client";
 
 export default function Page() {
   const trpc = useTRPC();
   const router = useRouter();
   const saveConfiguration = useMutation(trpc.project.save.mutationOptions());
+  const catalogQuery = useQuery(trpc.scaffold.catalog.queryOptions());
 
   const handleSubmitConfiguration = async (
     safeName: string,
     envVars: Record<string, string>,
     modules: string[],
+    expectedTotalCredits: number,
   ) => {
     try {
       const response = await fetch("/api/scaffold", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: safeName, envVars, modules }),
+        body: JSON.stringify({ name: safeName, envVars, modules, expectedTotalCredits }),
       });
 
+      if (response.status === 409) {
+        await catalogQuery.refetch();
+        toast.error("Prices changed since you opened the wizard. Check the new total and download again.");
+        return;
+      }
       if (!response.ok) {
         throw new Error("Failed to download");
       }
@@ -78,8 +86,21 @@ export default function Page() {
     }
   };
 
+  if (!catalogQuery.data) {
+    return (
+      <div className="flex h-[50vh] items-center justify-center">
+        {catalogQuery.isError ? (
+          <p className="text-sm text-muted-foreground">Could not load scaffold prices. Refresh to try again.</p>
+        ) : (
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        )}
+      </div>
+    );
+  }
+
   return (
     <DashboardPage
+      catalog={catalogQuery.data}
       onSubmitConfiguration={handleSubmitConfiguration}
       onSaveConfiguration={handleSaveConfiguration}
       docsBaseUrl={process.env.NEXT_PUBLIC_URL!}

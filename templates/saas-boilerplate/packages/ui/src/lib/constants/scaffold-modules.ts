@@ -5,69 +5,49 @@ export type ScaffoldModuleId =
   | "api_keys"
   | "notifications";
 
-export type ScaffoldModuleOption = {
+// Prices and availability come only from the server's `scaffold.catalog`
+// (scaffold-modules/registry.json). Never hardcode credit amounts in clients.
+
+export type ScaffoldCatalogModule = {
   id: ScaffoldModuleId;
   label: string;
   description: string;
   creditsCost: number;
   available: boolean;
+  requires: ScaffoldModuleId[];
+  incompatibleWith: ScaffoldModuleId[];
 };
 
-export const BASE_SCAFFOLD_CREDITS_COST = 10;
+export type ScaffoldCatalog = {
+  baseCredits: number;
+  tierUpgradeCreditsPerStep: number;
+  modules: ScaffoldCatalogModule[];
+};
 
-export const SCAFFOLD_MODULE_OPTIONS: ScaffoldModuleOption[] = [
-  {
-    id: "billing",
-    label: "Billing & Payments",
-    description: "Checkout, transactions, credits purchase UI, and payment webhooks.",
-    creditsCost: 10,
-    available: true,
-  },
-  {
-    id: "multi_tenancy",
-    label: "Organizations / Teams",
-    description: "Workspaces, member invites, workspace switching, and owner/admin/member/viewer roles.",
-    creditsCost: 50,
-    available: true,
-  },
-  {
-    id: "ai",
-    label: "AI Platform",
-    description: "Chat UI, prompt management, multi-provider abstraction, speech (TTS/STT), and token-aware credit metering.",
-    creditsCost: 20,
-    available: true,
-  },
-  {
-    id: "api_keys",
-    label: "API Keys",
-    description: "Programmable access with scoped key management.",
-    creditsCost: 5,
-    available: false,
-  },
-  {
-    id: "notifications",
-    label: "Notifications",
-    description: "In-app notifications and future multi-channel delivery hooks.",
-    creditsCost: 5,
-    available: false,
-  },
-];
+export type ScaffoldQuote = {
+  baseCredits: number;
+  moduleCredits: Array<{ moduleId: ScaffoldModuleId; credits: number; label: string }>;
+  totalCredits: number;
+};
 
-export function calculateScaffoldCredits(selectedModules: ScaffoldModuleId[]) {
+/**
+ * Prices a selection with the catalog's numbers, matching the server's
+ * calculateScaffoldCredits. Downloads send the total as expectedTotalCredits,
+ * and the server answers 409 price_changed if it no longer matches.
+ */
+export function quoteFromCatalog(
+  catalog: ScaffoldCatalog,
+  selectedModules: ScaffoldModuleId[],
+): ScaffoldQuote {
   const selectedSet = new Set(selectedModules);
-  const moduleCredits = SCAFFOLD_MODULE_OPTIONS.filter((module) =>
-    selectedSet.has(module.id),
-  ).map((module) => ({
-    moduleId: module.id,
-    credits: module.creditsCost,
-    label: module.label,
-  }));
+  const moduleCredits = catalog.modules
+    .filter((module) => selectedSet.has(module.id))
+    .map((module) => ({ moduleId: module.id, credits: module.creditsCost, label: module.label }));
 
   return {
-    baseCredits: BASE_SCAFFOLD_CREDITS_COST,
+    baseCredits: catalog.baseCredits,
     moduleCredits,
     totalCredits:
-      BASE_SCAFFOLD_CREDITS_COST +
-      moduleCredits.reduce((sum, entry) => sum + entry.credits, 0),
+      catalog.baseCredits + moduleCredits.reduce((sum, entry) => sum + entry.credits, 0),
   };
 }

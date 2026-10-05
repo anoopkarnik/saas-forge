@@ -17,6 +17,7 @@ export default function DashboardRoute() {
     const location = useLocation();
     const trpc = useTRPC() as any;
     const { data: landingInfo } = useQuery(trpc.landing.getLandingInfoFromNotion.queryOptions());
+    const catalogQuery = useQuery(trpc.scaffold.catalog.queryOptions());
     // Do NOT pass fetchOptions here — that creates a separate atom/cache entry
     // from the one updated by authClient.signIn.email, causing an immediate false redirect.
     // The authClient is already configured with baseURL + credentials globally.
@@ -34,16 +35,20 @@ export default function DashboardRoute() {
         }
     }, [session, isPending, isRefetching, navigate, justLoggedIn]);
 
-    const handleSubmitConfiguration = async (safeName: string, envVars: Record<string, string>, modules: string[]) => {
+    const handleSubmitConfiguration = async (safeName: string, envVars: Record<string, string>, modules: string[], expectedTotalCredits: number) => {
         try {
             const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000'
             const response = await fetch(`${apiUrl}/api/scaffold`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 credentials: "include",
-                body: JSON.stringify({ name: safeName, envVars, modules }),
+                body: JSON.stringify({ name: safeName, envVars, modules, expectedTotalCredits }),
             });
 
+            if (response.status === 409) {
+                await catalogQuery.refetch();
+                throw new Error("Prices changed. Check the new total and download again.");
+            }
             if (!response.ok) {
                 throw new Error("Failed to download");
             }
@@ -85,7 +90,13 @@ export default function DashboardRoute() {
                     <div className="font-semibold tracking-tight">Dashboard</div>
                 </div>
                 <Separator />
-                <DashboardPage onSubmitConfiguration={handleSubmitConfiguration} onNavigateDoc={(slug) => navigate(`/doc/${slug}`)} />
+                {catalogQuery.data ? (
+                    <DashboardPage catalog={catalogQuery.data as any} onSubmitConfiguration={handleSubmitConfiguration} onNavigateDoc={(slug) => navigate(`/doc/${slug}`)} />
+                ) : (
+                    <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
+                        {catalogQuery.isError ? "Could not load scaffold prices." : "Loading..."}
+                    </div>
+                )}
             </div>
             <Support />
         </SidebarProvider>

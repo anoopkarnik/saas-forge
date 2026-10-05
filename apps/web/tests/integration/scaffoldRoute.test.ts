@@ -61,7 +61,8 @@ const mockCalculateScaffoldCredits = vi.fn();
 const mockCreateTempScaffoldDir = vi.fn();
 const mockCompileScaffoldVariant = vi.fn();
 
-vi.mock("@/lib/scaffold-modules", () => ({
+vi.mock("@/lib/scaffold-modules", async (importOriginal) => ({
+  isPriceChanged: (await importOriginal<typeof import("@/lib/scaffold-modules")>()).isPriceChanged,
   InvalidScaffoldModuleError: MockInvalidScaffoldModuleError,
   loadScaffoldRegistry: (...args: any[]) => mockLoadScaffoldRegistry(...args),
   validateSelectedModules: (...args: any[]) =>
@@ -360,6 +361,25 @@ describe("Scaffold Route Integration Tests", () => {
 
       expect(response.status).toBe(403);
       expect(data.error).toBe("Not enough credits");
+    });
+
+    it("should return 409 without charging when the expected price is stale", async () => {
+      const { POST } = await import("../../app/api/scaffold/route.js");
+
+      const request = createScaffoldRequest(
+        "http://localhost:3000/api/scaffold",
+        {
+          method: "POST",
+          body: JSON.stringify({ name: "my-project", envVars: {}, expectedTotalCredits: 10 }),
+        },
+      );
+
+      const response = await POST(request as any);
+      const data = await response.json();
+
+      expect(response.status).toBe(409);
+      expect(data).toEqual({ error: "price_changed", totalCredits: 20 });
+      expect(mockUserUpdate).not.toHaveBeenCalled();
     });
 
     it("should return 500 when scaffold root is not found", async () => {

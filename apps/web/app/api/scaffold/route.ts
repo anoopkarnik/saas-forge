@@ -7,6 +7,7 @@ import { guardRoute } from "@/server/routeGuard";
 import { DESKTOP_APP_ORIGIN } from "@workspace/auth/better-auth/desktop-origin";
 import {
   calculateScaffoldCredits,
+  isPriceChanged,
   compileScaffoldVariant,
   createTempScaffoldDir,
   InvalidScaffoldModuleError,
@@ -71,7 +72,7 @@ function getCorsHeaders(req: NextRequest) {
 
 function jsonWithCors(
   req: NextRequest,
-  body: Record<string, string>,
+  body: Record<string, string | number>,
   status: number,
   extraHeaders?: HeadersInit,
 ) {
@@ -295,6 +296,10 @@ export async function POST(req: NextRequest) {
     const modules = validateSelectedModules(body.modules ?? [], registry);
     const pricing = calculateScaffoldCredits(modules, registry);
     const scaffoldRoot = getScaffoldRoot();
+
+    if (isPriceChanged(body.expectedTotalCredits, pricing.totalCredits)) {
+      return jsonWithCors(req, { error: "price_changed", totalCredits: pricing.totalCredits }, 409);
+    }
 
     if (session.user.creditsTotal - session.user.creditsUsed < pricing.totalCredits) {
       return jsonWithCors(req, { error: "Not enough credits" }, 403);

@@ -50,6 +50,8 @@
     "packages/database/prisma/migrations/20260817001340_project_upgrade",
     "apps/web/lib/scaffold",
     "apps/web/trpc/routers/projectProcedures.ts",
+    "apps/web/trpc/routers/scaffoldCatalogProcedures.ts",
+    "apps/web/trpc/routers/__tests__/scaffoldCatalog.test.ts",
     "apps/web/trpc/routers/__tests__/projectProcedures.test.ts",
     "apps/web/app/api/v1/projects",
     "apps/web/app/api/v1/credits",

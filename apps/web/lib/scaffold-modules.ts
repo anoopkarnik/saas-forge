@@ -14,6 +14,8 @@ export type ScaffoldModuleId =
 type RegistryModuleEntry = {
   id: ScaffoldModuleId;
   label: string;
+  /** Buyer-facing copy shown next to the price in every client. */
+  description: string;
   default: boolean;
   creditsCost: number;
   requires: ScaffoldModuleId[];
@@ -81,6 +83,22 @@ export type ScaffoldPricingOutput = {
   baseCredits: number;
   moduleCredits: Array<{ moduleId: ScaffoldModuleId; credits: number }>;
   totalCredits: number;
+};
+
+/** What every client renders: the registry with effective prices, no internals. */
+export type ScaffoldCatalog = {
+  baseCredits: number;
+  tierUpgradeCreditsPerStep: number;
+  modules: Array<{
+    id: ScaffoldModuleId;
+    label: string;
+    description: string;
+    creditsCost: number;
+    /** Selectable by buyers: download-enabled and implemented. */
+    available: boolean;
+    requires: ScaffoldModuleId[];
+    incompatibleWith: ScaffoldModuleId[];
+  }>;
 };
 
 export class InvalidScaffoldModuleError extends Error {
@@ -190,6 +208,36 @@ export function calculateScaffoldCredits(
       registry.baseCreditsCost +
       moduleCredits.reduce((total, entry) => total + entry.credits, 0),
   };
+}
+
+export function getScaffoldCatalog(registry = loadScaffoldRegistry()): ScaffoldCatalog {
+  const { moduleCredits } = calculateScaffoldCredits(
+    registry.modules.map((module) => module.id),
+    registry,
+  );
+  const effectiveCost = new Map(moduleCredits.map((entry) => [entry.moduleId, entry.credits]));
+
+  return {
+    baseCredits: registry.baseCreditsCost,
+    tierUpgradeCreditsPerStep: getTierUpgradeCreditsPerStep(registry),
+    modules: registry.modules.map((module) => ({
+      id: module.id,
+      label: module.label,
+      description: module.description,
+      creditsCost: effectiveCost.get(module.id) ?? 0,
+      available: module.downloadEnabled !== false && module.implemented !== false,
+      requires: module.requires,
+      incompatibleWith: module.incompatibleWith,
+    })),
+  };
+}
+
+/**
+ * True when a client quoted a total that no longer matches the server price.
+ * Clients that send no expectation (older builds) are not rejected.
+ */
+export function isPriceChanged(expectedTotalCredits: unknown, totalCredits: number) {
+  return typeof expectedTotalCredits === "number" && expectedTotalCredits !== totalCredits;
 }
 
 /** Sum of module credits only (no base), implemented-aware. Used for upgrade deltas. */

@@ -144,6 +144,14 @@ export const API_REGISTRY: ApiGroup[] = [
       { name: "setupGuide", type: "query", access: "authenticated" },
     ],
   },
+  {
+    group: "scaffold",
+    label: "Scaffold catalog",
+    calls: [
+      { name: "catalog", type: "query", access: "public" },
+      { name: "quote", type: "query", access: "public" },
+    ],
+  },
   ...ORGANIZATION_API_GROUPS,
   {
     group: "admin.settings",

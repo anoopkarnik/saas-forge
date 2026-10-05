@@ -43,10 +43,9 @@ import { useIsGuest } from "../../hooks/useIsGuest";
 import { formSchema, FormValues } from "../../lib/zod/download";
 import { MODULE_CONFIG } from "../../lib/constants/module";
 import {
-  BASE_SCAFFOLD_CREDITS_COST,
-  calculateScaffoldCredits,
+  quoteFromCatalog,
+  type ScaffoldCatalog,
   type ScaffoldModuleId,
-  SCAFFOLD_MODULE_OPTIONS,
 } from "../../lib/constants/scaffold-modules";
 import {
   type ProductTypeId,
@@ -77,10 +76,14 @@ import {
 } from "../../lib/scaffold-wizard";
 
 interface DashboardPageProps {
+  /** Prices and modules from the server's `scaffold.catalog`. */
+  catalog: ScaffoldCatalog;
   onSubmitConfiguration: (
     safeName: string,
     envVars: Record<string, string>,
     modules: ScaffoldModuleId[],
+    /** The total the buyer saw; the server answers 409 if the price changed. */
+    expectedTotalCredits: number,
   ) => Promise<void>;
   onSaveConfiguration?: (payload: {
     name: string;
@@ -180,6 +183,7 @@ import { PresetJourney } from "@workspace/ui/components/dashboard/PresetJourney"
 import { WizardSummary } from "@workspace/ui/components/dashboard/WizardSummary";
 
 export default function DashboardPage({
+  catalog,
   onSubmitConfiguration,
   onSaveConfiguration,
   docsBaseUrl = "",
@@ -213,10 +217,16 @@ export default function DashboardPage({
   const values = form.watch();
   const pricing = React.useMemo(
     () =>
-      calculateScaffoldCredits(
+      quoteFromCatalog(
+        catalog,
         (values.SELECTED_MODULES || []) as ScaffoldModuleId[],
       ),
-    [values.SELECTED_MODULES],
+    [catalog, values.SELECTED_MODULES],
+  );
+  // Unimplemented modules are hidden rather than offered as free no-ops.
+  const availableModules = React.useMemo(
+    () => catalog.modules.filter((module) => module.available),
+    [catalog],
   );
   const accountGroups = React.useMemo(
     () => getAccountsProviderGroups(values),
@@ -441,16 +451,18 @@ export default function DashboardPage({
           .slice(0, 80);
 
         const envVars = buildEnvVarsFromForm(submittedValues);
+        const modules = submittedValues.SELECTED_MODULES || [];
         await onSubmitConfiguration(
           safeName,
           envVars,
-          submittedValues.SELECTED_MODULES || [],
+          modules,
+          quoteFromCatalog(catalog, modules).totalCredits,
         );
       } finally {
         setIsDownloading(false);
       }
     },
-    [onSubmitConfiguration],
+    [catalog, onSubmitConfiguration],
   );
 
   const handleFinalDownload = React.useCallback(async () => {
@@ -637,7 +649,7 @@ export default function DashboardPage({
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
-            {SCAFFOLD_MODULE_OPTIONS.map((module) => {
+            {availableModules.map((module) => {
               const isSelected = (values.SELECTED_MODULES || []).includes(
                 module.id,
               );
@@ -646,14 +658,12 @@ export default function DashboardPage({
                 <button
                   key={module.id}
                   type="button"
-                  disabled={!module.available}
                   onClick={() => toggleScaffoldModule(module.id)}
                   className={cn(
                     "rounded-xl border p-4 text-left transition-all",
                     isSelected
                       ? "border-primary bg-primary/10 shadow-sm"
                       : "border-border/60 bg-background hover:border-primary/40",
-                    !module.available && "cursor-not-allowed opacity-60",
                   )}
                 >
                   <div className="flex items-center justify-between gap-3">
@@ -666,11 +676,7 @@ export default function DashboardPage({
                     {module.description}
                   </p>
                   <p className="mt-3 text-xs text-muted-foreground">
-                    {!module.available
-                      ? "Coming soon"
-                      : isSelected
-                        ? "Selected"
-                        : "Optional"}
+                    {isSelected ? "Selected" : "Optional"}
                   </p>
                 </button>
               );
@@ -682,7 +688,7 @@ export default function DashboardPage({
               <div>
                 <p className="text-sm font-semibold">Scaffold pricing</p>
                 <p className="text-xs text-muted-foreground">
-                  Base starter costs {BASE_SCAFFOLD_CREDITS_COST} credits.
+                  Base starter costs {pricing.baseCredits} credits.
                 </p>
               </div>
               <p className="text-lg font-semibold">
@@ -1009,7 +1015,7 @@ export default function DashboardPage({
                       question="Should the scaffold include checkout, billing, and credits flows?"
                       description="Enable this only if you want payment UI, transaction history, and webhooks already wired in."
                     >
-                      {SCAFFOLD_MODULE_OPTIONS.filter(
+                      {availableModules.filter(
                         (module) => module.id === "billing",
                       ).map((module) => (
                         <ModuleToggleCard
@@ -1026,7 +1032,7 @@ export default function DashboardPage({
                       question="Should the downloadable scaffold include the AI module?"
                       description="Enable this for model integrations, streaming responses, and the starter AI workspace."
                     >
-                      {SCAFFOLD_MODULE_OPTIONS.filter(
+                      {availableModules.filter(
                         (module) => module.id === "ai",
                       ).map((module) => (
                         <ModuleToggleCard
@@ -1043,7 +1049,7 @@ export default function DashboardPage({
                       question="Will customers work together in shared workspaces?"
                       description="Enable this for workspaces, member invites, workspace switching, and owner/admin/member/viewer roles."
                     >
-                      {SCAFFOLD_MODULE_OPTIONS.filter(
+                      {availableModules.filter(
                         (module) => module.id === "multi_tenancy",
                       ).map((module) => (
                         <ModuleToggleCard

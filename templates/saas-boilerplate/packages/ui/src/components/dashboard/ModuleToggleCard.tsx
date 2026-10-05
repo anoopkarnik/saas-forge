@@ -2,7 +2,7 @@ import * as React from "react";
 import { CircleDot } from "lucide-react";
 import { Badge } from "@workspace/ui/components/shadcn/badge";
 import { cn } from "@workspace/ui/lib/utils";
-import type { ScaffoldModuleOption } from "@workspace/ui/lib/constants/scaffold-modules";
+import type { ScaffoldCatalogModule } from "@workspace/ui/lib/constants/scaffold-modules";
 
 /** Selectable card for one paid scaffold module on the wizard's Features step. */
 export function ModuleToggleCard({
@@ -10,7 +10,7 @@ export function ModuleToggleCard({
     selected,
     onToggle,
 }: {
-    module: ScaffoldModuleOption;
+    module: ScaffoldCatalogModule;
     selected: boolean;
     onToggle: () => void;
 }) {

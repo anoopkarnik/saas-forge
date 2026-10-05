@@ -4,6 +4,7 @@ import { guardRoute } from "@/server/routeGuard";
 import { getProject, markProjectUpgraded } from "@/lib/scaffold/project-service";
 import {
   InvalidScaffoldModuleError,
+  isPriceChanged,
   validateSelectedModules,
   type ScaffoldModuleId,
 } from "@/lib/scaffold-modules";
@@ -27,6 +28,8 @@ const input = z.object({
   modules: z.array(z.string()).optional(),
   tierId: z.string().trim().min(1).optional(),
   versionId: z.string().trim().min(1).optional(),
+  /** The delta the buyer saw; a mismatch is rejected with 409 price_changed. */
+  expectedTotalCredits: z.number().int().nonnegative().optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -70,6 +73,12 @@ export async function POST(req: NextRequest) {
   });
   if (delta.addedModules.length === 0 && delta.tierSteps === 0) {
     return NextResponse.json({ error: "Nothing to upgrade" }, { status: 400 });
+  }
+  if (isPriceChanged(parsed.data.expectedTotalCredits, delta.deltaCredits)) {
+    return NextResponse.json(
+      { error: "price_changed", totalCredits: delta.deltaCredits },
+      { status: 409 },
+    );
   }
 
   try {

@@ -6,10 +6,32 @@ vi.mock("@workspace/auth/better-auth/auth-client", () => ({
 }));
 
 import DashboardPage from "./DashboardPage";
+import type { ScaffoldCatalog } from "../../lib/constants/scaffold-modules";
+
+const module = (id: ScaffoldCatalog["modules"][number]["id"], label: string, creditsCost: number, available = true) => ({
+  id,
+  label,
+  description: `${label} description`,
+  creditsCost,
+  available,
+  requires: [],
+  incompatibleWith: [],
+});
+
+const catalog: ScaffoldCatalog = {
+  baseCredits: 20,
+  tierUpgradeCreditsPerStep: 3,
+  modules: [
+    module("billing", "Billing & Payments", 10),
+    module("multi_tenancy", "Organizations / Teams", 50),
+    module("ai", "AI Platform", 20),
+    module("api_keys", "API Keys", 0, false),
+  ],
+};
 
 describe("DashboardPage preset handoff", () => {
   it("keeps the applied configuration editable through every wizard step", () => {
-    render(<DashboardPage onSubmitConfiguration={vi.fn()} />);
+    render(<DashboardPage catalog={catalog} onSubmitConfiguration={vi.fn()} />);
 
     fireEvent.click(screen.getByRole("button", { name: /^Use a Preset/ }));
 
@@ -57,7 +79,7 @@ describe("DashboardPage preset handoff", () => {
   });
 
   it("offers Organizations / Teams beside AI Capabilities for 50 credits", () => {
-    render(<DashboardPage onSubmitConfiguration={vi.fn()} />);
+    render(<DashboardPage catalog={catalog} onSubmitConfiguration={vi.fn()} />);
 
     fireEvent.click(screen.getByRole("button", { name: /^Use a Preset/ }));
     const journey = screen.getByRole("region", {

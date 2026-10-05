@@ -4,6 +4,7 @@ import { getProject, markProjectBuilt } from "@/lib/scaffold/project-service";
 import {
   InvalidScaffoldModuleError,
   calculateScaffoldCredits,
+  isPriceChanged,
   validateSelectedModules,
   type ScaffoldModuleId,
 } from "@/lib/scaffold-modules";
@@ -46,6 +47,12 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
   const currentHash = computeBuildHash(project);
   const alreadyBuilt = !!project.lastBuiltHash && project.lastBuiltHash === currentHash;
   const amount = alreadyBuilt ? 0 : calculateScaffoldCredits(modules).totalCredits;
+
+  // Optional JSON body: { expectedTotalCredits } guards against price changes.
+  const body = (await req.json().catch(() => ({}))) as { expectedTotalCredits?: unknown };
+  if (isPriceChanged(body?.expectedTotalCredits, amount)) {
+    return jsonError("price_changed", `This download now costs ${amount} credits.`, 409);
+  }
   const idempotencyKey = req.headers.get("Idempotency-Key") || undefined;
 
   let charge;

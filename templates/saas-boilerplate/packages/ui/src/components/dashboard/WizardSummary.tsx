@@ -10,10 +10,7 @@ import {
 } from "@workspace/ui/components/shadcn/card";
 import { Progress } from "@workspace/ui/components/shadcn/progress";
 import { Separator } from "@workspace/ui/components/shadcn/separator";
-import {
-    calculateScaffoldCredits,
-    BASE_SCAFFOLD_CREDITS_COST,
-} from "@workspace/ui/lib/constants/scaffold-modules";
+import type { ScaffoldQuote } from "@workspace/ui/lib/constants/scaffold-modules";
 import { EntryChoice, WIZARD_STEPS, WizardStepId } from "@workspace/ui/lib/scaffold-wizard";
 import { ResolvedPreset } from "@workspace/ui/lib/constants/presets";
 import { FormValues } from "@workspace/ui/lib/zod/download";
@@ -32,7 +29,7 @@ export function WizardSummary({
     completionByStep: Record<WizardStepId, boolean>;
     selectedPreset: ResolvedPreset | null;
     entryChoice: EntryChoice;
-    pricing: ReturnType<typeof calculateScaffoldCredits>;
+    pricing: ScaffoldQuote;
     values: FormValues;
     missingLabels: string[];
 }) {
@@ -120,7 +117,7 @@ export function WizardSummary({
                             </span>
                         </div>
                         <p className="mt-1 text-xs text-muted-foreground">
-                            {BASE_SCAFFOLD_CREDITS_COST} base credits
+                            {pricing.baseCredits} base credits
                             {pricing.moduleCredits.length > 0
                                 ? ` + ${pricing.moduleCredits
                                     .map((entry) => `${entry.credits} for ${entry.label}`)

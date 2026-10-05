@@ -7,7 +7,6 @@ import { Button } from "@workspace/ui/components/shadcn/button";
 import { Badge } from "@workspace/ui/components/shadcn/badge";
 import { buildEnvVarsFromForm } from "@workspace/ui/lib/utils/scaffold";
 import type { FormValues } from "@workspace/ui/lib/zod/download";
-import { SCAFFOLD_MODULE_OPTIONS } from "@workspace/ui/lib/constants/scaffold-modules";
 import { useTRPC } from "@/trpc/client";
 
 type ProjectListItem = {
@@ -25,17 +24,21 @@ type ProjectListItem = {
   updatedAt: Date | string;
 };
 
+const PRICE_CHANGED = "Prices changed. Check the new total and try again.";
+
 async function downloadFromConfig(
   slug: string,
   config: Record<string, unknown>,
   modules: string[],
+  expectedTotalCredits: number | undefined,
 ) {
   const envVars = buildEnvVarsFromForm(config as FormValues);
   const response = await fetch("/api/scaffold", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name: slug, envVars, modules }),
+    body: JSON.stringify({ name: slug, envVars, modules, expectedTotalCredits }),
   });
+  if (response.status === 409) throw new Error(PRICE_CHANGED);
   if (!response.ok) {
     const body = await response.json().catch(() => ({}));
     throw new Error(body?.error ?? "Download failed");
@@ -53,12 +56,18 @@ async function downloadFromConfig(
 
 const TIERS = ["tier-1", "tier-2", "tier-3", "tier-4", "tier-5", "tier-6"];
 
-async function upgradeProject(slug: string, modules: string[], tierId: string) {
+async function upgradeProject(
+  slug: string,
+  modules: string[],
+  tierId: string,
+  expectedTotalCredits: number | undefined,
+) {
   const response = await fetch("/api/scaffold/upgrade", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ slug, modules, tierId }),
+    body: JSON.stringify({ slug, modules, tierId, expectedTotalCredits }),
   });
+  if (response.status === 409) throw new Error(PRICE_CHANGED);
   if (!response.ok) {
     const body = await response.json().catch(() => ({}));
     throw new Error(body?.error ?? "Upgrade failed");
@@ -85,6 +94,7 @@ function ProjectRow({ project }: { project: ProjectListItem }) {
   const [isUpgrading, setIsUpgrading] = useState(false);
 
   const targetModules = Array.from(new Set([...project.modules, ...extraModules]));
+  const catalog = useQuery({ ...trpc.scaffold.catalog.queryOptions(), enabled: upgradeOpen });
 
   const detail = useQuery({
     ...trpc.project.get.queryOptions({ slug: project.slug }),
@@ -136,7 +146,9 @@ function ProjectRow({ project }: { project: ProjectListItem }) {
         | { config?: Record<string, unknown> }
         | undefined;
       const config = record?.config ?? {};
-      await downloadFromConfig(project.slug, config, project.modules);
+      // The session download always builds and charges in full; free
+      // re-downloads of an unchanged build arrive with cached builds (#4).
+      await downloadFromConfig(project.slug, config, project.modules, estimate.data?.fullCredits);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Download failed");
     } finally {
@@ -198,11 +210,10 @@ function ProjectRow({ project }: { project: ProjectListItem }) {
         <div className="flex flex-col gap-4 rounded-md bg-muted/40 p-4 text-sm">
           {estimate.data ? (
             <p className="text-muted-foreground">
-              Estimated download cost:{" "}
+              Download cost:{" "}
               <span className="font-medium text-foreground">
-                {estimate.data.credits} credits
+                {estimate.data.fullCredits} credits
               </span>
-              {estimate.data.alreadyBuilt ? " (already built — free re-download)" : null}
             </p>
           ) : null}
 
@@ -267,7 +278,7 @@ function ProjectRow({ project }: { project: ProjectListItem }) {
           </div>
           <div className="flex flex-col gap-1">
             <span className="font-medium">Add modules</span>
-            {SCAFFOLD_MODULE_OPTIONS.filter(
+            {(catalog.data?.modules ?? []).filter(
               (m) => m.available && !project.modules.includes(m.id),
             ).map((m) => (
               <label key={m.id} className="flex items-center gap-2">
@@ -316,7 +327,12 @@ function ProjectRow({ project }: { project: ProjectListItem }) {
               onClick={async () => {
                 setIsUpgrading(true);
                 try {
-                  await upgradeProject(project.slug, targetModules, targetTier);
+                  await upgradeProject(
+                    project.slug,
+                    targetModules,
+                    targetTier,
+                    upgradeEstimate.data?.deltaCredits,
+                  );
                   toast.success(
                     "Upgrade kit downloaded — run /upgrade-boilerplate in your project",
                   );

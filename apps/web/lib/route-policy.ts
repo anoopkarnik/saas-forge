@@ -111,7 +111,7 @@ export const routePolicies = [
   { path: "/api/v1/scaffold/pricing", match: "exact", auth: "api-key", rateLimit: "api-key", input: "none" },
   { path: "/api/v1/projects", match: "exact", auth: "api-key", rateLimit: "api-key", maxBodyBytes: 256 * KB, input: "zod" },
   { path: "/api/v1/projects/[slug]", match: "exact", auth: "api-key", rateLimit: "api-key", maxBodyBytes: 256 * KB, input: "zod" },
-  { path: "/api/v1/projects/[slug]/download", match: "exact", auth: "api-key", rateLimit: "api-key", maxBodyBytes: 64 * KB, input: "none" },
+  { path: "/api/v1/projects/[slug]/download", match: "exact", auth: "api-key", rateLimit: "api-key", maxBodyBytes: 64 * KB, input: "manual" },
   { path: "/api/v1/projects/[slug]/upgrade", match: "exact", auth: "api-key", rateLimit: "api-key", maxBodyBytes: 64 * KB, input: "zod" },
 ] as const satisfies readonly RoutePolicy[];
 

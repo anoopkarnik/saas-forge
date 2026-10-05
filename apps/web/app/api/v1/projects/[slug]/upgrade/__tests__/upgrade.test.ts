@@ -52,9 +52,10 @@ vi.mock("@workspace/database/client", () => ({
     },
   },
 }));
-vi.mock("@/lib/scaffold-modules", () => ({
+vi.mock("@/lib/scaffold-modules", async (importOriginal) => ({
   InvalidScaffoldModuleError,
   validateSelectedModules: mockValidate,
+  isPriceChanged: (await importOriginal<typeof import("@/lib/scaffold-modules")>()).isPriceChanged,
 }));
 vi.mock("@/lib/scaffold/template-version", () => ({
   getTemplateVersion: () => "1.4.1",
@@ -148,6 +149,15 @@ describe("POST /api/v1/projects/[slug]/upgrade", () => {
     const res = await POST(makeReq({ modules: ["billing", "ai"] }), ctx);
     expect(res.status).toBe(403);
     expect(mockBuildKit).not.toHaveBeenCalled();
+  });
+
+  it("409s on a stale expected delta without charging", async () => {
+    mockAuth.mockResolvedValue({ ok: true, userId: "u1" });
+    mockFindFirst.mockResolvedValue(PROJECT);
+    const res = await POST(makeReq({ modules: ["billing", "ai"], expectedTotalCredits: 20 }), ctx);
+    expect(res.status).toBe(409);
+    expect((await res.json()).error.code).toBe("price_changed");
+    expect(mockCharge).not.toHaveBeenCalled();
   });
 
   it("charges the delta and streams the upgrade kit", async () => {

@@ -11,6 +11,7 @@ import { apiKeyRouter } from './apiKeyProcedures';
 import { adminRouter } from './adminProcedures';
 import { organizationRouter } from './organizationProcedures';
 import { projectRouter } from './projectProcedures';
+import { scaffoldCatalogRouter } from './scaffoldCatalogProcedures';
 
 export const appRouter = createTRPCRouter({
     support: supportRouter,
@@ -25,6 +26,7 @@ export const appRouter = createTRPCRouter({
     admin: adminRouter,
     organization: organizationRouter,
     project: projectRouter,
+    scaffold: scaffoldCatalogRouter,
 });
 // export type definition of API
 export type AppRouter = typeof appRouter;

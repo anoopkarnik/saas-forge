@@ -99,6 +99,11 @@ export const routePolicies = [
   { path: "/api/payments/dodo/webhook", match: "exact", auth: "webhook", rateLimit: "none", maxBodyBytes: 1 * MB, input: "provider" },
   // scaffold:end payment_gateway.dodo
 
+  // scaffold:begin jobs
+  // Inngest runs jobs and schedules through here; the SDK verifies its signature.
+  { path: "/api/inngest", match: "exact", auth: "webhook", rateLimit: "none", maxBodyBytes: 4 * MB, input: "provider" },
+  // scaffold:end jobs
+
   // Session routes
   { path: "/api/cms/upload", match: "exact", auth: "session", roles: ["admin"], rateLimit: "default", maxBodyBytes: 11 * MB, input: "image-upload" },
   { path: "/api/settings/modifyAvatar", match: "exact", auth: "session", rateLimit: "default", maxBodyBytes: 6 * MB, input: "image-upload" },

@@ -43,6 +43,8 @@ export const SECRET_ENV_KEYS: ReadonlySet<string> = new Set([
   "DODO_CREDITS_PRODUCT_ID",
   "STRIPE_SECRET_KEY",
   "STRIPE_WEBHOOK_SECRET",
+  "INNGEST_EVENT_KEY",
+  "INNGEST_SIGNING_KEY",
 ]);
 
 /** Fail-closed heuristic for keys not in the explicit list. */

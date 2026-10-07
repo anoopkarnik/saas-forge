@@ -18,8 +18,10 @@
   "dependencies": {
     "@react-email/components": "^1.0.2",
     "@react-email/render": "^2.0.0",
+    "@workspace/jobs": "workspace:*",
     "react": "^19.1.1",
-    "resend": "^6.6.0"
+    "resend": "^6.6.0",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@types/node": "^24.19.1",

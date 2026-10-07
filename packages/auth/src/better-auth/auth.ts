@@ -3,7 +3,7 @@ import { prismaAdapter } from "better-auth/adapters/prisma";
 import db from '@workspace/database/client';
 import { admin,  openAPI, jwt } from "better-auth/plugins";
 import { expo } from "@better-auth/expo";
-import { sendResetEmail, sendVerificationEmail } from "@workspace/email/resend/index"
+import { sendEmail } from "@workspace/email/jobs"
 import { authCookiePrefix } from "./cookies";
 import { DESKTOP_APP_ORIGIN } from "./desktop-origin";
 import { isEmailAllowedToRegister, type RegistrationMode } from "./registration";
@@ -104,7 +104,7 @@ const options = {
         changeEmail: {
             enabled: true,
             sendChangeEmailConfirmation: async ({user, newEmail, url, token}, request) => {
-                await sendVerificationEmail(newEmail,url)
+                await sendEmail({ template: "verification", email: newEmail, url })
             }
         },
         deleteUser: {
@@ -137,7 +137,7 @@ const options = {
         autoSignIn: false,
         requireEmailVerification: true,
         sendResetPassword : async ({user, url}) =>{
-            await sendResetEmail(user.email, url)
+            await sendEmail({ template: "reset", email: user.email, url })
         }
     },
     emailVerification: {
@@ -164,7 +164,7 @@ const options = {
             
             const verificationUrl = `${appUrl}/api/auth/verify-email?token=${token}
             &callbackURL=${appUrl}/email-verified`;
-            await sendVerificationEmail(user.email,verificationUrl)
+            await sendEmail({ template: "verification", email: user.email, url: verificationUrl })
         },
     },
     databaseHooks: {

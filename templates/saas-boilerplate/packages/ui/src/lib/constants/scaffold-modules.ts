@@ -4,6 +4,7 @@ export type ScaffoldModuleId =
   | "ai"
   | "ai_agents"
   | "api_keys"
+  | "jobs"
   | "notifications";
 
 // Prices and availability come only from the server's `scaffold.catalog`

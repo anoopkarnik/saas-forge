@@ -7,6 +7,9 @@ import { seoRouter } from './seoProcedures';
 // scaffold:begin api_keys
 import { apiKeyRouter } from './apiKeyProcedures';
 // scaffold:end api_keys
+// scaffold:begin jobs
+import { jobsRouter } from './jobsProcedures';
+// scaffold:end jobs
 import { adminRouter } from './adminProcedures';
 // scaffold:begin billing
 import { billingRouter } from './billingProcedures';
@@ -30,6 +33,9 @@ export const appRouter = createTRPCRouter({
     // scaffold:begin api_keys
     apiKey: apiKeyRouter,
     // scaffold:end api_keys
+    // scaffold:begin jobs
+    jobs: jobsRouter,
+    // scaffold:end jobs
     admin: adminRouter,
     // scaffold:begin billing
     billing: billingRouter,

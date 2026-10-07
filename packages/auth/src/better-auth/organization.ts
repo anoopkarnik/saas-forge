@@ -14,7 +14,7 @@ import {
     ownerAc,
 } from "better-auth/plugins/organization/access";
 import db from "@workspace/database/client";
-import { sendOrganizationInvitationEmail } from "@workspace/email/resend/organization";
+import { sendEmail } from "@workspace/email/jobs";
 import { buildWorkspaceSlug, personalWorkspaceName } from "./organization-helpers";
 
 const INVITATION_EXPIRES_IN_SECONDS = 7 * 24 * 60 * 60;
@@ -40,7 +40,8 @@ type InvitationEmailData = {
 
 export const sendInvitationEmail = async (data: InvitationEmailData) => {
     const appUrl = process.env.NEXT_PUBLIC_URL || "http://localhost:3000";
-    await sendOrganizationInvitationEmail({
+    await sendEmail({
+        template: "organization-invitation",
         email: data.email,
         organizationName: data.organization.name,
         inviterName: data.inviter.user.name || data.inviter.user.email,

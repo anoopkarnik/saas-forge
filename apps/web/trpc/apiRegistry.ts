@@ -130,6 +130,16 @@ export const API_REGISTRY: ApiGroup[] = [
     ],
   },
   {
+    group: "jobs",
+    label: "Background jobs",
+    calls: [
+      { name: "failed", type: "query", access: "admin" },
+      { name: "replay", type: "mutation", access: "admin" },
+      { name: "discard", type: "mutation", access: "admin" },
+      { name: "schedules", type: "query", access: "admin" },
+    ],
+  },
+  {
     group: "project",
     label: "Projects",
     calls: [

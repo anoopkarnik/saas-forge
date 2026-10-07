@@ -193,6 +193,13 @@ Route trust contract source of truth is `apps/web/lib/route-policy.ts`:
 - `session` API routes call `guardRoute(req, "<path>")` from `apps/web/server/routeGuard.ts` for session, role, guest, and rate-limit checks instead of re-implementing them.
 - Adding an API route means adding its row; `tests/integration/routePolicy.test.ts` fails otherwise.
 
+Background jobs (`packages/jobs`):
+
+- Define work with `defineJob(name, zodSchema, handler, { retries, version })` and run it with `enqueue(job, payload, { delayMs, dedupeKey })`; recurring work uses `defineSchedule(name, cron, job)`. Throw `PermanentJobError` for failures a retry cannot fix.
+- Email goes through the `email.send` job: call `sendEmail({ template, ... })` from `@workspace/email/jobs`, not the Resend senders directly.
+- Without a queue (tests, development, no jobs module) `enqueue` runs the job inline with the same retries. With `JOBS_DRIVER=inngest` it sends a `jobs/<name>` event to Inngest; `/api/inngest` serves one function per job and per schedule (`apps/web/lib/jobs/functions.ts`). A job that fails every attempt becomes a `JobRun` dead letter on `/admin/jobs` with replay; `ScheduleRun` makes each cron window fire once. Register new jobs in a module `functions.ts` imports.
+- The Python ARQ worker (`apps/backend`) stays for AI agent and RAG work; product work (email, cleanups, notifications, webhooks) uses these jobs.
+
 Webhook idempotency is important for payments:
 
 1. Extract a unique event or checkout identifier.

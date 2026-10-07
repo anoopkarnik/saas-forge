@@ -1,0 +1,46 @@
+{
+  "id": "jobs",
+  "ownedIdentifiers": [
+    "jobsRouter",
+    "jobsProcedures",
+    "trpc.jobs.",
+    "@workspace/jobs/inngest",
+    "from \"inngest",
+    "\"inngest\": \"",
+    "@inngest/",
+    "model JobRun",
+    "model ScheduleRun",
+    "jobs_schema",
+    "JOBS_DRIVER",
+    "/admin/jobs"
+  ],
+  "unselected": {
+    "remove": [
+      "packages/jobs/src/inngest.ts",
+      "apps/web/app/api/inngest",
+      "apps/web/app/(home)/admin/jobs",
+      "apps/web/lib/jobs",
+      "apps/web/trpc/routers/jobsProcedures.ts",
+      "packages/database/prisma/jobs.prisma",
+      "packages/database/prisma/migrations/20261007033702_jobs"
+    ],
+    "jsonRemove": [
+      { "file": "packages/jobs/package.json", "keys": { "dependencies": ["inngest"] } },
+      { "file": "apps/web/package.json", "keys": { "dependencies": ["inngest"], "devDependencies": ["@inngest/test"] } },
+      {
+        "file": "turbo.json",
+        "keys": {
+          "globalEnv": [
+            "INNGEST_BASE_URL",
+            "INNGEST_DEV",
+            "INNGEST_EVENT_KEY",
+            "INNGEST_SERVE_ORIGIN",
+            "INNGEST_SIGNING_KEY",
+            "JOBS_DRIVER"
+          ]
+        }
+      }
+    ],
+    "textReplace": [{ "file": "packages/database/prisma/schema.prisma", "find": ",\"jobs_schema\"", "replace": "" }]
+  }
+}

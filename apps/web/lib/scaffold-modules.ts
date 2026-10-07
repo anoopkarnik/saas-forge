@@ -10,6 +10,7 @@ export type ScaffoldModuleId =
   | "ai"
   | "ai_agents"
   | "api_keys"
+  | "jobs"
   | "notifications";
 
 type RegistryModuleEntry = {

@@ -2,7 +2,7 @@ import { randomBytes } from "crypto";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import db from "@workspace/database/client";
-import { sendInvitationEmail } from "@workspace/email/resend/index";
+import { sendEmail } from "@workspace/email/jobs";
 import { createTRPCRouter, baseProcedure, adminProcedure } from "../init";
 
 const settingsRouter = createTRPCRouter({
@@ -68,7 +68,7 @@ const invitesRouter = createTRPCRouter({
         },
       });
 
-      await sendInvitationEmail(email, buildInviteUrl(token, email), company);
+      await sendEmail({ template: "invitation", email, url: buildInviteUrl(token, email), company });
       return invitation;
     }),
 
@@ -91,7 +91,7 @@ const invitesRouter = createTRPCRouter({
         where: { id: input.id },
         data: { token, expiresAt: new Date(Date.now() + INVITE_TTL_MS) },
       });
-      await sendInvitationEmail(existing.email, buildInviteUrl(token, existing.email), company);
+      await sendEmail({ template: "invitation", email: existing.email, url: buildInviteUrl(token, existing.email), company });
       return updated;
     }),
 

@@ -13,7 +13,7 @@ import {
 } from "@workspace/ui/components/shadcn/sidebar";
 import { useTheme } from "next-themes";
 import { cn } from "@workspace/ui/lib/utils";
-import { Bot, Users, Database, FileText, Search, Network, Boxes } from "lucide-react";
+import { Bot, Users, Database, FileText, Search, Network, Boxes, Timer } from "lucide-react";
 import { MdSaveAs } from "react-icons/md";
 import { usePathname, useRouter } from "next/navigation";
 import { useTRPC } from "@/trpc/client";
@@ -164,6 +164,16 @@ export function AppSidebar() {
                                     <div className="flex items-center gap-3">
                                         <Network className="w-5 h-5 text-purple-500" />
                                         <div className="text-xs">API Management</div>
+                                    </div>
+                                </SidebarMenuButton>
+                            </SidebarMenuItem>
+                            <SidebarMenuItem>
+                                <SidebarMenuButton tooltip={"Background jobs"}
+                                    className={cn("cursor-pointer transition-all duration-200 ease-in-out hover:pl-3 h-10", pathname === "/admin/jobs" && "bg-sidebar-accent text-sidebar-accent-foreground font-medium shadow-sm")}
+                                    onClick={() => router.push("/admin/jobs")}>
+                                    <div className="flex items-center gap-3">
+                                        <Timer className="w-5 h-5 text-sky-500" />
+                                        <div className="text-xs">Background jobs</div>
                                     </div>
                                 </SidebarMenuButton>
                             </SidebarMenuItem>

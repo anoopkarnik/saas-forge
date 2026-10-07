@@ -66,6 +66,17 @@
       "implemented": true
     },
     {
+      "id": "jobs",
+      "label": "Background jobs & cron",
+      "description": "Typed background jobs on Inngest with retries, a dead-letter queue and replay, cron schedules, and email sent through the queue. Without it, jobs run inline.",
+      "default": false,
+      "creditsCost": 15,
+      "requires": [],
+      "incompatibleWith": [],
+      "downloadEnabled": true,
+      "implemented": true
+    },
+    {
       "id": "notifications",
       "label": "Notifications",
       "description": "In-app notifications and future multi-channel delivery hooks.",

@@ -8,6 +8,7 @@ import { seoRouter } from './seoProcedures';
 import { aiRouter } from './aiProcedures';
 import { aiJobsRouter } from './aiJobsProcedures';
 import { apiKeyRouter } from './apiKeyProcedures';
+import { jobsRouter } from './jobsProcedures';
 import { adminRouter } from './adminProcedures';
 import { organizationRouter } from './organizationProcedures';
 import { projectRouter } from './projectProcedures';
@@ -23,6 +24,7 @@ export const appRouter = createTRPCRouter({
     ai: aiRouter,
     aiJobs: aiJobsRouter,
     apiKey: apiKeyRouter,
+    jobs: jobsRouter,
     admin: adminRouter,
     organization: organizationRouter,
     project: projectRouter,

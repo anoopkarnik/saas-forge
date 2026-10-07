@@ -150,6 +150,18 @@ export const API_REGISTRY: ApiGroup[] = [
     ],
   },
   // scaffold:end api_keys
+  // scaffold:begin jobs
+  {
+    group: "jobs",
+    label: "Background jobs",
+    calls: [
+      { name: "failed", type: "query", access: "admin" },
+      { name: "replay", type: "mutation", access: "admin" },
+      { name: "discard", type: "mutation", access: "admin" },
+      { name: "schedules", type: "query", access: "admin" },
+    ],
+  },
+  // scaffold:end jobs
   ...ORGANIZATION_API_GROUPS,
   {
     group: "admin.settings",

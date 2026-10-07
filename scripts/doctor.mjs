@@ -41,6 +41,9 @@ const MODULES = [
   // scaffold:begin api_keys
   "api_keys",
   // scaffold:end api_keys
+  // scaffold:begin jobs
+  "jobs",
+  // scaffold:end jobs
 ];
 
 // Next.js reads apps/web/.env, then .env.local over it; shell variables win.
@@ -90,6 +93,10 @@ const HINTS = {
   R2_SECRET_ACCESS_KEY: "Same R2 API token.",
   R2_BUCKET_NAME: "A bucket under https://dash.cloudflare.com → R2.",
   // scaffold:end image_storage.cloudflare_r2
+  // scaffold:begin jobs
+  INNGEST_EVENT_KEY: "https://app.inngest.com → Manage → Event Keys, or the key your self-hosted server was started with.",
+  INNGEST_SIGNING_KEY: "https://app.inngest.com → Manage → Signing Key, or your self-hosted server's signing key.",
+  // scaffold:end jobs
   UPSTASH_REDIS_REST_URL: "https://console.upstash.com/redis → your database → REST API.",
   UPSTASH_REDIS_REST_TOKEN: "Same Upstash database → REST API.",
   // scaffold:begin cms.notion

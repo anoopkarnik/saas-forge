@@ -26,7 +26,7 @@ import {
  * Bump whenever the output of buildBaseArchive or compileScaffoldVariant
  * changes; build-cache.test.ts fails when their sources change without it.
  */
-export const BUILDER_VERSION = 5;
+export const BUILDER_VERSION = 6;
 
 /** Neutral top-level folder of a cached archive, renamed per download. */
 export const BASE_ROOT = "saas-forge-app";

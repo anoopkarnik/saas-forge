@@ -34,6 +34,7 @@
     "@workspace/cms": "workspace:*",
     "@workspace/database": "workspace:*",
     "@workspace/email": "workspace:*",
+    "@workspace/jobs": "workspace:*",
     "@workspace/observability": "workspace:*",
     "@workspace/ui": "workspace:*",
     "ai": "^6.0.0",
@@ -42,6 +43,7 @@
     "date-fns": "^4.1.0",
     "dodopayments": "^2.17.1",
     "framer-motion": "^12.23.25",
+    "inngest": "^4.22.0",
     "jszip": "^3.10.1",
     "lucide-react": "^0.475.0",
     "next": "^15.4.5",
@@ -63,6 +65,7 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@inngest/test": "^1.0.0",
     "@tailwindcss/postcss": "^4.1.11",
     "@tailwindcss/typography": "^0.5.19",
     "@types/archiver": "^7.0.0",

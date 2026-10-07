@@ -4,6 +4,9 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@workspace/ui/components/shadcn/card";
 import { useFlag } from "@/components/flags/FlagsProvider";
 import { useTRPC } from "@/trpc/client";
+// scaffold:begin onboarding
+import { OnboardingPanel } from "@/components/onboarding/OnboardingPanel";
+// scaffold:end onboarding
 
 /** An example of a flagged feature: visible, and its data served, only while beta.dashboardWidgets is on. */
 function BetaWidgets() {
@@ -31,5 +34,12 @@ function BetaWidgets() {
 
 export default function Page() {
   const showBetaWidgets = useFlag("beta.dashboardWidgets");
-  return <div className="flex-1 p-6">{showBetaWidgets ? <BetaWidgets /> : null}</div>;
+  return (
+    <div className="flex flex-1 flex-col gap-6 p-6">
+      {/* scaffold:begin onboarding */}
+      <OnboardingPanel />
+      {/* scaffold:end onboarding */}
+      {showBetaWidgets ? <BetaWidgets /> : null}
+    </div>
+  );
 }

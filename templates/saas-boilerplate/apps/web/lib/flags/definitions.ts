@@ -12,6 +12,9 @@ export const FLAGS = {
   "ai.voice": { description: "Voice input and spoken replies in AI chat.", default: true },
   // scaffold:end ai
   "beta.dashboardWidgets": { description: "Beta widgets on the home dashboard.", default: false },
+  // scaffold:begin onboarding
+  "onboarding.checklist": { description: "The setup checklist on the home page.", default: true },
+  // scaffold:end onboarding
 } satisfies Record<string, FlagDefinition>;
 
 export type FlagKey = keyof typeof FLAGS;

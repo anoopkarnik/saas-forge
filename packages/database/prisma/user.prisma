@@ -31,6 +31,8 @@ model User {
     notifications    Notification[]
     notificationPreferences NotificationPreference[]
     webhookEndpoints WebhookEndpoint[]
+    onboardingState  OnboardingState?
+    onboardingTasks  OnboardingTask[]
     members          Member[]
     organizationInvitations OrganizationInvitation[] @relation("OrganizationInvitationInviter")
     projectConfigs   ProjectConfig[]

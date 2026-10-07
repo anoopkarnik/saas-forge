@@ -172,6 +172,13 @@ Feature flags (`apps/web/lib/flags`):
 <!-- scaffold:end feature_flags -->
 - Flags are per-user booleans; global values belong in site config. Without the feature_flags module, `flags.ts` is a stub and every flag keeps its default.
 
+<!-- scaffold:begin onboarding -->
+Onboarding (`apps/web/lib/onboarding`):
+
+- Checklist tasks live in `tasks.ts`, each module's inside its markers. Give a task a `done(userId)` check on real data (avatar set, key created); a task without one is completed by `onboarding.complete`. The wizard and checklist render on the home page, never block anything, and can be turned off in Settings (`onboarding.wizard`, `onboarding.checklist`) or by the `onboarding.checklist` flag. The demo guest sees neither.
+- After installing it in an app that already has users, run `pnpm --dir packages/database backfill:onboarding` so existing users are not shown the wizard.
+<!-- scaffold:end onboarding -->
+
 Webhook idempotency is important for payments:
 
 1. Extract a unique event or checkout identifier.

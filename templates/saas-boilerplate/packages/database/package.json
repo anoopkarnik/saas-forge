@@ -12,6 +12,7 @@
     "reset": "npx prisma migrate reset --force --schema prisma && npx prisma db seed",
     "seed": "npx prisma db seed",
     "backfill:orgs": "tsx scripts/backfill-organizations.ts",
+    "backfill:onboarding": "tsx scripts/backfill-onboarding.ts",
     "typecheck": "tsc --noEmit",
     "test:coverage": "vitest run --coverage --passWithNoTests"
   },

@@ -225,6 +225,19 @@ export const API_REGISTRY: ApiGroup[] = [
     ],
   },
   // scaffold:end feature_flags
+  // scaffold:begin onboarding
+  {
+    group: "onboarding",
+    label: "Onboarding",
+    calls: [
+      { name: "state", type: "query", access: "authenticated" },
+      { name: "answer", type: "mutation", access: "authenticated" },
+      { name: "setWizard", type: "mutation", access: "authenticated" },
+      { name: "dismiss", type: "mutation", access: "authenticated" },
+      { name: "complete", type: "mutation", access: "authenticated" },
+    ],
+  },
+  // scaffold:end onboarding
   // scaffold:begin jobs
   {
     group: "jobs",

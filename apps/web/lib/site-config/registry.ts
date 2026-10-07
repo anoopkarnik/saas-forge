@@ -123,6 +123,22 @@ export const SETTINGS = {
     storageKey: "registration_mode",
     default: "OPEN",
   }),
+  // scaffold:begin onboarding
+  "onboarding.wizard": setting({
+    group: "Onboarding",
+    label: "Welcome wizard for new users",
+    public: true,
+    schema: z.boolean(),
+    default: true,
+  }),
+  "onboarding.checklist": setting({
+    group: "Onboarding",
+    label: "Setup checklist on the home page",
+    public: true,
+    schema: z.boolean(),
+    default: true,
+  }),
+  // scaffold:end onboarding
   // scaffold:begin audit_log
   "audit.retentionDays": setting({
     group: "Audit log",

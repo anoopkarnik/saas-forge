@@ -1,0 +1,40 @@
+{
+  "id": "onboarding",
+  "ownedIdentifiers": [
+    "onboardingRouter",
+    "onboardingProcedures",
+    "trpc.onboarding.",
+    "@/lib/onboarding/",
+    "OnboardingPanel",
+    "OnboardingWizard",
+    "OnboardingChecklist",
+    "model OnboardingState",
+    "backfill:onboarding",
+    "onboarding.checklist",
+    "onboarding.wizard",
+    "backfillOnboarding"
+  ],
+  "unselected": {
+    "remove": [
+      "apps/web/lib/onboarding",
+      "apps/web/trpc/routers/onboardingProcedures.ts",
+      "apps/web/components/onboarding",
+      "packages/ui/src/components/onboarding",
+      "packages/database/prisma/onboarding.prisma",
+      "packages/database/prisma/migrations/20261007171215_onboarding",
+      "packages/database/scripts/backfill-onboarding.ts",
+      "packages/database/src/backfillOnboarding.ts",
+      "packages/database/src/backfillOnboarding.test.ts"
+    ],
+    "jsonRemove": [
+      {
+        "file": "packages/database/package.json",
+        "keys": {
+          "scripts": [
+            "backfill:onboarding"
+          ]
+        }
+      }
+    ]
+  }
+}

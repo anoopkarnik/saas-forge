@@ -56,6 +56,9 @@ const MODULES = [
   // scaffold:begin feature_flags
   "feature_flags",
   // scaffold:end feature_flags
+  // scaffold:begin onboarding
+  "onboarding",
+  // scaffold:end onboarding
 ];
 
 // Next.js reads apps/web/.env, then .env.local over it; shell variables win.

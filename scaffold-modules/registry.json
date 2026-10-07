@@ -121,6 +121,17 @@
       "incompatibleWith": [],
       "downloadEnabled": true,
       "implemented": true
+    },
+    {
+      "id": "onboarding",
+      "label": "Onboarding",
+      "description": "A skippable welcome wizard and a setup checklist whose tasks come from the modules you pick (profile, team invite, credits, first AI chat, API key), completed from real data. Toggle both in Settings.",
+      "default": false,
+      "creditsCost": 5,
+      "requires": [],
+      "incompatibleWith": [],
+      "downloadEnabled": true,
+      "implemented": true
     }
   ]
 }

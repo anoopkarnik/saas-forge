@@ -43,6 +43,10 @@ model User {
     // scaffold:begin webhooks
     webhookEndpoints WebhookEndpoint[]
     // scaffold:end webhooks
+    // scaffold:begin onboarding
+    onboardingState  OnboardingState?
+    onboardingTasks  OnboardingTask[]
+    // scaffold:end onboarding
     // scaffold:begin multi_tenancy
     members          Member[]
     organizationInvitations OrganizationInvitation[] @relation("OrganizationInvitationInviter")

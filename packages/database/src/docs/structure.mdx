@@ -1,103 +1,75 @@
+SaaS Forge is a pnpm workspace. Every app and package is a workspace, and Turborepo runs tasks across them.
 
-### **Folder Structure**
+## Repository layout
 
-
-Here’s how the boilerplate is organized:
-
-
-```plain text
-/saas-boilerplate
-├── apps
-│   ├── web  # Next.js app
-├── packages
-│   ├── ui  # Shared UI components and styles (ShadCN based)
-│   |   ├── components (Shadcn, Aceternity, Mdx, Notion components)
-│   |   ├── styles (Shadcn and Custom Colour themes and css styles to use)
-│   |   ├── typography
-│   ├── auth # Better Auth Authentication library
-│   ├── database # Prisma ORM Client library
-│   ├── email # Email Templates and Resend Client library
-│   ├── typescript-config # Typescript configs library
-│   ├── eslint-config # Eslint configs library
-│   ├── cms # Notion Client for functions
-│   ├── analytics # Google and Vercel Analytics
-│   ├── payments # Dodo
-│   ├── observability
-├── docker  # Docker configuration with example env files
-└── docs  #Docs for opensource contributors to this repo
-└── .github  #Github Actions for testing
-└── vitest.config.ts  #Vitest Config for testing
-├── scripts # Bash Scripts to run to get started
-└── turbo.json  # TurboRepo config
+```text
+saas-forge/
+├── apps/
+│   ├── web/                 Next.js app: UI, tRPC API, REST routes, webhooks
+│   ├── desktop/             Electron app
+│   ├── mobile/              Expo app
+│   └── backend/             FastAPI AI service (AI Agents module)
+├── packages/
+│   ├── ai/                  AI SDK provider resolution, tools, token metering
+│   ├── auth/                Better Auth server and clients, API key helpers
+│   ├── cms/                 Notion API helpers (Notion CMS provider)
+│   ├── database/            Prisma schema, client, seed script, docs MDX
+│   ├── email/               Resend senders and React Email templates
+│   ├── observability/       Winston logger, AI logger, signed fetch to the backend
+│   ├── ui/                  Shared components, blocks, providers, styles
+│   ├── eslint-config/       Shared ESLint config
+│   ├── typescript-config/   Shared tsconfig presets
+│   └── create-saas-forge/   The CLI (open-source repo only)
+├── scripts/                 doctor, template sync, matrix, release tooling
+├── scaffold-modules/        Module registry and manifests (open-source repo only)
+├── scaffold-providers/      Provider registry and manifests (open-source repo only)
+├── templates/               Managed starter source (open-source repo only)
+├── template-overrides/      Starter-only differences (open-source repo only)
+├── docker-compose.yml       Local Postgres, Redis, web and backend
+├── Dockerfile.web           Production image for the web app
+└── turbo.json               Task pipeline
 ```
 
+## Inside apps/web
 
-# Tech Stack
+```text
+apps/web/
+├── app/
+│   ├── (auth)/              sign-in, sign-up, forgot/reset password, email verified, error
+│   ├── (home)/              signed-in app: your product, admin, organization, AI, projects
+│   ├── landing/             public pages: landing, doc/[slug], legal/*
+│   ├── api/                 REST routes, Better Auth handler, webhooks, tRPC handler
+│   ├── sitemap.ts, robots.ts
+│   └── layout.tsx           theme, analytics, support widget, toaster
+├── blocks/                  page-level client components (landing, admin, docs, support)
+├── components/              feature components (landing sections, admin tables, AI, orgs)
+├── lib/                     services and helpers: env validation, route policy, SEO, CMS
+├── server/                  server-only helpers: routeGuard, rate limits, Redis, uploads
+├── trpc/                    init (procedures), routers, client and server helpers
+├── tests/                   integration tests (route policy, doctor)
+├── middleware.ts            page gating and body-size limits from the route policy
+└── instrumentation.ts       boot-time env validation
+```
 
+## Workspace imports
 
-The SaaS Boilerplate is built on a modern, robust technology stack.
+Packages are imported with the `@workspace/` prefix, and app-local code in `apps/web` with `@/`:
 
+```ts
+import { auth } from "@workspace/auth/better-auth/auth";
+import db from "@workspace/database/client";
+import { Button } from "@workspace/ui/components/shadcn/button";
+import { useTRPC } from "@/trpc/client";
+```
 
-## Core Framework
+## What a downloaded project contains
 
-- [**Next.js 15**](https://nextjs.org/): The React framework for the web. Used with the App Router for improved routing and layouts.
-- [**React 19**](https://react.dev/): The library for web and native user interfaces.
-- [**TypeScript**](https://www.typescriptlang.org/): Strongly typed JavaScript for better tooling and fewer bugs.
+A download is the same tree with these differences:
 
-## Styling
+- No root-only tooling: no `create-saas-forge`, `scaffold-modules/`, `scaffold-providers/`, `templates/`, `template-overrides/`, the download API or the project dashboard.
+- Only the platforms you chose: `apps/desktop` and `apps/mobile` are removed when unselected.
+- Only the modules you chose: their routes, routers, components, Prisma files and migrations are gone, and code shared with other features has its module sections removed.
+- `apps/web/app/(home)/page.tsx` is an empty page where your product starts.
+- `SETUP.md`, `.boilerplate-version` and filled `.env` files are added at the root.
 
-- [**Tailwind CSS 4**](https://tailwindcss.com/): A utility-first CSS framework for rapidly building custom designs.
-- [**Shadcn/UI**](https://ui.shadcn.com/): Re-usable components built using Radix UI and Tailwind CSS.
-- [**Lucide React**](https://lucide.dev/): Beautiful & consistent icons.
-
-## Data Fetching & State
-
-- [**TanStack Query**](https://tanstack.com/query/latest): Powerful asynchronous state management.
-- [**tRPC**](https://trpc.io/): End-to-end typesafe APIs.
-
-## Database & Backend
-
-- [**Prisma**](https://www.prisma.io/): Next-generation Node.js and TypeScript ORM.
-- [**PostgreSQL**](https://www.postgresql.org/): Advanced open-source relational database.
-- [**Upstash Redis**](https://upstash.com/): Serverless Redis for caching and rate limiting.
-
-## Authentication & Security
-
-- [**Better Auth**](https://www.better-auth.com/): Modern authentication library with built-in session management.
-- **OAuth Providers**: GitHub, Google, LinkedIn integrations.
-
-## Payments & Commerce
-
-- [**Dodo Payments**](https://dodopayments.com/): Merchant of Record for global tax compliance and payment processing.
-
-## Content Management
-
-- [**Notion API**](https://developers.notion.com/): Headless CMS for landing pages and documentation.
-
-## File Storage
-
-- [**Vercel Blob**](https://vercel.com/docs/storage/vercel-blob): Serverless file storage for user uploads.
-
-## Observability
-
-- [**Winston**](https://github.com/winstonjs/winston): Universal logging library.
-- [**BetterStack**](https://betterstack.com/): Log aggregation and uptime monitoring.
-- [**Google Analytics**](https://analytics.google.com/): User analytics and tracking.
-
-## Email
-
-- [**Resend**](https://resend.com/): Modern email API for transactional emails.
-- [**React Email**](https://react.email/): Build emails using React components.
-
-## Infrastructure & Tools
-
-- [**TurboRepo**](https://turbo.build/): High-performance build system for monorepos.
-- [**pnpm**](https://pnpm.io/): Fast, disk space efficient package manager.
-- [**Zod**](https://zod.dev/): TypeScript-first schema declaration and validation.
-- [**React Hook Form**](https://react-hook-form.com/): Performant, flexible and extensible forms with easy-to-use validation.
-
-## UI & Animation
-
-- [**Framer Motion**](https://www.framer.com/motion/): Production-ready motion library for React.
-- [**Radix UI**](https://www.radix-ui.com/): Unstyled, accessible component primitives.
-- [**MDX**](https://mdxjs.com/): Markdown for the component era.
+See [Download a Boilerplate](/landing/doc/download-a-boilerplate) for the full list.

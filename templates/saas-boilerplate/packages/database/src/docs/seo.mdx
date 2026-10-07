@@ -1,115 +1,46 @@
+## Metadata
 
-Optimize your SaaS Forge application for search engines.
+`apps/web/lib/seo.ts` builds page metadata from your environment:
 
+| Helper | Returns |
+| --- | --- |
+| `getSiteUrl()` | `NEXT_PUBLIC_URL` without a trailing slash |
+| `getSiteName()` | `NEXT_PUBLIC_SAAS_NAME` |
+| `getSiteDescription()` | `NEXT_PUBLIC_SITE_DESCRIPTION` |
+| `getCanonicalUrl(path)` | The absolute canonical URL for a path |
+| `createSeoMetadata({ title, description, pathname })` | A `Metadata` object with title, description, canonical URL, Open Graph and Twitter card |
 
-## Next.js Metadata API
+The root layout sets `metadataBase` and the site-wide defaults. Public pages add their own:
 
+```ts
+import type { Metadata } from "next";
+import { createSeoMetadata } from "@/lib/seo";
 
-Configure metadata in `layout.tsx` or `page.tsx`:
-
-
-```typescript
-import { Metadata } from "next";
-
-export const metadata: Metadata = {
-  title: "My SaaS App",
-  description: "The best SaaS solution",
-  keywords: ["saas", "software", "productivity"],
-  authors: [{ name: "Your Name" }],
-  openGraph: {
-    title: "My SaaS App",
-    description: "The best SaaS solution",
-    url: "<https://mysaas.com>",
-    siteName: "My SaaS",
-    images: [{
-      url: "<https://mysaas.com/og-image.png>",
-      width: 1200,
-      height: 630,
-    }],
-    locale: "en_US",
-    type: "website",
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "My SaaS App",
-    description: "The best SaaS solution",
-    images: ["<https://mysaas.com/twitter-image.png>"],
-  },
-};
+export const metadata: Metadata = createSeoMetadata({
+  title: "Pricing",
+  description: "Plans for teams of every size.",
+  pathname: "/landing/pricing",
+});
 ```
 
-
-## Dynamic Metadata
-
-
-```typescript
-export async function generateMetadata({ params }): Promise<Metadata> {
-  const post = await getPost(params.id);
-
-  return {
-    title: post.title,
-    description: post.excerpt,
-  };
-}
-```
-
+Dynamic pages use `generateMetadata`, as `app/landing/doc/[slug]/page.tsx` does for each doc. The default Open Graph image is `/cms/hero_0.png`; replace it or pass your own.
 
 ## Sitemap
 
+`app/sitemap.ts` lists the public static routes (`PUBLIC_SEO_STATIC_ROUTES` in `lib/seo.ts`: the landing page, legal pages, sign-in and sign-up) and every documentation page from your CMS. Doc pages are marked weekly, others monthly, and `/landing` has the highest priority. Add new public routes to `PUBLIC_SEO_STATIC_ROUTES`.
 
-Create `app/sitemap.ts`:
+## robots.txt
 
+`app/robots.ts` allows `/landing`, `/landing/doc`, `/landing/legal`, `/sign-in` and `/sign-up`, disallows `/admin`, `/api` and the auth callback and recovery pages, and points to the sitemap. Signed-in pages are not crawlable anyway, because the middleware redirects visitors without a session.
 
-```typescript
-import { MetadataRoute } from "next";
+## The SEO audit
 
-export default function sitemap(): MetadataRoute.Sitemap {
-  return [
-    {
-      url: "<https://mysaas.com>",
-      lastModified: new Date(),
-      changeFrequency: "yearly",
-      priority: 1,
-    },
-    {
-      url: "<https://mysaas.com/pricing>",
-      lastModified: new Date(),
-      changeFrequency: "monthly",
-      priority: 0.8,
-    },
-  ];
-}
-```
+**Admin → SEO → Audit** checks every public page and doc page for a title, a meta description, a canonical URL and a clean heading hierarchy, and checks that `robots.txt` and `sitemap.xml` respond. With `GOOGLE_PAGESPEED_API_KEY` it adds PageSpeed Insights performance scores. Create the key in the Google Cloud Console with the PageSpeed Insights API enabled.
 
+## Checklist before launch
 
-## Robots.txt
-
-
-Create `app/robots.ts`:
-
-
-```typescript
-import { MetadataRoute } from "next";
-
-export default function robots(): MetadataRoute.Robots {
-  return {
-    rules: {
-      userAgent: "*",
-      allow: "/",
-      disallow: "/private/",
-    },
-    sitemap: "<https://mysaas.com/sitemap.xml>",
-  };
-}
-```
-
-
-## Best Practices
-
-1. **Unique titles**: Each page should have a unique title
-2. **Meta descriptions**: 150-160 characters
-3. **Open Graph images**: 1200x630px
-4. **Semantic HTML**: Use proper heading hierarchy
-5. **Alt text**: Describe all images
-6. **Mobile-friendly**: Responsive design
-7. **Fast loading**: Optimize performance
+1. Set `NEXT_PUBLIC_URL` to the production domain. Canonical URLs, the sitemap and Open Graph URLs all use it.
+2. Write a real `NEXT_PUBLIC_SITE_DESCRIPTION` (150–160 characters).
+3. Replace the Open Graph image and the favicon.
+4. Submit `https://your-domain.com/sitemap.xml` in Google Search Console.
+5. Run the admin SEO audit and fix every failing check.

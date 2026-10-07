@@ -1,26 +1,47 @@
+## Tools
 
-Before you begin, ensure your development environment meets the following requirements.
+| Tool | Version | Notes |
+| --- | --- | --- |
+| Node.js | 24 or newer | Required by `engines` in `package.json`. Use nvm, fnm or Volta |
+| pnpm | 10.4.1 | Run `corepack enable` and the version pinned in `packageManager` is used |
+| Git | any recent | Needed for upgrades and the template branch |
+| Docker | optional | Runs Postgres (with pgvector) and Redis locally through `docker-compose.yml` |
 
+Supported operating systems are macOS, Linux and Windows through WSL2.
 
-## System Requirements
+## Services every project needs
 
-- **Operating System**: macOS, Windows (WSL recommended), or Linux.
-- **Node.js**: Version 20 or higher is **required**.
-    - Check version: `node -v`
-- **Package Manager**: **pnpm** (preferred), npm, or yarn.
-    - Install pnpm: `npm install -g pnpm`
+| Service | Why | Free tier |
+| --- | --- | --- |
+| PostgreSQL | Users, sessions, CMS content, docs, billing and module data | [Neon](https://neon.tech/), [Supabase](https://supabase.com/), or local Docker |
+| [Upstash Redis](https://upstash.com/) | Rate limits on uploads and other session routes, plus caching of CMS and docs content | Yes |
+| [Resend](https://resend.com/) | Verification and password-reset emails when email sign-up is on | Yes, with a verified domain for real recipients |
 
-## Accounts & Services
+Production refuses to start without `DATABASE_URL`, `NEXT_PUBLIC_URL` and a strong `BETTER_AUTH_SECRET`, and with email sign-up on it also needs an email client. See [Environment Variables](/landing/doc/env-vars).
 
+## Services by feature
 
-You will need accounts with the following services to fully utilize the boilerplate features. Free tiers are sufficient for development.
+Create these only for the features you turn on:
 
-1. [**GitHub**](https://github.com/): For version control and OAuth.
-2. [**Vercel**](https://vercel.com/): For deployment and Blob storage.
-3. [**Notion**](https://www.notion.so/): For managing website content.
-4. [**Neon**](https://neon.tech/) / [**Supabase**](https://supabase.com/): For a hosted PostgreSQL database (or use local Docker).
-5. [**Upstash**](https://upstash.com/): For Redis.
-6. [**Resend**](https://resend.com/): For sending emails.
-7. [**Dodo Payments**](https://dodopayments.com/): For payment processing.
-8. [**Google Cloud Console**](https://console.cloud.google.com/): For Google OAuth.
-9. [**LinkedIn Developers**](https://www.linkedin.com/developers/): For LinkedIn OAuth.
+| Feature | Accounts |
+| --- | --- |
+| Google, GitHub or LinkedIn sign-in | [Google Cloud Console](https://console.cloud.google.com/), [GitHub Developer Settings](https://github.com/settings/developers), [LinkedIn Developers](https://www.linkedin.com/developers/) |
+| Uploads | [Vercel Blob](https://vercel.com/docs/storage/vercel-blob) or [Cloudflare R2](https://developers.cloudflare.com/r2/) |
+| Payments (Billing module) | [Stripe](https://stripe.com/) or [Dodo Payments](https://dodopayments.com/) |
+| Notion CMS | [Notion](https://www.notion.so/) integration |
+| Logs and analytics | [BetterStack](https://betterstack.com/), [Google Analytics 4](https://analytics.google.com/), a Google API key for PageSpeed Insights |
+| AI Platform module | At least one of OpenAI, Anthropic, Google, OpenRouter, the Vercel AI Gateway, Ollama, or an OpenAI-compatible endpoint |
+| Hosting | [Vercel](https://vercel.com/) or any Docker host |
+
+## AI Agents module only
+
+The Python service in `apps/backend` also needs:
+
+- Python 3.12 or newer and [uv](https://github.com/astral-sh/uv) (`pipx install uv` or `curl -LsSf https://astral.sh/uv/install.sh | sh`).
+- Postgres with the `pgvector` extension. Neon and the `pgvector/pgvector` Docker image both have it.
+- A Redis reachable over TCP (`redis://…`) for the job queue. Upstash's REST API is not enough here; Docker Compose provides one locally.
+
+## Native apps only
+
+- **Desktop:** nothing extra for development. Building a snap needs `snapcraft`; macOS and Windows installers are built on those systems.
+- **Mobile:** an [Expo](https://expo.dev/) account and the EAS CLI for cloud builds. Local iOS builds need Xcode with CocoaPods, local Android builds need Android Studio.

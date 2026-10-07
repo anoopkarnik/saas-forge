@@ -1,0 +1,79 @@
+`pnpm doctor` takes a fresh clone or download to a booting app. It uses the same validation the web server runs at startup (`apps/web/lib/env.ts`), so when the doctor is happy, `next start` is too.
+
+## Commands
+
+```bash
+pnpm doctor           # interactive: asks, generates, checks, writes files
+pnpm doctor --check   # report only; exits 1 when something would stop the app
+pnpm doctor --json    # the --check report as JSON, for tooling
+```
+
+Outside a terminal (CI, scripts) `pnpm doctor` behaves like `--check`. Secret values are never printed in any mode; they are replaced with `****`.
+
+## What the interactive run does
+
+1. **Finds missing, weak and malformed values**, in the order boot validation reports them. For each one it shows where to get the value (for example the Stripe dashboard page) and asks for it. Press Enter to skip.
+2. **Generates secrets** instead of asking: `BETTER_AUTH_SECRET`, and `BACKEND_HMAC_SECRET` when the AI Agents module is present.
+3. **Checks formats** that boot validation accepts as any string: Resend keys start with `re_`, Stripe keys with `sk_test_` or `sk_live_`, Google client IDs end with `.apps.googleusercontent.com`, and so on.
+4. **Calls each configured service** to prove the credential works:
+
+   | Service | Checked when |
+   | --- | --- |
+   | Postgres | `DATABASE_URL` is set. Also reports pending migrations, missing schemas, and a missing `pgvector` extension |
+   | Resend | `NEXT_PUBLIC_EMAIL_CLIENT=resend`. Also checks that the domain of `NEXT_PUBLIC_SUPPORT_MAIL` is verified |
+   | Stripe | `NEXT_PUBLIC_PAYMENT_GATEWAY=stripe` (Billing module). Also checks for an enabled webhook endpoint at your URL |
+   | Dodo Payments | `NEXT_PUBLIC_PAYMENT_GATEWAY=dodo` (Billing module), in the mode set by `DODO_PAYMENTS_ENVIRONMENT` |
+   | Upstash Redis | `NEXT_PUBLIC_ALLOW_RATE_LIMIT=upstash` |
+   | Vercel Blob or Cloudflare R2 | `NEXT_PUBLIC_IMAGE_STORAGE` picks it. Writes and deletes a probe file |
+   | Notion | `NEXT_PUBLIC_CMS=notion` |
+
+   A rejected credential can be entered again on the spot.
+5. **Writes the env files** after showing which keys change in each file (values hidden). Files are written with `0600` permissions:
+   - `apps/web/.env`, or `apps/web/.env.local` for keys already defined there (Next.js reads `.env.local` over `.env`);
+   - `packages/database/.env` with `DATABASE_URL`, only when it is empty there, because a different URL there can be deliberate (for example a direct connection for migrations);
+   - `apps/desktop/.env` and `apps/mobile/.env`, derived from the web values (native apps only get public toggles, never secrets);
+   - `apps/backend/.env` with `BACKEND_HMAC_SECRET` (AI Agents module).
+6. **Sets up the database** when it is reachable but not ready: it offers `pnpm generate`, `pnpm migrate`, and `pnpm seed` for a fresh database.
+
+The run ends with `Ready. Start the app with: pnpm dev`, or with the list of values still missing.
+
+## Reading a --check report
+
+```text
+SaaS Forge doctor · modules: billing, ai · platforms: web, desktop
+
+Environment (apps/web)
+  ✗ BETTER_AUTH_SECRET must be at least 32 characters
+  ⚠ STRIPE_SECRET_KEY Stripe secret keys start with sk_test_ or sk_live_
+
+Env files
+  ⚠ apps/desktop/.env is out of date: VITE_AUTH_GOOGLE
+
+Services
+  ✓ Postgres: PostgreSQL 16.4 connected; 5 schemas and 28 migrations in place
+  ✗ Upstash Redis: Upstash rejected UPSTASH_REDIS_REST_TOKEN
+
+2 problem(s). Run pnpm doctor to fix them.
+```
+
+`✗` stops the app in production, `⚠` is worth fixing, `✓` passed. A warning that `pnpm migrate uses X but the web app uses Y` means `packages/database/.env` and `apps/web/.env` point at different databases.
+
+## Use it in CI
+
+```yaml
+- run: pnpm doctor --check
+  env:
+    DATABASE_URL: ${{ secrets.DATABASE_URL }}
+    BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
+```
+
+Shell variables win over file values, so CI secrets are checked without writing files.
+
+## Extending it
+
+When you add an integration with a required credential:
+
+1. Add the toggle and keys to `INTEGRATION_REQUIREMENTS` in `apps/web/lib/env.ts` so production refuses to boot without them.
+2. Add a `HINTS` entry in `scripts/doctor.mjs` that says where to find the value, and a `FORMATS` entry if it has a recognizable shape.
+3. Add a probe in `scripts/doctor-probes.mjs` when the provider has a cheap authenticated read.
+4. Add the variable to `apps/web/.env.example`.

@@ -1,62 +1,60 @@
+[Vercel](https://vercel.com/) is the default host for the web app. It builds from your Git repository on every push, with previews for pull requests.
 
-The easiest way to deploy this app is to use the [Vercel Platform](https://vercel.com/new).
+## 1. Import the project
 
+1. Push your project to GitHub, GitLab or Bitbucket.
+2. In Vercel, click **Add New → Project** and import the repository.
+3. Set **Root Directory** to `apps/web`. Vercel detects Next.js and the pnpm workspace, and installs from the repository root.
+4. Leave the build and install commands at their defaults. `apps/web`'s `build` script runs `prisma generate` before `next build`, and the lockfile pruned for your download works with Vercel's frozen install.
 
-## Steps
+## 2. Add environment variables
 
-1. **Push your code** to a Git repository (GitHub, GitLab, Bitbucket).
-2. **Import the project** into Vercel from [vercel.com/new](https://vercel.com/new).
-3. **Configure Project Settings**:
-    - **Framework Preset**: Next.js
-    - **Root Directory**: Leave as apps/web
-    - **Build Command**: `pnpm -w run generate && pnpm build`  (or leave default)
-    - **Output Directory**: Leave default
-    - **Install Command**: Leave default
-4. **Environment Variables**:
-    - Copy all production values from your `.env` file into the Vercel Environment Variables UI
-    - **Security Note**: Never commit `.env` to Git
+Add production values under **Settings → Environment Variables**, separately for Production and Preview. Start with what boot validation requires:
 
-## Monorepo Configuration
+| Variable | Value |
+| --- | --- |
+| `NEXT_PUBLIC_URL` | `https://your-domain.com` (Production) |
+| `NEXT_PUBLIC_SAAS_NAME` | Your product name, exactly as seeded |
+| `DATABASE_URL` | Pooled production Postgres URL |
+| `BETTER_AUTH_SECRET` | A new value: `openssl rand -base64 32` |
 
+Then the toggles and credentials for every feature you use: email, OAuth, storage, Upstash, payments, CMS, AI. Production refuses to start if an enabled feature lacks credentials; the error lists them. Run `pnpm doctor --check` locally against the production values to catch problems before deploying.
 
-Since this is a Turborepo monorepo, Vercel will:
+`NEXT_PUBLIC_*` values are inlined at build time, so redeploy after changing one.
 
-- Automatically detect workspace structure
-- Install dependencies from the root
-- Build only the `apps/web` package (configured in `turbo.json`)
-- Cache build outputs for faster deployments
+## 3. Prepare the database
 
-## Build Command
+Nothing in the Vercel build touches your database. From your machine or CI:
 
+```bash
+DATABASE_URL="postgresql://…production…" pnpm --dir packages/database migrate:deploy
+DATABASE_URL="postgresql://…production…" pnpm seed   # once; NEXT_PUBLIC_SAAS_NAME must match production
+```
 
-The default build command `pnpm build` defined in `package.json` should work correctly. It triggers the Next.js build process.
+Then sign up right away: the first account becomes the admin.
 
+## 4. Connect services to the production URL
 
-## Post-Deployment
+- **Domain**: add it under **Settings → Domains**, then update `NEXT_PUBLIC_URL`.
+- **OAuth**: add `https://your-domain.com/api/auth/callback/<provider>` to Google, GitHub (a separate OAuth App) and LinkedIn.
+- **Payments**: create the production webhook endpoint (`/api/payments/stripe/webhook` or `/api/payments/dodo/webhook`) with live keys.
+- **Email**: verify the sending domain in Resend.
+- **Storage**: connect a Blob store to the project, or set the R2 variables, and allow the image host in `next.config.mjs`.
+- **Analytics**: enable Vercel Analytics and Speed Insights in the dashboard if you want them.
 
-1. **Domain**: Configure your custom domain in Vercel settings.
-2. **Update Environment Variables**:
-    - Set `NEXT_PUBLIC_URL` to your production domain
-    - Update `DODO_PAYMENTS_RETURN_URL` to use your production domain
-3. **Configure Webhooks**:
-    - Update Dodo Payments webhook URL to `https://yourdomain.com/api/payments/dodo/webhook`
-    - Add your production domain to Better Auth allowed origins (if applicable)
-4. **Test Authentication**: Ensure OAuth redirect URIs are updated in:
-    - Google Cloud Console
-    - GitHub OAuth Apps
-    - LinkedIn Developer Portal
+## Function settings
+
+- Put functions in the same region as your database (**Settings → Functions → Region**).
+- Routes that stream (AI chat) set `maxDuration`; check your plan's limit.
+- The open-source repository ships the starter source with its download routes through `outputFileTracingIncludes` in `next.config.mjs`. A downloaded project does not have those routes.
+
+## Previews
+
+Preview deployments use the Preview environment variables. Point them at a separate database (for example a Neon branch) so previews never migrate or write production data, and use test-mode payment keys.
 
 ## Troubleshooting
 
-
-### Build Fails with "Module not found"
-
-- Ensure all workspace dependencies are properly installed
-- Check that `@workspace/*` packages are correctly exported in their `package.json`
-- Verify `next.config.mjs` has proper transpilation configuration
-
-### Environment Variables Not Loading
-
-- Redeploy after adding new environment variables
-- Check variable names match exactly (case-sensitive)
-- Ensure variables are set for the correct environment (Production/Preview/Development)
+- **`Invalid server environment`** in the runtime logs: a required variable is missing or weak; the message lists each one.
+- **`Module not found` for `@workspace/...`**: the Root Directory is not `apps/web`, or the install ran outside the workspace.
+- **Prisma "did not initialize yet"**: the build skipped `prisma generate`; keep the default build command.
+- **OAuth redirect mismatch**: `NEXT_PUBLIC_URL` and the provider's callback URL must match exactly.

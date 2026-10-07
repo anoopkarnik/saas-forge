@@ -1,55 +1,128 @@
-The scaffold feature lets users download a customized copy of the SaaS Forge boilerplate: only the modules and platforms they chose, priced from the module catalog.
+How the open-source repository turns one codebase into thousands of downloadable variants. This page is for contributors and for anyone running their own copy of the download platform. None of this code ships in a download.
 
+## The pipeline
 
-## Your keys never reach our servers
-
-
-The server only receives non-secret choices: modules, platforms, themes and toggles. Database URLs, auth secrets and provider API keys are never sent.
-
-- **Web and desktop:** if you import a `.env` file with secrets, the download is built from your public choices, then your browser adds the secrets to the ZIP as `apps/web/.env.local` and `packages/database/.env` (readable only by you, `0600`).
-- **Mobile:** secrets are not collected. Add them after download by following `SETUP.md`.
-
-`/api/scaffold` rejects any request that contains a secret with `400 secret_not_accepted`, and server logs redact secret-looking fields.
-
-
-## What the ZIP contains
-
-
-- The project, compiled for your modules and platforms, without `node_modules` or build output.
-- `.env` files for each platform with your public choices, plus `.env.example` templates.
-- `SETUP.md`: the accounts to create and every env var to fill, with where to find each one.
-- `pnpm-lock.yaml`, pruned to your selection, so `pnpm install --frozen-lockfile` works on CI and Vercel.
-- `.boilerplate-version`, used by upgrades.
-
-
-## API
-
-
-**POST** `/api/scaffold` (signed-in session)
-
-```json
-{
-  "name": "my-awesome-saas",
-  "modules": ["billing", "ai"],
-  "envVars": { "NEXT_PUBLIC_URL": "https://example.com", "NEXT_PUBLIC_PLATFORM": "web,mobile" },
-  "expectedTotalCredits": 50
-}
+```text
+apps/ + packages/  ──template:sync──►  templates/saas-boilerplate  ──template:stage──►  .generated/saas-boilerplate
+ (source of truth)                     (managed starter source)                         (clean staged copy)
+                                                                                              │
+                                              compileScaffoldVariant(modules, platforms, providers)
+                                                                                              ▼
+                                                                         base archive (cached in R2)
+                                                                                              │
+                                                           + SETUP.md, .boilerplate-version, .env files
+                                                                                              ▼
+                                                                                      the buyer's ZIP
 ```
 
-| Response | Meaning |
+## Modules
+
+`scaffold-modules/registry.json` lists the base price, the tier step price and every module (`id`, label, description, `creditsCost`, `requires`, `incompatibleWith`, `downloadEnabled`, `implemented`). Each module has `scaffold-modules/<id>/manifest.json`:
+
+| Key | Meaning |
 | --- | --- |
-| `200` | The ZIP stream. Credits are charged once and recorded in the scaffold ledger. |
-| `400 secret_not_accepted` | `envVars` contained a secret. The `keys` field lists them; nothing was built or charged. |
-| `403` | Not enough credits, or the origin is not allowed. |
-| `409 price_changed` | `expectedTotalCredits` no longer matches the catalog. Refresh prices and retry. |
+| `unselected.remove` | Files and folders the module owns, deleted when it is not selected (including its migration folders) |
+| `unselected.jsonRemove` | JSON keys to delete, such as a package script or dependency |
+| `unselected.textReplace` | One-line edits markers cannot express; each must match exactly once |
+| `unselected.copy` / `replace` | Module-owned slot stubs, such as `WorkspaceSlot.tsx`. Never snapshot a shared file |
+| `ownedIdentifiers` | Strings that must not survive when the module is unselected; the leak check fails on them |
+| `selected` | Actions applied only when the module is selected |
 
-Prices come from the public `scaffold.catalog` tRPC query. Saved projects can also be downloaded with an API key through `POST /api/v1/projects/{slug}/download`, which builds the same archive.
+Code inside shared files goes between markers in the file's comment syntax:
 
+```ts
+// scaffold:begin billing
+import { billingRouter } from "./billingProcedures";
+// scaffold:end billing
+```
 
-## Implementation
+```tsx
+{/* scaffold:begin ai */}
+<AiMenuItem />
+{/* scaffold:end ai */}
+```
 
+```env
+# scaffold:begin ai_agents
+BACKEND_URL=http://localhost:8000
+# scaffold:end ai_agents
+```
 
-- `apps/web/app/api/scaffold/route.ts`: session, secret and price checks.
-- `apps/web/lib/scaffold/service.ts`: `buildProjectZip`, the one builder for every download path.
-- `packages/ui/src/lib/scaffold-secrets.ts`: which env vars are secrets, shared by clients and server.
-- `packages/ui/src/lib/zip-append.ts`: adds the secret files to the downloaded ZIP on the device.
+Regions can nest. Regions of unselected modules are dropped and marker lines never ship. Model access through `(db as any)` escapes the type checker, so it needs a marker region too.
+
+## Providers
+
+`scaffold-providers/registry.json` lists each toggle (`payment_gateway`, `image_storage`, `cms`), its env var, its owning module and its values. `scaffold-providers/<toggle>/<value>/manifest.json` has `unselected` actions, `ownedIdentifiers` and `selected` actions (for example pinning the default to the chosen value). Markers use `<toggle>.<value>`:
+
+```ts
+// scaffold:begin payment_gateway.stripe
+if (gateway === "stripe") {
+  // …
+}
+// scaffold:end payment_gateway.stripe
+throw gatewayNotConfigured();
+```
+
+Each provider branch must be self-contained: an `if` block per provider, then a clear error, never an `else` another provider fills. A toggle prunes only inside its module, and choices are part of the build key.
+
+## Migrations per variant
+
+A module owns the migration folders that only touch its tables. Statements a module adds to a shared migration are stripped with `textReplace` in the variant; repository migration files are never edited. The boot smoke test proves the remaining migrations match the variant's schema.
+
+## Lockfile
+
+`pnpm-lock.yaml` importers are pruned to the variant's `package.json` files at compile time, so `pnpm install --frozen-lockfile` works for buyers on CI and Vercel.
+
+## Downloads, charges and the build cache
+
+Every download goes through `downloadScaffold` in `apps/web/lib/scaffold/service.ts`:
+
+1. **Charge**: free when the user already owns the same build key; otherwise the price is charged once per idempotency key and a `ScaffoldJob` is recorded.
+2. **Build**: the base archive is served from the build cache (`apps/web/lib/scaffold/build-cache.ts`, stored in R2 when its credentials are set), keyed by the starter's content, modules, platforms, providers and `BUILDER_VERSION`.
+3. **Finish**: the job becomes `ready`, or `failed` and refunded exactly once.
+
+Bump `BUILDER_VERSION` whenever compile or archive output changes; `build-cache.test.ts` fails until you do. After a deploy, an admin can warm the cache with the `scaffold.prewarm` mutation.
+
+The wizard's file preview (`scaffold.previewIndex`) compiles real variants, so it follows the manifests automatically.
+
+## Secrets
+
+`packages/ui/src/lib/scaffold-secrets.ts` decides which env vars are secrets, for the browser and the server alike. `/api/scaffold` answers `400 secret_not_accepted` if a request contains one; the browser adds secrets to the ZIP with `zip-append.ts`.
+
+## HTTP API
+
+| Route | Auth | Purpose |
+| --- | --- | --- |
+| `POST /api/scaffold` | Session | Wizard download. Body: `name`, `modules`, public `envVars`, `expectedTotalCredits`. `409 price_changed` when the price moved |
+| `POST /api/scaffold/upgrade` | Session | Upgrade kit for a saved project |
+| `POST /api/scaffold/builds/[jobId]` | Session | Free re-download of an owned build |
+| `/api/scaffold/trpc` | Per procedure | tRPC procedures that read the starter (preview, build keys, prewarm, upgrade previews) |
+| `GET /api/v1/scaffold/pricing` | API key | Catalog and prices |
+| `GET /api/v1/credits` | API key (`read:credits`) | Credit balance |
+| `GET`, `POST /api/v1/projects` | API key | List or create saved projects |
+| `GET`, `PATCH /api/v1/projects/[slug]` | API key | Read or update a project |
+| `POST /api/v1/projects/[slug]/download` | API key (`scaffold:download`) | Download a project |
+| `GET`, `POST /api/v1/projects/[slug]/upgrade` | API key (`scaffold:upgrade`) | Quote or buy an upgrade kit |
+
+## Vercel file tracing
+
+Vercel ships each route with only its traced files, but the scaffold code reads the registry and the starter with `fs`. `outputFileTracingIncludes` in `apps/web/next.config.mjs` adds the registry to every route and the starter only to `/api/scaffold/*` and the v1 download and upgrade routes. `traceConfig.test.ts` checks it.
+
+## Validating changes
+
+```bash
+pnpm scaffold:matrix              # every module alone, every pair, all; install, generate, typecheck, arch-check
+pnpm scaffold:matrix --static     # compile and leak checks only, fast
+pnpm scaffold:matrix --only ai+billing
+pnpm scaffold:matrix --full       # every subset (nightly)
+```
+
+CI runs the pairwise matrix on every pull request. `.github/workflows/scaffold-nightly.yml` runs the full sweep plus `scripts/scaffold-boot-smoke.mjs` (migrate, seed, production build, start, sign up) for the `none` and `all` variants. A module marked `implemented: false` must keep an empty manifest.
+
+## Adding a module
+
+1. Add it to `scaffold-modules/registry.json` with a price and `implemented: true`.
+2. Create its manifest: owned files in `unselected.remove`, identifiers in `ownedIdentifiers`.
+3. Wrap its code in shared files with `scaffold:begin <id>` / `scaffold:end <id>`.
+4. Give it its own `.prisma` file and migrations.
+5. Run `pnpm scaffold:matrix`, then document it here and on the Modules pages.

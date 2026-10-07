@@ -1,20 +1,16 @@
-`create-saas-forge` creates a project from the terminal with only the modules you bought, using the same prices and archive as the web wizard.
-
+`create-saas-forge` downloads a project from the terminal with only the modules you choose, using the same prices and the same build as the web wizard. It has no dependencies and needs Node.js 24.
 
 ## Sign in
 
-
-Create an API key in SaaS Forge under **Settings → API Keys** with the scopes `read:me`, `read:projects`, `write:projects`, `scaffold:download` and `scaffold:upgrade`. Then:
+On [saasforge.cc](https://saasforge.cc), create an API key under **Settings → API Keys** with the scopes `read:me`, `read:projects`, `write:projects`, `scaffold:download` and `scaffold:upgrade`. Then:
 
 ```bash
 npx create-saas-forge login
 ```
 
-The key is saved to `~/.config/saas-forge/credentials.json`, readable only by you. In CI, set `SAAS_FORGE_API_KEY` instead.
-
+The key is saved to `~/.config/saas-forge/credentials.json` (or `$XDG_CONFIG_HOME/saas-forge/`), readable only by you. In CI, set `SAAS_FORGE_API_KEY` instead.
 
 ## Create a project
-
 
 ```bash
 # Interactive: pick modules and platforms
@@ -23,33 +19,34 @@ npx create-saas-forge my-app
 # Non-interactive (CI)
 npx create-saas-forge my-app --modules billing,ai --platforms web,mobile --yes
 
-# Download a configuration you saved on the dashboard
+# Download a project you saved on the dashboard
 npx create-saas-forge new my-app --project my-saved-project --yes
 ```
 
-The CLI shows the price before charging, adds modules a selection requires (AI Agents needs AI), verifies the archive's checksum, and extracts it into `my-app`. Downloading a build you already own is free. Add `--install` to also run `git init`, `pnpm install` and `pnpm generate`.
+The CLI saves the selection as a project on your account, shows the price before charging, adds modules a selection requires (AI Agents needs AI Platform), and extracts the archive into `my-app`. It writes `.saas-forge.json` with the project slug so later upgrades know which project this is. Downloading a build you already own is free.
 
-Your keys never leave your machine: run `pnpm doctor` in the project. It asks for each value, checks it against the service and writes the `.env` files.
+Add `--install` to also run `git init`, add the published template branch as a `saas-forge` git remote, and run `pnpm install` and `pnpm generate`.
 
+Your keys never leave your machine. Next, run `pnpm doctor` inside the project: it asks for each value, checks it against the service and writes the `.env` files.
 
 ## Upgrade
 
-
-Run inside a project created by the CLI (it reads `.saas-forge.json`):
+Inside a project created by the CLI (or anywhere with `--project <slug>`):
 
 ```bash
 # See what an upgrade adds and costs
 npx create-saas-forge upgrade --add ai_agents --tier tier-3 --dry-run
 
+# Switch a provider; the kit swaps the code
+npx create-saas-forge upgrade --provider payment_gateway=dodo --dry-run
+
 # Buy it and unpack the upgrade kit
 npx create-saas-forge upgrade --add ai_agents --yes
 ```
 
-The kit contains `UPGRADE.md`, `UPGRADE_SPEC.json` and the staged changes. Follow `UPGRADE.md`, or run the upgrade-boilerplate skill in Claude Code.
-
+The kit contains `UPGRADE.md`, `UPGRADE_SPEC.json` and the staged files under `.upgrade/`. Follow `UPGRADE.md`, or run `/upgrade-boilerplate` in Claude Code to apply it while keeping your changes. See [Upgrading Your Project](/landing/doc/upgrading).
 
 ## Other commands
-
 
 ```bash
 npx create-saas-forge credits   # remaining credits
@@ -58,8 +55,16 @@ npx create-saas-forge --help
 
 | Option | Meaning |
 | --- | --- |
+| `--modules a,b` | Modules to include (`billing`, `multi_tenancy`, `ai`, `ai_agents`, `api_keys`) |
+| `--platforms a,b` | Platforms: `web`, `desktop`, `mobile` (default `web`) |
+| `--name <name>` | Project name (defaults to the directory name) |
+| `--project <slug>` | Use an existing saved project |
 | `--api-key <key>` | Use this key instead of the saved one or `SAAS_FORGE_API_KEY` |
-| `--url <server>` | Point at another SaaS Forge server (`SAAS_FORGE_URL`) |
-| `--yes` | Skip confirmations (required without a terminal) |
+| `--url <server>` | Point at another SaaS Forge server (`SAAS_FORGE_URL`); the default is `https://saasforge.cc` |
+| `--yes`, `-y` | Skip confirmations (required without a terminal) |
+| `--install` | Run git and pnpm setup after extracting |
+| `--dry-run` | Upgrade only: show the plan and price without buying |
 
-The older `npx saas-forge` command still works but clones the whole platform repository. It prints a deprecation notice and will be removed in a later release.
+`upgrade` refuses to send your key to a server other than the one it was created for unless you pass `--url` explicitly.
+
+The older `npx saas-forge` command clones the whole open-source repository. It prints a deprecation notice and will be removed in a later release.

@@ -1,34 +1,73 @@
+Email is sent with [Resend](https://resend.com/) and rendered from [React Email](https://react.email/) templates in `packages/email`.
 
-We use **Resend** for transactional and marketing emails.
+## Setup
 
+1. Create a Resend account and an API key at [resend.com/api-keys](https://resend.com/api-keys).
+2. Add and verify your sending domain at [resend.com/domains](https://resend.com/domains) (DNS records for SPF and DKIM). Without a verified domain Resend only delivers to your own address.
+3. Configure:
 
-## Configuration
-
-1. Create an account at [Resend](https://resend.com/).
-2. Verify your domain (required for sending to non-test emails).
-3. Create an API Key.
-4. Add it to `.env`:
-
-```plain text
-RESEND_API_KEY=re_123456789
-NEXT_PUBLIC_SUPPORT_MAIL=support@yourdomain.com
+```env
+NEXT_PUBLIC_EMAIL_CLIENT="resend"
+RESEND_API_KEY="re_..."
+NEXT_PUBLIC_SUPPORT_MAIL="support@your-domain.com"
+NEXT_PUBLIC_COMPANY_NAME="Acme Inc."
 ```
 
+`NEXT_PUBLIC_SUPPORT_MAIL` is the sender of every email and the inbox that receives support messages, so it must be on the verified domain. `pnpm doctor` checks both the key and the domain.
 
-## Sending Emails
+## Without an email client
 
+With `NEXT_PUBLIC_EMAIL_CLIENT="none"` (or no API key), every send is skipped with a warning. Outside production the warning includes the link, so you can still verify accounts and reset passwords locally. Production refuses to boot with email sign-up on and no email client.
 
-We use React Email for templates. You can send an email using the `@workspace/email` package:
+## What is sent
 
+| Email | Template | Sent when |
+| --- | --- | --- |
+| Verify your email | `EmailVerification.tsx` | Email sign-up, and email change |
+| Reset your password | `ResetPassword.tsx` | `/forgot-password` |
+| Invitation | `Invitation.tsx` | An admin invites someone (invite-only registration) |
+| Workspace invitation | `OrganizationInvitation.tsx` | A workspace admin invites a member (Organizations module) |
+| Support message | plain text | A visitor uses **Send Message** in the support widget |
 
-```typescript
-import { sendEmail } from "@workspace/email";
-import { WelcomeEmail } from "@workspace/email/templates/welcome";
+Newsletter sign-ups can be added as Resend contacts with `createContact` (set `RESEND_AUDIENCE_ID`).
 
-await sendEmail({
-  to: "user@example.com",
-  subject: "Welcome!",
-  react: WelcomeEmail({ name: "User" }),
-});
+## Sending your own email
+
+Add a template and a sender next to the existing ones:
+
+```tsx
+// packages/email/src/templates/Welcome.tsx
+import { Body, Container, Heading, Html, Text } from "@react-email/components";
+
+export default function Welcome({ name }: { name: string }) {
+  return (
+    <Html>
+      <Body>
+        <Container>
+          <Heading>Welcome, {name}</Heading>
+          <Text>Thanks for signing up.</Text>
+        </Container>
+      </Body>
+    </Html>
+  );
+}
 ```
 
+```ts
+// packages/email/src/resend/index.ts
+import { render } from "@react-email/render";
+import Welcome from "../templates/Welcome";
+
+export const sendWelcomeEmail = async (email: string, name: string) => {
+  const subject = "Welcome!";
+  const resend = getResendClient();
+  if (!resend) {
+    warnEmailSkipped(subject, email);
+    return null;
+  }
+  const html = await render(Welcome({ name }));
+  return resend.emails.send({ from: process.env.NEXT_PUBLIC_SUPPORT_MAIL!, to: email, subject, html });
+};
+```
+
+Always go through `getResendClient()` so unconfigured environments skip instead of failing. Call senders from server code only (tRPC procedures, route handlers, Better Auth hooks).

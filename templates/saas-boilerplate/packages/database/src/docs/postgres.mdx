@@ -1,35 +1,74 @@
+SaaS Forge stores everything in PostgreSQL through [Prisma](https://www.prisma.io/) 7. The schema, the generated client, the seed script and these docs live in `packages/database`.
 
-The project uses PostgreSQL as its primary database. We recommend using a hosted provider like **Neon** or **Supabase**, but you can also run it locally via Docker or  in aws rds. 
+## Choose a database
 
+| Option | Notes |
+| --- | --- |
+| [Neon](https://neon.tech/) | Serverless Postgres with branching and pgvector. Use the **pooled** connection string for the app |
+| [Supabase](https://supabase.com/) | Postgres with pgvector. Use the connection pooler URL for serverless hosting |
+| Docker | `docker compose up -d postgres` runs `pgvector/pgvector:pg16` on port 5433 |
+| Any Postgres 14+ | Must allow multiple schemas. The AI Agents module also needs the `vector` extension |
 
-## Connection String
+## Connection strings
 
+`DATABASE_URL` is read in two places:
 
-Add your database connection string to the `.env` file:
+| File | Read by |
+| --- | --- |
+| `apps/web/.env` | The running app (through `@prisma/adapter-pg`) |
+| `packages/database/.env` | The Prisma CLI: `pnpm migrate`, `pnpm seed`, `pnpm reset` |
 
+Usually both hold the same URL. They may differ on purpose, for example a direct (non-pooled) URL for migrations. `pnpm doctor` warns when they point at different databases, so you never migrate one database and run the app against another by accident.
 
-```plain text
-DATABASE_URL="postgresql://user:password@host:port/database"
+```env
+DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/DBNAME?sslmode=require"
 ```
 
+## Schemas
 
-## Schema Management
+The schema is split across files in `packages/database/prisma/`, and tables are grouped into Postgres schemas:
 
+| Postgres schema | Contents |
+| --- | --- |
+| `user_schema` | Users, accounts, sessions, verification, invitations, app settings; organizations and API keys when those modules are present |
+| `billing_schema` | Payment transactions |
+| `cms_schema` | Landing page content and documentation |
+| `ai_schema` | Prompts, conversations, usage, speech and webhook config; agent jobs and RAG collections with AI Agents |
+| `scaffold_schema` | Saved projects, download jobs and release emails (open-source repository only) |
 
-We use **Prisma ORM** to manage the database schema. The schema file is located at `packages/database/prisma/schema.prisma`.
+See [Schema Reference](/landing/doc/schema) for every model.
 
+## Commands
 
-### Common Commands
+Run from the repository root:
 
-- **Push Schema**: Update the database schema to match your Prisma file.
+| Command | What it does |
+| --- | --- |
+| `pnpm generate` | Generates the Prisma client into `packages/database/src/generated/prisma` |
+| `pnpm migrate` | `prisma migrate dev`: creates a migration from schema changes, applies it, regenerates the client |
+| `pnpm seed` | Loads landing content, docs, AI prompts and the demo guest user |
+| `pnpm reset` | Drops and recreates the database, applies all migrations, seeds. **Destroys data** |
+| `pnpm --dir packages/database migrate:deploy` | Applies pending migrations without prompts. Use in production |
 
-    ```bash
-    pnpm migrate
-    ```
+The web app's `build` script runs `prisma generate` first, so hosts like Vercel always build with a fresh client.
 
-- **Generate Client**: Regenerate the Prisma Client (run this after changing schema).
+## Using the client
 
-    ```bash
-    pnpm generate
-    ```
+```ts
+import db from "@workspace/database/client";
 
+const user = await db.user.findUnique({
+  where: { id: userId },
+  select: { id: true, email: true, creditsTotal: true, creditsUsed: true },
+});
+```
+
+Types come from `@workspace/database/prisma`. The client is a singleton per process. Set `PRISMA_QUERY_LOGGING=true` to log every query with its duration.
+
+UI code never imports the database package directly: components, pages and the native apps go through tRPC or a service in `apps/web/lib`. `pnpm arch:check` enforces this.
+
+## Production tips
+
+- Use a pooled connection string on serverless hosts. Every function instance opens its own connections.
+- Nothing in the build migrates your production database. Run `migrate:deploy` as a release step: see [Migrations & Seeding](/landing/doc/migration).
+- Turn on automated backups or point-in-time recovery with your provider before launch.

@@ -1,0 +1,88 @@
+The API Keys module (`api_keys`) lets users create API keys and call a REST API under `/api/v1` from scripts, CI or other services.
+
+## Creating a key
+
+Users open **Settings → API Keys**, give the key a label, choose scopes and an optional expiry. The full key is shown **once**:
+
+```text
+sk_<10-character prefix>_<secret>
+```
+
+Only a SHA-256 hash is stored, with the prefix for lookup. Keys can be revoked at any time, and the list shows when each key was last used.
+
+## Calling the API
+
+Send the key as a bearer token:
+
+```bash
+curl https://your-domain.com/api/v1/me \
+  -H "Authorization: Bearer sk_..."
+```
+
+```json
+{ "user": { "id": "cm…", "email": "ada@example.com", "name": "Ada" } }
+```
+
+Errors use one shape:
+
+```json
+{ "error": { "code": "insufficient_scope", "message": "…" } }
+```
+
+| Status | Meaning |
+| --- | --- |
+| `401` | Missing, malformed, unknown, revoked or expired key |
+| `403` | The key lacks a required scope |
+| `429` | Over the per-key rate limit (60 requests per minute) |
+
+## Scopes
+
+| Scope | Allows |
+| --- | --- |
+| `read:me` | `GET /api/v1/me` |
+| `read:credits`, `read:projects`, `write:projects`, `scaffold:download`, `scaffold:upgrade` | SaaS Forge's own credits, project and download endpoints (open-source repository only). Remove them from `scopes.ts` in your product or reuse the names |
+
+Add scopes for your own endpoints in `packages/auth/src/api-keys/scopes.ts`, with a description users see when creating a key.
+
+## Adding an endpoint
+
+```ts
+// apps/web/app/api/v1/reports/route.ts
+import { NextRequest, NextResponse } from "next/server";
+import db from "@workspace/database/client";
+import { authenticateApiKey } from "@/server/authenticateApiKey";
+
+export const runtime = "nodejs";
+
+export async function GET(req: NextRequest) {
+  const auth = await authenticateApiKey(req, { scopes: ["read:reports"] });
+  if (!auth.ok) return auth.response;
+
+  const reports = await db.report.findMany({ where: { userId: auth.userId } });
+  return NextResponse.json({ reports });
+}
+```
+
+Then add the route to `apps/web/lib/route-policy.ts`:
+
+```ts
+{ path: "/api/v1/reports", match: "exact", auth: "api-key", rateLimit: "api-key", input: "none" },
+```
+
+`authenticateApiKey` checks the key, its status, expiry and scopes, applies the per-key rate limit, and records `lastUsedAt`.
+
+## Procedures
+
+`apiKey.list`, `apiKey.create` (label, 1+ scopes, optional expiry) and `apiKey.revoke`. All require a signed-in, non-guest user, and users only see their own keys.
+
+## Files
+
+| Path | Purpose |
+| --- | --- |
+| `packages/auth/src/api-keys/` | Key generation, hashing and scopes |
+| `packages/database/prisma/api-keys.prisma` | `ApiKey` model |
+| `apps/web/server/authenticateApiKey.ts` | Bearer-token authentication for REST routes |
+| `apps/web/server/apiKeyRateLimit.ts` | 60 requests per minute per key |
+| `apps/web/trpc/routers/apiKeyProcedures.ts` | The `apiKey` router |
+| `apps/web/components/api-keys/` | The settings screen |
+| `apps/web/app/api/v1/me/route.ts` | Example endpoint |

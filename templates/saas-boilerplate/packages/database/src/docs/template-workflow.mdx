@@ -1,0 +1,47 @@
+How the released starter is produced from the root repository. Open-source repository only.
+
+## Three copies of the starter
+
+| Path | What it is | Edit it? |
+| --- | --- | --- |
+| Root `apps/` and `packages/` | The source of truth for shared SaaS behavior | Yes |
+| `templates/saas-boilerplate` | The managed starter source, copied from root plus overrides | No, regenerate it |
+| `template-overrides/saas-boilerplate` | Files that intentionally differ in the starter (README, CLAUDE.md, `UPGRADING.md`, the empty home page, the starter sidebar, the starter `package.json`, …) | Yes |
+| `.generated/saas-boilerplate` | A clean staged copy used for validation, builds and downloads | Never |
+
+`template-sync.manifest.json` decides what goes in: `include` paths copied from root, `exclude` paths kept out (the download API, the projects dashboard, the CLI, scaffold migrations), and `templateOverrides`, each backed by a file in `template-overrides/saas-boilerplate`.
+
+## Commands
+
+| Command | What it does |
+| --- | --- |
+| `pnpm template:sync` | Copies root into `templates/saas-boilerplate` and reapplies overrides |
+| `pnpm template:check-sync` | Fails on drift, unmanaged files, unregistered overrides or generated artifacts; prints the source path and a diff for each drifted file |
+| `pnpm template:stage` | Builds `.generated/saas-boilerplate` |
+| `pnpm template:prepare` | Stages, installs dependencies in the staged copy and runs Prisma generate |
+| `pnpm template:dev` | Prepares, then runs the staged starter |
+| `pnpm template:build` | Check, prepare, build the staged starter |
+| `pnpm template:test`, `pnpm template:test:coverage` | Check, prepare, test the staged starter |
+
+`pnpm build` at the root runs `template:stage` before `turbo build`, because the download routes package the staged starter.
+
+## Rules
+
+- Make shared changes in root `apps/` and `packages/`, then `pnpm template:sync`.
+- Put starter-only differences in `template-overrides/saas-boilerplate` and register them in `templateOverrides`.
+- Never hand-edit `.generated/saas-boilerplate` or `templates/saas-boilerplate`.
+- Never install dependencies inside `templates/saas-boilerplate`; `node_modules`, `.next`, `.turbo`, `coverage`, `dist` and `build` there make `check-sync` fail. Use `template:prepare`, which works in the staged copy.
+- Root-only features (scaffold, projects, CLI) stay out of the starter unless the product changes on purpose.
+
+## Typical loop
+
+```bash
+# change root code
+pnpm template:sync
+pnpm template:check-sync
+pnpm template:build      # when starter behavior may have changed
+pnpm template:test
+pnpm scaffold:matrix     # when modules, markers or manifests changed
+```
+
+CI runs **Template Sync** (`template:check-sync`) on every push and pull request.

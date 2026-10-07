@@ -1,79 +1,71 @@
+Signed-in users work in the `(home)` route group: `apps/web/app/(home)`. This is where your product lives.
 
-The authenticated home area (`apps/web/app/(home)`) is where users land after signing in.
+## The app shell
 
+`app/(home)/layout.tsx` wraps every signed-in page with:
 
-## Structure
+- the **sidebar** (`components/home/AppSidebar.tsx`): logo and name from the CMS, navigation, the admin group for admins, the workspace switcher with the Organizations module, and the user menu;
+- the **user menu** at the bottom of the sidebar: credits (Billing module), **Settings**, theme switch and sign-out;
+- a **guest banner** when the read-only demo account is signed in;
+- a header with the sidebar toggle and breadcrumbs.
 
+The layout prefetches landing content on the server (for the logo and name) and hydrates it to the client.
 
-```plain text
-app/(home)/
-├── layout.tsx           # Protected layout
-├── page.tsx             # Home dashboard
-├── billing/
-│   └── page.tsx         # Billing & credits
-└── tasks/               # Your custom features
-    └── page.tsx
+## Settings
+
+The Settings dialog (`packages/ui/src/components/home/SettingsDialog.tsx`) has these sections:
+
+| Section | Contents |
+| --- | --- |
+| My Account | Name, avatar upload, change or set password, delete account |
+| Sessions | Active sessions with device and IP, revoke any of them |
+| Plans & Billing | Credit balance, buy credits, transaction history (Billing module) |
+| API Keys | Create, list and revoke API keys (API Keys module) |
+
+## Your home page
+
+In a downloaded project, `app/(home)/page.tsx` is an intentionally empty page:
+
+```tsx
+"use client";
+
+export default function Page() {
+  return <div className="flex-1 p-6" />;
+}
 ```
 
+Replace it with your product. In the open-source repository this page is the SaaS Forge download wizard instead.
 
-## Protected Layout
+## Adding a page
 
+Create a folder under `app/(home)`. The middleware protects it automatically (any path not listed in the route policy requires a session).
 
-The `(home)` route group is automatically protected by middleware. Users must be authenticated to access these rout
+```tsx
+// apps/web/app/(home)/reports/page.tsx
+import { getQueryClient, trpc } from "@/trpc/server";
+import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
+import ReportsList from "@/components/reports/ReportsList";
 
+export default async function ReportsPage() {
+  const queryClient = getQueryClient();
+  await queryClient.ensureQueryData(trpc.reports.list.queryOptions());
 
-## Home Page
-
-
-Default landing for authenticated users:
-
-
-```typescript
-// app/(home)/page.tsx
-
-export default async function HomePage() {
   return (
-    <div>
-      <h1>Welcome, {session.user.name}!</h1>
-      {/* Dashboard content */}
-    </div>
+    <HydrationBoundary state={dehydrate(queryClient)}>
+      <ReportsList />
+    </HydrationBoundary>
   );
 }
 ```
 
+Then add a link in `components/home/AppSidebar.tsx`. Wrap it in `isAdmin` if only admins should see it, and protect the data with `adminProcedure` either way. The full recipe is in [Adding a Feature](/landing/doc/adding-features).
 
-## Adding Dashboard Features
+## Other signed-in pages
 
-
-Create new routes under `(home)`:
-
-
-```bash
-mkdir apps/web/app/\\(home\\)/analytics
-touch apps/web/app/\\(home\\)/analytics/page.tsx
-```
-
-
-## Navigation
-
-
-Add links to your dashboard features:
-
-
-```typescript
-// components/DashboardNav.tsx
-<nav>
-  <Link href="/">Home</Link>
-  <Link href="/billing">Billing</Link>
-  <Link href="/tasks">Tasks</Link>
-  <Link href="/settings">Settings</Link>
-</nav>
-```
-
-
-## Best Practices
-
-1. **Loading states**: Use Suspense for async data
-2. **Error boundaries**: Handle errors gracefully
-3. **Responsive design**: Mobile-first approach
-4. **Performance**: Lazy load heavy features
+| Path | What | Module |
+| --- | --- | --- |
+| `/admin/*` | [Admin panel](/landing/doc/admin-panel) | Core |
+| `/organization` | Workspace settings, members, invitations | Organizations |
+| `/accept-invitation/[id]` | Accept a workspace invitation | Organizations |
+| `/ai` | AI chat | AI Platform |
+| `/projects` | Saved projects, downloads and Upgrade Center | Open-source repository only |

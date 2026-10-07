@@ -1,0 +1,45 @@
+The admin panel lives under `/admin` and is visible to users with the `admin` role. The demo `guest` role can open the screens marked below to see them, but cannot change anything. Every write is checked on the server with `adminProcedure`.
+
+| Page | Path | Guest can view |
+| --- | --- | --- |
+| Users | `/admin/users` | No |
+| CMS | `/admin/cms` | Yes |
+| Docs | `/admin/doc` | Yes |
+| SEO | `/admin/seo` | Analytics only |
+| API | `/admin/api` | Yes |
+| AI | `/admin/ai` (AI Platform module) | Partly |
+
+In a downloaded project the sidebar links Users, CMS and Docs. Open the other pages by URL or add links in `apps/web/components/home/AppSidebar.tsx`.
+
+## Users
+
+- List every user with role, verification and ban status.
+- Create users, including the read-only demo guest (**Create Guest**).
+- Change roles between `user`, `admin` and `guest`.
+- Ban, unban and permanently remove users.
+- Switch registration between **Open** and **Invite only**, and send, resend or revoke invitations (valid for 7 days).
+
+See [Roles & Access Control](/landing/doc/roles-and-access).
+
+## CMS
+
+Edit the landing page without a deploy. Tabs: **Navbar** (name, logos, GitHub, donate link), **Hero**, **Features**, **Testimonials**, **Pricing**, **FAQ** and **Legal** (company details for the legal pages). Images upload to your [file storage](/landing/doc/storage) through `/api/cms/upload` (admins only, 10 MB, PNG/JPEG/WebP).
+
+Works with the Postgres and Notion CMS. With the AI Platform module, an assistant can draft section content from a short brief. See [Content Management](/landing/doc/content-management).
+
+## Docs
+
+Create, edit, reorder and delete documentation pages: title, slug, category, order and Markdown content. Changes appear immediately on `/landing/doc`. Postgres CMS only. With the AI Platform module, an assistant can draft a page.
+
+## SEO
+
+- **Audit**: crawls `/landing`, the legal pages and every doc page, and checks the title, meta description, canonical URL, heading hierarchy, `robots.txt` and `sitemap.xml`. With `GOOGLE_PAGESPEED_API_KEY` it also runs PageSpeed Insights performance scores.
+- **Analytics**: traffic overview, top pages, sources, devices, browsers, countries and real-time users from Google Analytics 4. Needs `GA4_PROPERTY_ID` and `GA4_CREDENTIALS_JSON`: see [Observability](/landing/doc/observability).
+
+## API
+
+A catalog of every tRPC procedure, grouped by router, with its type (query or mutation) and the access it requires (public, authenticated, admin, or admin with guest read). It reads `apps/web/trpc/apiRegistry.ts`, which a test keeps in sync with the real router.
+
+## AI (AI Platform module)
+
+Manage prompts and their versions (content, provider, model), activate a version, list available models, configure speech (text-to-speech and speech-to-text) and the n8n webhook, and review token usage and credits per request. See [AI Platform](/landing/doc/ai-platform).

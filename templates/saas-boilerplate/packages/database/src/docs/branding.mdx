@@ -1,0 +1,61 @@
+## Name and description
+
+Set these in `apps/web/.env`:
+
+```env
+NEXT_PUBLIC_SAAS_NAME="Acme"
+NEXT_PUBLIC_SITE_DESCRIPTION="Acme turns spreadsheets into dashboards."
+NEXT_PUBLIC_COMPANY_NAME="Acme Inc."
+NEXT_PUBLIC_URL="https://acme.com"
+```
+
+`NEXT_PUBLIC_SAAS_NAME` is used in page titles, emails, support-message subjects and Redis cache keys. It also has two effects worth knowing:
+
+- **It is the key of your landing content.** The Postgres and Notion CMS look up the landing page whose title equals this name. After renaming, run `pnpm seed` (Postgres) or rename the Notion row.
+- **It names the session cookie.** The cookie prefix is the name in lowercase with non-alphanumerics replaced by dashes (`acme.session_token`). Renaming signs everyone out.
+
+## Colors
+
+Pick one of eight themes:
+
+```env
+NEXT_PUBLIC_THEME="violet"   # blue, green, neutral, orange, red, rose, violet, yellow
+NEXT_PUBLIC_THEME_TYPE="dark"  # light, dark or system
+```
+
+The root layout adds `theme-<color>` to `<html>`, and `next-themes` toggles the `dark` class. Each theme is a set of CSS variables in `packages/ui/src/styles/shadcn-<color>.css`, with a `.theme-<color>` block for light mode and a `.theme-<color>.dark` block for dark mode.
+
+To add your own brand theme:
+
+1. Copy `shadcn-green.css` to `shadcn-acme.css` and rename the selectors to `.theme-acme` and `.theme-acme.dark`.
+2. Change the variables. The [shadcn/ui themes page](https://ui.shadcn.com/themes) generates compatible values.
+3. Import it in `packages/ui/src/styles/globals.css`.
+4. Set `NEXT_PUBLIC_THEME="acme"` (and `VITE_THEME` / `EXPO_PUBLIC_THEME` for the native apps).
+
+## Logos and images
+
+- **Logos** come from your CMS: `logo` and `darkLogo` on the landing page. With the Postgres or constant CMS the defaults are `/cms/logo.png` and `/cms/darkLogo.png` in `apps/web/public/cms/`. Replace those files, or upload new logos in **Admin → CMS → Navbar**.
+- **Hero and feature images** are also CMS fields, seeded from `apps/web/public/cms/`.
+- **Favicon:** replace `apps/web/app/favicon.ico`.
+- **Default Open Graph image:** `/cms/hero_0.png`, set in `apps/web/lib/seo.ts`.
+
+Images served from another host (Vercel Blob, R2, Notion) must be allowed in `images.remotePatterns` in `apps/web/next.config.mjs`. See [File Storage](/landing/doc/storage).
+
+## Fonts
+
+Fonts are loaded with `next/font/local` in `packages/ui/src/typography/font.tsx`: Geist Sans for text, Geist Mono for code, and Cyberdyne for the logo wordmark. Replace the files in `packages/ui/src/typography/fontFiles/` or switch to `next/font/google`.
+
+## Native app identity
+
+| What | Where |
+| --- | --- |
+| Desktop app name and ID | `productName` and `appId` in `apps/desktop/electron-builder.yml` |
+| Desktop icon | `apps/desktop/icon.png` and `apps/desktop/build/` |
+| Mobile name, slug, deep-link scheme and package IDs | `apps/mobile/app.json` |
+| Mobile icons and splash | `apps/mobile/assets/` |
+
+If you change the mobile deep-link scheme from `saas-forge`, also update the trusted origins in `packages/auth/src/better-auth/auth.ts`.
+
+## Legal pages
+
+Terms of service, privacy policy, cancellation and refund, and contact pages are built from CMS fields: company legal name, support email, website URL, country, address, contact number and last-updated date. Edit them in **Admin → CMS → Legal** or in `packages/database/src/constants/legal.ts`. Have a lawyer review the text before launch.

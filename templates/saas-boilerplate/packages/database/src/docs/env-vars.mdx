@@ -1,47 +1,142 @@
+The web app reads `apps/web/.env`, then `apps/web/.env.local` over it; shell and host variables win over both. The Prisma CLI reads `packages/database/.env`. `apps/web/.env.example` is the source of truth for names. Use [`pnpm doctor`](/landing/doc/setup-doctor) to fill them.
 
-| Variable                         | Description                                       | Required?              |
-| -------------------------------- | ------------------------------------------------- | ---------------------- |
-| **Project Settings**             |                                                   |                        |
-| `NEXT_PUBLIC_THEME`              | `light`, `dark`, or `system`. Default theme.      | No                     |
-| `NEXT_PUBLIC_SAAS_NAME`          | The name of your product.                         | Yes                    |
-| `NEXT_PUBLIC_COMPANY_NAME`       | Legal name for footer/policies.                   | Yes                    |
-| `NEXT_PUBLIC_URL`                | Your production URL (e.g., `https://example.com`) | Yes                    |
-| **CMS (Notion)**                 |                                                   |                        |
-| `NOTION_API_TOKEN`               | Integration secret for Notion API.                | Yes                    |
-| `LANDING_DATABASE_ID`            | ID for the main Landing Page database.            | Yes                    |
-| `HERO_DATABASE_ID`               | ID for Hero section database.                     | Yes                    |
-| `FEATURE_DATABASE_ID`            | ID for Features database.                         | Yes                    |
-| `TESTIMONIAL_DATABASE_ID`        | ID for Testimonials database.                     | Yes                    |
-| `PRICING_DATABASE_ID`            | ID for Pricing database.                          | Yes                    |
-| `FAQ_DATABASE_ID`                | ID for FAQ database.                              | Yes                    |
-| `FOOTER_DATABASE_ID`             | ID for Footer database.                           | Yes                    |
-| **Authentication**               |                                                   |                        |
-| `BETTER_AUTH_SECRET`             | Random string for encrypting sessions.            | Yes                    |
-| `AUTH_GOOGLE_CLIENT_ID`          | Google OAuth Client ID.                           | Optional               |
-| `AUTH_GOOGLE_CLIENT_SECRET`      | Google OAuth Client Secret.                       | Optional               |
-| `AUTH_GITHUB_CLIENT_ID`          | GitHub OAuth Client ID.                           | Optional               |
-| `AUTH_GITHUB_CLIENT_SECRET`      | GitHub OAuth Client Secret.                       | Optional               |
-| `AUTH_LINKEDIN_CLIENT_ID`        | LinkedIn OAuth Client ID.                         | Optional               |
-| `AUTH_LINKEDIN_CLIENT_SECRET`    | LinkedIn OAuth Client Secret.                     | Optional               |
-| **Database & Cache**             |                                                   |                        |
-| `DATABASE_URL`                   | Postgres connection string.                       | Yes                    |
-| `UPSTASH_REDIS_REST_URL`         | Redis REST URL.                                   | Yes                    |
-| `UPSTASH_REDIS_REST_TOKEN`       | Redis REST Token.                                 | Yes                    |
-| **Payments**                     |                                                   |                        |
-| `DODO_PAYMENTS_API_KEY`          | Private API Key from Dodo.                        | Yes                    |
-| `DODO_PAYMENTS_WEBHOOK_KEY`      | Webhook signing secret.                           | Yes                    |
-| `DODO_PAYMENTS_RETURN_URL`       | URL to redirect after payment.                    | Yes                    |
-| `DODO_PAYMENTS_ENVIRONMENT`      | `test_mode` or `live_mode`.                       | Yes                    |
-| `DODO_CREDITS_PRODUCT_ID`        | Product ID for internal reference.                | Yes                    |
-| `NEXT_PUBLIC_DODO_PAYMENTS_URL`  | Dodo Checkout Base URL.                           | Yes                    |
-| **Email**                        |                                                   |                        |
-| `RESEND_API_KEY`                 | API Key for sending emails.                       | Yes                    |
-| `NEXT_PUBLIC_SUPPORT_MAIL`       | Email address displayed for support.              | Yes                    |
-| **Storage**                      |                                                   |                        |
-| `BLOB_READ_WRITE_TOKEN`          | Vercel Blob access token.                         | Yes (if using uploads) |
-| **Observability**                |                                                   |                        |
-| `BETTERSTACK_TELEMETRY_*`        | BetterStack Source Token & Host.                  | Optional               |
-| `NEXT_PUBLIC_GOOGLE_ANALYTICS_*` | GA4 Measurement ID.                               | Optional               |
-| `GA4_PROPERTY_ID`                | GA4 property ID for admin analytics reports.      | Optional               |
-| `GA4_CREDENTIALS_JSON`           | Service account JSON or file path for GA4 reports. | Optional              |
-| `GOOGLE_PAGESPEED_API_KEY`       | API key for PageSpeed Insights audits.            | Optional               |
+## Validation at boot
+
+`apps/web/instrumentation.ts` validates the environment when a Node.js server process starts (`apps/web/lib/env.ts`). In production any issue stops the server; in development it only warns.
+
+- `NEXT_PUBLIC_URL` must be an `http(s)` URL and `DATABASE_URL` a `postgresql://` URL.
+- `BETTER_AUTH_SECRET` must be at least 32 characters and not a placeholder from an example file. The same applies to `BACKEND_HMAC_SECRET` once `BACKEND_URL` is set.
+- `NEXT_PUBLIC_AUTH_EMAIL=true` requires `NEXT_PUBLIC_EMAIL_CLIENT` (sign-up sends a verification email).
+- Each enabled integration requires its credentials (table below).
+- Any non-empty `NEXT_PUBLIC_*` variable whose name looks like a secret (`SECRET`, `TOKEN`, `PASSWORD`, `PRIVATE`, `API_KEY`, `WEBHOOK_KEY`, `JWT_KEY`) is rejected, because `NEXT_PUBLIC_` values are inlined into the browser bundle.
+
+| Toggle | Value | Requires |
+| --- | --- | --- |
+| `NEXT_PUBLIC_AUTH_GOOGLE` | `true` | `AUTH_GOOGLE_CLIENT_ID`, `AUTH_GOOGLE_CLIENT_SECRET` |
+| `NEXT_PUBLIC_AUTH_GITHUB` | `true` | `AUTH_GITHUB_CLIENT_ID`, `AUTH_GITHUB_CLIENT_SECRET` |
+| `NEXT_PUBLIC_AUTH_LINKEDIN` | `true` | `AUTH_LINKEDIN_CLIENT_ID`, `AUTH_LINKEDIN_CLIENT_SECRET` |
+| `NEXT_PUBLIC_EMAIL_CLIENT` | `resend` | `RESEND_API_KEY`, `NEXT_PUBLIC_SUPPORT_MAIL` |
+| `NEXT_PUBLIC_PAYMENT_GATEWAY` | `stripe` | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` |
+| `NEXT_PUBLIC_PAYMENT_GATEWAY` | `dodo` | `DODO_PAYMENTS_API_KEY`, `DODO_PAYMENTS_WEBHOOK_KEY` |
+| `NEXT_PUBLIC_IMAGE_STORAGE` | `vercel_blob` | `BLOB_READ_WRITE_TOKEN` |
+| `NEXT_PUBLIC_IMAGE_STORAGE` | `cloudflare_r2` | `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME` |
+| `NEXT_PUBLIC_ALLOW_RATE_LIMIT` | `upstash` | `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` |
+| `NEXT_PUBLIC_CMS` | `notion` | `NOTION_API_TOKEN` |
+
+## Project
+
+| Variable | Description |
+| --- | --- |
+| `NEXT_PUBLIC_SAAS_NAME` | Product name. Used in titles, emails, cookie names, cache keys, and to find the landing page row in Postgres or Notion. **Required** |
+| `NEXT_PUBLIC_SITE_DESCRIPTION` | Default meta description |
+| `NEXT_PUBLIC_COMPANY_NAME` | Company name in emails and legal pages |
+| `NEXT_PUBLIC_URL` | Public URL of the web app, without a trailing slash. **Required** |
+| `NEXT_PUBLIC_THEME` | Color theme: `blue`, `green` (default), `neutral`, `orange`, `red`, `rose`, `violet`, `yellow` |
+| `NEXT_PUBLIC_THEME_TYPE` | `light`, `dark` or `system` (default) |
+
+## Content
+
+| Variable | Description |
+| --- | --- |
+| `NEXT_PUBLIC_CMS` | `constant`, `postgres` or `notion`. Unset means `notion` in the open-source repo, or the CMS you chose in a download |
+| `NOTION_API_TOKEN` | Notion integration secret (Notion CMS) |
+| `LANDING_DATABASE_ID`, `HERO_DATABASE_ID`, `FEATURE_DATABASE_ID`, `TESTIMONIAL_DATABASE_ID`, `PRICING_DATABASE_ID`, `FAQ_DATABASE_ID`, `FOOTER_DATABASE_ID`, `DOCUMENTATION_DATABASE_ID` | Notion database IDs (Notion CMS). See [Notion Setup](/landing/doc/notion-setup) |
+
+## Authentication
+
+| Variable | Description |
+| --- | --- |
+| `BETTER_AUTH_SECRET` | Signs sessions. `openssl rand -base64 32`. **Required** |
+| `NEXT_PUBLIC_AUTH_FRAMEWORK` | `better-auth` |
+| `NEXT_PUBLIC_AUTH_EMAIL` | Email and password sign-in (`true`/`false`) |
+| `NEXT_PUBLIC_AUTH_GOOGLE`, `NEXT_PUBLIC_AUTH_GITHUB`, `NEXT_PUBLIC_AUTH_LINKEDIN` | Show each OAuth button |
+| `AUTH_GOOGLE_CLIENT_ID`, `AUTH_GOOGLE_CLIENT_SECRET` | [Google OAuth](/landing/doc/google-oauth-credentials) |
+| `AUTH_GITHUB_CLIENT_ID`, `AUTH_GITHUB_CLIENT_SECRET` | [GitHub OAuth](/landing/doc/github-oauth-credentials) |
+| `AUTH_LINKEDIN_CLIENT_ID`, `AUTH_LINKEDIN_CLIENT_SECRET` | [LinkedIn OAuth](/landing/doc/linkedin-oauth-credentials) |
+| `DEMO_GUEST_EMAIL`, `DEMO_GUEST_PASSWORD` | Read-only demo account used by the landing page demo button. Server-only |
+| `NEXT_PUBLIC_GUEST_MAIL`, `NEXT_PUBLIC_ADMIN_MAIL` | Optional. Accounts with these emails cannot edit their profile from My Account (keeps shared demo accounts intact) |
+
+## Email and support
+
+| Variable | Description |
+| --- | --- |
+| `NEXT_PUBLIC_EMAIL_CLIENT` | `resend` to send email, `none` to skip (links are logged outside production) |
+| `RESEND_API_KEY` | Resend API key |
+| `NEXT_PUBLIC_SUPPORT_MAIL` | Sender address for all email and the recipient of support messages. Must be on a verified Resend domain |
+| `RESEND_AUDIENCE_ID` | Optional. Resend audience for newsletter contacts |
+| `NEXT_PUBLIC_CALENDLY_BOOKING_URL` | Optional. Shows **Book Meeting** in the support widget |
+| `N8N_SUBSCRIBE_NEWSLETTER_WEBHOOK_URL`, `N8N_SAAS_ASSISTANT_WEBHOOK_URL` | Optional n8n webhooks for the newsletter and assistant tiles (hidden by default) |
+
+## Storage, database and cache
+
+| Variable | Description |
+| --- | --- |
+| `DATABASE_URL` | Postgres URL. **Required** in `apps/web/.env` and `packages/database/.env` |
+| `PRISMA_QUERY_LOGGING` | `true` logs every query with its duration |
+| `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` | Upstash Redis for rate limits and content caching |
+| `NEXT_PUBLIC_ALLOW_RATE_LIMIT` | `upstash` makes the Upstash credentials required at boot |
+| `NEXT_PUBLIC_IMAGE_STORAGE` | `vercel_blob` (default) or `cloudflare_r2` |
+| `BLOB_READ_WRITE_TOKEN` | Vercel Blob token |
+| `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME` | Cloudflare R2 credentials |
+| `NEXT_PUBLIC_R2_PUBLIC_URL` | Public base URL of the bucket (custom domain or `r2.dev`) used in image links |
+
+## Observability
+
+| Variable | Description |
+| --- | --- |
+| `BETTERSTACK_TELEMETRY_SOURCE_TOKEN`, `BETTERSTACK_TELEMETRY_INGESTING_HOST` | Ship logs to BetterStack. Both are needed |
+| `NEXT_PUBLIC_GOOGLE_ANALYTICS_MEASUREMENT_ID` | GA4 measurement ID (`G-…`) for page tracking |
+| `GA4_PROPERTY_ID`, `GA4_CREDENTIALS_JSON` | GA4 Data API access for the admin traffic reports |
+| `GOOGLE_PAGESPEED_API_KEY` | PageSpeed Insights key for the admin SEO audit |
+
+## Billing module
+
+| Variable | Description |
+| --- | --- |
+| `NEXT_PUBLIC_PAYMENT_GATEWAY` | `stripe`, `dodo` or `none` |
+| `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` | Stripe API key and webhook signing secret |
+| `DODO_PAYMENTS_API_KEY`, `DODO_PAYMENTS_WEBHOOK_KEY` | Dodo API key and webhook secret |
+| `DODO_PAYMENTS_ENVIRONMENT` | `test_mode` or `live_mode` (default `live_mode`) |
+| `DODO_CREDITS_PRODUCT_ID` | The Dodo product sold as one unit of 50 credits |
+| `NEXT_PUBLIC_DODO_PAYMENTS_URL` | Dodo API base URL used to build invoice links stored on transactions (`https://test.dodopayments.com` or `https://live.dodopayments.com`) |
+| `DODO_PAYMENTS_RETURN_URL` | Listed in `.env.example` but not read; checkout returns to `NEXT_PUBLIC_URL` |
+
+## AI Platform module
+
+| Variable | Description |
+| --- | --- |
+| `NEXT_PUBLIC_AI_ENABLED` | `true` turns AI features on |
+| `AI_GATEWAY_API_KEY` | Vercel AI Gateway |
+| `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GOOGLE_GENERATIVE_AI_API_KEY`, `OPENROUTER_API_KEY` | Provider keys; set the ones you use |
+| `OLLAMA_BASE_URL` | Local or remote Ollama |
+| `OPENAI_COMPATIBLE_BASE_URL` | Any OpenAI-compatible endpoint |
+| `N8N_WEBHOOK_URL`, `N8N_WEBHOOK_JWT_KEY` | Route chat to an n8n workflow instead of a model |
+
+## AI Agents module
+
+| Variable | Description |
+| --- | --- |
+| `BACKEND_URL` | URL of the FastAPI service. `http://localhost:8400` with `pnpm dev`, `http://backend-api:8000` in Compose |
+| `BACKEND_HMAC_SECRET` | Shared secret that signs every web-to-backend request. `openssl rand -hex 32`. Must match `apps/backend/.env` |
+
+The Python service has its own `apps/backend/.env.example`: see [AI Agents & RAG](/landing/doc/ai-agents).
+
+## Desktop and mobile
+
+The native apps only read public values. `pnpm doctor` and the download builder derive them from the web values.
+
+| Desktop (`apps/desktop/.env`) | Mobile (`apps/mobile/.env`) | Meaning |
+| --- | --- | --- |
+| `VITE_API_URL` | `EXPO_PUBLIC_API_URL` | Web app URL the client talks to |
+| — | `EXPO_PUBLIC_APP_URL` | Expo web URL used for deep links |
+| `VITE_AUTH_EMAIL`, `VITE_AUTH_GOOGLE`, `VITE_AUTH_GITHUB`, `VITE_AUTH_LINKEDIN` | `EXPO_PUBLIC_AUTH_EMAIL`, `EXPO_PUBLIC_AUTH_GOOGLE`, `EXPO_PUBLIC_AUTH_GITHUB`, `EXPO_PUBLIC_AUTH_LINKEDIN` | Sign-in methods |
+| `VITE_THEME`, `VITE_THEME_TYPE` | `EXPO_PUBLIC_THEME`, `EXPO_PUBLIC_THEME_TYPE` | Theme |
+| `VITE_SUPPORT_MAIL`, `VITE_CALENDLY_BOOKING_URL` | `EXPO_PUBLIC_SUPPORT_MAIL`, `EXPO_PUBLIC_CALENDLY_BOOKING_URL` | Support options |
+| `VITE_PAYMENT_GATEWAY` | `EXPO_PUBLIC_PAYMENT_GATEWAY` | Payment gateway (Billing module) |
+
+## Adding a variable
+
+1. Add it to the right `.env.example` in the same change.
+2. If an integration toggle now needs it, add it to `INTEGRATION_REQUIREMENTS` in `apps/web/lib/env.ts`.
+3. Give it a `HINTS` entry in `scripts/doctor.mjs`.
+4. Never prefix a secret with `NEXT_PUBLIC_`, `VITE_` or `EXPO_PUBLIC_`: those are shipped to clients.

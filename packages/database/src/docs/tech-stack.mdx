@@ -1,0 +1,47 @@
+Versions are the ones installed from `pnpm-lock.yaml` at the time of writing. Check `package.json` files for the exact ranges.
+
+## Web and shared code
+
+| Area | Technology |
+| --- | --- |
+| Framework | [Next.js](https://nextjs.org/) 15.5 (App Router, Turbopack in dev), [React](https://react.dev/) 19.2, TypeScript 5.7 |
+| Styling | [Tailwind CSS](https://tailwindcss.com/) 4, [shadcn/ui](https://ui.shadcn.com/) on Radix UI, Framer Motion, Lucide icons |
+| API | [tRPC](https://trpc.io/) 11 with [TanStack Query](https://tanstack.com/query) 5, [Zod](https://zod.dev/) 4, plus REST route handlers |
+| Auth | [Better Auth](https://www.better-auth.com/) 1.5 with the admin, organization and Expo plugins |
+| Database | PostgreSQL with [Prisma](https://www.prisma.io/) 7 (`prisma-client` generator and the `@prisma/adapter-pg` driver adapter) |
+| Cache and rate limits | [Upstash Redis](https://upstash.com/) and `@upstash/ratelimit` |
+| Email | [Resend](https://resend.com/) and [React Email](https://react.email/) |
+| File storage | [Vercel Blob](https://vercel.com/docs/storage/vercel-blob) or [Cloudflare R2](https://developers.cloudflare.com/r2/) through the S3 API, images processed with sharp |
+| Payments | [Stripe](https://stripe.com/) or [Dodo Payments](https://dodopayments.com/) |
+| AI | [Vercel AI SDK](https://ai-sdk.dev/) 6 with OpenAI, Anthropic, Google, OpenRouter, Ollama, OpenAI-compatible endpoints and the Vercel AI Gateway |
+| CMS (optional) | [Notion API](https://developers.notion.com/) |
+| Logging and analytics | Winston with BetterStack (Logtail), Google Analytics 4, Vercel Analytics and Speed Insights |
+
+## Native apps
+
+| App | Technology |
+| --- | --- |
+| Desktop | [Electron](https://www.electronjs.org/) 44, electron-vite, React Router 7, electron-builder |
+| Mobile | [Expo](https://expo.dev/) 55, React Native 0.83, expo-router, NativeWind, EAS Build |
+
+## AI service (AI Agents module)
+
+| Area | Technology |
+| --- | --- |
+| API | Python 3.12, [FastAPI](https://fastapi.tiangolo.com/), uvicorn |
+| Agents | [LangGraph](https://langchain-ai.github.io/langgraph/) and LangChain (OpenAI, Anthropic, Ollama) |
+| Data | SQLAlchemy (async) with asyncpg, pgvector or Qdrant for vectors |
+| Jobs | [ARQ](https://arq-docs.helpmanual.io/) on Redis |
+| Tooling | [uv](https://github.com/astral-sh/uv), pytest, ruff, pyright, optional Prometheus and OpenTelemetry |
+
+## Tooling
+
+| Tool | Use |
+| --- | --- |
+| Node.js 24 and pnpm 10.4.1 | Runtime and package manager (`node-linker=hoisted`) |
+| [Turborepo](https://turbo.build/) 2 | Runs `dev`, `build`, `lint`, `typecheck` and `test` across workspaces |
+| [Vitest](https://vitest.dev/) 4 | Unit and integration tests with Testing Library and happy-dom |
+| dependency-cruiser | Import-direction and cycle checks (`pnpm arch:check`) |
+| ESLint and Prettier | Linting and formatting |
+| Docker and Docker Compose | Web image, local Postgres (pgvector) and Redis |
+| GitHub Actions | CI, the scaffold variant matrix, and a nightly full sweep |

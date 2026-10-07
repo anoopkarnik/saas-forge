@@ -1,451 +1,191 @@
+An end-to-end recipe: a "Reports" feature with a table, a tRPC router, a page and a sidebar link. Follow the same steps for anything you build.
 
-This guide walks you through adding new features to SaaS Forge, following best practices and the established architecture patterns.
+## 1. Model the data
 
+Create `packages/database/prisma/reports.prisma`:
 
-## Feature Development Workflow
+```prisma
+model Report {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-
-### 1. Plan the Feature
-
-
-Before writing code, clarify:
-
-- **Requirements**: What does the feature do?
-- **Data Model**: What data needs to be stored?
-- **API Endpoints**: What operations are needed?
-- **UI Components**: What interfaces are required?
-- **Permissions**: Who can access this feature?
-
-### 2. Update Database Schema
-
-
-If your feature requires new data:
-
-
-**Edit Prisma Schema** (`packages/database/prisma/schema.prisma`):
-
-
-```plain text
-model Task {
-  id          String   @id @default(cuid())
-  title       String
-  description String?
-  completed   Boolean  @default(false)
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
-  @@map("tasks")
   @@schema("user_schema")
 }
-
-// Add relation to User model
-model User {
-  // ... existing fields
-  tasks Task[]
-}
 ```
 
-
-**Run Migrations**:
-
+Add the back-relation to `User` in `user.prisma` (`reports Report[]`). Use an existing Postgres schema, or add a new one to `schemas` in `schema.prisma`. With the Organizations module, add an `organizationId` and filter by workspace instead of user.
 
 ```bash
-# Generate Prisma client
-pnpm --filter @workspace/database generate
-
-# Create and apply migration
-pnpm --filter @workspace/database migrate
+pnpm migrate      # name it add_reports, then read the SQL
 ```
 
+## 2. Write the router
 
-### 3. Create TRPC Router
+`apps/web/trpc/routers/reportProcedures.ts`:
 
-
-**Create Router File** (`apps/web/trpc/routers/taskRouter.ts`):
-
-
-```typescript
-import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
+```ts
 import { z } from "zod";
 import db from "@workspace/database/client";
-import { TRPCError } from "@trpc/server";
+import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
 
-const createTaskSchema = z.object({
-  title: z.string().min(1).max(200),
-  description: z.string().optional(),
-});
-
-const updateTaskSchema = z.object({
-  id: z.string(),
-  title: z.string().min(1).max(200).optional(),
-  description: z.string().optional(),
-  completed: z.boolean().optional(),
-});
-
-export const taskRouter = createTRPCRouter({
-  // List user's tasks
-  list: protectedProcedure.query(async ({ ctx }) => {
-    return await db.task.findMany({
-      where: { userId: ctx.session.user.id },
-      orderBy: { createdAt: "desc" },
-    });
-  }),
-
-  // Create new task
+export const reportRouter = createTRPCRouter({
+  list: protectedProcedure.query(({ ctx }) =>
+    db.report.findMany({ where: { userId: ctx.session.user.id }, orderBy: { createdAt: "desc" } }),
+  ),
   create: protectedProcedure
-    .input(createTaskSchema)
-    .mutation(async ({ input, ctx }) => {
-      return await db.task.create({
-        data: {
-          ...input,
-          userId: ctx.session.user.id,
-        },
-      });
-    }),
-
-  // Update task
-  update: protectedProcedure
-    .input(updateTaskSchema)
-    .mutation(async ({ input, ctx }) => {
-      const { id, ...data } = input;
-
-      // Verify ownership
-      const task = await db.task.findUnique({
-        where: { id },
-      });
-
-      if (!task || task.userId !== ctx.session.user.id) {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: "You don't own this task",
-        });
-      }
-
-      return await db.task.update({
-        where: { id },
-        data,
-      });
-    }),
-
-  // Delete task
-  delete: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .mutation(async ({ input, ctx }) => {
-      // Verify ownership
-      const task = await db.task.findUnique({
-        where: { id: input.id },
-      });
-
-      if (!task || task.userId !== ctx.session.user.id) {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: "You don't own this task",
-        });
-      }
-
-      await db.task.delete({
-        where: { id: input.id },
-      });
-
-      return { success: true };
-    }),
+    .input(z.object({ title: z.string().trim().min(1).max(120) }))
+    .mutation(({ ctx, input }) =>
+      db.report.create({ data: { title: input.title, userId: ctx.session.user.id } }),
+    ),
 });
 ```
 
+Register it in `apps/web/trpc/routers/_app.ts` (`report: reportRouter`) and describe it in `apps/web/trpc/apiRegistry.ts`:
 
-**Add to App Router** (`apps/web/trpc/routers/_app.ts`):
-
-
-```typescript
-import { taskRouter } from "./taskRouter";
-
-export const appRouter = createTRPCRouter({
-  // ... existing routers
-  task: taskRouter,
-});
+```ts
+{
+  group: "report",
+  label: "Reports",
+  calls: [
+    { name: "list", type: "query", access: "authenticated" },
+    { name: "create", type: "mutation", access: "authenticated" },
+  ],
+},
 ```
 
+If the logic is more than a query, put it in a service in `apps/web/lib/` and call it from the router; routers stay thin and services stay testable.
 
-### 4. Create UI Components
+## 3. Build the UI
 
+A client component in `apps/web/components/reports/ReportsList.tsx`:
 
-**Create Shared Components** (if reusable):
-
-
-`packages/ui/src/components/TaskCard.tsx`:
-
-
-```typescript
-import { Card, CardContent, CardHeader, CardTitle } from "./shadcn/card";
-import { Checkbox } from "./shadcn/checkbox";
-
-interface TaskCardProps {
-  title: string;
-  description?: string;
-  completed: boolean;
-  onToggle: () => void;
-  onDelete: () => void;
-}
-
-export function TaskCard({
-  title,
-  description,
-  completed,
-  onToggle,
-  onDelete,
-}: TaskCardProps) {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Checkbox checked={completed} onCheckedChange={onToggle} />
-          <span className={completed ? "line-through" : ""}>{title}</span>
-        </CardTitle>
-      </CardHeader>
-      {description && <CardContent>{description}</CardContent>}
-    </Card>
-  );
-}
-```
-
-
-### 5. Create Page/Route
-
-
-**Create Protected Page** (`apps/web/app/(home)/tasks/page.tsx`):
-
-
-```typescript
+```tsx
 "use client";
-
-import { api } from "@/trpc/client";
-import { TaskCard } from "@workspace/ui/components/TaskCard";
-import { Button } from "@workspace/ui/components/shadcn/button";
 import { useState } from "react";
+import { useMutation, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { Button } from "@workspace/ui/components/shadcn/button";
+import { Input } from "@workspace/ui/components/shadcn/input";
+import { useTRPC } from "@/trpc/client";
 
-export default function TasksPage() {
-  const [isCreating, setIsCreating] = useState(false);
-
-  const utils = api.useUtils();
-
-  // Fetch tasks
-  const { data: tasks, isLoading } = api.task.list.useQuery();
-
-  // Create task mutation
-  const createTask = api.task.create.useMutation({
-    onSuccess: () => {
-      utils.task.list.invalidate();
-      setIsCreating(false);
-    },
-  });
-
-  // Update task mutation
-  const updateTask = api.task.update.useMutation({
-    onSuccess: () => {
-      utils.task.list.invalidate();
-    },
-  });
-
-  // Delete task mutation
-  const deleteTask = api.task.delete.useMutation({
-    onSuccess: () => {
-      utils.task.list.invalidate();
-    },
-  });
-
-  if (isLoading) return <div>Loading tasks...</div>;
+export default function ReportsList() {
+  const trpc = useTRPC();
+  const queryClient = useQueryClient();
+  const [title, setTitle] = useState("");
+  const { data: reports } = useSuspenseQuery(trpc.report.list.queryOptions());
+  const create = useMutation(
+    trpc.report.create.mutationOptions({
+      onSuccess: () => {
+        setTitle("");
+        queryClient.invalidateQueries({ queryKey: trpc.report.list.queryKey() });
+      },
+    }),
+  );
 
   return (
-    <div className="container mx-auto py-8">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">My Tasks</h1>
-        <Button onClick={() => setIsCreating(true)}>New Task</Button>
-      </div>
-
-      <div className="space-y-4">
-        {tasks?.map((task) => (
-          <TaskCard
-            key={task.id}
-            title={task.title}
-            description={task.description ?? undefined}
-            completed={task.completed}
-            onToggle={() =>
-              updateTask.mutate({
-                id: task.id,
-                completed: !task.completed,
-              })
-            }
-            onDelete={() => deleteTask.mutate({ id: task.id })}
-          />
+    <div className="flex flex-col gap-4 p-6">
+      <form
+        className="flex gap-2"
+        onSubmit={(e) => {
+          e.preventDefault();
+          create.mutate({ title });
+        }}
+      >
+        <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Report title" />
+        <Button type="submit" disabled={create.isPending}>Create</Button>
+      </form>
+      <ul>
+        {reports.map((report) => (
+          <li key={report.id}>{report.title}</li>
         ))}
-      </div>
-
-      {/* Add CreateTaskModal component here */}
+      </ul>
     </div>
   );
 }
 ```
 
+Reusable pieces belong in `packages/ui` so the desktop app can use them too.
 
-### 6. Add Navigation
+## 4. Add the page
 
+`apps/web/app/(home)/reports/page.tsx`:
 
-Add link to your new feature in the navigation:
+```tsx
+import { Suspense } from "react";
+import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
+import LoadingState from "@workspace/ui/components/misc/LoadingState";
+import { getQueryClient, trpc } from "@/trpc/server";
+import ReportsList from "@/components/reports/ReportsList";
 
+export default async function ReportsPage() {
+  const queryClient = getQueryClient();
+  await queryClient.ensureQueryData(trpc.report.list.queryOptions());
 
-`apps/web/components/Navigation.tsx`:
-
-
-```typescript
-<nav>
-  <Link href="/">Home</Link>
-  <Link href="/tasks">Tasks</Link>  {/* Add this */}
-  <Link href="/billing">Billing</Link>
-</nav>
-```
-
-
-### 7. Test the Feature
-
-1. **Manual Testing**:
-
-    ```bash
-    pnpm dev
-    # Navigate to /tasks
-    # Test create, update, delete operations
-    ```
-
-2. **Type Checking**:
-
-    ```bash
-    pnpm --filter web typecheck
-    ```
-
-3. **Linting**:
-
-    ```bash
-    pnpm --filter web lint
-    ```
-
-
-## Feature Patterns
-
-
-### Adding Public Features
-
-
-For features accessible without authentication:
-
-1. Add route to `publicRoutes` in `middleware.ts`
-2. Use `baseProcedure` instead of `protectedProcedure`
-3. Don't access `ctx.session` (it might be null)
-
-### Adding Admin-Only Features
-
-
-```typescript
-const adminProcedure = protectedProcedure.use(async (opts) => {
-  if (!opts.ctx.session.user.isAdmin) {
-    throw new TRPCError({ code: "FORBIDDEN" });
-  }
-  return opts.next();
-});
-
-export const adminRouter = createTRPCRouter({
-  listUsers: adminProcedure.query(async () => {
-    return await db.user.findMany();
-  }),
-});
-```
-
-
-### Adding Paid Features
-
-
-Check user credits or subscription:
-
-
-```typescript
-const paidFeatureProcedure = protectedProcedure.use(async (opts) => {
-  const user = await db.user.findUnique({
-    where: { id: opts.ctx.session.user.id },
-  });
-
-  if (!user || user.creditsUsed >= user.creditsTotal) {
-    throw new TRPCError({
-      code: "FORBIDDEN",
-      message: "Insufficient credits",
-    });
-  }
-
-  return opts.next();
-});
-```
-
-
-### Adding Real-time Features
-
-
-Use Server-Sent Events or WebSockets:
-
-
-```typescript
-// apps/web/app/api/tasks/subscribe/route.ts
-export async function GET(req: Request) {
-  const session = await auth.api.getSession({ headers: req.headers });
-  if (!session) {
-    return new Response("Unauthorized", { status: 401 });
-  }
-
-  const stream = new ReadableStream({
-    start(controller) {
-      // Send updates to client
-      const interval = setInterval(async () => {
-        const tasks = await db.task.findMany({
-          where: { userId: session.user.id },
-        });
-        controller.enqueue(`data: ${JSON.stringify(tasks)}\\n\\n`);
-      }, 5000);
-
-      req.signal.addEventListener("abort", () => {
-        clearInterval(interval);
-        controller.close();
-      });
-    },
-  });
-
-  return new Response(stream, {
-    headers: {
-      "Content-Type": "text/event-stream",
-      "Cache-Control": "no-cache",
-      Connection: "keep-alive",
-    },
-  });
+  return (
+    <HydrationBoundary state={dehydrate(queryClient)}>
+      <Suspense fallback={<LoadingState title="Loading reports" description="One moment" />}>
+        <ReportsList />
+      </Suspense>
+    </HydrationBoundary>
+  );
 }
 ```
 
+Pages under `(home)` are protected by the middleware automatically. Public pages go under `app/landing` and need no session.
 
-## Best Practices
+## 5. Link it
 
-1. **Start with data model**: Get the schema right first
-2. **Use TRPC for APIs**: Avoid creating custom API routes unless necessary
-3. **Validate all inputs**: Use Zod schemas for type-safe validation
-4. **Check permissions**: Always verify user ownership/access rights
-5. **Invalidate queries**: Update cache after mutations
-6. **Handle errors gracefully**: Show user-friendly error messages
-7. **Keep procedures focused**: One procedure = one operation
-8. **Use TypeScript**: Leverage full type safety
-9. **Add loading states**: Improve perceived performance
-10. **Test on multiple devices**: Ensure responsive design
+Add an entry to the sidebar in `apps/web/components/home/AppSidebar.tsx`, next to the existing items.
 
-## Common Pitfalls
+## 6. Test it
 
-- **Forgetting to add router to** **`_app.ts`**: Your procedures won't be accessible
-- **Not checking ownership**: Users might access others' data
-- **Missing cache invalidation**: UI shows stale data after mutations
-- **Skipping input validation**: Opens security vulnerabilities
-- **Hardcoding user IDs**: Always use `ctx.session.user.id`
-- **Not handling errors**: App crashes or shows unhelpful messages
+`apps/web/trpc/routers/__tests__/reportProcedures.test.ts`:
+
+```ts
+import { describe, expect, it, vi } from "vitest";
+import { reportRouter } from "../reportProcedures";
+
+vi.mock("@workspace/database/client", () => ({
+  default: {
+    report: { findMany: vi.fn().mockResolvedValue([{ id: "r1", title: "Q3" }]) },
+  },
+}));
+
+describe("reportRouter", () => {
+  it("lists the user's reports", async () => {
+    const caller = reportRouter.createCaller({
+      session: { user: { id: "user_1", role: "user" } } as any,
+      headers: new Headers(),
+    });
+    await expect(caller.list()).resolves.toEqual([{ id: "r1", title: "Q3" }]);
+  });
+
+  it("rejects signed-out callers", async () => {
+    const caller = reportRouter.createCaller({ session: null, headers: new Headers() });
+    await expect(caller.list()).rejects.toThrow("logged in");
+  });
+});
+```
+
+## 7. Check everything
+
+```bash
+pnpm typecheck && pnpm lint && pnpm test && pnpm arch:check
+```
+
+## Variations
+
+| Need | Do this |
+| --- | --- |
+| Admin-only feature | `adminProcedure`, and show the link only when `session.user.role === "admin"` |
+| Paid feature | Check and deduct credits in the procedure: see [Billing & Credits](/landing/doc/billing) |
+| Workspace data | `orgProcedure` and `ctx.org.id`: see [Organizations & Teams](/landing/doc/organizations) |
+| File uploads | A session route with `guardRoute` and the image helpers: see [File Storage](/landing/doc/storage) |
+| Webhook or public endpoint | A route handler plus a route-policy row: see [API Routes & Route Policy](/landing/doc/api-routes) |
+| New env var | `.env.example`, `env.ts` requirements, a doctor hint: see [Environment Variables](/landing/doc/env-vars) |
+| Desktop or mobile screen | Reuse the `packages/ui` component; mobile screens go in `apps/mobile/app/(home)` |

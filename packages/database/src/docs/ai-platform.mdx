@@ -1,0 +1,89 @@
+The AI Platform module (`ai`) adds streaming chat, admin-managed prompts, a multi-provider model layer built on the [Vercel AI SDK](https://ai-sdk.dev/), speech, and per-request credit metering.
+
+## Turn it on
+
+```env
+NEXT_PUBLIC_AI_ENABLED=true
+
+# Set at least one provider
+OPENAI_API_KEY="sk-..."
+ANTHROPIC_API_KEY="sk-ant-..."
+GOOGLE_GENERATIVE_AI_API_KEY="..."
+OPENROUTER_API_KEY="sk-or-..."
+AI_GATEWAY_API_KEY="..."              # Vercel AI Gateway
+OLLAMA_BASE_URL="http://localhost:11434"
+OPENAI_COMPATIBLE_BASE_URL="https://your-endpoint/v1"
+```
+
+Providers are detected from which variables are set. `ai.getStatus` reports whether AI is enabled and configured, and why not.
+
+## Prompts and models
+
+Every AI feature runs a named **prompt**. A prompt has versions; each version holds the system content, the **provider** and the **model**, and one version is active. Admins manage them in **Admin → AI** without a deploy.
+
+`pnpm seed` creates three prompts:
+
+| Key | Used by |
+| --- | --- |
+| `chat.assistant` | The chat page |
+| `documentation.assistant` | Drafting pages in **Admin → Docs** |
+| `cms.assistant` | Drafting sections in **Admin → CMS** |
+
+The seeded versions use `openai` / `gpt-4o`. Change the provider and model to one you have keys for. Model IDs can include the provider prefix (`openai/gpt-4o`); it is stripped when calling the provider directly.
+
+## Chat
+
+`/ai` is a streaming chat for signed-in users. It posts to `POST /api/ai/chat` with the messages and a `promptKey`, which:
+
+1. checks the session and refuses guests;
+2. loads the prompt's active version and resolves its provider and model;
+3. refuses with `403` when the user has less than 1 credit;
+4. stores the conversation and messages (`AiConversation`, `AiMessage`);
+5. streams the reply with `streamText`, with starter tools available to the model;
+6. charges credits from the token usage and records an `AiUsageEvent`.
+
+## Credits
+
+AI requests cost **1 credit per 1,000 tokens** (input plus output), with a minimum of 1 credit per request (`calculateCreditsFromTokens` in `packages/ai/src/usage.ts`). Credits come from the same balance as the [Billing module](/landing/doc/billing); without Billing, users spend the 20 credits they start with, and admins can raise `creditsTotal`.
+
+**Admin → AI** shows every usage event with tokens and credits charged.
+
+## Speech
+
+`POST /api/ai/speech/tts` (text to speech, 64 KB body) and `POST /api/ai/speech/stt` (speech to text, 25 MB audio upload) call the endpoints configured in **Admin → AI → Speech**: OpenAI's audio API, or a custom endpoint with your own request body.
+
+## n8n workflows
+
+A prompt version can use the `n8n-webhook` provider instead of a model. Chat messages are then posted to `N8N_WEBHOOK_URL` (signed with `N8N_WEBHOOK_JWT_KEY`) and the workflow's reply is streamed back. Configure the webhook in **Admin → AI**.
+
+## Using AI in your own feature
+
+```ts
+import { generateText } from "ai";
+import { calculateAIUsageCredits, resolveAIModel } from "@workspace/ai";
+
+const { model } = resolveAIModel(process.env, { provider: "openai", model: "gpt-4o" });
+const result = await generateText({ model, prompt: "Summarize this report: ..." });
+
+const { creditsCharged } = calculateAIUsageCredits(result.usage);
+await db.user.update({
+  where: { id: userId },
+  data: { creditsUsed: { increment: creditsCharged } },
+});
+```
+
+Better: create a prompt for the feature, load its active version (provider, model and content) the way `/api/ai/chat` does, and let admins tune it.
+
+## Files
+
+| Path | Purpose |
+| --- | --- |
+| `packages/ai/` | Provider detection, model resolution, tools, token-to-credit metering |
+| `packages/database/prisma/ai.prisma` | Prompts, versions, conversations, messages, usage, speech and webhook config |
+| `apps/web/app/api/ai/` | Chat and speech routes |
+| `apps/web/trpc/routers/aiProcedures.ts` | Prompt, model, speech, usage and draft procedures |
+| `apps/web/app/(home)/ai`, `apps/web/app/(home)/admin/ai` | Chat page and admin page |
+| `packages/ui/src/components/ai/` | Chat UI components |
+| `packages/observability/src/ai-logger.ts` | Structured AI request logs |
+
+For long-running or agentic work, add the [AI Agents & RAG](/landing/doc/ai-agents) module.

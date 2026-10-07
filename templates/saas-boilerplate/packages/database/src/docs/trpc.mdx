@@ -1,150 +1,120 @@
+Most of the web app's API is [tRPC](https://trpc.io/) 11 with TanStack Query 5: end-to-end types, no code generation.
 
-SaaS Forge uses tRPC for type-safe communication between frontend and backend.
+## Setup
 
+| File | Purpose |
+| --- | --- |
+| `apps/web/trpc/init.ts` | Context (headers and session) and the procedure builders |
+| `apps/web/trpc/org.ts` | Organization-scoped builders (Organizations module) |
+| `apps/web/trpc/routers/_app.ts` | The root router: one key per feature router |
+| `apps/web/trpc/client.tsx` | `TRPCReactProvider` and the `useTRPC()` hook |
+| `apps/web/trpc/server.ts` | Server-side `trpc` options proxy, `getQueryClient()` and `caller()` |
+| `apps/web/trpc/apiRegistry.ts` | Every procedure with its access level, for **Admin → API** |
+| `apps/web/app/api/trpc/[trpc]/route.ts` | The HTTP handler at `/api/trpc` |
 
-## Overview
+## Procedure builders
 
+| Builder | Access |
+| --- | --- |
+| `baseProcedure` | Public |
+| `protectedProcedure` | Signed in; guests may only run queries |
+| `adminProcedure` | Admins |
+| `guestReadableAdminProcedure` | Admins; guests may run queries |
+| `orgProcedure`, `orgRoleProcedure(role)` | Active workspace membership (Organizations module) |
 
-tRPC eliminates the need for API schemas, code generation, or maintaining separate type definitions. Your backend types automatically flow to the frontend.
+## Routers
 
+| Key | Router file | Module |
+| --- | --- | --- |
+| `landing` | `landingProcedures.ts` | Core: landing content and the CMS editor |
+| `documentation` | `docProcedures.ts` | Core: docs index, pages and the docs editor |
+| `support` | `supportProcedures.ts` | Core: support messages, newsletter, assistant |
+| `home` | `homeProcedures.ts` | Core: set a password for OAuth accounts |
+| `admin` | `adminProcedures.ts` | Core: registration mode and invitations |
+| `seo` | `seoProcedures.ts` | Core: SEO audit and GA4 reports |
+| `billing` | `billingProcedures.ts` | Billing |
+| `organization` | `organizationProcedures.ts` | Organizations |
+| `ai` | `aiProcedures.ts` | AI Platform |
+| `aiJobs` | `aiJobsProcedures.ts` | AI Agents |
+| `apiKey` | `apiKeyProcedures.ts` | API Keys |
+| `project`, `scaffold` | `projectProcedures.ts`, `scaffoldCatalogProcedures.ts` | Open-source repository only |
 
-## Benefits
+## Writing a router
 
-- **Full Type Safety**: Catch errors at compile time
-- **Auto-completion**: IntelliSense for all API calls
-- **No Code Generation**: Types are inferred automatically
-- **React Query Integration**: Built-in caching and state management
+```ts
+// apps/web/trpc/routers/reportProcedures.ts
+import { z } from "zod";
+import { TRPCError } from "@trpc/server";
+import db from "@workspace/database/client";
+import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
 
-## Project Setup
+export const reportRouter = createTRPCRouter({
+  list: protectedProcedure.query(({ ctx }) =>
+    db.report.findMany({
+      where: { userId: ctx.session.user.id },
+      orderBy: { createdAt: "desc" },
+    }),
+  ),
 
+  create: protectedProcedure
+    .input(z.object({ title: z.string().trim().min(1).max(120) }))
+    .mutation(({ ctx, input }) =>
+      db.report.create({ data: { title: input.title, userId: ctx.session.user.id } }),
+    ),
 
-The tRPC infrastructure is already configured in SaaS Forge. See the [tRPC Setup Guide](https://www.notion.so/docs/architecture/trpc-setup) for complete documentation.
-
-
-## Available Routers
-
-
-Your SaaS Forge instance includes these routers:
-
-
-### Landing Router
-
-
-```typescript
-api.landing.getLandingPage.useQuery()
+  remove: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const { count } = await db.report.deleteMany({
+        where: { id: input.id, userId: ctx.session.user.id },
+      });
+      if (count === 0) throw new TRPCError({ code: "NOT_FOUND" });
+      return { ok: true };
+    }),
+});
 ```
 
+Then:
 
-Fetches landing page data from Notion CMS.
+1. Register it in `_app.ts`: `report: reportRouter`.
+2. Add a group to `API_REGISTRY` in `apiRegistry.ts` listing each procedure's name, type and access. `trpc/routers/__tests__/apiRegistry.test.ts` fails until the registry matches the router.
 
+## Calling from client components
 
-### Documentation Router
-
-
-```typescript
-api.documentation.getDocumentation.useQuery({ docId })
-```
-
-
-Fetches documentation pages from Notion.
-
-
-### Support Router
-
-
-```typescript
-api.support.sendMessage.useMutation()
-api.support.subscribe.useMutation()
-```
-
-
-Handles contact forms and newsletter subscriptions via n8n webhooks.
-
-
-### Home Router
-
-
-```typescript
-api.home.getHomeData.useQuery()
-```
-
-
-Fetches authenticated user's home page data.
-
-
-### Billing Router
-
-
-```typescript
-api.billing.getCountryCodes.useQuery()
-api.billing.getBillingAddress.useQuery()
-api.billing.saveBillingAddress.useMutation()
-api.billing.purchaseCredits.useMutation()
-```
-
-
-Manages billing, addresses, and credit purchases via Dodo Payments.
-
-
-## Quick Start
-
-
-### Client-Side Query
-
-
-```typescript
+```tsx
 "use client";
-import { api } from "@/trpc/client";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTRPC } from "@/trpc/client";
 
-export function MyComponent() {
-  const { data, isLoading, error } = api.myRouter.getData.useQuery({ id: "123" });
-
-  if (isLoading) return <div>Loading...</div>;
-  if (error) return <div>Error: {error.message}</div>;
-
-  return <div>{data.name}</div>;
-}
-```
-
-
-### Client-Side Mutation
-
-
-```typescript
-"use client";
-import { api } from "@/trpc/client";
-
-export function MyForm() {
-  const utils = api.useUtils();
-  const mutation = api.myRouter.create.useMutation({
-    onSuccess: () => {
-      utils.myRouter.getData.invalidate();
-    },
-  });
-
-  const handleSubmit = (data) => {
-    mutation.mutate(data);
-  };
-
-  return (
-    <form onSubmit={handleSubmit}>
-      {/* form fields */}
-      <button disabled={mutation.isPending}>Save</button>
-    </form>
+export function Reports() {
+  const trpc = useTRPC();
+  const queryClient = useQueryClient();
+  const reports = useQuery(trpc.report.list.queryOptions());
+  const create = useMutation(
+    trpc.report.create.mutationOptions({
+      onSuccess: () => queryClient.invalidateQueries({ queryKey: trpc.report.list.queryKey() }),
+    }),
   );
+  // ...
 }
 ```
 
+## Calling from the server
 
-### Server-Side
+```ts
+import { getQueryClient, trpc, caller } from "@/trpc/server";
 
+// Prefetch for hydration (preferred in pages)
+await getQueryClient().ensureQueryData(trpc.report.list.queryOptions());
 
-```typescript
-import { api } from "@/trpc/server";
-
-export default async function Page() {
-  const data = await api.myRouter.getData({ id: "123" });
-  return <div>{data.name}</div>;
-}
+// Or call a procedure directly
+const reports = await (await caller()).report.list();
 ```
 
+## Things to know
+
+- **No data transformer.** `Date` values arrive in the client as ISO strings. Convert them (`new Date(value)`), or return strings from your procedures.
+- **Errors**: throw `TRPCError` with `UNAUTHORIZED`, `FORBIDDEN`, `NOT_FOUND`, `BAD_REQUEST`, `CONFLICT` or `PRECONDITION_FAILED`. Never return secrets or stack traces in messages.
+- **Validation**: every input goes through Zod. Trim strings and bound lengths.
+- **Native clients**: the desktop app (a tRPC client) and the mobile app (fetch wrappers in `apps/mobile/lib`) call the same `/api/trpc` endpoints with the session. They are not type-checked against `AppRouter`, so update them when a procedure they use changes.
+- **Heavy procedures** (the download builder) are served from a separate endpoint, `/api/scaffold/trpc`, through `useScaffoldTRPC()`, so the main `/api/trpc` function stays small. Use the same trick for procedures with large bundles.

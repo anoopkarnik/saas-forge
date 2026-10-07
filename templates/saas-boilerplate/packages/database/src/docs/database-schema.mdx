@@ -1,73 +1,48 @@
+The databases the Notion CMS reads, with the property names and types the code expects. Names are case-sensitive, and a wrong type usually shows up as an empty field: Text properties are read as rich text, while Title, Select, URL and Checkbox are read as single values.
 
-If you are not using our pre-built template, you must configure your Notion databases with the following properties.
+## Landing page (`LANDING_DATABASE_ID`)
 
+One row per product. The row whose `title` contains `NEXT_PUBLIC_SAAS_NAME` is used.
 
-## 1. Main Landing Page Database (`LANDING_DATABASE_ID`)
+| Property | Type | Used for |
+| --- | --- | --- |
+| `title` | Title | Product name |
+| `logo`, `darkLogo` | Files & media | Logos for light and dark mode |
+| `githubLink` | URL | Navbar GitHub link |
+| `githubUsername`, `githubRepositoryName` | Text | GitHub star count |
+| `donateNowLink` | URL | Navbar donate link |
+| `tagline`, `description` | Text | Hero text |
+| `appointmentLink` | URL | Hero booking button |
+| `codeSnippet` | Text | Hero command snippet |
+| `videoLink` | URL | Hero video |
+| `featureHeading`, `featureDescription` | Text | Features section heading |
+| `testimonialHeading`, `testimonialDescription` | Text | Testimonials section heading |
+| `pricingHeading`, `pricingDescription` | Text | Pricing section heading |
+| `faqHeading`, `faqDescription` | Text | FAQ section heading |
+| `creator` | Text | Footer credit |
+| `creatorLink` | URL | Footer credit link |
+| `supportEmailAddress`, `companyLegalName`, `websiteUrl`, `country`, `contactNumber`, `address`, `lastUpdated` | Text | Legal and contact pages |
 
+## Section databases
 
-This is the "Parent" database. All other sections link to an entry here.
+Every section database has a relation property named **`Landing Page`** pointing to the landing page database.
 
-- `title`: Title
-- `logo`: Files & Media (Light mode logo)
-- `darkLogo`: Files & Media (Dark mode logo)
-- `tagline`: Text
-- `description`: Text
-- `codeSnippet`: Text
-- `appointmentLink`: URL
-- `githubLink`, `githubUsername`, `githubRepositoryName`: Text
-- `donateNowLink`: URL
-- `supportEmailAddress`: Text
-- `companyLegalName`: Text
-- `websiteUrl`: URL
+| Database | Properties |
+| --- | --- |
+| Hero (`HERO_DATABASE_ID`) | `title` (Title), `image` (Files & media) |
+| Features (`FEATURE_DATABASE_ID`) | `title` (Title), `description` (Text), `category` (Select), `image` (Files & media) |
+| Testimonials (`TESTIMONIAL_DATABASE_ID`) | `name` (Title), `position` (Text), `comment` (Text), `category` (Select), `image` (Files & media) |
+| Pricing (`PRICING_DATABASE_ID`) | `title` (Title), `price` (Text), `popular` (Checkbox), `description` (Text), `priceType` (Select, for example "/month"), `benefitList` (Text, comma-separated) |
+| FAQ (`FAQ_DATABASE_ID`) | `question` (Title), `answer` (Text) |
+| Footer (`FOOTER_DATABASE_ID`) | `label` (Title), `href` (Text), `type` (Select, the footer column) |
 
-## 2. Hero Section (`HERO_DATABASE_ID`)
+## Documentation (`DOCUMENTATION_DATABASE_ID`)
 
-- `SaaS Landing Page`: Relation (to Main DB)
-- `title`: Title
-- `image`: Files & Media
+| Property | Type | Used for |
+| --- | --- | --- |
+| `Name` | Title | Page title; the slug is derived from it |
+| `SaaS Landing Page` | Relation | Links the page to your landing page row |
+| `Type` | Select | Sidebar category |
+| `order` | Number | Position in the sidebar |
 
-## 3. Features (`FEATURE_DATABASE_ID`)
-
-- `SaaS Landing Page`: Relation
-- `title`: Title
-- `description`: Text
-- `category`: Select
-- `image`: Files & Media
-
-## 4. Testimonials (`TESTIMONIAL_DATABASE_ID`)
-
-- `SaaS Landing Page`: Relation
-- `name`: Text
-- `title`: Text
-- `comment`: Text
-- `image`: Files & Media
-
-## 5. Pricing (`PRICING_DATABASE_ID`)
-
-- `SaaS Landing Page`: Relation
-- `title`: Title
-- `price`: Text
-- `popular`: Checkbox
-- `description`: Text
-- `priceType`: Text (e.g., "/mo")
-- `benefitList`: Text (Comma-separated values)
-
-## 6. FAQ (`FAQ_DATABASE_ID`)
-
-- `SaaS Landing Page`: Relation
-- `question`: Title
-- `answer`: Text
-
-## 7. Footer (`FOOTER_DATABASE_ID`)
-
-- `SaaS Landing Page`: Relation
-- `label`: Title
-- `href`: Text (URL)
-- `type`: Select (Column/Category)
-
-## 7. Documentation ( `DOCUMENTATION_DATABASE_ID`)
-
-- `SaaS Landing Page`: Relation
-- `Name`: Title
-- `order`: Number (order in which these docs are displayed
-- `type`: Select (Column/Category)
+Note the documentation relation is named `SaaS Landing Page`, while section databases use `Landing Page`.

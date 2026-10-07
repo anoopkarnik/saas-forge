@@ -1,0 +1,76 @@
+## Start everything
+
+```bash
+pnpm dev
+```
+
+Turborepo starts every app in the workspace:
+
+| App | URL | Command |
+| --- | --- | --- |
+| Web | [http://localhost:3000](http://localhost:3000) | `next dev --turbopack` |
+| Desktop | Electron window (renderer on `http://localhost:5173`) | `electron-vite dev` |
+| Mobile | [http://localhost:8081](http://localhost:8081) (Expo web) | `expo start --web` |
+| AI service (AI Agents module) | `http://localhost:8400` | `uvicorn … --reload --port 8400` |
+
+Run a single app when you do not need the others:
+
+```bash
+pnpm --dir apps/web dev
+pnpm --dir apps/desktop dev
+pnpm --dir apps/mobile dev
+pnpm --filter @workspace/backend dev          # AI service
+pnpm --filter @workspace/backend dev:worker   # AI job worker
+```
+
+For the AI service, point the web app at the dev port: `BACKEND_URL=http://localhost:8400` in `apps/web/.env`. Docker Compose runs the service on port 8000 instead.
+
+## First sign-in
+
+1. Open `/sign-up` and create an account. **The first account in the database becomes `admin`.**
+2. With email sign-up and no email client configured, the verification link is printed in the server log outside production. Open it to verify.
+3. Admin pages appear in the sidebar: users, CMS, docs, SEO, API, and AI with the AI Platform module.
+
+Signed-out visitors are redirected to `/landing`. Signed-in users who open an auth page are redirected to `/`.
+
+## Demo account
+
+The landing page has a demo button that signs visitors into a read-only `guest` account. To enable it:
+
+1. As admin, open **Admin → Users → Create Guest** and create the account.
+2. Put the same credentials in `DEMO_GUEST_EMAIL` and `DEMO_GUEST_PASSWORD` in `apps/web/.env`.
+
+Guests can read everything a user can, and some admin screens, but every mutation is refused. `/api/demo-login` also refuses to sign anyone in if the configured account is not a guest.
+
+## Everyday commands
+
+| Task | Command |
+| --- | --- |
+| Check env and services | `pnpm doctor --check` |
+| Regenerate the Prisma client | `pnpm generate` |
+| Create and apply a migration after a schema change | `pnpm migrate` |
+| Reload landing content and docs | `pnpm seed` |
+| Wipe and rebuild the local database | `pnpm reset` (destructive) |
+| Typecheck, lint, test | `pnpm typecheck`, `pnpm lint`, `pnpm test` |
+| Check import boundaries | `pnpm arch:check` |
+| Format | `pnpm format` |
+
+## Local services with Docker
+
+```bash
+docker compose up -d postgres redis
+```
+
+| Service | Address |
+| --- | --- |
+| Postgres 16 with pgvector | `postgresql://postgres:postgres@localhost:5433/saas_forge` |
+| Redis 7 | `redis://localhost:6379` (for the AI job queue; the web app uses Upstash's REST API) |
+
+Compose needs `BETTER_AUTH_SECRET` (and `BACKEND_HMAC_SECRET` with the AI Agents module) in a `.env` file next to `docker-compose.yml`, even when you start only these two services.
+
+## Typical workflow
+
+1. Change code in `apps/web` or a package. Next.js hot-reloads; packages are compiled through `transpilePackages`, so no build step is needed.
+2. Changed a `.prisma` file? Run `pnpm migrate` to create and apply a migration, then restart the dev server if types look stale. See [Migrations & Seeding](/landing/doc/migration).
+3. Added an API route? Add its row to `apps/web/lib/route-policy.ts`. Added a tRPC procedure? Add it to `apps/web/trpc/apiRegistry.ts`. Tests fail until you do.
+4. Before pushing: `pnpm typecheck && pnpm lint && pnpm test && pnpm arch:check`.

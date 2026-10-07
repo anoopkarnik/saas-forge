@@ -1,49 +1,73 @@
+Everything SaaS Forge ships, grouped by what every project gets (core), what you choose (modules and providers), and where it runs (platforms).
 
-## 🔐 Authentication
+## Core: in every project
 
+**Authentication** ([details](/landing/doc/authentication-overview))
+- Email and password sign-up with email verification, password reset, change email and delete account.
+- Google, GitHub and LinkedIn OAuth, each behind its own toggle, with account linking.
+- Roles: `user`, `admin` and a read-only `guest` for public demos. The first account to sign up becomes admin.
+- Open or invite-only registration, switchable from the admin panel.
+- Bans and role changes from the admin panel. Impersonation is available through Better Auth's admin API.
 
-**Better Auth** integration supporting:
+**Landing site and documentation** ([details](/landing/doc/content-management))
+- Hero, features, testimonials, pricing, FAQ and footer sections.
+- Terms of service, privacy policy, cancellation and refund, and contact pages.
+- A documentation site at `/landing/doc` with categories and a sidebar.
+- Content comes from code constants, Postgres (editable in the admin panel) or Notion.
 
-- **OAuth Providers**: Google, GitHub, LinkedIn.
-- **Email/Password**: Secure credentials flow.
-- **Account Linking**: Connect multiple providers to one account.
+**Admin panel** ([details](/landing/doc/admin-panel))
+- Users: create, change role, ban, unban, remove, and create the demo guest account.
+- Invitations and registration mode.
+- Landing page editor with image uploads, and a documentation editor.
+- SEO audit (PageSpeed Insights) and GA4 traffic reports.
+- A catalog of every tRPC procedure and the role it requires.
 
-## 💳 Payments
+**Platform features**
+- [Email](/landing/doc/email): Resend with React Email templates.
+- [File storage](/landing/doc/storage): avatars and CMS images, validated and re-encoded with sharp, stored in Vercel Blob or Cloudflare R2.
+- [Support widget](/landing/doc/support): send a message, open the docs, book a meeting.
+- [SEO](/landing/doc/seo): metadata helper, canonical URLs, Open Graph, sitemap with every doc page, robots rules.
+- [Observability](/landing/doc/observability): Winston logs shipped to BetterStack, Google Analytics 4, Vercel Analytics and Speed Insights.
+- [Caching and rate limiting](/landing/doc/performance) with Upstash Redis.
 
+**Production hardening** ([details](/landing/doc/security))
+- Boot-time environment validation that refuses weak or missing secrets in production.
+- A route policy table that declares auth, roles, rate limits and body-size limits for every route.
+- Secret redaction in logs and idempotent payment webhooks.
 
-**Dodo Payments** integration for:
+**Developer tooling**
+- `pnpm doctor`: fills `.env` files, generates secrets and checks each service with a live call.
+- Vitest across apps and packages, dependency-cruiser architecture checks, ESLint, Prettier.
+- GitHub Actions CI, a Docker image for the web app, and Docker Compose for local services.
 
-- **Subscriptions**: Recurring revenue made easy.
-- **One-time Payments**: For lifetime deals or credits.
-- **Webhooks**: Automatically handle payment events.
+## Modules: optional features
 
-## 📝 Content Management (CMS)
+Modules are optional features. The open-source repository contains all of them. A download contains only the ones you pick, and you can add others later.
 
+| Module | ID | What it adds | Credits |
+| --- | --- | --- | --- |
+| [Billing & Payments](/landing/doc/billing) | `billing` | Credit purchases, checkout, transactions, Stripe and Dodo webhooks | 10 |
+| [Organizations / Teams](/landing/doc/organizations) | `multi_tenancy` | Workspaces, invitations, workspace switcher, owner/admin/member/viewer roles | 50 |
+| [AI Platform](/landing/doc/ai-platform) | `ai` | Streaming chat, admin-managed prompts, multi-provider models, speech, token-based credit metering | 20 |
+| [AI Agents & RAG](/landing/doc/ai-agents) | `ai_agents` | Python FastAPI service, LangGraph agents, background jobs, RAG collections on pgvector. Requires `ai` | 30 |
+| [API Keys](/landing/doc/api-keys) | `api_keys` | Scoped, hashed API keys with per-key rate limits and a REST API | 5 |
 
-**Notion** as a CMS:
+A download always costs the 20-credit base plus the modules you select. A Notifications module appears in the catalog but is not built yet, so it cannot be selected.
 
-- Edit your landing page, blog, and documentation directly in Notion.
-- Instant updates without redeploying code.
-- structured databases for Hero, Features, Testimonials, and more.
+## Providers: one choice per integration
 
-## 📧 Email
+Some integrations have interchangeable providers. A download keeps only the provider you choose. The open-source repository keeps all of them and picks one at runtime from an env var.
 
+| Integration | Env var | Choices | Module |
+| --- | --- | --- | --- |
+| Payment gateway | `NEXT_PUBLIC_PAYMENT_GATEWAY` | `stripe`, `dodo`, `none` | Billing |
+| Image storage | `NEXT_PUBLIC_IMAGE_STORAGE` | `vercel_blob`, `cloudflare_r2` | Core |
+| CMS | `NEXT_PUBLIC_CMS` | `constant`, `postgres`, `notion` | Core |
 
-**Resend** integration:
+## Platforms
 
-- Beautiful, React-based email templates.
-- Transactional emails (Welcome, Password Reset).
-- Marketing capabilities.
-
-## 🗄️ Database & Storage
-
-- **PostgreSQL**: Robust relational database.
-- **Prisma ORM**: Type-safe database access.
-- **Redis (Upstash)**: High-performance caching and rate limiting.
-- **Vercel Blob**: Cloud storage for user uploads (avatars, files).
-
-## 📊 Observability
-
-- **BetterStack**: Uptime monitoring and log management.
-- **Google Analytics**: Integrated visitor tracking.
-- **OpenTelemetry**: Ready for advanced tracing.
+| Platform | App | Notes |
+| --- | --- | --- |
+| Web | `apps/web` | Always included. Hosts the API every other client uses |
+| Desktop | `apps/desktop` | [Electron app](/landing/doc/desktop-app) with auth, docs, support, admin and settings |
+| Mobile | `apps/mobile` | [Expo app](/landing/doc/mobile-app) with auth, docs, support, settings and admin |

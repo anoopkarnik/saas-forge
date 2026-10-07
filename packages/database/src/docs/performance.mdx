@@ -1,101 +1,65 @@
+SaaS Forge uses [Upstash Redis](https://upstash.com/) over its REST API for rate limiting and content caching. REST works from serverless functions without connection pools.
 
-Strategies to keep your SaaS Forge application fast.
+## Setup
 
+1. Create a Redis database at [console.upstash.com](https://console.upstash.com/redis), in the region closest to your app.
+2. Copy the REST URL and token:
 
-## Image Optimization
-
-
-Use Next.js Image component:
-
-
-```typescript
-import Image from "next/image";
-
-<Image
-  src="/hero.jpg"
-  alt="Hero"
-  width={1200}
-  height={600}
-  priority // For above-the-fold images
-/>
+```env
+NEXT_PUBLIC_ALLOW_RATE_LIMIT="upstash"
+UPSTASH_REDIS_REST_URL="https://….upstash.io"
+UPSTASH_REDIS_REST_TOKEN="..."
 ```
 
+`NEXT_PUBLIC_ALLOW_RATE_LIMIT="upstash"` makes production refuse to boot without the credentials, and `pnpm doctor` checks them with a `PING`.
 
-## Code Splitting
+## Rate limits
 
+| Limiter | Window | Applies to | Keyed by |
+| --- | --- | --- | --- |
+| `ratelimit` | 5 requests / 60 s, sliding | Session routes with `rateLimit: "default"`: avatar and CMS uploads (and downloads in the open-source repo) | User ID |
+| `chatRateLimit` | 20 requests / 60 s | Session routes with `rateLimit: "chat"` (none by default; AI chat is metered by credits instead) | User ID |
+| `apiKeyRateLimit` | 60 requests / 60 s | REST API calls with an API key (API Keys module) | API key |
+| Better Auth | 100 requests / 60 s, 3 / 60 s for email sign-in | `/api/auth/*` | Client |
 
-Lazy load components:
+Limiters are defined in `apps/web/server/ratelimit.ts`, and each route picks one in `apps/web/lib/route-policy.ts`. Over the limit, `guardRoute` answers `429`. Rate-limited routes need Upstash; without it they fail.
 
+## Content caching
 
-```typescript
-import dynamic from "next/dynamic";
+With Upstash configured (and a CMS other than `constant`), these are cached for an hour:
 
-const HeavyComponent = dynamic(() => import("./HeavyComponent"), {
-  loading: () => <Spinner />,
-  ssr: false, // Client-side only
-});
+| Key | Contents | Cleared by |
+| --- | --- | --- |
+| `<name>-landing-page:cms:v1` | Landing page content | Saving in Admin → CMS |
+| `<name>-documentation:v1` | Docs index (titles, slugs, categories) | Saving in Admin → Docs |
+| `<name>-documentation:blocks:v1:<id>` | A Notion doc's block tree | Expiry only |
+
+`<name>` is `NEXT_PUBLIC_SAAS_NAME` in lowercase. Postgres doc bodies are read from the database on every request.
+
+Cache your own expensive reads the same way:
+
+```ts
+import { redis } from "@/server/redis";
+
+const key = `reports:summary:${userId}`;
+const cached = await redis.get<Summary>(key);
+if (cached) return cached;
+
+const summary = await buildSummary(userId);
+await redis.set(key, summary, { ex: 300 });
+return summary;
 ```
 
+## Rendering and hosting
 
-## Caching
+- Signed-in pages are client components that fetch through tRPC. Server components prefetch with `queryClient.ensureQueryData(...)` and hydrate, so the first paint has data.
+- Public pages that prefetch through the tRPC server proxy read request headers for the session, so they render per request. Redis is what keeps them cheap.
+- `next/image` caches optimized CMS images for 31 days (`images.minimumCacheTTL`).
+- On serverless hosts, use a pooled Postgres connection string and keep functions in the same region as the database.
 
+## Measuring
 
-Use Redis for expensive operations:
-
-
-```typescript
-const cached = await redis.get(key);
-if (cached) return JSON.parse(cached);
-
-const data = await fetchExpensiveData();
-await redis.set(key, JSON.stringify(data), { ex: 3600 });
-```
-
-
-## Database Optimization
-
-- Add indexes to frequently queried fields
-- Use `select` to limit returned fields
-- Batch queries with `findMany` instead of multiple `findUnique`
-- Use database connections pooling
-
-## Bundle Optimization
-
-
-Analyze bundle size:
-
-
-```bash
-pnpm add -D @next/bundle-analyzer
-```
-
-
-```javascript
-// next.config.mjs
-import analyzer from "@next/bundle-analyzer";
-
-const withBundleAnalyzer = analyzer({
-  enabled: process.env.ANALYZE === "true",
-});
-
-export default withBundleAnalyzer(nextConfig);
-```
-
-
-Run analysis:
-
-
-```bash
-ANALYZE=true pnpm build
-```
-
-
-## Best Practices
-
-1. **Minimize JavaScript**: Remove unused dependencies
-2. **Use Server Components**: Reduce client-side JS
-3. **Optimize images**: WebP format, proper sizing
-4. **Enable compression**: Gzip/Brotli
-5. **Cache static assets**: CDN or Vercel caching
-6. **Lazy load**: Below-the-fold content
-7. **Monitor metrics**: Core Web Vitals
+- Vercel Speed Insights (already mounted) for real-user Core Web Vitals.
+- The admin SEO audit with a PageSpeed key for lab scores.
+- `PRISMA_QUERY_LOGGING=true` to see every query and its duration.
+- `ANALYZE=true` builds with `@next/bundle-analyzer` once you add it to `next.config.mjs`.

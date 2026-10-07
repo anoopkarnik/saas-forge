@@ -1,0 +1,54 @@
+Work through this list before you send real users to your product.
+
+## Environment
+
+- [ ] `pnpm doctor --check` passes against the production values.
+- [ ] `NEXT_PUBLIC_URL` is the final `https://` domain.
+- [ ] `BETTER_AUTH_SECRET` is new for production, at least 32 characters, and not shared with development. Same for `BACKEND_HMAC_SECRET` (AI Agents).
+- [ ] Only the features you use are switched on, and each has its production credentials.
+- [ ] No secret is in a `NEXT_PUBLIC_`, `VITE_` or `EXPO_PUBLIC_` variable (boot validation rejects the obvious ones).
+- [ ] Preview and development use different databases and test-mode payment keys.
+
+## Database
+
+- [ ] All migrations applied with `pnpm --dir packages/database migrate:deploy`.
+- [ ] Seeded once (`pnpm seed`) with the production `NEXT_PUBLIC_SAAS_NAME`.
+- [ ] You signed up first and are the admin. Check **Admin → Users**.
+- [ ] Backups or point-in-time recovery are on.
+- [ ] The app uses a pooled connection string on serverless hosts.
+
+## Auth and email
+
+- [ ] Sending domain verified in Resend; `NEXT_PUBLIC_SUPPORT_MAIL` is on it.
+- [ ] Sign-up, verification email, password reset and sign-in all work on production.
+- [ ] Each OAuth provider has the production callback URL, and Google's consent screen is published.
+- [ ] Registration mode is what you want (**Open** or **Invite only**).
+- [ ] If you use the demo button: the guest account exists, its role is `guest`, and `DEMO_GUEST_*` are set.
+
+## Payments (Billing module)
+
+- [ ] Live keys, live webhook endpoint and its secret are set.
+- [ ] The displayed price and the charged price match (see [Billing & Credits](/landing/doc/billing)).
+- [ ] One real purchase credited the account; then refunded.
+
+## Content
+
+- [ ] Landing page, pricing, FAQ and legal pages show your product, not the defaults.
+- [ ] Legal pages reviewed: company name, address, country, contact and last-updated date.
+- [ ] These SaaS Forge docs replaced or removed (**Admin → Docs**).
+- [ ] Logo, favicon and Open Graph image replaced.
+- [ ] Image hosts for uploads are in `images.remotePatterns`.
+
+## Operations
+
+- [ ] Upstash configured: rate limits work (uploads answer `429` when hammered).
+- [ ] Logs reach BetterStack or your host's log viewer.
+- [ ] An uptime monitor watches `/api/healthcheck`.
+- [ ] Error tracking (for example Sentry) is set up if you want alerts.
+- [ ] `sitemap.xml` submitted to Google Search Console; the admin SEO audit passes.
+
+## Downloaded projects
+
+- [ ] Root-only references you don't need are gone from your README and sidebar.
+- [ ] Opted in to release emails, or you check the Upgrade Center for security advisories.
+- [ ] `.boilerplate-version` is committed so upgrades know your starting point.

@@ -1,49 +1,70 @@
+SaaS Forge is MIT licensed and open to contributions: bug reports, fixes, docs and features. The full guide is `docs/CONTRIBUTING.md` in the repository.
 
-Thank you for considering contributing to SaaS Forge!
+## Reporting issues
 
+Open an issue on [GitHub](https://github.com/anoopkarnik/saas-forge/issues) with:
 
-## Getting Started
+- what you did, what you expected, and what happened;
+- your OS, Node.js and pnpm versions;
+- the output of `pnpm doctor --check` (secrets are already masked);
+- for downloads, the version in `.boilerplate-version` and your modules.
 
-1. Fork the repository
-2. Clone your fork
-3. Create a feature branch
-4. Make your changes
-5. Submit a pull request
+Report security problems privately to the address in `docs/SECURITY.md`, not in a public issue.
 
-## Development Setup
-
+## Development setup
 
 ```bash
-git clone <https://github.com/YOUR_USERNAME/saas-forge.git>
+git clone https://github.com/<you>/saas-forge.git
 cd saas-forge
+corepack enable
 pnpm install
+pnpm doctor
 pnpm dev
 ```
 
+## Where to make a change
 
-## Code Style
+| Change | Where |
+| --- | --- |
+| Shared SaaS behavior (auth, UI, APIs, schema) | Root `apps/` and `packages/` |
+| Something only the released starter should have | `template-overrides/saas-boilerplate/`, registered in `template-sync.manifest.json` |
+| A module's code in a shared file | Inside its `// scaffold:begin <module>` markers |
+| The download platform | `apps/web/lib/scaffold/`, `scaffold-modules/`, `scaffold-providers/` |
 
-- Use TypeScript for all code
-- Follow ESLint configuration
-- Format with Prettier
-- Write meaningful commit messages
+Never edit `.generated/saas-boilerplate`; it is rebuilt by `pnpm template:stage`. After touching anything that ships in the starter, run `pnpm template:sync`. See [Starter Template Workflow](/landing/doc/template-workflow).
 
-## Submitting Changes
+## Before opening a pull request
 
-1. Create a feature branch: `git checkout -b feature/my-feature`
-2. Commit changes: `git commit -m "Add feature"`
-3. Push to branch: `git push origin feature/my-feature`
-4. Open a Pull Request
+```bash
+pnpm typecheck
+pnpm lint
+pnpm test
+pnpm arch:check
+pnpm template:check-sync          # if starter files changed
+pnpm scaffold:matrix --static     # if modules, markers or manifests changed (the full matrix runs in CI)
+```
 
-## Reporting Issues
+- Add or update tests for what you changed.
+- New API route: add its route-policy row. New tRPC procedure: add it to `apiRegistry.ts`. New env var: `.env.example`, `env.ts` and a doctor hint.
+- Schema change: include the migration and say so in the pull request.
+- Update these docs (`packages/database/src/docs/`) when behavior changes.
 
+## Commit messages
 
-Use [GitHub Issues](https://github.com/anoopkarnik/saas-forge/issues) to report bugs or request features.
+Use [Conventional Commits](https://www.conventionalcommits.org/). Release notes are drafted from them, so the type and scope matter:
 
+```text
+feat(billing): add annual credit packs
+fix(auth): keep the invite token through OAuth sign-up
+security(api_keys): compare key hashes in constant time
+feat(ai)!: rename the chat prompt key
+```
 
-Include:
+`feat` becomes a feature, `fix` and `perf` a fix, `security` a security advisory, and `!` or `BREAKING CHANGE` a breaking change. Name the module in the scope when the change belongs to one.
 
-- Clear description
-- Steps to reproduce
-- Expected vs actual behavior
-- Environment details
+## Code style
+
+- TypeScript everywhere, strict mode, no `any` in new code unless an external type forces it.
+- Formatting with Prettier (`pnpm format`), linting with ESLint.
+- Match the surrounding code: naming, file layout and comment density.
+- Keep changes focused. Unrelated refactors belong in their own pull request.

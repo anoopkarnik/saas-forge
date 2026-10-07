@@ -1,0 +1,63 @@
+Modules are optional features. The open-source repository contains all of them; a download contains only the modules you select, with no leftover files, imports, env vars, Prisma models or migrations from the others.
+
+| Module | ID | Requires | Credits | Docs |
+| --- | --- | --- | --- | --- |
+| Billing & Payments | `billing` | — | 10 | [Billing](/landing/doc/billing), [Payment Gateways](/landing/doc/payments) |
+| Organizations / Teams | `multi_tenancy` | — | 50 | [Organizations & Teams](/landing/doc/organizations) |
+| AI Platform | `ai` | — | 20 | [AI Platform](/landing/doc/ai-platform) |
+| AI Agents & RAG | `ai_agents` | `ai` | 30 | [AI Agents & RAG](/landing/doc/ai-agents) |
+| API Keys | `api_keys` | — | 5 | [API Keys & REST API](/landing/doc/api-keys) |
+
+## Which modules does my project have?
+
+Run `pnpm doctor --check`. Its first line lists them:
+
+```text
+SaaS Forge doctor · modules: billing, api_keys · platforms: web, mobile
+```
+
+You can also look for the module's files, for example `packages/database/prisma/org.prisma` for Organizations or `apps/web/trpc/routers/aiProcedures.ts` for AI Platform.
+
+## How a module is removed from a download
+
+Module code lives in three forms, and the download builder handles each:
+
+1. **Files the module owns** (routers, pages, components, Prisma files, migrations) are deleted.
+2. **Sections inside shared files** are wrapped in marker comments, and the sections of unselected modules are dropped:
+
+   ```ts
+   // scaffold:begin billing
+   import { billingRouter } from "./billingProcedures";
+   // scaffold:end billing
+   ```
+
+   The markers themselves never ship.
+3. **Small slots** that differ by module, such as the workspace switcher in the sidebar, are replaced by a no-op stub.
+
+Every variant is checked in SaaS Forge's CI: each module alone, every pair and all modules are compiled, installed, typechecked and scanned for leftovers, and a nightly job boots the smallest and largest variants against a fresh database.
+
+## Providers
+
+Some integrations have interchangeable providers. They are pruned the same way, inside the module that owns them:
+
+| Toggle | Env var | Choices | Owner |
+| --- | --- | --- | --- |
+| `payment_gateway` | `NEXT_PUBLIC_PAYMENT_GATEWAY` | `stripe`, `dodo`, `none` | Billing |
+| `image_storage` | `NEXT_PUBLIC_IMAGE_STORAGE` | `vercel_blob`, `cloudflare_r2` | Core |
+| `cms` | `NEXT_PUBLIC_CMS` | `constant`, `postgres`, `notion` | Core |
+
+A download keeps only the provider you picked and pins the default to it. Leave a toggle unset in the wizard to keep every choice, or set `KEEP_ALL_PROVIDERS=true`. Switching provider later is a free upgrade.
+
+## Adding a module later
+
+Buy it as an upgrade from the [Upgrade Center](/landing/doc/upgrading) or the CLI (`create-saas-forge upgrade --add <id>`). You pay the module's price, and the kit brings its files, migrations and env vars.
+
+## Removing a module yourself
+
+To drop a module from a project:
+
+1. Delete the files it owns (its router, pages, components, `.prisma` file).
+2. Remove its sections in shared files. In the open-source repository, search for `scaffold:begin <id>`.
+3. Remove it from `apps/web/trpc/routers/_app.ts` and `apps/web/trpc/apiRegistry.ts`.
+4. Create a migration that drops its tables, after backing up the data.
+5. Run `pnpm typecheck` and `pnpm test`.

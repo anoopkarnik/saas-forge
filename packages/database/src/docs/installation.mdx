@@ -1,94 +1,77 @@
+This page sets up the open-source repository. If you downloaded a boilerplate, follow [Download a Boilerplate](/landing/doc/download-a-boilerplate) instead; the steps after unzipping are the same.
 
-There are two ways to set up the SaaS Forge: using the CLI tool (recommended) or manual installation.
-
-
-## Option 1: Using the CLI (Recommended)
-
-
-The fastest way to get started:
-
+## 1. Clone and install
 
 ```bash
-npx saas-forge my-saas-app --theme=blue|green|neutral|orange|red|rose|violet|yellow
-```
-
-
-This command will:
-
-- Clone the repository
-- Copy `.env.example` to `.env`
-- Set your preferred theme (optional)
-- Install all dependencies
-
-## Option 2: Manual Installation
-
-
-### 1. Clone the Repository
-
-
-```bash
-git clone <https://github.com/anoopkarnik/saas-forge.git> my-saas-app
-cd my-saas-app
-```
-
-
-### 2. Install Dependencies
-
-
-We use `pnpm` for package management.
-
-
-```bash
+git clone https://github.com/anoopkarnik/saas-forge.git my-saas
+cd my-saas
+corepack enable      # uses the pnpm version pinned in package.json
 pnpm install
 ```
 
-
-### 3. Environment Variables
-
-
-Copy the example environment file to create your own local configuration.
-
+On Linux, pnpm sometimes skips Electron's binary download. If the desktop app later fails with "Electron failed to install correctly", run:
 
 ```bash
-cd apps/web
-cp .env.example .env
+node node_modules/electron/install.js
 ```
 
+## 2. Configure the environment
 
 ```bash
-cd packages/database
-cp .env.example .env
+pnpm doctor
 ```
 
-> **Important**: You must fill in the `.env` file with your API keys and secrets. See the Environment Variables guide for a detailed reference of each variable.
+The doctor creates `apps/web/.env` from `apps/web/.env.example`, asks for each missing value, generates `BETTER_AUTH_SECRET`, checks every configured service with a live call, and writes `packages/database/.env` plus the desktop and mobile env files. Values you skip can be added later. See [Setup Doctor](/landing/doc/setup-doctor).
 
-### 4. Database Setup
-
-
-Ensure your `DATABASE_URL` in `.env`  in database packages is correct, then generate the Prisma client and run migrations.
-
+Prefer to do it by hand?
 
 ```bash
-# Run from the root directory
-pnpm generate
-
-# Run migrations to create tables
-pnpm migrate
+cp apps/web/.env.example apps/web/.env
+cp packages/database/.env.example packages/database/.env
+cp apps/desktop/.env.example apps/desktop/.env   # optional
+cp apps/mobile/.env.example apps/mobile/.env     # optional
 ```
 
+At minimum, set `NEXT_PUBLIC_SAAS_NAME`, `NEXT_PUBLIC_URL`, `DATABASE_URL` (in both `apps/web/.env` and `packages/database/.env`) and `BETTER_AUTH_SECRET` (`openssl rand -base64 32`). With `NEXT_PUBLIC_AUTH_EMAIL=true` you also need `NEXT_PUBLIC_EMAIL_CLIENT=resend`, `RESEND_API_KEY` and `NEXT_PUBLIC_SUPPORT_MAIL`, or set `NEXT_PUBLIC_AUTH_EMAIL=false` while you get started.
 
-This will:
+## 3. Set up the database
 
-1. Generate the Prisma client from your schema
-2. Create all necessary tables in your PostgreSQL database as defined in `packages/database/prisma/schema.prisma`
+The doctor offers to run these for you when the database is empty:
 
-### 5. Start Development Server
+```bash
+pnpm generate   # generates the Prisma client
+pnpm migrate    # applies migrations to the DATABASE_URL in packages/database/.env
+pnpm seed       # loads landing content, these docs, AI prompts and the demo guest user
+```
 
+`pnpm seed` reads `NEXT_PUBLIC_SAAS_NAME` from `apps/web/.env` and stores the landing page under that name. The app looks content up by the same name, so seed again if you rename the product.
+
+No hosted database yet? Start one locally:
+
+```bash
+# Compose reads secrets from a .env file next to docker-compose.yml, even for one service
+printf 'BETTER_AUTH_SECRET=%s\nBACKEND_HMAC_SECRET=%s\n' "$(openssl rand -base64 32)" "$(openssl rand -hex 32)" > .env
+docker compose up -d postgres redis
+# DATABASE_URL="postgresql://postgres:postgres@localhost:5433/saas_forge"
+```
+
+## 4. Start the apps
 
 ```bash
 pnpm dev
 ```
 
+This starts every app through Turborepo. To run only the web app:
 
-Your app will be available at [http://localhost:3000](http://localhost:3000/)
+```bash
+pnpm --dir apps/web dev
+```
 
+Open [http://localhost:3000](http://localhost:3000) and sign up. **The first account becomes the admin.** See [Local Development](/landing/doc/local-development) for ports, the demo account and day-to-day commands.
+
+## 5. Make it yours
+
+- Set your name, description, theme and logos: [Branding & Themes](/landing/doc/branding).
+- Replace the landing content and these docs: [Content Management](/landing/doc/content-management).
+- Remove what you do not need, such as the root-only download platform: [Project Structure](/landing/doc/structure).
+- Build your first feature: [Adding a Feature](/landing/doc/adding-features).

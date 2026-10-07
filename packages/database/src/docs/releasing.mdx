@@ -1,0 +1,73 @@
+How a SaaS Forge release is cut. Open-source repository only. Each release ships the root package and git tag, the starter on the `template/saas-boilerplate` branch, and optionally the desktop snap and the CLI.
+
+## 1. Bump the version
+
+```bash
+pnpm version:bump 1.5.0
+```
+
+Updates `package.json`, `apps/web`, `apps/desktop`, `apps/mobile` (`package.json` and `app.json`), the starter's `package.json` override and `template-sync.manifest.json`, then restages the template. Add `--dry-run` to preview.
+
+## 2. Write the release notes
+
+```bash
+pnpm release:notes --version 1.5.0
+```
+
+Drafts `releases/1.5.0.json` from the conventional commits that changed the starter since the last release:
+
+| Commit | Entry |
+| --- | --- |
+| `feat` | feature |
+| `fix`, `perf` | fix |
+| `security` type or scope | security |
+| `!` or `BREAKING CHANGE` | breaking |
+
+The module comes from the scope, a module named in the subject, or the module folder the commit touched, else `core`. Commits that add a migration are flagged. Edit the draft (highlights, wording, modules) and set `"draft": false`; publishing refuses a draft. These notes appear per project in the Upgrade Center, and security entries put a banner on affected projects.
+
+## 3. Validate
+
+```bash
+pnpm template:check-sync
+pnpm template:build
+pnpm template:test
+```
+
+## 4. Commit and tag
+
+```bash
+git add -A
+git commit -m "chore: release v1.5.0"
+git tag v1.5.0
+git push origin main --tags
+```
+
+## 5. Publish the desktop app (optional)
+
+```bash
+pnpm desktop:install:linux          # test locally
+pnpm desktop:publish:linux:edge     # pre-release
+pnpm desktop:publish:linux:stable   # general availability
+```
+
+Needs `snapcraft login`.
+
+## 6. Publish the CLI (when it changed)
+
+```bash
+cd packages/create-saas-forge && npm version 1.5.0 --no-git-tag-version && npm publish
+```
+
+## 7. Publish the starter
+
+```bash
+pnpm template:publish --version 1.5.0
+```
+
+Stages the template, checks out the `template/saas-boilerplate` orphan branch in a temporary worktree, replaces its contents with `.generated/saas-boilerplate`, writes `.boilerplate-version`, commits, tags `template/v1.5.0`, and pushes. `--dry-run` previews; `--no-push` commits locally only. Projects merging the template branch receive the release from here.
+
+## 8. After the deploy
+
+- **Migrate production**: nothing in the build does it. Run `pnpm --dir packages/database migrate:deploy` with the production `DATABASE_URL`. Keep migrations additive.
+- **Warm the build cache**: an admin runs the `scaffold.prewarm` mutation so the first downloads are fast.
+- **Send release emails**: an admin opens **My Projects → Release emails**. Each opted-in owner whose projects the release changes gets one email; running it again is safe.

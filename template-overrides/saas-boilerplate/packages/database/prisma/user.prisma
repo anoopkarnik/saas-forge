@@ -32,6 +32,10 @@ model User {
     apiKeys          ApiKey[]
     // scaffold:end api_keys
     sentInvitations  Invitation[]     @relation("InvitationInvitedBy")
+    // scaffold:begin notifications
+    notifications    Notification[]
+    notificationPreferences NotificationPreference[]
+    // scaffold:end notifications
     // scaffold:begin multi_tenancy
     members          Member[]
     organizationInvitations OrganizationInvitation[] @relation("OrganizationInvitationInviter")

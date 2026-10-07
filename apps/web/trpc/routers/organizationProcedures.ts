@@ -9,6 +9,9 @@ import {
   ORG_ROLES,
 } from '@workspace/auth/better-auth/organization-helpers';
 import { createTRPCRouter, protectedProcedure } from '../init';
+// scaffold:begin notifications
+import { notifyInvitedUser } from '@/lib/notifications/notify';
+// scaffold:end notifications
 import {
   getActiveOrganizationId,
   orgProcedure,
@@ -252,6 +255,16 @@ export const organizationRouter = createTRPCRouter({
           },
         }),
       );
+      // scaffold:begin notifications
+      if (invitation?.id) {
+        await notifyInvitedUser({
+          email: input.email,
+          organizationId: ctx.org.id,
+          inviterName: ctx.session.user.name || ctx.session.user.email,
+          invitationId: invitation.id,
+        });
+      }
+      // scaffold:end notifications
       return { id: invitation?.id as string };
     }),
 

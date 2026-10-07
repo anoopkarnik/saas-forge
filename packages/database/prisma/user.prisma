@@ -26,6 +26,8 @@ model User {
     aiCollections    AiCollection[]    @relation("AiCollections")
     apiKeys          ApiKey[]
     sentInvitations  Invitation[]     @relation("InvitationInvitedBy")
+    notifications    Notification[]
+    notificationPreferences NotificationPreference[]
     members          Member[]
     organizationInvitations OrganizationInvitation[] @relation("OrganizationInvitationInviter")
     projectConfigs   ProjectConfig[]

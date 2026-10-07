@@ -8,6 +8,9 @@ process.env.DODO_PAYMENTS_WEBHOOK_KEY = 'test_webhook_key';
 const mockUserUpdate = vi.fn();
 const mockTransactionCreate = vi.fn();
 const mockTransactionFindFirst = vi.fn();
+// scaffold:begin notifications
+vi.mock("@/lib/notifications/notify", () => ({ notify: vi.fn(async () => true), notifyIfCreditsLow: vi.fn() }));
+// scaffold:end notifications
 vi.mock('@workspace/database/client', () => ({
   default: {
     user: {

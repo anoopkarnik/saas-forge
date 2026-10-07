@@ -27,6 +27,9 @@ const { db, api } = vi.hoisted(() => ({
   },
 }));
 
+// scaffold:begin notifications
+vi.mock("@/lib/notifications/notify", () => ({ notifyInvitedUser: vi.fn() }));
+// scaffold:end notifications
 vi.mock("@workspace/auth/better-auth/auth", () => ({ auth: { api } }));
 vi.mock("@workspace/database/client", () => ({ default: db }));
 

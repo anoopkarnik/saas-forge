@@ -3,6 +3,10 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import db from "@workspace/database/client";
 import { sendEmail } from "@workspace/email/jobs";
+// scaffold:begin notifications
+import { invitationSent } from "@/lib/notifications/catalog";
+import { notify } from "@/lib/notifications/notify";
+// scaffold:end notifications
 import { createTRPCRouter, baseProcedure, adminProcedure } from "../init";
 
 const settingsRouter = createTRPCRouter({
@@ -69,6 +73,9 @@ const invitesRouter = createTRPCRouter({
       });
 
       await sendEmail({ template: "invitation", email, url: buildInviteUrl(token, email), company });
+      // scaffold:begin notifications
+      await notify(invitationSent, ctx.session.user.id, { email });
+      // scaffold:end notifications
       return invitation;
     }),
 

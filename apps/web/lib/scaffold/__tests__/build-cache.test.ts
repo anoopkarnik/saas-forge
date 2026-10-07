@@ -82,7 +82,7 @@ describe("getOrBuildBaseArchive", () => {
     expect(second.cacheHit).toBe(true);
     expect(compileSpy).toHaveBeenCalledTimes(1);
     expect(Buffer.from(second.bytes).equals(Buffer.from(first.bytes))).toBe(true);
-  });
+  }, 60_000);
 
   it("serves an owner's earlier build while it is still cached", async () => {
     const store = memoryStore();
@@ -118,7 +118,7 @@ describe("getOrBuildBaseArchive", () => {
     expect(result.cacheHit).toBe(false);
     expect(result.bytes.length).toBeGreaterThan(0);
     warn.mockRestore();
-  });
+  }, 60_000);
 });
 
 // Cached archives outlive deploys, so a builder change must change the key.

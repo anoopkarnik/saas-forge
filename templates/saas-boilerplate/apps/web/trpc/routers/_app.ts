@@ -10,6 +10,9 @@ import { apiKeyRouter } from './apiKeyProcedures';
 // scaffold:begin jobs
 import { jobsRouter } from './jobsProcedures';
 // scaffold:end jobs
+// scaffold:begin notifications
+import { notificationRouter } from './notificationProcedures';
+// scaffold:end notifications
 import { adminRouter } from './adminProcedures';
 // scaffold:begin billing
 import { billingRouter } from './billingProcedures';
@@ -36,6 +39,9 @@ export const appRouter = createTRPCRouter({
     // scaffold:begin jobs
     jobs: jobsRouter,
     // scaffold:end jobs
+    // scaffold:begin notifications
+    notification: notificationRouter,
+    // scaffold:end notifications
     admin: adminRouter,
     // scaffold:begin billing
     billing: billingRouter,

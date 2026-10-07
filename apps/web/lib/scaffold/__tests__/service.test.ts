@@ -56,6 +56,7 @@ import {
   computeUpgradeDelta,
   diffTrees,
 } from "../service";
+import { calculateModulesCredits, loadScaffoldRegistry } from "@/lib/scaffold-modules";
 
 const job = {
   type: "download" as const,
@@ -137,7 +138,7 @@ describe("computeUpgradeDelta", () => {
     expect(d.deltaCredits).toBe(16); // 10 + 2*3
   });
 
-  it("charges 0 for a not-yet-implemented module", () => {
+  it("charges 5 credits to add Notifications", () => {
     const d = computeUpgradeDelta({
       fromModules: ["billing"],
       toModules: ["billing", "notifications"],
@@ -145,7 +146,18 @@ describe("computeUpgradeDelta", () => {
       toTierId: "tier-1",
     });
     expect(d.addedModules).toEqual(["notifications"]);
-    expect(d.deltaCredits).toBe(0);
+    expect(d.deltaCredits).toBe(5);
+  });
+
+  it("charges 0 for a module marked implemented: false", () => {
+    const registry = loadScaffoldRegistry();
+    const draft = {
+      ...registry,
+      modules: registry.modules.map((module) =>
+        module.id === "notifications" ? { ...module, implemented: false } : module,
+      ),
+    };
+    expect(calculateModulesCredits(["notifications"], draft)).toBe(0);
   });
 
   it("charges 5 credits to add API Keys", () => {

@@ -79,13 +79,13 @@
     {
       "id": "notifications",
       "label": "Notifications",
-      "description": "In-app notifications and future multi-channel delivery hooks.",
+      "description": "An in-app bell and inbox on web, desktop and mobile, per-type email and in-app preferences, and email delivered as a background job. Ships with payment, low-credit and invitation events.",
       "default": false,
       "creditsCost": 5,
       "requires": [],
       "incompatibleWith": [],
       "downloadEnabled": true,
-      "implemented": false
+      "implemented": true
     }
   ]
 }

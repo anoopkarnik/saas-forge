@@ -135,6 +135,13 @@ Background jobs (`packages/jobs`):
 - The Python ARQ worker (`apps/backend`) stays for AI agent and RAG work; product work (email, cleanups, notifications, webhooks) uses these jobs.
 <!-- scaffold:end jobs -->
 
+<!-- scaffold:begin notifications -->
+Notifications (`apps/web/lib/notifications`):
+
+- Add a type to `catalog.ts` (label, default channels, `render`) inside its module's markers, then call `notify(definition, userId, data, { dedupeKey, organizationId })` after the work commits. It writes the in-app row (duplicates of a `dedupeKey` are skipped, never thrown) and emails through the `notification.deliver` job on the channels the user keeps on. Wrap emit sites in other modules' files in `notifications` markers.
+- The bell (`packages/ui/src/components/notifications/NotificationBell.tsx`) is presentational; web, desktop and mobile wrap it with their own clients and poll `notification.unreadCount` every 30 s. Guests can read the inbox but not mark it read.
+<!-- scaffold:end notifications -->
+
 Webhook idempotency is important for payments:
 
 1. Extract a unique event or checkout identifier.

@@ -1,5 +1,30 @@
 {
   "id": "notifications",
-  "selected": {},
-  "unselected": {}
+  "ownedIdentifiers": [
+    "notificationRouter",
+    "notificationProcedures",
+    "trpc.notification.",
+    "@/lib/notifications/",
+    "NotificationBell",
+    "NotificationsSection",
+    "notifications-api",
+    "model Notification",
+    "notification.deliver",
+    "sendNotificationEmail"
+  ],
+  "unselected": {
+    "remove": [
+      "apps/web/lib/notifications",
+      "apps/web/trpc/routers/notificationProcedures.ts",
+      "apps/web/components/notifications",
+      "apps/desktop/src/renderer/src/components/notifications",
+      "apps/mobile/components/settings/NotificationsSection.tsx",
+      "apps/mobile/lib/notifications-api.ts",
+      "packages/ui/src/components/notifications",
+      "packages/email/src/templates/Notification.tsx",
+      "packages/email/src/resend/notification.ts",
+      "packages/database/prisma/notifications.prisma",
+      "packages/database/prisma/migrations/20261007103304_notifications"
+    ]
+  }
 }

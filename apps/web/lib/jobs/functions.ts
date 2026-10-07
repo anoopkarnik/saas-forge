@@ -1,5 +1,8 @@
 import "@workspace/email/jobs";
 import "@/lib/jobs/cleanup";
+// scaffold:begin notifications
+import "@/lib/notifications/deliver";
+// scaffold:end notifications
 import { NonRetriableError } from "inngest";
 import { enqueue, getJob, listJobs, listSchedules, PermanentJobError, type JobDefinition } from "@workspace/jobs/index";
 import { inngest, jobEvent, type JobEventData } from "@workspace/jobs/inngest";

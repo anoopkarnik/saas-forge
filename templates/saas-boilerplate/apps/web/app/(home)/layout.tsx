@@ -9,6 +9,9 @@ import { SidebarProvider, SidebarTrigger } from "@workspace/ui/components/shadcn
 import { Separator } from "@workspace/ui/components/shadcn/separator";
 import { BreadcrumbsHeader } from "@/components/home/BreadcrumbsHeader"
 import AppSidebar from "@/components/home/AppSidebar";
+// scaffold:begin notifications
+import { NotificationsBell } from "@/components/notifications/NotificationsBell";
+// scaffold:end notifications
 
 // No blanket force-dynamic: every page under (home) is a client component that
 // fetches its own data. This layout still renders per-request (it reads the
@@ -32,6 +35,11 @@ export default async function Layout({ children }: { children: React.ReactNode }
               <div className="flex items-center gap-4 py-2">
                 <SidebarTrigger />
                 <BreadcrumbsHeader />
+                {/* scaffold:begin notifications */}
+                <div className="ml-auto pr-4">
+                  <NotificationsBell />
+                </div>
+                {/* scaffold:end notifications */}
               </div>
               <Separator />
               {children}

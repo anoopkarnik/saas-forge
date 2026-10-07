@@ -23,6 +23,9 @@ import {
   isN8nWebhookProvider,
 } from "@/lib/helper/aiWebhook";
 import { aiChatRequestSchema, type AiChatMessage } from "@/lib/zod/aiChat";
+// scaffold:begin notifications
+import { notifyIfCreditsLow } from "@/lib/notifications/notify";
+// scaffold:end notifications
 import {
   convertToModelMessages,
   safeValidateUIMessages,
@@ -281,6 +284,9 @@ export async function POST(req: Request) {
           },
         });
       });
+      // scaffold:begin notifications
+      await notifyIfCreditsLow(userId, usage.creditsCharged);
+      // scaffold:end notifications
 
       logAIEvent({
         userId,
@@ -380,6 +386,9 @@ export async function POST(req: Request) {
             },
           });
         });
+        // scaffold:begin notifications
+        await notifyIfCreditsLow(userId, usage.creditsCharged);
+        // scaffold:end notifications
 
         logAIEvent({
           userId,

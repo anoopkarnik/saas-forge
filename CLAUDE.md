@@ -200,6 +200,11 @@ Background jobs (`packages/jobs`):
 - Without a queue (tests, development, no jobs module) `enqueue` runs the job inline with the same retries. With `JOBS_DRIVER=inngest` it sends a `jobs/<name>` event to Inngest; `/api/inngest` serves one function per job and per schedule (`apps/web/lib/jobs/functions.ts`). A job that fails every attempt becomes a `JobRun` dead letter on `/admin/jobs` with replay; `ScheduleRun` makes each cron window fire once. Register new jobs in a module `functions.ts` imports.
 - The Python ARQ worker (`apps/backend`) stays for AI agent and RAG work; product work (email, cleanups, notifications, webhooks) uses these jobs.
 
+Notifications (`apps/web/lib/notifications`):
+
+- Add a type to `catalog.ts` (label, default channels, `render`) inside its module's markers, then call `notify(definition, userId, data, { dedupeKey, organizationId })` after the work commits. It writes the in-app row (duplicates of a `dedupeKey` are skipped, never thrown) and emails through the `notification.deliver` job on the channels the user keeps on. Wrap emit sites in other modules' files in `notifications` markers.
+- The bell (`packages/ui/src/components/notifications/NotificationBell.tsx`) is presentational; web, desktop and mobile wrap it with their own clients and poll `notification.unreadCount` every 30 s. Guests can read the inbox but not mark it read.
+
 Webhook idempotency is important for payments:
 
 1. Extract a unique event or checkout identifier.

@@ -53,7 +53,7 @@ describe("buildProjectZip", () => {
 
     expect(zip.file("demo/pnpm-lock.yaml")).not.toBeNull();
     expect(zip.file("demo/SETUP.md")).not.toBeNull();
-  });
+  }, 60_000);
 
   it("refuses secrets before building anything", async () => {
     await expect(

@@ -233,7 +233,7 @@ describe("project router", () => {
 
     const withEmpty = await caller.save({ name: "Empty", modules: ["notifications"] });
     const est2 = await caller.estimateDownload({ slug: withEmpty.project.slug });
-    expect(est2.fullCredits).toBe(20); // notifications not implemented -> 0
+    expect(est2.fullCredits).toBe(25); // base 20 + notifications 5
 
     const withTeams = await caller.save({ name: "Teams", modules: ["multi_tenancy"] });
     const est3 = await caller.estimateDownload({ slug: withTeams.project.slug });

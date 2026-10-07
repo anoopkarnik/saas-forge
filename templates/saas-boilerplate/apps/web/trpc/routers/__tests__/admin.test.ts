@@ -1,5 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
+// scaffold:begin notifications
+vi.mock("@/lib/notifications/notify", () => ({ notify: vi.fn(async () => true), notifyIfCreditsLow: vi.fn() }));
+// scaffold:end notifications
 vi.mock("@workspace/auth/better-auth/auth", () => ({
   auth: { api: { getSession: vi.fn(async () => null) } },
 }));

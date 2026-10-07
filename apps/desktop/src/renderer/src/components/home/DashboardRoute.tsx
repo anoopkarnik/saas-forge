@@ -6,6 +6,9 @@ import SidebarUser from "./SidebarUser"
 import WorkspaceSlot from "../organizations/WorkspaceSlot"
 import { SidebarProvider, SidebarTrigger } from "@workspace/ui/components/shadcn/sidebar";
 import { Separator } from "@workspace/ui/components/shadcn/separator";
+// scaffold:begin notifications
+import NotificationsBell from "../notifications/NotificationsBell";
+// scaffold:end notifications
 import DashboardPage from "@workspace/ui/blocks/dashboard/DashboardPage";
 import Support from "../support/Support";
 import { useTRPC } from "../../lib/trpc";
@@ -92,6 +95,11 @@ export default function DashboardRoute() {
                 <div className="flex items-center gap-4 py-2 px-4">
                     <SidebarTrigger />
                     <div className="font-semibold tracking-tight">Dashboard</div>
+                    {/* scaffold:begin notifications */}
+                    <div className="ml-auto">
+                        <NotificationsBell />
+                    </div>
+                    {/* scaffold:end notifications */}
                 </div>
                 <Separator />
                 {catalogQuery.data ? (

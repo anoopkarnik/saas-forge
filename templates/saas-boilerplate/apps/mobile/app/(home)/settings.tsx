@@ -11,6 +11,9 @@ import OrgSelector from "@/components/organizations/OrgSelector";
 // scaffold:begin billing
 import BillingSection from "@/components/settings/BillingSection";
 // scaffold:end billing
+// scaffold:begin notifications
+import NotificationsSection from "@/components/settings/NotificationsSection";
+// scaffold:end notifications
 
 export default function Settings() {
     const router = useRouter();
@@ -63,6 +66,10 @@ export default function Settings() {
 
             {/* Password Management */}
             <PasswordSection />
+
+            {/* scaffold:begin notifications */}
+            <NotificationsSection />
+            {/* scaffold:end notifications */}
 
             {/* Active Sessions */}
             <SessionsSection />

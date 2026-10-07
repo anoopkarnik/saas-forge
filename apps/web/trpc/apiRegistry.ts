@@ -130,6 +130,24 @@ export const API_REGISTRY: ApiGroup[] = [
     ],
   },
   {
+    group: "notification",
+    label: "Notifications",
+    calls: [
+      { name: "list", type: "query", access: "authenticated" },
+      { name: "unreadCount", type: "query", access: "authenticated" },
+      { name: "markRead", type: "mutation", access: "authenticated" },
+      { name: "markAllRead", type: "mutation", access: "authenticated" },
+    ],
+  },
+  {
+    group: "notification.preferences",
+    label: "Notifications · Preferences",
+    calls: [
+      { name: "get", type: "query", access: "authenticated" },
+      { name: "set", type: "mutation", access: "authenticated" },
+    ],
+  },
+  {
     group: "jobs",
     label: "Background jobs",
     calls: [

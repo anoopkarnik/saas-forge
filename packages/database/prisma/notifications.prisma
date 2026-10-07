@@ -1,0 +1,33 @@
+/// One notification for one user (notifications module). In-app rows show in the bell.
+model Notification {
+    id             String    @id @default(cuid())
+    userId         String
+    user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+    /// Set for organization events; the inbox shows the active organization's plus personal ones.
+    organizationId String?
+    type           String
+    title          String
+    body           String
+    link           String?
+    data           Json?
+    /// Emitting the same key twice for a user creates one notification (webhook retries).
+    dedupeKey      String?
+    readAt         DateTime?
+    createdAt      DateTime  @default(now())
+
+    @@unique([userId, dedupeKey])
+    @@index([userId, readAt])
+    @@schema("user_schema")
+}
+
+/// A user's choice for one notification type and channel; missing rows use the type's default.
+model NotificationPreference {
+    userId  String
+    user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+    type    String
+    channel String
+    enabled Boolean
+
+    @@id([userId, type, channel])
+    @@schema("user_schema")
+}

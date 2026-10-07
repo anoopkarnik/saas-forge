@@ -2,6 +2,10 @@ import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import db from "@workspace/database/client"
+// scaffold:begin notifications
+import { paymentFailed, paymentSucceeded } from "@/lib/notifications/catalog";
+import { notify } from "@/lib/notifications/notify";
+// scaffold:end notifications
 
 // Created lazily: `next build` evaluates this module while collecting page data,
 // and the Stripe constructor throws when STRIPE_SECRET_KEY is absent at build time.
@@ -105,6 +109,9 @@ export async function POST(request: NextRequest) {
             });
 
             console.log(`[Stripe Webhook] Credits +${credits} for user ${userId} (session: ${session.id})`);
+            // scaffold:begin notifications
+            await notify(paymentSucceeded, userId, { credits }, { dedupeKey: `payment:${session.id}` });
+            // scaffold:end notifications
             return NextResponse.json({
                 message: "Checkout session completed and credits updated",
             }, { status: 200 });
@@ -123,6 +130,13 @@ export async function POST(request: NextRequest) {
             }, { status: 500 });
         }
     }
+
+    // scaffold:begin notifications
+    if (event.type === "checkout.session.async_payment_failed" && session.client_reference_id) {
+        await notify(paymentFailed, session.client_reference_id, {}, { dedupeKey: `payment-failed:${session.id}` });
+        return NextResponse.json({ message: "Payment failure recorded" });
+    }
+    // scaffold:end notifications
 
     return NextResponse.json({
         message: "Stripe webhook received but not processed",

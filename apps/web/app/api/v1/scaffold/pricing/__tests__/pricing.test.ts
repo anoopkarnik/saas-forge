@@ -42,10 +42,9 @@ describe("GET /api/v1/scaffold/pricing", () => {
     expect(multi.creditsCost).toBe(50);
     expect(multi.implemented).toBe(true);
 
-    // Not-yet-implemented module is listed but charged 0.
     const notifications = body.modules.find((m: any) => m.id === "notifications");
-    expect(notifications.creditsCost).toBe(0);
+    expect(notifications.creditsCost).toBe(5);
     expect(notifications.listedCreditsCost).toBe(5);
-    expect(notifications.implemented).toBe(false);
+    expect(notifications.implemented).toBe(true);
   });
 });

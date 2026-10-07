@@ -16,6 +16,9 @@ const N8N_WEBHOOK_TEMPLATE = `{
   "context": {{context}}
 }`;
 
+// scaffold:begin notifications
+vi.mock("@/lib/notifications/notify", () => ({ notify: vi.fn(async () => true), notifyIfCreditsLow: vi.fn() }));
+// scaffold:end notifications
 vi.mock("@workspace/auth/better-auth/auth", () => ({
   auth: {
     api: {

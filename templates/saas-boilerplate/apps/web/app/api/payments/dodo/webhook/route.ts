@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import db  from "@workspace/database/client";
+// scaffold:begin notifications
+import { paymentFailed, paymentSucceeded } from "@/lib/notifications/catalog";
+import { notify } from "@/lib/notifications/notify";
+// scaffold:end notifications
 
 export async function POST(req: NextRequest) {
 
@@ -16,6 +20,19 @@ export async function POST(req: NextRequest) {
         console.log("Received onSubscriptionActive webhook:", payload);
         // Add your business logic here
       },
+      // scaffold:begin notifications
+      onPaymentFailed: async (payload: any) => {
+        const userId = payload?.data?.metadata?.userId;
+        const paymentId = payload?.data?.payment_id;
+        if (!userId || !paymentId) return;
+        await notify(
+          paymentFailed,
+          userId,
+          { reason: payload?.data?.error_message ?? undefined },
+          { dedupeKey: `payment-failed:${paymentId}` },
+        );
+      },
+      // scaffold:end notifications
       onPaymentSucceeded: async (payload: any) => {
         const credits = payload?.data?.metadata?.credits;
         const userId = payload?.data?.metadata?.userId;
@@ -84,6 +101,10 @@ export async function POST(req: NextRequest) {
           console.error("[Dodo Webhook] Error processing webhook:", error);
           throw error;
         }
+
+        // scaffold:begin notifications
+        await notify(paymentSucceeded, userId, { credits: Number(credits) }, { dedupeKey: `payment:${eventId}` });
+        // scaffold:end notifications
 
         // Revalidate the entire layout cache so updated credits show immediately everywhere
         revalidatePath("/", "layout");

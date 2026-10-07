@@ -15,6 +15,10 @@ const { db, tx, signature } = vi.hoisted(() => {
 });
 
 vi.mock("@workspace/database/client", () => ({ default: db }));
+// scaffold:begin notifications
+const notify = vi.hoisted(() => vi.fn(async () => true));
+vi.mock("@/lib/notifications/notify", () => ({ notify }));
+// scaffold:end notifications
 vi.mock("next/headers", () => ({
   headers: async () => new Headers({ "Stripe-Signature": signature.value }),
 }));
@@ -72,6 +76,14 @@ describe("POST /api/payments/stripe/webhook", () => {
       where: { id: "user_1" },
       data: { creditsTotal: { increment: 100 } },
     });
+    // scaffold:begin notifications
+    expect(notify).toHaveBeenCalledWith(
+      expect.objectContaining({ type: "payment.succeeded" }),
+      "user_1",
+      { credits: 100 },
+      { dedupeKey: "payment:cs_test_1" },
+    );
+    // scaffold:end notifications
   });
 
   it("ignores a checkout session it already processed", async () => {

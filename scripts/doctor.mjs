@@ -50,6 +50,9 @@ const MODULES = [
   // scaffold:begin audit_log
   "audit_log",
   // scaffold:end audit_log
+  // scaffold:begin webhooks
+  "webhooks",
+  // scaffold:end webhooks
 ];
 
 // Next.js reads apps/web/.env, then .env.local over it; shell variables win.
@@ -62,6 +65,9 @@ const GENERATED = {
   // scaffold:begin ai_agents
   BACKEND_HMAC_SECRET: () => randomBytes(32).toString("hex"),
   // scaffold:end ai_agents
+  // scaffold:begin webhooks
+  WEBHOOK_SECRET_KEY: () => randomBytes(32).toString("base64"),
+  // scaffold:end webhooks
 };
 
 /** Where to get each value. */

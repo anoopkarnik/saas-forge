@@ -12,6 +12,9 @@ import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
 // scaffold:begin audit_log
 import { audit, userActor } from "@/lib/audit/audit";
 // scaffold:end audit_log
+// scaffold:begin webhooks
+import { emitWebhook } from "@/lib/webhooks/service";
+// scaffold:end webhooks
 
 const scopeSchema = z
   .string()
@@ -78,6 +81,13 @@ export const apiKeyRouter = createTRPCRouter({
           scopes: input.scopes,
         })}`,
       );
+      // scaffold:begin webhooks
+      await emitWebhook(
+        "api_key.created",
+        { keyId: row.id, label: input.label, scopes: input.scopes },
+        { userId: ctx.session.user.id },
+      );
+      // scaffold:end webhooks
       return { key: row, plaintext: generated.plaintext };
     }),
 
@@ -110,6 +120,9 @@ export const apiKeyRouter = createTRPCRouter({
         // scaffold:end audit_log
         return revoked;
       });
+      // scaffold:begin webhooks
+      await emitWebhook("api_key.revoked", { keyId: row.id }, { userId: ctx.session.user.id });
+      // scaffold:end webhooks
       logger.info(
         `apiKey.revoked ${JSON.stringify({
           userId: ctx.session.user.id,

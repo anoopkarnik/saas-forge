@@ -12,6 +12,9 @@ import { createTRPCRouter, protectedProcedure } from '../init';
 // scaffold:begin notifications
 import { notifyInvitedUser } from '@/lib/notifications/notify';
 // scaffold:end notifications
+// scaffold:begin webhooks
+import { emitWebhook } from '@/lib/webhooks/service';
+// scaffold:end webhooks
 // scaffold:begin audit_log
 import { audit, userActor } from '@/lib/audit/audit';
 import type { AuditAction, AuditMetadata } from '@/lib/audit/actions';
@@ -356,6 +359,13 @@ export const organizationRouter = createTRPCRouter({
       // scaffold:begin audit_log
       await auditOrg(ctx, 'org.member.removed', input.memberId, {});
       // scaffold:end audit_log
+      // scaffold:begin webhooks
+      await emitWebhook(
+        'org.member.removed',
+        { organizationId: ctx.org.id, memberId: input.memberId },
+        { organizationId: ctx.org.id },
+      );
+      // scaffold:end webhooks
       return { success: true };
     }),
 
@@ -427,6 +437,13 @@ export const organizationRouter = createTRPCRouter({
       );
       const organizationId = result?.invitation?.organizationId as string;
       await setSessionActiveOrganization(ctx.session.session.id, organizationId);
+      // scaffold:begin webhooks
+      await emitWebhook(
+        'org.member.added',
+        { organizationId, userId: ctx.session.user.id, role: String(result?.member?.role ?? result?.invitation?.role ?? 'member') },
+        { organizationId },
+      );
+      // scaffold:end webhooks
       return { organizationId };
     }),
 

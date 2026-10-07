@@ -183,6 +183,23 @@ export const API_REGISTRY: ApiGroup[] = [
     ],
   },
   // scaffold:end audit_log
+  // scaffold:begin webhooks
+  {
+    group: "webhook",
+    label: "Webhooks",
+    calls: [
+      { name: "eventTypes", type: "query", access: "authenticated" },
+      { name: "list", type: "query", access: "authenticated" },
+      { name: "create", type: "mutation", access: "authenticated" },
+      { name: "update", type: "mutation", access: "authenticated" },
+      { name: "delete", type: "mutation", access: "authenticated" },
+      { name: "rotateSecret", type: "mutation", access: "authenticated" },
+      { name: "sendTest", type: "mutation", access: "authenticated" },
+      { name: "deliveries", type: "query", access: "authenticated" },
+      { name: "replay", type: "mutation", access: "authenticated" },
+    ],
+  },
+  // scaffold:end webhooks
   // scaffold:begin jobs
   {
     group: "jobs",

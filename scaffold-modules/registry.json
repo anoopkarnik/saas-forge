@@ -97,6 +97,19 @@
       "incompatibleWith": [],
       "downloadEnabled": true,
       "implemented": true
+    },
+    {
+      "id": "webhooks",
+      "label": "Outgoing webhooks",
+      "description": "Customer-managed webhook endpoints with HMAC-signed, versioned events, retries with backoff for 24 hours, a delivery log with replay, secret rotation and SSRF protection. Requires background jobs.",
+      "default": false,
+      "creditsCost": 10,
+      "requires": [
+        "jobs"
+      ],
+      "incompatibleWith": [],
+      "downloadEnabled": true,
+      "implemented": true
     }
   ]
 }

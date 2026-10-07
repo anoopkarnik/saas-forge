@@ -211,6 +211,11 @@ Audit log (`apps/web/lib/audit`):
 - Metadata is redacted (listed and secret-looking keys), then reduced to the keys its schema lists. Audit configuration changes, never per-call usage. Better Auth admin endpoints (`/api/auth/admin/*`) are audited in the auth route by `withAuthAudit`.
 - The trail is append-only: `/admin/audit` (admin-only, CSV export) and the workspace activity on `/organization` read it; the `cleanup.auditRetention` job (with `jobs`) deletes events older than the `audit.retentionDays` site setting.
 
+Outgoing webhooks (`apps/web/lib/webhooks`, guide in its `README.md`):
+
+- Add an event to `events.ts` (description, Zod schema) inside its module's markers; never change a payload under an existing `apiVersion`. Call `emitWebhook(type, data, { userId, organizationId })` after the change commits; it never throws, and wraps nothing in a transaction. Wrap emit sites in other modules' files in `webhooks` markers.
+- Each delivery is a `webhook.deliver` job: signed `SaaSForge-Signature: t=…,v1=…` (HMAC-SHA256 of `t.body`), retried on Inngest for about 24 hours, endpoint paused after 15 failures in a row. Secrets are AES-256-GCM encrypted under `WEBHOOK_SECRET_KEY`. URLs are checked against private ranges when saved and at connect time (`ssrf.ts`); keep both checks.
+
 Webhook idempotency is important for payments:
 
 1. Extract a unique event or checkout identifier.

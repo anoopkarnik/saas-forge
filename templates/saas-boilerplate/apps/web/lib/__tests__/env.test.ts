@@ -15,6 +15,13 @@ describe("findServerEnvIssues", () => {
     expect(findServerEnvIssues(baseEnv)).toEqual([]);
   });
 
+  // scaffold:begin webhooks
+  it("refuses a weak WEBHOOK_SECRET_KEY but does not require one", () => {
+    expect(findServerEnvIssues({ ...baseEnv, WEBHOOK_SECRET_KEY: "short" }).map((i) => i.key)).toEqual(["WEBHOOK_SECRET_KEY"]);
+    expect(findServerEnvIssues({ ...baseEnv, WEBHOOK_SECRET_KEY: STRONG_SECRET })).toEqual([]);
+  });
+  // scaffold:end webhooks
+
   it("requires core variables", () => {
     const issues = findServerEnvIssues({});
     expect(issues.map((i) => i.key)).toEqual(

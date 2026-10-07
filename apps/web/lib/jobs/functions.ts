@@ -3,6 +3,9 @@ import "@/lib/jobs/cleanup";
 // scaffold:begin notifications
 import "@/lib/notifications/deliver";
 // scaffold:end notifications
+// scaffold:begin webhooks
+import "@/lib/webhooks/deliver";
+// scaffold:end webhooks
 import { NonRetriableError } from "inngest";
 import { enqueue, getJob, listJobs, listSchedules, PermanentJobError, type JobDefinition } from "@workspace/jobs/index";
 import { inngest, jobEvent, type JobEventData } from "@workspace/jobs/inngest";

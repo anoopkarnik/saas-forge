@@ -34,6 +34,7 @@ export interface SetupGuide {
 const ENV_HINTS: Record<string, string> = {
   DATABASE_URL: "Postgres connection string from your database provider (Neon, Supabase, Railway).",
   BETTER_AUTH_SECRET: "Generate with `openssl rand -base64 32`.",
+  WEBHOOK_SECRET_KEY: "Generate with `openssl rand -base64 32`; keep it, or stored webhook secrets become unreadable.",
   AUTH_GITHUB_CLIENT_ID: "GitHub → Settings → Developer settings → OAuth Apps.",
   AUTH_GITHUB_CLIENT_SECRET: "Same GitHub OAuth App — generate a new client secret.",
   AUTH_GOOGLE_CLIENT_ID: "Google Cloud Console → APIs & Services → Credentials → OAuth client.",

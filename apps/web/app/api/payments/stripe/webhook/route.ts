@@ -6,6 +6,9 @@ import db from "@workspace/database/client"
 import { paymentFailed, paymentSucceeded } from "@/lib/notifications/catalog";
 import { notify } from "@/lib/notifications/notify";
 // scaffold:end notifications
+// scaffold:begin webhooks
+import { emitWebhook } from "@/lib/webhooks/service";
+// scaffold:end webhooks
 
 // Created lazily: `next build` evaluates this module while collecting page data,
 // and the Stripe constructor throws when STRIPE_SECRET_KEY is absent at build time.
@@ -112,6 +115,19 @@ export async function POST(request: NextRequest) {
             // scaffold:begin notifications
             await notify(paymentSucceeded, userId, { credits }, { dedupeKey: `payment:${session.id}` });
             // scaffold:end notifications
+            // scaffold:begin webhooks
+            await emitWebhook(
+                "payment.succeeded",
+                {
+                    userId,
+                    credits,
+                    amount: session.amount_total ?? null,
+                    currency: session.currency ?? null,
+                    checkoutId: session.id,
+                },
+                { userId },
+            );
+            // scaffold:end webhooks
             return NextResponse.json({
                 message: "Checkout session completed and credits updated",
             }, { status: 200 });
@@ -131,12 +147,20 @@ export async function POST(request: NextRequest) {
         }
     }
 
-    // scaffold:begin notifications
     if (event.type === "checkout.session.async_payment_failed" && session.client_reference_id) {
+        console.log(`[Stripe Webhook] Payment failed for user ${session.client_reference_id} (session: ${session.id})`);
+        // scaffold:begin notifications
         await notify(paymentFailed, session.client_reference_id, {}, { dedupeKey: `payment-failed:${session.id}` });
+        // scaffold:end notifications
+        // scaffold:begin webhooks
+        await emitWebhook(
+            "payment.failed",
+            { userId: session.client_reference_id, reason: null },
+            { userId: session.client_reference_id },
+        );
+        // scaffold:end webhooks
         return NextResponse.json({ message: "Payment failure recorded" });
     }
-    // scaffold:end notifications
 
     return NextResponse.json({
         message: "Stripe webhook received but not processed",

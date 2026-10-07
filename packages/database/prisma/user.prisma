@@ -28,6 +28,7 @@ model User {
     sentInvitations  Invitation[]     @relation("InvitationInvitedBy")
     notifications    Notification[]
     notificationPreferences NotificationPreference[]
+    webhookEndpoints WebhookEndpoint[]
     members          Member[]
     organizationInvitations OrganizationInvitation[] @relation("OrganizationInvitationInviter")
     projectConfigs   ProjectConfig[]

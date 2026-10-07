@@ -105,6 +105,15 @@ export function findServerEnvIssues(env: Env): ServerEnvIssue[] {
   }
   // scaffold:end ai_agents
 
+  // scaffold:begin webhooks
+  // Encrypts webhook signing secrets. Optional at boot (endpoints cannot be
+  // created without it), but a weak key is refused.
+  if (!isBlank(env.WEBHOOK_SECRET_KEY)) {
+    const webhookKeyIssue = secretIssue("WEBHOOK_SECRET_KEY", env.WEBHOOK_SECRET_KEY);
+    if (webhookKeyIssue) issues.push(webhookKeyIssue);
+  }
+  // scaffold:end webhooks
+
   // Email/password sign-up requires a verification email, so it needs a sender.
   if (env.NEXT_PUBLIC_AUTH_EMAIL === "true" && (isBlank(env.NEXT_PUBLIC_EMAIL_CLIENT) || env.NEXT_PUBLIC_EMAIL_CLIENT === "none")) {
     issues.push({

@@ -63,6 +63,7 @@ const SidebarUser = ({
   status,
   isSigningOut: externalIsSigningOut,
   apiKeysContent,
+  webhooksContent,
 }: SidebarUserProps) => {
 
   const { isMobile } = useSidebar()
@@ -168,6 +169,7 @@ const SidebarUser = ({
                 onCreateCheckoutSession={onCreateCheckoutSession}
                 openedTab={openedTab}
                 apiKeysContent={apiKeysContent}
+                webhooksContent={webhooksContent}
               >
                 <DropdownMenuItem
                   className="flex gap-2 cursor-pointer"

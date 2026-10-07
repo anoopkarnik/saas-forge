@@ -36,6 +36,9 @@ model User {
     notifications    Notification[]
     notificationPreferences NotificationPreference[]
     // scaffold:end notifications
+    // scaffold:begin webhooks
+    webhookEndpoints WebhookEndpoint[]
+    // scaffold:end webhooks
     // scaffold:begin multi_tenancy
     members          Member[]
     organizationInvitations OrganizationInvitation[] @relation("OrganizationInvitationInviter")

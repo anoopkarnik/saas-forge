@@ -17,6 +17,9 @@ import { notificationRouter } from './notificationProcedures';
 // scaffold:begin audit_log
 import { auditRouter } from './auditProcedures';
 // scaffold:end audit_log
+// scaffold:begin webhooks
+import { webhookRouter } from './webhookProcedures';
+// scaffold:end webhooks
 import { adminRouter } from './adminProcedures';
 // scaffold:begin billing
 import { billingRouter } from './billingProcedures';
@@ -50,6 +53,9 @@ export const appRouter = createTRPCRouter({
     // scaffold:begin audit_log
     audit: auditRouter,
     // scaffold:end audit_log
+    // scaffold:begin webhooks
+    webhook: webhookRouter,
+    // scaffold:end webhooks
     admin: adminRouter,
     // scaffold:begin billing
     billing: billingRouter,

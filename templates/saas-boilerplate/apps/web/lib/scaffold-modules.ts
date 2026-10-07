@@ -12,7 +12,8 @@ export type ScaffoldModuleId =
   | "api_keys"
   | "jobs"
   | "notifications"
-  | "audit_log";
+  | "audit_log"
+  | "webhooks";
 
 type RegistryModuleEntry = {
   id: ScaffoldModuleId;

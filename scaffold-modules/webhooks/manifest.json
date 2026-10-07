@@ -1,0 +1,35 @@
+{
+  "id": "webhooks",
+  "ownedIdentifiers": [
+    "webhookRouter",
+    "webhookProcedures",
+    "trpc.webhook.",
+    "@/lib/webhooks/",
+    "model WebhookEndpoint",
+    "model WebhookDelivery",
+    "WebhooksScreen",
+    "emitWebhook",
+    "webhook.deliver",
+    "WEBHOOK_SECRET_KEY",
+    "SaaSForge-Signature"
+  ],
+  "unselected": {
+    "remove": [
+      "apps/web/lib/webhooks",
+      "apps/web/trpc/routers/webhookProcedures.ts",
+      "apps/web/components/webhooks",
+      "packages/database/prisma/webhooks.prisma",
+      "packages/database/prisma/migrations/20261007123820_webhooks"
+    ],
+    "jsonRemove": [
+      {
+        "file": "turbo.json",
+        "keys": {
+          "globalEnv": [
+            "WEBHOOK_SECRET_KEY"
+          ]
+        }
+      }
+    ]
+  }
+}

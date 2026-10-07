@@ -92,3 +92,16 @@ export const organizationInvited = defineNotification<{ organizationName: string
   }),
 });
 // scaffold:end multi_tenancy
+
+// scaffold:begin webhooks
+export const webhookDisabled = defineNotification<{ url: string; failures: number }>({
+  type: "webhook.disabled",
+  label: "Webhook endpoint disabled",
+  defaults: { in_app: true, email: true },
+  render: ({ url, failures }) => ({
+    title: "Webhook endpoint disabled",
+    body: `${url} failed ${failures} times in a row, so deliveries to it are paused. Fix it, then turn it back on in Settings → Webhooks.`,
+    link: "/",
+  }),
+});
+// scaffold:end webhooks

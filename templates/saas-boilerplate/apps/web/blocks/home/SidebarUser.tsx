@@ -11,6 +11,9 @@ import ProgressWithCredits from "@workspace/ui/components/home/ProgressWithCredi
 // scaffold:begin api_keys
 import { ApiKeysScreen } from "@/components/api-keys/ApiKeysScreen"
 // scaffold:end api_keys
+// scaffold:begin webhooks
+import { WebhooksScreen } from "@/components/webhooks/WebhooksScreen"
+// scaffold:end webhooks
 
 const SidebarUser = () => {
   const router = useRouter();
@@ -148,6 +151,9 @@ const SidebarUser = () => {
         // scaffold:begin api_keys
         apiKeysContent={<ApiKeysScreen />}
         // scaffold:end api_keys
+        // scaffold:begin webhooks
+        webhooksContent={<WebhooksScreen />}
+        // scaffold:end webhooks
       />
     </>
   )

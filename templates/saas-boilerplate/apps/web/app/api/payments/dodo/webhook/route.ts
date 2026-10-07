@@ -5,6 +5,9 @@ import db  from "@workspace/database/client";
 import { paymentFailed, paymentSucceeded } from "@/lib/notifications/catalog";
 import { notify } from "@/lib/notifications/notify";
 // scaffold:end notifications
+// scaffold:begin webhooks
+import { emitWebhook } from "@/lib/webhooks/service";
+// scaffold:end webhooks
 
 export async function POST(req: NextRequest) {
 
@@ -20,19 +23,28 @@ export async function POST(req: NextRequest) {
         console.log("Received onSubscriptionActive webhook:", payload);
         // Add your business logic here
       },
-      // scaffold:begin notifications
       onPaymentFailed: async (payload: any) => {
-        const userId = payload?.data?.metadata?.userId;
-        const paymentId = payload?.data?.payment_id;
-        if (!userId || !paymentId) return;
-        await notify(
-          paymentFailed,
-          userId,
-          { reason: payload?.data?.error_message ?? undefined },
-          { dedupeKey: `payment-failed:${paymentId}` },
-        );
+        console.log("[Dodo Webhook] Payment failed:", payload?.data?.payment_id);
+        // scaffold:begin notifications
+        if (payload?.data?.metadata?.userId && payload?.data?.payment_id) {
+          await notify(
+            paymentFailed,
+            payload.data.metadata.userId,
+            { reason: payload.data.error_message ?? undefined },
+            { dedupeKey: `payment-failed:${payload.data.payment_id}` },
+          );
+        }
+        // scaffold:end notifications
+        // scaffold:begin webhooks
+        if (payload?.data?.metadata?.userId) {
+          await emitWebhook(
+            "payment.failed",
+            { userId: payload.data.metadata.userId, reason: payload.data.error_message ?? null },
+            { userId: payload.data.metadata.userId },
+          );
+        }
+        // scaffold:end webhooks
       },
-      // scaffold:end notifications
       onPaymentSucceeded: async (payload: any) => {
         const credits = payload?.data?.metadata?.credits;
         const userId = payload?.data?.metadata?.userId;
@@ -105,6 +117,19 @@ export async function POST(req: NextRequest) {
         // scaffold:begin notifications
         await notify(paymentSucceeded, userId, { credits: Number(credits) }, { dedupeKey: `payment:${eventId}` });
         // scaffold:end notifications
+        // scaffold:begin webhooks
+        await emitWebhook(
+          "payment.succeeded",
+          {
+            userId,
+            credits: Number(credits),
+            amount: amount == null ? null : Number(amount),
+            currency: currency ?? null,
+            checkoutId: eventId,
+          },
+          { userId },
+        );
+        // scaffold:end webhooks
 
         // Revalidate the entire layout cache so updated credits show immediately everywhere
         revalidatePath("/", "layout");

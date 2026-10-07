@@ -6,7 +6,8 @@ export type ScaffoldModuleId =
   | "api_keys"
   | "jobs"
   | "notifications"
-  | "audit_log";
+  | "audit_log"
+  | "webhooks";
 
 // Prices and availability come only from the server's `scaffold.catalog`
 // (scaffold-modules/registry.json). Never hardcode credit amounts in clients.

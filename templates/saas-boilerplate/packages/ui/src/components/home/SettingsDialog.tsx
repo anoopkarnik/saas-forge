@@ -4,6 +4,9 @@ import React, { useEffect, useState } from "react"
 import {
   BadgeCheck, Bell, CircleUserIcon, Globe, KeyRound, Link, Lock, RadioIcon, ReceiptIcon, Settings,
 } from "lucide-react"
+// scaffold:begin webhooks
+import { Webhook } from "lucide-react"
+// scaffold:end webhooks
 
 import {
   Dialog,
@@ -42,6 +45,9 @@ const data = {
     // scaffold:begin api_keys
     { name: "API Keys", icon: KeyRound },
     // scaffold:end api_keys
+    // scaffold:begin webhooks
+    { name: "Webhooks", icon: Webhook },
+    // scaffold:end webhooks
     // { name: "Notifications", icon: Bell },
     // { name: "Language & Region", icon: Globe },
     // { name: "Privacy & Visibility", icon: Lock },
@@ -65,6 +71,7 @@ export interface SettingsDialogProps {
   isBillingLoading?: boolean;
   onCreateCheckoutSession?: (credits: number) => Promise<{ checkoutUrl?: string }>;
   apiKeysContent?: React.ReactNode;
+  webhooksContent?: React.ReactNode;
 }
 
 export function SettingsDialog({
@@ -83,6 +90,7 @@ export function SettingsDialog({
   isBillingLoading,
   onCreateCheckoutSession,
   apiKeysContent,
+  webhooksContent,
 }: SettingsDialogProps) {
 
   const { data: session, status } = useSession();
@@ -186,6 +194,17 @@ export function SettingsDialog({
               </div>
             )}
             {/* scaffold:end api_keys */}
+            {/* scaffold:begin webhooks */}
+            {currentOpenedTab === "Webhooks" && (
+              <div className="p-6">
+                {webhooksContent ?? (
+                  <p className="text-sm text-muted-foreground">
+                    Webhooks are not available in this context.
+                  </p>
+                )}
+              </div>
+            )}
+            {/* scaffold:end webhooks */}
 
           </main>
         </SidebarProvider>

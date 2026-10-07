@@ -34,7 +34,6 @@
       "apps/web/app/(home)/organization",
       "apps/web/app/(home)/accept-invitation",
       "apps/web/components/organizations",
-      "apps/web/components/audit/OrgActivity.tsx",
       "apps/desktop/src/renderer/src/components/organizations",
       "apps/mobile/components/organizations",
       "apps/mobile/lib/organization-api.ts"

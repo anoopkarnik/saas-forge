@@ -1,7 +1,4 @@
 import { TeamSettingsPanel } from "@/components/organizations/TeamSettingsPanel";
-// scaffold:begin audit_log
-import { OrgActivity } from "@/components/audit/OrgActivity";
-// scaffold:end audit_log
 
 export const dynamic = "force-dynamic";
 
@@ -15,9 +12,6 @@ export default function Page() {
         </p>
       </div>
       <TeamSettingsPanel />
-      {/* scaffold:begin audit_log */}
-      <OrgActivity />
-      {/* scaffold:end audit_log */}
     </div>
   );
 }

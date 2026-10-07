@@ -6,6 +6,39 @@ import { toast } from "sonner";
 import { useTRPC } from "@/trpc/client";
 import { useSession } from "@workspace/auth/better-auth/auth-client";
 import { TeamSettings } from "@workspace/ui/components/organizations/TeamSettings";
+// scaffold:begin audit_log
+import { useInfiniteQuery } from "@tanstack/react-query";
+import { Button } from "@workspace/ui/components/shadcn/button";
+import { AuditEventTable } from "@/components/audit/AuditEventTable";
+
+/** The active workspace's audit trail, for its admins and owners; others see nothing. */
+function OrgActivity() {
+  const trpc = useTRPC();
+  const events = useInfiniteQuery(
+    trpc.audit.orgActivity.infiniteQueryOptions(
+      { limit: 20 },
+      { retry: false, getNextPageParam: (page) => page.nextCursor ?? undefined },
+    ),
+  );
+
+  if (events.isLoading || events.error) return null;
+
+  return (
+    <section className="space-y-3">
+      <div>
+        <h2 className="text-lg font-semibold">Activity</h2>
+        <p className="text-sm text-muted-foreground">Changes to this workspace, newest first.</p>
+      </div>
+      <AuditEventTable events={events.data?.pages.flatMap((page) => page.items) ?? []} showIp={false} />
+      {events.hasNextPage ? (
+        <Button variant="outline" size="sm" onClick={() => events.fetchNextPage()} disabled={events.isFetchingNextPage}>
+          Load more
+        </Button>
+      ) : null}
+    </section>
+  );
+}
+// scaffold:end audit_log
 
 export function TeamSettingsPanel() {
   const trpc = useTRPC();
@@ -54,6 +87,7 @@ export function TeamSettingsPanel() {
   );
 
   return (
+    <>
     <TeamSettings
       organization={data.organization}
       currentRole={data.role}
@@ -69,6 +103,10 @@ export function TeamSettingsPanel() {
       onDelete={() => destroy.mutate()}
       isBusy={isBusy}
     />
+    {/* scaffold:begin audit_log */}
+    <OrgActivity />
+    {/* scaffold:end audit_log */}
+    </>
   );
 }
 

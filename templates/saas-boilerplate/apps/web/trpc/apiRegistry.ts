@@ -170,6 +170,19 @@ export const API_REGISTRY: ApiGroup[] = [
     ],
   },
   // scaffold:end notifications
+  // scaffold:begin audit_log
+  {
+    group: "audit",
+    label: "Audit log",
+    calls: [
+      { name: "list", type: "query", access: "admin" },
+      { name: "exportCsv", type: "query", access: "admin" },
+      // scaffold:begin multi_tenancy
+      { name: "orgActivity", type: "query", access: "authenticated" },
+      // scaffold:end multi_tenancy
+    ],
+  },
+  // scaffold:end audit_log
   // scaffold:begin jobs
   {
     group: "jobs",

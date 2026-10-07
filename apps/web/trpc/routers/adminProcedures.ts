@@ -7,6 +7,9 @@ import { sendEmail } from "@workspace/email/jobs";
 import { invitationSent } from "@/lib/notifications/catalog";
 import { notify } from "@/lib/notifications/notify";
 // scaffold:end notifications
+// scaffold:begin audit_log
+import { audit, userActor } from "@/lib/audit/audit";
+// scaffold:end audit_log
 import { createTRPCRouter, baseProcedure, adminProcedure } from "../init";
 
 const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
@@ -42,14 +45,25 @@ const invitesRouter = createTRPCRouter({
       }
 
       const token = randomBytes(32).toString("hex");
-      const invitation = await db.invitation.create({
-        data: {
-          email,
-          token,
-          status: "PENDING",
-          expiresAt: new Date(Date.now() + INVITE_TTL_MS),
-          invitedById: ctx.session.user.id,
-        },
+      const invitation = await db.$transaction(async (tx) => {
+        const created = await tx.invitation.create({
+          data: {
+            email,
+            token,
+            status: "PENDING",
+            expiresAt: new Date(Date.now() + INVITE_TTL_MS),
+            invitedById: ctx.session.user.id,
+          },
+        });
+        // scaffold:begin audit_log
+        await audit(tx, "invitation.created", {
+          actor: userActor(ctx.session.user.id),
+          targetId: created.id,
+          metadata: { email },
+          headers: ctx.headers,
+        });
+        // scaffold:end audit_log
+        return created;
       });
 
       await sendEmail({ template: "invitation", email, url: buildInviteUrl(token, email), company });
@@ -61,22 +75,43 @@ const invitesRouter = createTRPCRouter({
 
   revoke: adminProcedure
     .input(z.object({ id: z.string() }))
-    .mutation(async ({ input }) => {
-      await db.invitation.update({ where: { id: input.id }, data: { status: "REVOKED" } });
+    .mutation(async ({ ctx, input }) => {
+      await db.$transaction(async (tx) => {
+        await tx.invitation.update({ where: { id: input.id }, data: { status: "REVOKED" } });
+        // scaffold:begin audit_log
+        await audit(tx, "invitation.revoked", {
+          actor: userActor(ctx.session.user.id),
+          targetId: input.id,
+          metadata: {},
+          headers: ctx.headers,
+        });
+        // scaffold:end audit_log
+      });
       return { id: input.id };
     }),
 
   resend: adminProcedure
     .input(z.object({ id: z.string() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       const existing = await db.invitation.findUnique({ where: { id: input.id } });
       if (!existing || existing.status !== "PENDING") {
         throw new TRPCError({ code: "BAD_REQUEST", message: "Only pending invitations can be resent." });
       }
       const token = randomBytes(32).toString("hex");
-      const updated = await db.invitation.update({
-        where: { id: input.id },
-        data: { token, expiresAt: new Date(Date.now() + INVITE_TTL_MS) },
+      const updated = await db.$transaction(async (tx) => {
+        const row = await tx.invitation.update({
+          where: { id: input.id },
+          data: { token, expiresAt: new Date(Date.now() + INVITE_TTL_MS) },
+        });
+        // scaffold:begin audit_log
+        await audit(tx, "invitation.resent", {
+          actor: userActor(ctx.session.user.id),
+          targetId: input.id,
+          metadata: { email: existing.email },
+          headers: ctx.headers,
+        });
+        // scaffold:end audit_log
+        return row;
       });
       await sendEmail({ template: "invitation", email: existing.email, url: buildInviteUrl(token, existing.email), company });
       return updated;

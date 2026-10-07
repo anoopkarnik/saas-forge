@@ -7,6 +7,9 @@ import { retrieveBlocksTree } from "@workspace/cms/notion/block/retrieveBlockChi
 // scaffold:end cms.notion
 import { getCmsProvider } from "@/lib/cms-provider";
 import prisma from "@workspace/database/client";
+// scaffold:begin audit_log
+import { audit, userActor } from "@/lib/audit/audit";
+// scaffold:end audit_log
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
@@ -220,7 +223,7 @@ export const documentationRouter = createTRPCRouter({
     }),
     createDoc: adminProcedure
     .input(documentationEditorSchema)
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       ensurePostgresDocumentationEditing();
 
       const landingPage = await getLandingPageOrThrow();
@@ -248,6 +251,14 @@ export const documentationRouter = createTRPCRouter({
       });
 
       await clearDocumentationCache();
+      // scaffold:begin audit_log
+      await audit(prisma, "doc.created", {
+        actor: userActor(ctx.session.user.id),
+        targetId: doc.id,
+        metadata: { title: doc.title },
+        headers: ctx.headers,
+      });
+      // scaffold:end audit_log
 
       return {
         id: doc.id,
@@ -268,7 +279,7 @@ export const documentationRouter = createTRPCRouter({
       order: documentationEditorSchema.shape.order,
       content: documentationEditorSchema.shape.content,
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       ensurePostgresDocumentationEditing();
 
       const landingPage = await getLandingPageOrThrow();
@@ -310,6 +321,14 @@ export const documentationRouter = createTRPCRouter({
       });
 
       await clearDocumentationCache();
+      // scaffold:begin audit_log
+      await audit(prisma, "doc.updated", {
+        actor: userActor(ctx.session.user.id),
+        targetId: doc.id,
+        metadata: { title: doc.title },
+        headers: ctx.headers,
+      });
+      // scaffold:end audit_log
 
       return {
         id: doc.id,
@@ -323,7 +342,7 @@ export const documentationRouter = createTRPCRouter({
     }),
     deleteDoc: adminProcedure
     .input(z.object({ id: z.string().min(1, "Document id is required") }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       ensurePostgresDocumentationEditing();
 
       const landingPage = await getLandingPageOrThrow();
@@ -342,6 +361,9 @@ export const documentationRouter = createTRPCRouter({
       }
 
       await clearDocumentationCache();
+      // scaffold:begin audit_log
+      await audit(prisma, "doc.deleted", { actor: userActor(ctx.session.user.id), targetId: input.id, metadata: {}, headers: ctx.headers });
+      // scaffold:end audit_log
 
       return { success: true };
     }),

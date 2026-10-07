@@ -77,6 +77,9 @@ vi.mock('next/headers', () => ({
 }));
 
 // Mock Auth (needed for tRPC init module resolution)
+// scaffold:begin audit_log
+vi.mock('@/lib/audit/audit', () => ({ audit: vi.fn(async () => undefined), userActor: (userId: string) => ({ type: 'user', userId }) }));
+// scaffold:end audit_log
 vi.mock('@workspace/auth/better-auth/auth', () => ({
   auth: {
     api: {

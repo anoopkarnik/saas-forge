@@ -205,6 +205,12 @@ Notifications (`apps/web/lib/notifications`):
 - Add a type to `catalog.ts` (label, default channels, `render`) inside its module's markers, then call `notify(definition, userId, data, { dedupeKey, organizationId })` after the work commits. It writes the in-app row (duplicates of a `dedupeKey` are skipped, never thrown) and emails through the `notification.deliver` job on the channels the user keeps on. Wrap emit sites in other modules' files in `notifications` markers.
 - The bell (`packages/ui/src/components/notifications/NotificationBell.tsx`) is presentational; web, desktop and mobile wrap it with their own clients and poll `notification.unreadCount` every 30 s. Guests can read the inbox but not mark it read.
 
+Audit log (`apps/web/lib/audit`):
+
+- Add an action to `actions.ts` (target type, metadata schema, `redact` keys) inside its module's markers. Call `audit(tx, action, { actor: userActor(id), targetId, organizationId, metadata, headers })` with the transaction client of the change, so both commit or roll back together; for Better Auth writes, call it after the call succeeds. Wrap emit sites in other modules' files in `audit_log` markers.
+- Metadata is redacted (listed and secret-looking keys), then reduced to the keys its schema lists. Audit configuration changes, never per-call usage. Better Auth admin endpoints (`/api/auth/admin/*`) are audited in the auth route by `withAuthAudit`.
+- The trail is append-only: `/admin/audit` (admin-only, CSV export) and the workspace activity on `/organization` read it; the `cleanup.auditRetention` job (with `jobs`) deletes events older than the `audit.retentionDays` site setting.
+
 Webhook idempotency is important for payments:
 
 1. Extract a unique event or checkout identifier.

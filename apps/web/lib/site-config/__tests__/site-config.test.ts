@@ -34,6 +34,9 @@ const { rows, db, redis, redisStore } = vi.hoisted(() => {
 vi.mock("@workspace/database/client", () => ({ default: db }));
 vi.mock("@/server/redis", () => ({ redis }));
 vi.mock("@workspace/auth/better-auth/auth", () => ({ auth: { api: { getSession: vi.fn() } } }));
+// scaffold:begin audit_log
+vi.mock("@/lib/audit/audit", () => ({ audit: vi.fn(async () => undefined), userActor: (userId: string) => ({ type: "user", userId }) }));
+// scaffold:end audit_log
 
 import { assertSafeSettings, publicSiteConfig, SETTINGS, setting } from "@/lib/site-config/registry";
 import {

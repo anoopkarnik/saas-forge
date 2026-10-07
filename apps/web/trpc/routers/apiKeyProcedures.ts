@@ -9,6 +9,9 @@ import {
 } from "@workspace/auth/api-keys";
 import { logger } from "@workspace/observability/winston-logger";
 import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
+// scaffold:begin audit_log
+import { audit, userActor } from "@/lib/audit/audit";
+// scaffold:end audit_log
 
 const scopeSchema = z
   .string()
@@ -46,16 +49,27 @@ export const apiKeyRouter = createTRPCRouter({
     .input(createInput)
     .mutation(async ({ ctx, input }) => {
       const generated = generateApiKey();
-      const row = await db.apiKey.create({
-        data: {
-          userId: ctx.session.user.id,
-          label: input.label,
-          keyPrefix: generated.prefix,
-          keyHash: generated.hash,
-          scopes: input.scopes as ApiKeyScope[],
-          expiresAt: input.expiresAt ?? null,
-        },
-        select: listSelect,
+      const row = await db.$transaction(async (tx) => {
+        const created = await tx.apiKey.create({
+          data: {
+            userId: ctx.session.user.id,
+            label: input.label,
+            keyPrefix: generated.prefix,
+            keyHash: generated.hash,
+            scopes: input.scopes as ApiKeyScope[],
+            expiresAt: input.expiresAt ?? null,
+          },
+          select: listSelect,
+        });
+        // scaffold:begin audit_log
+        await audit(tx, "api_key.created", {
+          actor: userActor(ctx.session.user.id),
+          targetId: created.id,
+          metadata: { label: input.label, keyPrefix: generated.prefix, scopes: input.scopes },
+          headers: ctx.headers,
+        });
+        // scaffold:end audit_log
+        return created;
       });
       logger.info(
         `apiKey.created ${JSON.stringify({
@@ -80,10 +94,21 @@ export const apiKeyRouter = createTRPCRouter({
           message: "API key not found.",
         });
       }
-      const row = await db.apiKey.update({
-        where: { id: existing.id },
-        data: { status: "revoked", revokedAt: new Date() },
-        select: { id: true, status: true, revokedAt: true },
+      const row = await db.$transaction(async (tx) => {
+        const revoked = await tx.apiKey.update({
+          where: { id: existing.id },
+          data: { status: "revoked", revokedAt: new Date() },
+          select: { id: true, status: true, revokedAt: true },
+        });
+        // scaffold:begin audit_log
+        await audit(tx, "api_key.revoked", {
+          actor: userActor(ctx.session.user.id),
+          targetId: revoked.id,
+          metadata: {},
+          headers: ctx.headers,
+        });
+        // scaffold:end audit_log
+        return revoked;
       });
       logger.info(
         `apiKey.revoked ${JSON.stringify({

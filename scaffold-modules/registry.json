@@ -86,6 +86,17 @@
       "incompatibleWith": [],
       "downloadEnabled": true,
       "implemented": true
+    },
+    {
+      "id": "audit_log",
+      "label": "Audit log",
+      "description": "An append-only trail of admin, invitation, organization, API key, CMS and prompt changes, with filters and CSV export at /admin/audit, workspace activity for organization admins, and retention set in Settings.",
+      "default": false,
+      "creditsCost": 10,
+      "requires": [],
+      "incompatibleWith": [],
+      "downloadEnabled": true,
+      "implemented": true
     }
   ]
 }

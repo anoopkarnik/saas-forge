@@ -45,6 +45,18 @@ function Field({
       </NativeSelect>
     );
   }
+  if (typeof value === "number") {
+    return (
+      <Input
+        id={settingKey}
+        type="number"
+        className="max-w-[10rem]"
+        value={value}
+        disabled={disabled}
+        onChange={(event) => onChange(event.target.valueAsNumber)}
+      />
+    );
+  }
   return (
     <Input
       id={settingKey}

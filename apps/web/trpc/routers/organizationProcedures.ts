@@ -12,6 +12,10 @@ import { createTRPCRouter, protectedProcedure } from '../init';
 // scaffold:begin notifications
 import { notifyInvitedUser } from '@/lib/notifications/notify';
 // scaffold:end notifications
+// scaffold:begin audit_log
+import { audit, userActor } from '@/lib/audit/audit';
+import type { AuditAction, AuditMetadata } from '@/lib/audit/actions';
+// scaffold:end audit_log
 import {
   getActiveOrganizationId,
   orgProcedure,
@@ -46,6 +50,24 @@ async function callAuth<T>(fn: () => Promise<T>): Promise<T> {
     });
   }
 }
+
+// scaffold:begin audit_log
+/** Records an organization change after Better Auth made it. */
+function auditOrg<A extends AuditAction>(
+  ctx: { session: { user: { id: string } }; org: { id: string }; headers: Pick<Headers, 'get'> },
+  action: A,
+  targetId: string,
+  metadata: AuditMetadata<A>,
+) {
+  return audit(db, action, {
+    actor: userActor(ctx.session.user.id),
+    organizationId: ctx.org.id,
+    targetId,
+    metadata,
+    headers: ctx.headers,
+  });
+}
+// scaffold:end audit_log
 
 async function setSessionActiveOrganization(
   sessionId: string,
@@ -233,6 +255,9 @@ export const organizationRouter = createTRPCRouter({
           body: { organizationId: ctx.org.id, data: { name: input.name } },
         }),
       );
+      // scaffold:begin audit_log
+      await auditOrg(ctx, 'org.updated', ctx.org.id, { name: input.name });
+      // scaffold:end audit_log
       return { success: true };
     }),
 
@@ -265,6 +290,12 @@ export const organizationRouter = createTRPCRouter({
         });
       }
       // scaffold:end notifications
+      // scaffold:begin audit_log
+      await auditOrg(ctx, 'org.member.invited', invitation?.id ?? '', {
+        email: input.email.toLowerCase(),
+        role: input.role,
+      });
+      // scaffold:end audit_log
       return { id: invitation?.id as string };
     }),
 
@@ -284,6 +315,9 @@ export const organizationRouter = createTRPCRouter({
           body: { invitationId: input.invitationId },
         }),
       );
+      // scaffold:begin audit_log
+      await auditOrg(ctx, 'org.invitation.canceled', input.invitationId, {});
+      // scaffold:end audit_log
       return { success: true };
     }),
 
@@ -303,6 +337,9 @@ export const organizationRouter = createTRPCRouter({
           body: { memberId: input.memberId, role: input.role, organizationId: ctx.org.id },
         }),
       );
+      // scaffold:begin audit_log
+      await auditOrg(ctx, 'org.member.role_changed', input.memberId, { role: input.role });
+      // scaffold:end audit_log
       return { success: true };
     }),
 
@@ -316,6 +353,9 @@ export const organizationRouter = createTRPCRouter({
           body: { memberIdOrEmail: input.memberId, organizationId: ctx.org.id },
         }),
       );
+      // scaffold:begin audit_log
+      await auditOrg(ctx, 'org.member.removed', input.memberId, {});
+      // scaffold:end audit_log
       return { success: true };
     }),
 
@@ -339,6 +379,9 @@ export const organizationRouter = createTRPCRouter({
         body: { organizationId: ctx.org.id },
       }),
     );
+    // scaffold:begin audit_log
+    await auditOrg(ctx, 'org.deleted', ctx.org.id, {});
+    // scaffold:end audit_log
     await activateFallbackOrganization(ctx.session.session.id, ctx.session.user.id);
     return { success: true };
   }),

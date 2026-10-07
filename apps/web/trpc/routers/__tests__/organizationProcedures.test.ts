@@ -30,10 +30,16 @@ const { db, api } = vi.hoisted(() => ({
 // scaffold:begin notifications
 vi.mock("@/lib/notifications/notify", () => ({ notifyInvitedUser: vi.fn() }));
 // scaffold:end notifications
+// scaffold:begin audit_log
+vi.mock("@/lib/audit/audit", () => ({ audit: vi.fn(async () => undefined), userActor: (userId: string) => ({ type: "user", userId }) }));
+// scaffold:end audit_log
 vi.mock("@workspace/auth/better-auth/auth", () => ({ auth: { api } }));
 vi.mock("@workspace/database/client", () => ({ default: db }));
 
 import { organizationRouter } from "../organizationProcedures";
+// scaffold:begin audit_log
+import { audit } from "@/lib/audit/audit";
+// scaffold:end audit_log
 
 function ctxFor(role = "user") {
   return {
@@ -259,6 +265,34 @@ describe("member management", () => {
     );
   });
 });
+
+// scaffold:begin audit_log
+describe("audit trail", () => {
+  it("a role change records exactly one event, scoped to the organization", async () => {
+    activeMember("admin");
+    db.member.findFirst.mockResolvedValue({ id: "m2", role: "member", userId: "u2" });
+    api.updateMemberRole.mockResolvedValue({});
+
+    await caller().updateMemberRole({ memberId: "m2", role: "admin" });
+
+    expect(audit).toHaveBeenCalledTimes(1);
+    expect(audit).toHaveBeenCalledWith(
+      expect.anything(),
+      "org.member.role_changed",
+      expect.objectContaining({ organizationId: "org1", targetId: "m2", metadata: { role: "admin" } }),
+    );
+  });
+
+  it("a failed role change records nothing", async () => {
+    activeMember("admin");
+    db.member.findFirst.mockResolvedValue({ id: "m2", role: "member", userId: "u2" });
+    api.updateMemberRole.mockRejectedValue(Object.assign(new Error("nope"), { statusCode: 400 }));
+
+    await expect(caller().updateMemberRole({ memberId: "m2", role: "admin" })).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    expect(audit).not.toHaveBeenCalled();
+  });
+});
+// scaffold:end audit_log
 
 describe("leave / delete", () => {
   it("refuses to leave the user's only organization", async () => {

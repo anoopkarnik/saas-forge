@@ -11,6 +11,7 @@ import { aiJobsRouter } from './aiJobsProcedures';
 import { apiKeyRouter } from './apiKeyProcedures';
 import { jobsRouter } from './jobsProcedures';
 import { notificationRouter } from './notificationProcedures';
+import { auditRouter } from './auditProcedures';
 import { adminRouter } from './adminProcedures';
 import { organizationRouter } from './organizationProcedures';
 import { projectRouter } from './projectProcedures';
@@ -29,6 +30,7 @@ export const appRouter = createTRPCRouter({
     apiKey: apiKeyRouter,
     jobs: jobsRouter,
     notification: notificationRouter,
+    audit: auditRouter,
     admin: adminRouter,
     organization: organizationRouter,
     project: projectRouter,

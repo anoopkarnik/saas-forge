@@ -193,6 +193,15 @@ export const API_REGISTRY: ApiGroup[] = [
   },
   ...ORGANIZATION_API_GROUPS,
   {
+    group: "audit",
+    label: "Audit log",
+    calls: [
+      { name: "list", type: "query", access: "admin" },
+      { name: "exportCsv", type: "query", access: "admin" },
+      { name: "orgActivity", type: "query", access: "authenticated" },
+    ],
+  },
+  {
     group: "siteConfig",
     label: "Site config",
     calls: [

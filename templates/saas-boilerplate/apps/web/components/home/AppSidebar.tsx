@@ -15,6 +15,9 @@ import {
 import { useTheme } from "next-themes";
 import { cn } from "@workspace/ui/lib/utils";
 import { Database, FileText, HomeIcon, Settings, Timer, Users } from "lucide-react";
+// scaffold:begin audit_log
+import { ScrollText } from "lucide-react";
+// scaffold:end audit_log
 import { usePathname, useRouter } from "next/navigation";
 import { useTRPC } from "@/trpc/client";
 import { useQuery } from "@tanstack/react-query";
@@ -158,6 +161,23 @@ export function AppSidebar() {
                 </SidebarMenuButton>
               </SidebarMenuItem>
               {/* scaffold:end jobs */}
+              {/* scaffold:begin audit_log */}
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  tooltip="Audit log"
+                  className={cn(
+                    "h-10 cursor-pointer transition-all duration-200 ease-in-out hover:pl-3",
+                    pathname === "/admin/audit" && "bg-sidebar-accent font-medium text-sidebar-accent-foreground shadow-sm"
+                  )}
+                  onClick={() => router.push("/admin/audit")}
+                >
+                  <div className="flex items-center gap-3">
+                    <ScrollText className="h-5 w-5 text-teal-500" />
+                    <div className="text-xs">Audit log</div>
+                  </div>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              {/* scaffold:end audit_log */}
               <SidebarMenuItem>
                 <SidebarMenuButton
                   tooltip="Settings"

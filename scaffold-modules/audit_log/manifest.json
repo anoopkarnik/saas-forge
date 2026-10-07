@@ -1,0 +1,26 @@
+{
+  "id": "audit_log",
+  "ownedIdentifiers": [
+    "auditRouter",
+    "auditProcedures",
+    "trpc.audit.",
+    "@/lib/audit/",
+    "model AuditEvent",
+    "AuditEventTable",
+    "OrgActivity",
+    "/admin/audit",
+    "audit.retentionDays",
+    "cleanup.auditRetention",
+    "withAuthAudit"
+  ],
+  "unselected": {
+    "remove": [
+      "apps/web/lib/audit",
+      "apps/web/trpc/routers/auditProcedures.ts",
+      "apps/web/app/(home)/admin/audit",
+      "apps/web/components/audit",
+      "packages/database/prisma/audit.prisma",
+      "packages/database/prisma/migrations/20261007114952_audit_log"
+    ]
+  }
+}

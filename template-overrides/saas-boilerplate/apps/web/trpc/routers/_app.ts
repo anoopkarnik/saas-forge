@@ -14,6 +14,9 @@ import { jobsRouter } from './jobsProcedures';
 // scaffold:begin notifications
 import { notificationRouter } from './notificationProcedures';
 // scaffold:end notifications
+// scaffold:begin audit_log
+import { auditRouter } from './auditProcedures';
+// scaffold:end audit_log
 import { adminRouter } from './adminProcedures';
 // scaffold:begin billing
 import { billingRouter } from './billingProcedures';
@@ -44,6 +47,9 @@ export const appRouter = createTRPCRouter({
     // scaffold:begin notifications
     notification: notificationRouter,
     // scaffold:end notifications
+    // scaffold:begin audit_log
+    audit: auditRouter,
+    // scaffold:end audit_log
     admin: adminRouter,
     // scaffold:begin billing
     billing: billingRouter,

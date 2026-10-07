@@ -11,6 +11,9 @@ import { queryAllNotionDatabase } from "@workspace/cms/notion/database/queryData
 // scaffold:end cms.notion
 import { getCmsProvider } from "@/lib/cms-provider";
 import prisma from "@workspace/database/client";
+// scaffold:begin audit_log
+import { audit, userActor } from "@/lib/audit/audit";
+// scaffold:end audit_log
 
 const LANDING_CACHE_TTL_SECONDS = 3600; // 10 minutes
 const getLandingCacheKey = () =>
@@ -119,7 +122,7 @@ export const landingRouter = createTRPCRouter({
                 answer: z.string()
             })).optional(),
         }))
-        .mutation(async ({ input }) => {
+        .mutation(async ({ ctx, input }) => {
             const cmsProvider = getCmsProvider();
             const saasName = process.env.NEXT_PUBLIC_SAAS_NAME || "";
 
@@ -230,6 +233,9 @@ export const landingRouter = createTRPCRouter({
                     await redis.del(getLandingCacheKey());
                 }
 
+                // scaffold:begin audit_log
+                await audit(prisma, "cms.landing_updated", { actor: userActor(ctx.session.user.id), metadata: {}, headers: ctx.headers });
+                // scaffold:end audit_log
                 return { success: true };
             }
 
@@ -394,6 +400,9 @@ export const landingRouter = createTRPCRouter({
                     await redis.del(getLandingCacheKey());
                 }
 
+                // scaffold:begin audit_log
+                await audit(prisma, "cms.landing_updated", { actor: userActor(ctx.session.user.id), metadata: {}, headers: ctx.headers });
+                // scaffold:end audit_log
                 return { success: true };
             }
             // scaffold:end cms.notion

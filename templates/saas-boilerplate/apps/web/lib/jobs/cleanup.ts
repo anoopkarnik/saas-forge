@@ -1,6 +1,10 @@
 import { z } from "zod";
 import db from "@workspace/database/client";
 import { defineJob, defineSchedule } from "@workspace/jobs/index";
+// scaffold:begin audit_log
+import { deleteAuditEventsOlderThan } from "@/lib/audit/service";
+import { getSiteConfig } from "@/lib/site-config/service";
+// scaffold:end audit_log
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -18,3 +22,12 @@ export const cleanupExpiredSessions = defineJob("cleanup.expiredSessions", z.obj
 
 defineSchedule("daily-invitation-cleanup", "0 3 * * *", cleanupExpiredInvitations);
 defineSchedule("daily-session-cleanup", "15 3 * * *", cleanupExpiredSessions);
+
+// scaffold:begin audit_log
+/** Audit events older than the retention set in /admin/settings (0 keeps them forever). */
+export const cleanupAuditRetention = defineJob("cleanup.auditRetention", z.object({}), async () => {
+  await deleteAuditEventsOlderThan((await getSiteConfig())["audit.retentionDays"]);
+});
+
+defineSchedule("daily-audit-retention", "30 3 * * *", cleanupAuditRetention);
+// scaffold:end audit_log

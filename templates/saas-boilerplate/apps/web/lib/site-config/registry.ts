@@ -123,6 +123,23 @@ export const SETTINGS = {
     storageKey: "registration_mode",
     default: "OPEN",
   }),
+  // scaffold:begin audit_log
+  "audit.retentionDays": setting({
+    group: "Audit log",
+    label: "Keep audit events for (days)",
+    description: "The daily cleanup job deletes older events when background jobs run. 0 keeps them forever.",
+    public: false,
+    schema: z.number().int().min(0).max(3650),
+    default: 365,
+  }),
+  "audit.recordRequestDetails": setting({
+    group: "Audit log",
+    label: "Record IP address and user agent",
+    public: false,
+    schema: z.boolean(),
+    default: true,
+  }),
+  // scaffold:end audit_log
 };
 
 export type SettingKey = keyof typeof SETTINGS;

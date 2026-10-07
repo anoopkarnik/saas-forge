@@ -53,8 +53,12 @@ const { createdRows, stored, apiKey } = vi.hoisted(() => {
   return { createdRows, stored, apiKey };
 });
 
+// scaffold:begin audit_log
+vi.mock("@/lib/audit/audit", () => ({ audit: vi.fn(async () => undefined), userActor: (userId: string) => ({ type: "user", userId }) }));
+// scaffold:end audit_log
 vi.mock("@workspace/database/client", () => {
   const client: any = { apiKey };
+  client.$transaction = async (run: (tx: any) => Promise<unknown>) => run(client);
   client.$extends = () => client;
   return { default: client };
 });

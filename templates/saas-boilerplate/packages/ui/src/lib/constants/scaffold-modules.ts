@@ -5,7 +5,8 @@ export type ScaffoldModuleId =
   | "ai_agents"
   | "api_keys"
   | "jobs"
-  | "notifications";
+  | "notifications"
+  | "audit_log";
 
 // Prices and availability come only from the server's `scaffold.catalog`
 // (scaffold-modules/registry.json). Never hardcode credit amounts in clients.

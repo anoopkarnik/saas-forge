@@ -1,6 +1,9 @@
 import { handlers } from "@workspace/auth/better-auth/auth"; // path to your auth file
 import { DESKTOP_APP_ORIGIN } from "@workspace/auth/better-auth/desktop-origin";
 import { NextRequest, NextResponse } from "next/server";
+// scaffold:begin audit_log
+import { isAuditedAuthRequest, withAuthAudit } from "@/lib/audit/auth-events";
+// scaffold:end audit_log
 
 const { POST: authPOST, GET: authGET } = handlers;
 
@@ -57,6 +60,11 @@ const setCorsHeaders = (res: Response | NextResponse, req: NextRequest) => {
 };
 
 export const POST = async (req: NextRequest) => {
+  // scaffold:begin audit_log
+  if (isAuditedAuthRequest(req)) {
+    return setCorsHeaders(await withAuthAudit(normalizeMissingOrigin(req), authPOST), req);
+  }
+  // scaffold:end audit_log
   return setCorsHeaders(await authPOST(normalizeMissingOrigin(req)), req);
 };
 

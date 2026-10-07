@@ -44,6 +44,12 @@ const MODULES = [
   // scaffold:begin jobs
   "jobs",
   // scaffold:end jobs
+  // scaffold:begin notifications
+  "notifications",
+  // scaffold:end notifications
+  // scaffold:begin audit_log
+  "audit_log",
+  // scaffold:end audit_log
 ];
 
 // Next.js reads apps/web/.env, then .env.local over it; shell variables win.

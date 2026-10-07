@@ -63,6 +63,17 @@ export const paymentFailed = defineNotification<{ reason?: string }>({
     link: "/",
   }),
 });
+
+export const usageThreshold = defineNotification<{ percent: number; remaining: number }>({
+  type: "usage.threshold",
+  label: "Credit usage alerts",
+  defaults: { in_app: true, email: true },
+  render: ({ percent, remaining }) => ({
+    title: `You've used ${percent}% of your credits`,
+    body: `${remaining} credits left. See what used them on the Usage page.`,
+    link: "/usage",
+  }),
+});
 // scaffold:end billing
 
 // scaffold:begin ai

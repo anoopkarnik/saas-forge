@@ -1,0 +1,32 @@
+/// One movement of credits, immutable (billing module). Spend is positive,
+/// a refund negative; the sum per user matches User.creditsUsed.
+model UsageEvent {
+    id             String   @id @default(cuid())
+    userId         String
+    user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+    organizationId String?
+    /// From the meter registry (apps/web/lib/usage/meters.ts), e.g. ai.tokens.
+    meter          String
+    quantity       Int
+    credits        Int
+    sourceType     String
+    sourceId       String?
+    /// A retry with the same key records (and charges) nothing.
+    idempotencyKey String   @unique
+    occurredAt     DateTime @default(now())
+
+    @@index([userId, occurredAt])
+    @@schema("billing_schema")
+}
+
+/// A usage threshold already announced for one credit cycle (the creditsTotal it was reached under).
+model UsageAlert {
+    userId    String
+    user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+    threshold Int
+    cycle     Int
+    createdAt DateTime @default(now())
+
+    @@id([userId, threshold, cycle])
+    @@schema("billing_schema")
+}

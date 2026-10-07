@@ -18,6 +18,9 @@ import { Database, FileText, HomeIcon, Settings, Timer, Users } from "lucide-rea
 // scaffold:begin audit_log
 import { ScrollText } from "lucide-react";
 // scaffold:end audit_log
+// scaffold:begin billing
+import { Gauge } from "lucide-react";
+// scaffold:end billing
 import { usePathname, useRouter } from "next/navigation";
 import { useTRPC } from "@/trpc/client";
 import { useQuery } from "@tanstack/react-query";
@@ -90,6 +93,23 @@ export function AppSidebar() {
                 </div>
               </SidebarMenuButton>
             </SidebarMenuItem>
+            {/* scaffold:begin billing */}
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                tooltip="Usage"
+                className={cn(
+                  "h-10 cursor-pointer transition-all duration-200 ease-in-out hover:pl-3",
+                  pathname === "/usage" && "bg-sidebar-accent font-medium text-sidebar-accent-foreground shadow-sm"
+                )}
+                onClick={() => router.push("/usage")}
+              >
+                <div className="flex items-center gap-3">
+                  <Gauge className="h-5 w-5 text-cyan-500" />
+                  <div className="text-xs">Usage</div>
+                </div>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            {/* scaffold:end billing */}
           </SidebarMenu>
         </SidebarGroup>
 

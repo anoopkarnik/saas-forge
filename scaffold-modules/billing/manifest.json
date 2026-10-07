@@ -14,7 +14,18 @@
     "EXPO_PUBLIC_PAYMENT_GATEWAY",
     "\"stripe\": \"",
     "\"dodopayments\"",
-    "@dodopayments/nextjs"
+    "@dodopayments/nextjs",
+    "usageRouter",
+    "usageProcedures",
+    "trpc.usage.",
+    "model UsageEvent",
+    "model UsageAlert",
+    "@/lib/usage/service",
+    "@/lib/usage/meters",
+    "logUsage",
+    "UsageChart",
+    "\"/usage\"",
+    "usage.reconcile"
   ],
   "selected": {},
   "unselected": {
@@ -30,7 +41,12 @@
       "apps/web/trpc/routers/billingProcedures.ts",
       "packages/ui/src/components/home/PlansBilling.tsx",
       "packages/ui/src/components/payments",
-      "packages/ui/src/components/home/ProgressWithCredits.tsx"
+      "packages/ui/src/components/home/ProgressWithCredits.tsx",
+      "apps/web/lib/usage",
+      "apps/web/trpc/routers/usageProcedures.ts",
+      "apps/web/app/(home)/usage",
+      "packages/database/prisma/usage.prisma",
+      "packages/database/prisma/migrations/20261007154251_usage_ledger"
     ],
     "jsonRemove": [
       {
@@ -42,6 +58,12 @@
             "stripe"
           ]
         }
+      }
+    ],
+    "copy": [
+      {
+        "from": "overrides/unselected/apps/web/lib/usage/record.ts",
+        "to": "apps/web/lib/usage/record.ts"
       }
     ]
   }

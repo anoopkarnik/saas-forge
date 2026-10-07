@@ -217,6 +217,17 @@ export const API_REGISTRY: ApiGroup[] = [
     ],
   },
   {
+    group: "usage",
+    label: "Usage",
+    calls: [
+      { name: "summary", type: "query", access: "authenticated" },
+      { name: "daily", type: "query", access: "authenticated" },
+      { name: "events", type: "query", access: "authenticated" },
+      { name: "ledger", type: "query", access: "authenticated" },
+      { name: "meters", type: "query", access: "authenticated" },
+    ],
+  },
+  {
     group: "siteConfig",
     label: "Site config",
     calls: [

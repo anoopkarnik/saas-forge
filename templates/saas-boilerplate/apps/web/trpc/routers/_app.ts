@@ -23,6 +23,7 @@ import { webhookRouter } from './webhookProcedures';
 import { adminRouter } from './adminProcedures';
 // scaffold:begin billing
 import { billingRouter } from './billingProcedures';
+import { usageRouter } from './usageProcedures';
 // scaffold:end billing
 // scaffold:begin ai
 import { aiRouter } from './aiProcedures';
@@ -59,6 +60,7 @@ export const appRouter = createTRPCRouter({
     admin: adminRouter,
     // scaffold:begin billing
     billing: billingRouter,
+    usage: usageRouter,
     // scaffold:end billing
     // scaffold:begin ai
     ai: aiRouter,

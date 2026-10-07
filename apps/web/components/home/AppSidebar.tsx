@@ -13,7 +13,7 @@ import {
 } from "@workspace/ui/components/shadcn/sidebar";
 import { useTheme } from "next-themes";
 import { cn } from "@workspace/ui/lib/utils";
-import { Bot, Users, Database, FileText, Search, Network, Boxes, Timer, Settings, ScrollText } from "lucide-react";
+import { Bot, Users, Database, FileText, Search, Network, Boxes, Timer, Settings, ScrollText, Gauge } from "lucide-react";
 import { MdSaveAs } from "react-icons/md";
 import { usePathname, useRouter } from "next/navigation";
 import { useTRPC } from "@/trpc/client";
@@ -87,6 +87,16 @@ export function AppSidebar() {
                                 <div className="flex items-center gap-3">
                                     <Boxes className="w-5 h-5 text-amber-500" />
                                     <div className="text-xs">{"Projects"}</div>
+                                </div>
+                            </SidebarMenuButton>
+                        </SidebarMenuItem>
+                        <SidebarMenuItem>
+                            <SidebarMenuButton asChild tooltip={"Credits usage"}
+                                className={cn("cursor-pointer transition-all duration-200 ease-in-out hover:pl-3 h-10", pathname === "/usage" && "bg-sidebar-accent text-sidebar-accent-foreground font-medium shadow-sm")}
+                                onClick={() => router.push("/usage")}>
+                                <div className="flex items-center gap-3">
+                                    <Gauge className="w-5 h-5 text-cyan-500" />
+                                    <div className="text-xs">{"Credits usage"}</div>
                                 </div>
                             </SidebarMenuButton>
                         </SidebarMenuItem>

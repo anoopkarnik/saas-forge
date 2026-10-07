@@ -19,6 +19,8 @@ const N8N_WEBHOOK_TEMPLATE = `{
 // scaffold:begin notifications
 vi.mock("@/lib/notifications/notify", () => ({ notify: vi.fn(async () => true), notifyIfCreditsLow: vi.fn() }));
 // scaffold:end notifications
+const { recordUsage } = vi.hoisted(() => ({ recordUsage: vi.fn(async () => ({ charged: true, alerts: [] })) }));
+vi.mock("@/lib/usage/record", () => ({ recordUsage, announceUsageAlerts: vi.fn() }));
 vi.mock("@workspace/auth/better-auth/auth", () => ({
   auth: {
     api: {
@@ -140,7 +142,7 @@ describe("AI chat route", () => {
       callback({
         user: { update: vi.fn() },
         aiMessage: { create: vi.fn() },
-        aiUsageEvent: { create: vi.fn() },
+        aiUsageEvent: { create: vi.fn(async () => ({ id: "usage_1" })) },
       }),
     );
     vi.mocked(streamText).mockImplementation((options: any) => {
@@ -265,6 +267,11 @@ describe("AI chat route", () => {
       }),
     );
     expect(db.$transaction).toHaveBeenCalled();
+    // 1,001 tokens cost 2 credits, charged through the usage ledger.
+    expect(recordUsage).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ userId: "user_1", meter: "ai.tokens", quantity: 1001, credits: 2, idempotencyKey: "ai:usage_1" }),
+    );
   });
 
   it("calls webhook provider with bearer auth and skips streamText", async () => {

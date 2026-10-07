@@ -22,6 +22,7 @@ import { tierOrder } from "@/lib/scaffold/project-rules";
 import { isSecretEnvKey } from "@/lib/scaffold/secret-keys";
 import { getTemplateVersion } from "@/lib/scaffold/template-version";
 import { generateSetupGuide } from "@/lib/scaffold/setup-guide";
+import { logUsage } from "@/lib/usage/record";
 import {
   BASE_ROOT,
   computeBuildKey,
@@ -349,6 +350,16 @@ export async function chargeScaffoldCredits(
           where: { id: input.userId },
           data: { creditsUsed: user.creditsUsed + input.amount },
         });
+        // The usage ledger shows buyers each download and upgrade (/usage).
+        await logUsage(tx, {
+          userId: input.userId,
+          meter: `scaffold.${input.job.type}`,
+          quantity: 1,
+          credits: input.amount,
+          sourceType: "scaffold_job",
+          sourceId: job.id,
+          idempotencyKey: `scaffold:${job.id}`,
+        });
       }
       return { charged: input.amount, alreadyProcessed: false, jobId: job.id };
     });
@@ -390,6 +401,15 @@ export async function refundScaffoldJob(jobId: string): Promise<boolean> {
       await tx.user.update({
         where: { id: job.userId },
         data: { creditsUsed: { decrement: job.creditsSpent } },
+      });
+      await logUsage(tx, {
+        userId: job.userId,
+        meter: "scaffold.refund",
+        quantity: 1,
+        credits: -job.creditsSpent,
+        sourceType: "scaffold_job",
+        sourceId: jobId,
+        idempotencyKey: `scaffold-refund:${jobId}`,
       });
     }
     return true;

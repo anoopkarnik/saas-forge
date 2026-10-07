@@ -46,6 +46,8 @@ const { db, state } = vi.hoisted(() => {
 });
 
 vi.mock("@workspace/database/client", () => ({ default: db }));
+const { logUsage } = vi.hoisted(() => ({ logUsage: vi.fn(async () => true) }));
+vi.mock("@/lib/usage/record", () => ({ logUsage }));
 
 import fs from "node:fs";
 import os from "node:os";
@@ -83,6 +85,11 @@ describe("chargeScaffoldCredits", () => {
     expect(state.creditsUsed).toBe(30);
     expect(state.updateCalled).toBe(true);
     expect(state.lastJobData?.creditsSpent).toBe(30);
+    // Buyers see the download on /usage.
+    expect(logUsage).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ userId: "u1", meter: `scaffold.${job.type}`, credits: 30, sourceId: "job1" }),
+    );
   });
 
   it("throws InsufficientCreditsError without charging", async () => {

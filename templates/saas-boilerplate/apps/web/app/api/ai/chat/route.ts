@@ -23,6 +23,7 @@ import {
   isN8nWebhookProvider,
 } from "@/lib/helper/aiWebhook";
 import { aiChatRequestSchema, type AiChatMessage } from "@/lib/zod/aiChat";
+import { announceUsageAlerts, recordUsage } from "@/lib/usage/record";
 // scaffold:begin notifications
 import { notifyIfCreditsLow } from "@/lib/notifications/notify";
 // scaffold:end notifications
@@ -251,7 +252,7 @@ export async function POST(req: Request) {
       const usage = calculateAIUsageCredits(null);
       const latencyMs = Date.now() - startedAt;
 
-      await db.$transaction(async (tx) => {
+      const usageAlerts = await db.$transaction(async (tx) => {
         await (tx as any).aiMessage.create({
           data: {
             conversationId: conversation.id,
@@ -262,12 +263,7 @@ export async function POST(req: Request) {
           },
         });
 
-        await tx.user.update({
-          where: { id: userId },
-          data: { creditsUsed: { increment: usage.creditsCharged } },
-        });
-
-        await (tx as any).aiUsageEvent.create({
+        const aiUsageEvent = await (tx as any).aiUsageEvent.create({
           data: {
             userId,
             conversationId: conversation.id,
@@ -283,7 +279,20 @@ export async function POST(req: Request) {
             status: "success",
           },
         });
+
+        // Credits move through the usage ledger; each completion is charged once, by its usage row.
+        const { alerts } = await recordUsage(tx, {
+          userId,
+          meter: "ai.tokens",
+          quantity: usage.totalTokens,
+          credits: usage.creditsCharged,
+          sourceType: "ai_usage_event",
+          sourceId: aiUsageEvent.id,
+          idempotencyKey: `ai:${aiUsageEvent.id}`,
+        });
+        return alerts;
       });
+      await announceUsageAlerts(userId, usageAlerts);
       // scaffold:begin notifications
       await notifyIfCreditsLow(userId, usage.creditsCharged);
       // scaffold:end notifications
@@ -353,7 +362,7 @@ export async function POST(req: Request) {
         const latencyMs = Date.now() - startedAt;
         const text = typeof finishData.text === "string" ? finishData.text : "";
 
-        await db.$transaction(async (tx) => {
+        const usageAlerts = await db.$transaction(async (tx) => {
           await (tx as any).aiMessage.create({
             data: {
               conversationId: conversation.id,
@@ -364,12 +373,7 @@ export async function POST(req: Request) {
             },
           });
 
-          await tx.user.update({
-            where: { id: userId },
-            data: { creditsUsed: { increment: usage.creditsCharged } },
-          });
-
-          await (tx as any).aiUsageEvent.create({
+          const aiUsageEvent = await (tx as any).aiUsageEvent.create({
             data: {
               userId,
               conversationId: conversation.id,
@@ -385,7 +389,20 @@ export async function POST(req: Request) {
               status: "success",
             },
           });
+
+          // Credits move through the usage ledger; each completion is charged once, by its usage row.
+          const { alerts } = await recordUsage(tx, {
+            userId,
+            meter: "ai.tokens",
+            quantity: usage.totalTokens,
+            credits: usage.creditsCharged,
+            sourceType: "ai_usage_event",
+            sourceId: aiUsageEvent.id,
+            idempotencyKey: `ai:${aiUsageEvent.id}`,
+          });
+          return alerts;
         });
+        await announceUsageAlerts(userId, usageAlerts);
         // scaffold:begin notifications
         await notifyIfCreditsLow(userId, usage.creditsCharged);
         // scaffold:end notifications

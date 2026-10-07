@@ -11,7 +11,7 @@
     {
       "id": "billing",
       "label": "Billing & Payments",
-      "description": "Checkout, transactions, credits purchase UI, and payment webhooks.",
+      "description": "Checkout, transactions, credits purchase UI, payment webhooks, and a usage ledger with a /usage dashboard: spend by meter, rates, balance history and threshold alerts.",
       "default": false,
       "creditsCost": 10,
       "requires": [],

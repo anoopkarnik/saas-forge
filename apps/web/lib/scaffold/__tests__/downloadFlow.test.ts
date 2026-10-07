@@ -47,6 +47,8 @@ const { db, state, mockBase } = vi.hoisted(() => {
 });
 
 vi.mock("@workspace/database/client", () => ({ default: db }));
+const { logUsage } = vi.hoisted(() => ({ logUsage: vi.fn(async () => true) }));
+vi.mock("@/lib/usage/record", () => ({ logUsage }));
 vi.mock("@/lib/scaffold/build-cache", () => ({
   BASE_ROOT: "saas-forge-app",
   computeBuildKey: () => "build-key-1",
@@ -107,6 +109,7 @@ describe("downloadScaffold", () => {
   });
 
   it("refunds the charge exactly once when the build fails", async () => {
+    logUsage.mockClear();
     mockBase.mockRejectedValueOnce(new Error("compile failed"));
     await expect(downloadScaffold(input)).rejects.toThrow("compile failed");
 
@@ -117,6 +120,12 @@ describe("downloadScaffold", () => {
     // A second refund (e.g. a retried cleanup) changes nothing.
     expect(await refundScaffoldJob(state.jobs[0]!.id)).toBe(false);
     expect(state.creditsUsed).toBe(0);
+    // The charge and the refund are both line items on /usage.
+    const calls = logUsage.mock.calls as unknown as Array<[unknown, { meter: string; credits: number }]>;
+    expect(calls.map(([, entry]) => [entry.meter, entry.credits])).toEqual([
+      ["scaffold.download", 30],
+      ["scaffold.refund", -30],
+    ]);
   });
 
   it("does not let a failed build count as owned", async () => {

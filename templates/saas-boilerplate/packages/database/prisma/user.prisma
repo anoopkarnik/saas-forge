@@ -18,6 +18,10 @@ model User {
     accounts      Account[]
     sessions      Session[]
     transactions  Transaction[]
+    // scaffold:begin billing
+    usageEvents   UsageEvent[]
+    usageAlerts   UsageAlert[]
+    // scaffold:end billing
     // scaffold:begin ai
     aiPromptVersions AiPromptVersion[] @relation("AiPromptVersionCreatedBy")
     aiConversations  AiConversation[]  @relation("AiConversations")

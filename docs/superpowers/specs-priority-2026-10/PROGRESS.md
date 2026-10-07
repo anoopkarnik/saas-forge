@@ -29,7 +29,7 @@ Rules for every spec:
 | 10 | Upgrade center | done | 4bfac2b | No releases/*.json yet (history had no usable notes); the next release drafts one with `pnpm release:notes`. Emails are sent by an admin from My Projects, not on publish. UI not clicked through in a browser (local web uses the prod DB) |
 | 11 | Provider-level pruning | done | 73d8394 | `packageJsonRemove` not added: existing `jsonRemove` covers dependencies. Keep-all output differs from pre-#11 only in the refactored provider files (no pruning). Minimal providers (all modules): 2,012 vs 2,210 installed packages, 1,872 vs 1,921 MB. Wizard file preview (#7) still counts keep-all files |
 | 12 | Jobs & cron module | done | 8696ec2 | Inngest instead of QStash: `/api/inngest` replaces `/api/jobs/run` and `/api/cron/[name]`, cron lives in Inngest (no `vercel.json`, no Redis driver; self-hosters run the Inngest server). `JobRun` stores dead letters only. Admin shows each schedule's last run, not the next. Price 15 credits is my pick (adjust in the registry). Switch on with `JOBS_DRIVER=inngest` |
-| 13 | Notifications module | todo | | |
+| 13 | Notifications module | done | b8262dd | Types: invitation sent, payment succeeded/failed (Stripe, Dodo), credits low, organization invitation. Email goes through the `notification.deliver` job. Deferred: the "AI job finished" event (the Python worker writes job status straight to the DB, so there is no web hook to emit from). Preferences live in the bell popover rather than a Settings tab; mobile shows the list and mark-read only. Price 5 credits (registry default) |
 | 14 | Runtime site config | todo | | |
 | 15 | Audit log module | todo | | |
 | 16 | Outgoing webhooks module | todo | | |
@@ -42,5 +42,5 @@ Rules for every spec:
 
 - 1db9b85 fix(doctor): env files written 0600 (security review of #9).
 - 7f1f4de fix(scaffold): Vercel never shipped `scaffold-modules/` (registry, manifests) with any route, so pricing, the catalog and downloads threw ENOENT in production; the v1 download/upgrade routes and the preview procedures also lacked the starter. Registry now traced everywhere, starter on archive routes, template-reading tRPC calls go to `/api/scaffold/trpc`. Predates the roadmap.
-- Production database (`prod-boilerplate`) is 4 additive migrations behind dev and nothing in the build migrates it; owner runs `migrate:deploy` (documented in the release workflow, step 7).
+- Production database (`prod-boilerplate`) is 6 additive migrations behind dev (through `20261007103304_notifications`) and nothing in the build migrates it; owner runs `migrate:deploy` (documented in the release workflow, step 7).
 - 73d8394 (with #11): local env files (`.env.production`, `.env.local`…) were copied into the synced starter and only a file named exactly `.env` was kept out of archives. Audit (read-only) of the R2 bucket found no build archives ever written, so nothing leaked.

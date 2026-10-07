@@ -14,7 +14,7 @@ import {
 } from "@workspace/ui/components/shadcn/sidebar";
 import { useTheme } from "next-themes";
 import { cn } from "@workspace/ui/lib/utils";
-import { Database, FileText, HomeIcon, Timer, Users } from "lucide-react";
+import { Database, FileText, HomeIcon, Settings, Timer, Users } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { useTRPC } from "@/trpc/client";
 import { useQuery } from "@tanstack/react-query";
@@ -158,6 +158,21 @@ export function AppSidebar() {
                 </SidebarMenuButton>
               </SidebarMenuItem>
               {/* scaffold:end jobs */}
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  tooltip="Settings"
+                  className={cn(
+                    "h-10 cursor-pointer transition-all duration-200 ease-in-out hover:pl-3",
+                    pathname === "/admin/settings" && "bg-sidebar-accent font-medium text-sidebar-accent-foreground shadow-sm"
+                  )}
+                  onClick={() => router.push("/admin/settings")}
+                >
+                  <div className="flex items-center gap-3">
+                    <Settings className="h-5 w-5 text-slate-500" />
+                    <div className="text-xs">Settings</div>
+                  </div>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroup>
         )}

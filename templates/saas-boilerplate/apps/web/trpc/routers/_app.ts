@@ -4,6 +4,7 @@ import { landingRouter } from './landingProcedures';
 import { documentationRouter } from './docProcedures';
 import { homeRouter } from './homeProcedures';
 import { seoRouter } from './seoProcedures';
+import { siteConfigRouter } from './siteConfigProcedures';
 // scaffold:begin api_keys
 import { apiKeyRouter } from './apiKeyProcedures';
 // scaffold:end api_keys
@@ -33,6 +34,7 @@ export const appRouter = createTRPCRouter({
     documentation: documentationRouter,
     home: homeRouter,
     seo: seoRouter,
+    siteConfig: siteConfigRouter,
     // scaffold:begin api_keys
     apiKey: apiKeyRouter,
     // scaffold:end api_keys

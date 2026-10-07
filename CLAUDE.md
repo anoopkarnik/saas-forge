@@ -218,6 +218,12 @@ Reference: `apps/web/app/api/payments/stripe/webhook/route.ts`
 
 Boot-time env validation lives in `apps/web/lib/env.ts` (called from `apps/web/instrumentation.ts`) and `apps/backend/src/saas_forge_backend/config.py`. Production refuses to start on missing core vars, weak or placeholder secrets (`BETTER_AUTH_SECRET`, `BACKEND_HMAC_SECRET`), missing credentials for an enabled integration toggle, or a secret-looking `NEXT_PUBLIC_*` name; development only warns. The backend enforces this when `APP_ENV=production`. Code still reads `process.env` directly at call sites.
 
+Runtime site config (`apps/web/lib/site-config/`): env is the default, an admin overrides it at runtime in `/admin/settings`, no redeploy.
+
+- Each setting in `registry.ts` has a Zod schema, a `public` flag, its env var and a default; it resolves DB row (`AppSetting`) -> env -> default. A key or env name that looks like a secret throws at load: secrets stay in env.
+- Server code calls `getSiteConfig()` (Redis-cached, in-memory when Redis is off; `updateSiteConfig` clears it). Client code calls `useSiteConfig()`, hydrated by the root layout, which renders dynamically for that reason. `siteConfig.get` returns public keys only.
+- Lint blocks reading the migrated `NEXT_PUBLIC_*` vars (theme, name, description, auth buttons, Calendly, GA) in UI files. Auth settings only show or hide buttons; providers still need env credentials. The support email stays env: it is also the email sender.
+
 - When an integration toggle gains a required credential, add it to `INTEGRATION_REQUIREMENTS` in `apps/web/lib/env.ts`.
 - `pnpm doctor` (`scripts/doctor.mjs`) runs the same `findServerEnvIssues`, adds live probes (`scripts/doctor-probes.mjs`) and writes env files through `apps/web/lib/env-files.ts`, the mapping the download builder also uses. Give a new credential a `HINTS` entry there, and a probe when the provider has a cheap authenticated read.
 - Email sign-up (`NEXT_PUBLIC_AUTH_EMAIL=true`) requires `NEXT_PUBLIC_EMAIL_CLIENT`. Without a configured client, `packages/email` helpers skip sending with a warning (including the link outside production) instead of calling Resend.
@@ -450,7 +456,7 @@ Nothing in the build migrates the production database: run `pnpm --dir packages/
 
 - Session cookies may appear as `better-auth.session_token` in local dev and `__Secure-better-auth.session_token` in secure production contexts.
 - The Prisma schema is split across multiple files in `packages/database/prisma/`; read the related models before changing billing or auth behavior.
-- Feature toggles are driven by env vars, not a central config service.
+- Feature toggles are driven by env vars. Branding, sign-in buttons and analytics can also be overridden at runtime through site config.
 - Root builds depend on a clean managed starter tree because template staging happens before Turbo build execution.
 
 ## Docs

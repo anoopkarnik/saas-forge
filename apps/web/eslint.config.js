@@ -68,4 +68,19 @@ export default [
       "@next/next/no-img-element": "off",
     },
   },
+  {
+    // These env vars are only defaults now: UI reads the runtime value from
+    // useSiteConfig() (or getSiteConfig() on the server), see lib/site-config.
+    files: ["app/**/*.tsx", "blocks/**/*.tsx", "components/**/*.tsx", "hooks/**/*.ts"],
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector:
+            "MemberExpression[object.object.name='process'][object.property.name='env'][property.name=/^NEXT_PUBLIC_(THEME|THEME_TYPE|SAAS_NAME|SITE_DESCRIPTION|AUTH_EMAIL|AUTH_GOOGLE|AUTH_GITHUB|AUTH_LINKEDIN|CALENDLY_BOOKING_URL|GOOGLE_ANALYTICS_MEASUREMENT_ID)$/]",
+          message: "This setting is runtime site config: use useSiteConfig() or getSiteConfig().",
+        },
+      ],
+    },
+  },
 ]

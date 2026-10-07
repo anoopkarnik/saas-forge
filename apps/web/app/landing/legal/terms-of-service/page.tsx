@@ -5,15 +5,18 @@ import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
 import { ReactElement, Suspense } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import TermsOfService from "@/blocks/landing/TermsOfService";
-import { createSeoMetadata } from "@/lib/seo";
+import type { Metadata } from "next";
+import { siteMetadata } from "@/lib/site-config/metadata";
 
 export const revalidate = 600;
 
-export const metadata = createSeoMetadata({
-  title: "Terms of Service",
-  description: "Read the terms of service for this SaaS application.",
-  pathname: "/landing/legal/terms-of-service",
-});
+export async function generateMetadata(): Promise<Metadata> {
+  return siteMetadata({
+    title: "Terms of Service",
+    description: "Read the terms of service for this SaaS application.",
+    pathname: "/landing/legal/terms-of-service",
+  });
+}
 
 const Page = async (): Promise<ReactElement> => {
   const queryClient = getQueryClient();

@@ -11,6 +11,7 @@ import LoadingCard from '@workspace/ui/components/auth/LoadingCard'
 import { useRouter } from 'next/navigation'
 import { useTRPC } from '@/trpc/client'
 import { useQuery } from '@tanstack/react-query'
+import { useSiteConfig } from '@/components/site-config/SiteConfigProvider'
 
 const RegisterContent = () => {
   const router = useRouter()
@@ -20,7 +21,7 @@ const RegisterContent = () => {
   const invitedEmail = searchParams.get('email') ?? ''
 
   const trpc = useTRPC()
-  const modeQuery = useQuery(trpc.admin.settings.registrationMode.queryOptions())
+  const config = useSiteConfig()
   const inviteQuery = useQuery(
     trpc.admin.invites.validate.queryOptions(
       { token: inviteToken },
@@ -28,7 +29,7 @@ const RegisterContent = () => {
     ),
   )
 
-  const isInviteOnly = modeQuery.data === 'INVITE_ONLY'
+  const isInviteOnly = config['registration.mode'] === 'INVITE_ONLY'
   const hasValidInvite = !!inviteQuery.data?.valid
   const blockedByInviteOnly = isInviteOnly && !hasValidInvite
 
@@ -55,10 +56,10 @@ const RegisterContent = () => {
 
   return (
     <RegisterPage
-      showEmail={process.env.NEXT_PUBLIC_AUTH_EMAIL === 'true' && !blockedByInviteOnly}
-      showGoogleProvider={process.env.NEXT_PUBLIC_AUTH_GOOGLE === 'true' && !blockedByInviteOnly}
-      showGithubProvider={process.env.NEXT_PUBLIC_AUTH_GITHUB === 'true' && !blockedByInviteOnly}
-      showLinkedinProvider={process.env.NEXT_PUBLIC_AUTH_LINKEDIN === 'true' && !blockedByInviteOnly}
+      showEmail={config['auth.email.visible'] && !blockedByInviteOnly}
+      showGoogleProvider={config['auth.google.visible'] && !blockedByInviteOnly}
+      showGithubProvider={config['auth.github.visible'] && !blockedByInviteOnly}
+      showLinkedinProvider={config['auth.linkedin.visible'] && !blockedByInviteOnly}
       prefillEmail={hasValidInvite ? (inviteQuery.data?.email ?? invitedEmail) : ''}
       onEmailSubmit={register}
       onGoogleProviderSubmit={() => loginWithSocials('google')}

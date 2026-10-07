@@ -3,16 +3,19 @@ import LandingPage from "@/blocks/landing/LandingPage";
 import LoadingState from "@workspace/ui/components/misc/LoadingState";
 import { getQueryClient, trpc } from "@/trpc/server"
 import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
-import { createSeoMetadata } from "@/lib/seo";
+import type { Metadata } from "next";
+import { siteMetadata } from "@/lib/site-config/metadata";
 import { ReactElement, Suspense } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 
 export const revalidate = 600;
 
-export const metadata = createSeoMetadata({
-  title: "Build and deploy SaaS products",
-  pathname: "/landing",
-});
+export async function generateMetadata(): Promise<Metadata> {
+  return siteMetadata({
+    title: "Build and deploy SaaS products",
+    pathname: "/landing",
+  });
+}
 
 const HomePage = async (): Promise<ReactElement> => {
   const queryClient = getQueryClient();

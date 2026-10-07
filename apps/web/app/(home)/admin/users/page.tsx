@@ -8,7 +8,7 @@ import { useAdminGuard } from "@/hooks/useAdminGuard";
 import { UsersTable } from "@/components/admin/UsersTable";
 import { useTRPC } from "@/trpc/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { RegistrationModeToggle } from "@workspace/ui/components/admin/RegistrationModeToggle";
+import Link from "next/link";
 import { InviteUserDialog } from "@workspace/ui/components/admin/InviteUserDialog";
 import { InvitationsTable } from "@workspace/ui/components/admin/InvitationsTable";
 import { CreateGuestDialog } from "@workspace/ui/components/admin/CreateGuestDialog";
@@ -21,16 +21,7 @@ export default function UserManagementPage() {
     const trpc = useTRPC();
     const qc = useQueryClient();
 
-    const modeQuery = useQuery(trpc.admin.settings.registrationMode.queryOptions());
     const invitesQuery = useQuery(trpc.admin.invites.list.queryOptions(undefined, { enabled: isAdmin }));
-
-    const setMode = useMutation(trpc.admin.settings.setRegistrationMode.mutationOptions({
-        onSuccess: async () => {
-            await qc.invalidateQueries({ queryKey: trpc.admin.settings.registrationMode.queryKey() });
-            toast.success("Registration mode updated");
-        },
-        onError: (e: any) => toast.error(e.message || "Failed to update mode"),
-    }));
 
     const createInvite = useMutation(trpc.admin.invites.create.mutationOptions({
         onSuccess: async () => {
@@ -157,11 +148,10 @@ export default function UserManagementPage() {
             </div>
 
             <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-                <RegistrationModeToggle
-                    mode={(modeQuery.data as "OPEN" | "INVITE_ONLY") ?? "OPEN"}
-                    onChange={(mode) => setMode.mutate({ mode })}
-                    disabled={setMode.isPending || modeQuery.isLoading}
-                />
+                <p className="text-sm text-muted-foreground">
+                    Who can sign up is set in{" "}
+                    <Link href="/admin/settings" className="underline underline-offset-4">Settings</Link>.
+                </p>
                 <div className="flex items-center gap-2">
                     <CreateGuestDialog onCreate={handleCreateGuest} />
                     <InviteUserDialog

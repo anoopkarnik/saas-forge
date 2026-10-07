@@ -154,6 +154,12 @@ Reference: `apps/web/app/api/payments/stripe/webhook/route.ts`
 ## Environment and Config
 
 Boot-time env validation lives in `apps/web/lib/env.ts` (called from `apps/web/instrumentation.ts`). Production refuses to start on missing core vars, weak or placeholder secrets (such as `BETTER_AUTH_SECRET`), missing credentials for an enabled integration toggle, or a secret-looking `NEXT_PUBLIC_*` name; development only warns. Code still reads `process.env` directly at call sites.
+
+Runtime site config (`apps/web/lib/site-config/`): env is the default, an admin overrides it at runtime in `/admin/settings`, no redeploy.
+
+- Each setting in `registry.ts` has a Zod schema, a `public` flag, its env var and a default; it resolves DB row (`AppSetting`) -> env -> default. A key or env name that looks like a secret throws at load: secrets stay in env.
+- Server code calls `getSiteConfig()` (Redis-cached, in-memory when Redis is off; `updateSiteConfig` clears it). Client code calls `useSiteConfig()`, hydrated by the root layout, which renders dynamically for that reason. `siteConfig.get` returns public keys only.
+- Lint blocks reading the migrated `NEXT_PUBLIC_*` vars (theme, name, description, auth buttons, Calendly, GA) in UI files. Auth settings only show or hide buttons; providers still need env credentials. The support email stays env: it is also the email sender.
 <!-- scaffold:begin ai_agents -->
 
 The Python backend validates its own env in `apps/backend/src/saas_forge_backend/config.py` when `APP_ENV=production`, including a strong `BACKEND_HMAC_SECRET`.
@@ -295,7 +301,7 @@ Useful default checks:
 
 - Session cookies may appear as `better-auth.session_token` in local dev and `__Secure-better-auth.session_token` in secure production contexts.
 - The Prisma schema is split across multiple files in `packages/database/prisma/`; read the related models before changing billing or auth behavior.
-- Feature toggles are driven by env vars, not a central config service.
+- Feature toggles are driven by env vars. Branding, sign-in buttons and analytics can also be overridden at runtime through site config.
 - This starter intentionally excludes scaffold/download and root template-management behavior.
 
 ## Docs

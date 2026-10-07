@@ -16,6 +16,7 @@ import SaaSAssistantChatbot from "@/components/support/SaaSAssistantChatbot";
 import Message from "@/components/support/Message";
 import Newsletter from "@/components/support/Newsletter";
 import { useRouter } from "next/navigation";
+import { useSiteConfig } from "@/components/site-config/SiteConfigProvider";
 
 type ActivePanel = "message" | "newsletter" | "assistant" | null;
 
@@ -23,6 +24,7 @@ const Support = () => {
   const [open, setOpen] = useState(false);
   const triggerRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+  const calendlyUrl = useSiteConfig()["support.calendlyUrl"];
 
   const [activePanel, setActivePanel] = useState<ActivePanel>(null);
 
@@ -94,8 +96,8 @@ const Support = () => {
                 <div className="text-center text-xs font-medium">Documentation</div>
               </div>
 
-              {process.env.NEXT_PUBLIC_CALENDLY_BOOKING_URL && <a
-                href={process.env.NEXT_PUBLIC_CALENDLY_BOOKING_URL}
+              {calendlyUrl && <a
+                href={calendlyUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="group flex flex-col items-center gap-3 p-4 rounded-xl cursor-pointer 

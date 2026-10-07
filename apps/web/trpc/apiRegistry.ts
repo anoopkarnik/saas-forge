@@ -193,11 +193,12 @@ export const API_REGISTRY: ApiGroup[] = [
   },
   ...ORGANIZATION_API_GROUPS,
   {
-    group: "admin.settings",
-    label: "Admin · Settings",
+    group: "siteConfig",
+    label: "Site config",
     calls: [
-      { name: "registrationMode", type: "query", access: "public" },
-      { name: "setRegistrationMode", type: "mutation", access: "admin" },
+      { name: "get", type: "query", access: "public" },
+      { name: "entries", type: "query", access: "adminGuestRead" },
+      { name: "update", type: "mutation", access: "admin" },
     ],
   },
   {

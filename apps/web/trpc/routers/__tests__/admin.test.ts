@@ -7,19 +7,11 @@ vi.mock("@workspace/auth/better-auth/auth", () => ({
   auth: { api: { getSession: vi.fn(async () => null) } },
 }));
 
-const { store, invites } = vi.hoisted(() => ({
-  store: { value: null as null | { value: string } },
+const { invites } = vi.hoisted(() => ({
   invites: { rows: [] as any[], users: [] as any[] },
 }));
 
 vi.mock("@workspace/database/client", () => {
-  const appSetting = {
-    findUnique: vi.fn(async () => store.value),
-    upsert: vi.fn(async ({ create }: any) => {
-      store.value = { value: create.value };
-      return store.value;
-    }),
-  };
   const user = {
     findUnique: vi.fn(async ({ where }: any) =>
       invites.users.find((u) => u.email === where.email) ?? null,
@@ -48,7 +40,7 @@ vi.mock("@workspace/database/client", () => {
       return row;
     }),
   };
-  const client: any = { appSetting, user, invitation };
+  const client: any = { user, invitation };
   client.$extends = () => client;
   return { default: client };
 });
@@ -65,26 +57,7 @@ const adminCtx: any = {
 };
 
 beforeEach(() => {
-  store.value = null;
   vi.clearAllMocks();
-});
-
-describe("admin.settings", () => {
-  it("defaults to OPEN when unset", async () => {
-    const caller = adminRouter.createCaller({ session: null } as any);
-    expect(await caller.settings.registrationMode()).toBe("OPEN");
-  });
-
-  it("sets and reads back INVITE_ONLY", async () => {
-    const caller = adminRouter.createCaller(adminCtx);
-    await caller.settings.setRegistrationMode({ mode: "INVITE_ONLY" });
-    expect(await caller.settings.registrationMode()).toBe("INVITE_ONLY");
-  });
-
-  it("rejects setRegistrationMode without admin session", async () => {
-    const caller = adminRouter.createCaller({ session: null } as any);
-    await expect(caller.settings.setRegistrationMode({ mode: "OPEN" })).rejects.toThrow();
-  });
 });
 
 describe("admin.invites", () => {

@@ -18,7 +18,7 @@ const MIN_SECRET_LENGTH = 32;
 
 // NEXT_PUBLIC_ variables are inlined into the browser bundle, so a name that
 // looks like a credential is a secret classified as public by mistake.
-const SECRET_NAME_PATTERN = /SECRET|TOKEN|PASSWORD|PRIVATE|API_KEY|WEBHOOK_KEY|JWT_KEY/;
+export const SECRET_NAME_PATTERN = /SECRET|TOKEN|PASSWORD|PRIVATE|API_KEY|WEBHOOK_KEY|JWT_KEY/;
 
 // Integration toggles and the server credentials their code paths read.
 const INTEGRATION_REQUIREMENTS: Array<{

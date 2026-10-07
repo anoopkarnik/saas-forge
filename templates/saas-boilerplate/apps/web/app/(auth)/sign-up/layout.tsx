@@ -1,11 +1,14 @@
-import { createSeoMetadata } from "@/lib/seo";
+import type { Metadata } from "next";
+import { siteMetadata } from "@/lib/site-config/metadata";
 import type { ReactElement, ReactNode } from "react";
 
-export const metadata = createSeoMetadata({
-  title: "Sign Up",
-  description: "Create your SaaS account.",
-  pathname: "/sign-up",
-});
+export async function generateMetadata(): Promise<Metadata> {
+  return siteMetadata({
+    title: "Sign Up",
+    description: "Create your SaaS account.",
+    pathname: "/sign-up",
+  });
+}
 
 export default function SignUpLayout({
   children,

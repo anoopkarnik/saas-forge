@@ -5,15 +5,18 @@ import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
 import { ReactElement, Suspense } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import ContactUs from "@/blocks/landing/ContactUs";
-import { createSeoMetadata } from "@/lib/seo";
+import type { Metadata } from "next";
+import { siteMetadata } from "@/lib/site-config/metadata";
 
 export const revalidate = 600;
 
-export const metadata = createSeoMetadata({
-  title: "Contact Us",
-  description: "Contact the team behind this SaaS application.",
-  pathname: "/landing/legal/contact-us",
-});
+export async function generateMetadata(): Promise<Metadata> {
+  return siteMetadata({
+    title: "Contact Us",
+    description: "Contact the team behind this SaaS application.",
+    pathname: "/landing/legal/contact-us",
+  });
+}
 
 const Page = async (): Promise<ReactElement> => {
   const queryClient = getQueryClient();

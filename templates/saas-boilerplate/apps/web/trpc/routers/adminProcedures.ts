@@ -9,26 +9,6 @@ import { notify } from "@/lib/notifications/notify";
 // scaffold:end notifications
 import { createTRPCRouter, baseProcedure, adminProcedure } from "../init";
 
-const settingsRouter = createTRPCRouter({
-  registrationMode: baseProcedure.query(async () => {
-    const setting = await db.appSetting.findUnique({
-      where: { key: "registration_mode" },
-    });
-    return setting?.value === "INVITE_ONLY" ? "INVITE_ONLY" : "OPEN";
-  }),
-
-  setRegistrationMode: adminProcedure
-    .input(z.object({ mode: z.enum(["OPEN", "INVITE_ONLY"]) }))
-    .mutation(async ({ input }) => {
-      await db.appSetting.upsert({
-        where: { key: "registration_mode" },
-        update: { value: input.mode },
-        create: { key: "registration_mode", value: input.mode },
-      });
-      return { mode: input.mode };
-    }),
-});
-
 const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const appUrl = process.env.NEXT_PUBLIC_URL || "http://localhost:3000";
 const company = process.env.NEXT_PUBLIC_COMPANY_NAME || "Company";
@@ -114,6 +94,5 @@ const invitesRouter = createTRPCRouter({
 });
 
 export const adminRouter = createTRPCRouter({
-  settings: settingsRouter,
   invites: invitesRouter,
 });

@@ -5,10 +5,13 @@ import { ThemeProvider as NextThemesProvider } from "next-themes"
 
 export function ThemeProvider({
   children,
+  defaultTheme: configuredTheme,
   ...props
 }: React.ComponentProps<typeof NextThemesProvider>) {
+  // Apps with runtime site config pass `defaultTheme`; the env var is the fallback.
   const defaultTheme =
-    typeof process !== "undefined" ? process.env?.NEXT_PUBLIC_THEME_TYPE || "system" : "system"
+    configuredTheme ??
+    (typeof process !== "undefined" ? process.env?.NEXT_PUBLIC_THEME_TYPE || "system" : "system")
 
   return (
     <NextThemesProvider

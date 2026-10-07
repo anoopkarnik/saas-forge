@@ -78,6 +78,7 @@ export const API_REGISTRY: ApiGroup[] = [
     label: "Home",
     calls: [
       { name: "setPassword", type: "mutation", access: "authenticated" },
+      { name: "betaWidgets", type: "query", access: "authenticated" },
     ],
   },
   // scaffold:begin billing
@@ -211,6 +212,19 @@ export const API_REGISTRY: ApiGroup[] = [
     ],
   },
   // scaffold:end webhooks
+  // scaffold:begin feature_flags
+  {
+    group: "flags",
+    label: "Feature flags",
+    calls: [
+      { name: "forSession", type: "query", access: "authenticated" },
+      { name: "list", type: "query", access: "adminGuestRead" },
+      { name: "history", type: "query", access: "adminGuestRead" },
+      { name: "update", type: "mutation", access: "admin" },
+      { name: "preview", type: "query", access: "admin" },
+    ],
+  },
+  // scaffold:end feature_flags
   // scaffold:begin jobs
   {
     group: "jobs",

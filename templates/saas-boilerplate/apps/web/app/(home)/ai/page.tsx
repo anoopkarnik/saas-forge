@@ -4,10 +4,12 @@ import { ChatPanel } from "@workspace/ui/components/ai/ChatPanel";
 import { useTRPC } from "@/trpc/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
+import { useFlag } from "@/components/flags/FlagsProvider";
 
 export default function AIChatPage() {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
+  const voiceEnabled = useFlag("ai.voice");
 
   const statusQuery = useQuery(trpc.ai.getStatus.queryOptions());
   let isLoading = statusQuery.isLoading;
@@ -32,6 +34,7 @@ export default function AIChatPage() {
 
   return (
     <ChatPanel
+      voiceEnabled={voiceEnabled}
       remainingCredits={remainingCredits}
       disabled={!status?.configured}
       disabledReason={status?.reason}

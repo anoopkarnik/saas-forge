@@ -20,6 +20,9 @@ import { auditRouter } from './auditProcedures';
 // scaffold:begin webhooks
 import { webhookRouter } from './webhookProcedures';
 // scaffold:end webhooks
+// scaffold:begin feature_flags
+import { flagsRouter } from './flagsProcedures';
+// scaffold:end feature_flags
 import { adminRouter } from './adminProcedures';
 // scaffold:begin billing
 import { billingRouter } from './billingProcedures';
@@ -57,6 +60,9 @@ export const appRouter = createTRPCRouter({
     // scaffold:begin webhooks
     webhook: webhookRouter,
     // scaffold:end webhooks
+    // scaffold:begin feature_flags
+    flags: flagsRouter,
+    // scaffold:end feature_flags
     admin: adminRouter,
     // scaffold:begin billing
     billing: billingRouter,

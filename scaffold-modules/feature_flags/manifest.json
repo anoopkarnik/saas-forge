@@ -1,0 +1,31 @@
+{
+  "id": "feature_flags",
+  "ownedIdentifiers": [
+    "flagsRouter",
+    "flagsProcedures",
+    "trpc.flags.",
+    "@/lib/flags/rules",
+    "@/lib/flags/service",
+    "model FeatureFlag",
+    "/admin/flags",
+    "ANONYMOUS_ID_COOKIE",
+    "feature-flags:v1"
+  ],
+  "unselected": {
+    "remove": [
+      "apps/web/lib/flags/rules.ts",
+      "apps/web/lib/flags/service.ts",
+      "apps/web/lib/flags/__tests__",
+      "apps/web/trpc/routers/flagsProcedures.ts",
+      "apps/web/app/(home)/admin/flags",
+      "packages/database/prisma/flags.prisma",
+      "packages/database/prisma/migrations/20261007162235_feature_flags"
+    ],
+    "copy": [
+      {
+        "from": "overrides/unselected/apps/web/lib/flags/flags.ts",
+        "to": "apps/web/lib/flags/flags.ts"
+      }
+    ]
+  }
+}

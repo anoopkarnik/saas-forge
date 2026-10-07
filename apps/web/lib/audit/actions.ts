@@ -58,6 +58,9 @@ export const AUDIT_ACTIONS = {
   }),
   "api_key.revoked": action({ targetType: "api_key", schema: none }),
   // scaffold:end api_keys
+  // scaffold:begin feature_flags
+  "flag.updated": action({ targetType: "feature_flag", schema: z.object({ enabled: z.boolean(), rules: z.number() }) }),
+  // scaffold:end feature_flags
   // scaffold:begin ai
   "ai.prompt.created": action({ targetType: "prompt_version", schema: z.object({ version: z.number().optional() }) }),
   "ai.prompt.updated": action({ targetType: "prompt_version", schema: none }),

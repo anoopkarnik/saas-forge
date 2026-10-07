@@ -21,6 +21,9 @@ import { ScrollText } from "lucide-react";
 // scaffold:begin billing
 import { Gauge } from "lucide-react";
 // scaffold:end billing
+// scaffold:begin feature_flags
+import { Flag } from "lucide-react";
+// scaffold:end feature_flags
 import { usePathname, useRouter } from "next/navigation";
 import { useTRPC } from "@/trpc/client";
 import { useQuery } from "@tanstack/react-query";
@@ -198,6 +201,23 @@ export function AppSidebar() {
                 </SidebarMenuButton>
               </SidebarMenuItem>
               {/* scaffold:end audit_log */}
+              {/* scaffold:begin feature_flags */}
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  tooltip="Feature flags"
+                  className={cn(
+                    "h-10 cursor-pointer transition-all duration-200 ease-in-out hover:pl-3",
+                    pathname === "/admin/flags" && "bg-sidebar-accent font-medium text-sidebar-accent-foreground shadow-sm"
+                  )}
+                  onClick={() => router.push("/admin/flags")}
+                >
+                  <div className="flex items-center gap-3">
+                    <Flag className="h-5 w-5 text-orange-500" />
+                    <div className="text-xs">Feature flags</div>
+                  </div>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              {/* scaffold:end feature_flags */}
               <SidebarMenuItem>
                 <SidebarMenuButton
                   tooltip="Settings"

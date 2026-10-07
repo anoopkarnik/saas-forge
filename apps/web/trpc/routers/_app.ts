@@ -14,6 +14,7 @@ import { jobsRouter } from './jobsProcedures';
 import { notificationRouter } from './notificationProcedures';
 import { auditRouter } from './auditProcedures';
 import { webhookRouter } from './webhookProcedures';
+import { flagsRouter } from './flagsProcedures';
 import { adminRouter } from './adminProcedures';
 import { organizationRouter } from './organizationProcedures';
 import { projectRouter } from './projectProcedures';
@@ -35,6 +36,7 @@ export const appRouter = createTRPCRouter({
     notification: notificationRouter,
     audit: auditRouter,
     webhook: webhookRouter,
+    flags: flagsRouter,
     admin: adminRouter,
     organization: organizationRouter,
     project: projectRouter,

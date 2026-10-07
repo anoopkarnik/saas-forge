@@ -131,6 +131,6 @@ describe("BUILDER_VERSION", () => {
     expect(
       { version: BUILDER_VERSION, hash },
       "Builder sources changed: if archive output changes, bump BUILDER_VERSION; then record the new hash here.",
-    ).toEqual({ version: 6, hash: "869e66db65c03152" });
+    ).toEqual({ version: 6, hash: "604a07d1362941aa" });
   });
 });

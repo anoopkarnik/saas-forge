@@ -28,6 +28,8 @@ type ChatPanelProps = {
   disabledReason?: string | null;
   sttApi?: string;
   ttsApi?: string;
+  /** False hides the microphone and spoken replies (e.g. the ai.voice flag is off). */
+  voiceEnabled?: boolean;
   onFinish?: () => void;
 };
 
@@ -93,6 +95,7 @@ export function ChatPanel({
   disabledReason,
   sttApi = "/api/ai/speech/stt",
   ttsApi = "/api/ai/speech/tts",
+  voiceEnabled = true,
   onFinish,
 }: ChatPanelProps) {
   const [input, setInput] = React.useState("");
@@ -310,7 +313,7 @@ export function ChatPanel({
   }, [isRecording, startRecording, stopRecording]);
 
   React.useEffect(() => {
-    if (!autoSpeak || isBusy || disabled) {
+    if (!voiceEnabled || !autoSpeak || isBusy || disabled) {
       return;
     }
 
@@ -328,7 +331,7 @@ export function ChatPanel({
 
     spokenMessageIdsRef.current.add(latestAssistantMessage.id);
     void speakText(text);
-  }, [autoSpeak, disabled, isBusy, messages, speakText]);
+  }, [autoSpeak, disabled, isBusy, messages, speakText, voiceEnabled]);
 
   React.useEffect(() => {
     return () => {
@@ -439,6 +442,7 @@ export function ChatPanel({
       </div>
 
       <form onSubmit={submit} className="border-t p-4">
+        {voiceEnabled ? (
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             {isRecording ? (
@@ -460,6 +464,7 @@ export function ChatPanel({
             {autoSpeak ? "Voice replies on" : "Voice replies off"}
           </Button>
         </div>
+        ) : null}
         <div className="flex items-end gap-2">
           <Textarea
             value={input}
@@ -474,6 +479,7 @@ export function ChatPanel({
               }
             }}
           />
+          {voiceEnabled ? (
           <Button
             type="button"
             variant={isRecording ? "destructive" : "outline"}
@@ -490,6 +496,7 @@ export function ChatPanel({
             )}
             <span className="sr-only">{isRecording ? "Stop recording" : "Start recording"}</span>
           </Button>
+          ) : null}
           {isBusy ? (
             <Button type="button" variant="outline" size="icon" onClick={stop}>
               <Square className="h-4 w-4" />

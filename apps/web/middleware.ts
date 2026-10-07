@@ -5,6 +5,9 @@ import {
 } from "@workspace/auth/better-auth/cookies";
 import { DESKTOP_APP_ORIGIN } from "@workspace/auth/better-auth/desktop-origin";
 import { resolveRoutePolicy } from "@/lib/route-policy";
+// scaffold:begin feature_flags
+import { ANONYMOUS_ID_COOKIE } from "@/lib/flags/definitions";
+// scaffold:end feature_flags
 
 const allowedOrigins = [
   "http://localhost:3000",
@@ -73,6 +76,19 @@ export default async function middleware(req: NextRequest) {
   }
 
   const response = NextResponse.next();
+
+  // scaffold:begin feature_flags
+  // A stable id so percentage rollouts treat a visitor the same before sign-in.
+  if (!req.cookies.get(ANONYMOUS_ID_COOKIE)) {
+    response.cookies.set(ANONYMOUS_ID_COOKIE, crypto.randomUUID(), {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: req.nextUrl.protocol === "https:",
+      maxAge: 60 * 60 * 24 * 365,
+      path: "/",
+    });
+  }
+  // scaffold:end feature_flags
 
   // Set CORS headers on all responses for allowed origins
   if (!handlerManagesCors && isAllowedOrigin) {

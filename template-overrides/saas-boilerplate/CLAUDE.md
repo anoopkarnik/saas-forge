@@ -164,6 +164,14 @@ Usage ledger (`apps/web/lib/usage`, billing module):
 - Without billing, `lib/usage/record.ts` is replaced by a stub with the same exports that only moves `creditsUsed`, so callers such as AI chat stay unchanged. A user's first event carries their earlier spend (`balance.opening`), so events always add up to `creditsUsed`; the `usage.reconcile` job (with jobs) logs any drift.
 <!-- scaffold:end billing -->
 
+Feature flags (`apps/web/lib/flags`):
+
+- Declare a flag in `definitions.ts` (description, code default) inside its module's markers. Read it with `useFlag(key)` (the root layout evaluates every flag on the server and hydrates `FlagsProvider`; no rule reaches the browser), and enforce it with `flagProcedure(key)` (`apps/web/trpc/flag-procedure.ts`) or `requireFlag(key, req)` in route handlers. Hiding UI is never enough on its own.
+<!-- scaffold:begin feature_flags -->
+- Rules (`rules.ts`) run in order, first match wins: role, user id, workspace id (multi_tenancy), percentage (stable SHA-256 bucket of key and user or `sf_aid` cookie id); otherwise the flag's default. `/admin/flags` edits them, previews a user and keeps history; changes clear the cache before the response.
+<!-- scaffold:end feature_flags -->
+- Flags are per-user booleans; global values belong in site config. Without the feature_flags module, `flags.ts` is a stub and every flag keeps its default.
+
 Webhook idempotency is important for payments:
 
 1. Extract a unique event or checkout identifier.

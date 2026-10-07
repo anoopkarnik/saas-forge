@@ -1,4 +1,5 @@
 import { guardRoute } from "@/server/routeGuard";
+import { requireFlag } from "@/lib/flags/flags";
 import {
   OPENAI_TTS_URL,
   applySpeechTemplate,
@@ -56,6 +57,8 @@ export async function POST(req: Request) {
   if (!guard.ok) {
     return jsonSpeechError(guard.error, guard.status);
   }
+  const flagOff = await requireFlag("ai.voice", req);
+  if (flagOff) return flagOff;
 
   const parsed = ttsRequestSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) {

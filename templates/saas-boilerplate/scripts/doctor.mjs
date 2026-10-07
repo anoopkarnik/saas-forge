@@ -53,6 +53,9 @@ const MODULES = [
   // scaffold:begin webhooks
   "webhooks",
   // scaffold:end webhooks
+  // scaffold:begin feature_flags
+  "feature_flags",
+  // scaffold:end feature_flags
 ];
 
 // Next.js reads apps/web/.env, then .env.local over it; shell variables win.

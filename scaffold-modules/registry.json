@@ -110,6 +110,17 @@
       "incompatibleWith": [],
       "downloadEnabled": true,
       "implemented": true
+    },
+    {
+      "id": "feature_flags",
+      "label": "Feature flags",
+      "description": "Per-user feature flags evaluated on the server: role, user, workspace and percentage rules, an admin page with rule editor, preview and history, useFlag() in the UI and flagProcedure() to enforce them. Without it every flag keeps its code default.",
+      "default": false,
+      "creditsCost": 10,
+      "requires": [],
+      "incompatibleWith": [],
+      "downloadEnabled": true,
+      "implemented": true
     }
   ]
 }

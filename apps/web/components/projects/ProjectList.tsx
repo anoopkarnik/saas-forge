@@ -455,7 +455,7 @@ export function ProjectList() {
   return (
     <div className="flex flex-col gap-4">
       <div>
-        <h1 className="text-2xl font-semibold">My Projects</h1>
+        <h1 className="page-title">My Projects</h1>
         <p className="text-sm text-muted-foreground">
           Saved configurations you can download or upgrade. Secrets are never stored — each
           project ships with a setup guide for the env vars it needs.

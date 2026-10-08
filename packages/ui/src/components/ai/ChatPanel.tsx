@@ -467,6 +467,7 @@ export function ChatPanel({
         ) : null}
         <div className="flex items-end gap-2">
           <Textarea
+            aria-label="Message to the AI assistant"
             value={input}
             onChange={(event) => setInput(event.target.value)}
             placeholder={isRecording ? "Listening..." : "Ask the assistant..."}

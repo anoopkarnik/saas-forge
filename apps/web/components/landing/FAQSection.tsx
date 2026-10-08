@@ -6,11 +6,12 @@ import {
   AccordionTrigger,
 } from "@workspace/ui/components/shadcn/accordion";
 import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { ReactElement } from "react";
 
 
 const FAQ = ({ FAQSection }: { FAQSection: FAQSectionProps }): ReactElement => {
+  const reducedMotion = useReducedMotion();
 
   const [headingArray, setHeadingArray] = useState<string[]>([])
   useEffect(() => {
@@ -22,16 +23,16 @@ const FAQ = ({ FAQSection }: { FAQSection: FAQSectionProps }): ReactElement => {
   return (
     <section
       id="faq"
-      className="container py-24 sm:py-32"
+      className="container mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24"
     >
       <motion.h2
-        initial={{ opacity: 0, y: 20 }}
+        initial={reducedMotion ? false : { opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
         transition={{ duration: 0.5 }}
         className="text-3xl md:text-4xl font-bold text-left leading-tight mb-12"
       >
-        <span className="bg-gradient-to-b from-primary/60 to-primary text-transparent bg-clip-text">
+        <span className="text-primary">
           {headingArray.slice(0, Math.ceil(headingArray.length / 2)).join(" ")}
         </span>{" "}
         <span>
@@ -47,20 +48,20 @@ const FAQ = ({ FAQSection }: { FAQSection: FAQSectionProps }): ReactElement => {
         {FAQSection.faqs?.map((faq, index) => (
           <motion.div
             key={faq.question}
-            initial={{ opacity: 0, y: 10 }}
+            initial={reducedMotion ? false : { opacity: 0, y: 10 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.3, delay: index * 0.1 }}
           >
             <AccordionItem
               value={faq.question}
-              className="border border-white/5 bg-zinc-900/30 rounded-lg px-4"
+              className="border border-border bg-card rounded-lg px-4"
             >
               <AccordionTrigger className="text-left py-4 hover:no-underline hover:text-primary transition-colors">
                 {faq.question}
               </AccordionTrigger>
 
-              <AccordionContent className="text-zinc-400 pb-4">{faq.answer}</AccordionContent>
+              <AccordionContent className="text-muted-foreground pb-4">{faq.answer}</AccordionContent>
             </AccordionItem>
           </motion.div>
         ))}

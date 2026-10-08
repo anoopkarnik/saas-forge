@@ -32,12 +32,15 @@ export default function UsagePage() {
       </div>
     );
   }
+  if (summary.isError) {
+    return <div role="alert" className="p-6"><p>Could not load your credits.</p><Button variant="outline" className="mt-3" onClick={() => summary.refetch()}>Try again</Button></div>;
+  }
   const balance = summary.data;
 
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 p-6">
       <div>
-        <h1 className="text-3xl font-bold">Usage</h1>
+        <h1 className="page-title">Usage</h1>
         <p className="mt-2 text-muted-foreground">Where your credits went, and how each charge is calculated.</p>
       </div>
 
@@ -63,7 +66,7 @@ export default function UsagePage() {
       </div>
 
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0">
+        <CardHeader className="flex flex-row flex-wrap gap-3 items-center justify-between space-y-0">
           <CardTitle>Credits spent</CardTitle>
           <div className="inline-flex rounded-md border p-1">
             {([30, 90] as const).map((value) => (
@@ -74,7 +77,9 @@ export default function UsagePage() {
           </div>
         </CardHeader>
         <CardContent>
-          {daily.data ? (
+          {daily.isError ? (
+            <div role="alert"><p>Could not load credit usage.</p><Button variant="outline" onClick={() => daily.refetch()}>Try again</Button></div>
+          ) : daily.data ? (
             <UsageChart days={daily.data.days as UsageChartDay[]} meters={daily.data.meters} />
           ) : (
             <Loader2 className="mx-auto h-5 w-5 animate-spin" />
@@ -82,6 +87,7 @@ export default function UsagePage() {
         </CardContent>
       </Card>
 
+      {meters.isError && <p role="alert">Could not load rates. <Button variant="link" onClick={() => meters.refetch()}>Try again</Button></p>}
       {meters.data && meters.data.length > 0 ? (
         <Card>
           <CardHeader>
@@ -116,6 +122,7 @@ export default function UsagePage() {
           <CardDescription>Purchases add credits; usage spends them.</CardDescription>
         </CardHeader>
         <CardContent>
+          {ledger.isError && <p role="alert">Could not load balance changes. <Button variant="link" onClick={() => ledger.refetch()}>Try again</Button></p>}
           <Table>
             <TableBody>
               {(ledger.data ?? []).map((entry) => (
@@ -145,6 +152,7 @@ export default function UsagePage() {
           <CardTitle>Recent usage</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-3">
+          {events.isError && <p role="alert">Could not load recent usage. <Button variant="link" onClick={() => events.refetch()}>Try again</Button></p>}
           <Table>
             <TableHeader>
               <TableRow>

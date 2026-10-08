@@ -83,7 +83,7 @@ export default function AuditLogPage() {
     <div className="mx-auto flex max-w-6xl flex-col gap-6 p-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Audit log</h1>
+          <h1 className="page-title">Audit log</h1>
           <p className="mt-2 text-muted-foreground">Who changed what, and when. Events cannot be edited or deleted.</p>
         </div>
         <Button variant="outline" onClick={exportCsv} disabled={exporting}>

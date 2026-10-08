@@ -3,10 +3,11 @@ import Image from "next/image";
 import { useTheme } from "next-themes";
 import { FooterSectionProps } from "@/lib/ts-types/landing";
 import { FooterLinkProps } from "@/lib/ts-types/landing";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { ReactElement } from "react";
 
 const FooterSection = ({ footerSection }: { footerSection: FooterSectionProps }): ReactElement => {
+  const reducedMotion = useReducedMotion();
     const [footerTypes, setFooterTypes] = useState<any>([]);
     const { theme } = useTheme();
     const [mounted, setMounted] = useState(false);
@@ -22,10 +23,10 @@ const FooterSection = ({ footerSection }: { footerSection: FooterSectionProps })
 
 
     return (
-        <div id="footer" className="w-full container mx-auto">
-            <hr className="w-full mx-auto border-white/10" />
+        <footer id="footer" className="w-full container mx-auto px-4 sm:px-6 lg:px-8">
+            <hr className="w-full mx-auto border-border" />
             <motion.div
-                initial={{ opacity: 0 }}
+                initial={reducedMotion ? false : { opacity: 0 }}
                 whileInView={{ opacity: 1 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5 }}
@@ -56,13 +57,13 @@ const FooterSection = ({ footerSection }: { footerSection: FooterSectionProps })
                 </section>
                 {[...footerTypes]?.map((type: string) => (
                     <div key={type} className="flex flex-col gap-2">
-                        <h3 className="text-paragraph font-semibold tracking-wide text-zinc-300">{type}</h3>
+                        <h3 className="text-paragraph font-semibold tracking-wide text-foreground">{type}</h3>
                         {footerSection.links?.filter(footer => footer.type === type)?.map((item) => (
                             <div key={item.label}>
                                 <a
                                     rel="noreferrer noopener"
                                     href={item.href}
-                                    className="text-zinc-400 hover:text-primary transition-colors text-xs"
+                                    className="text-muted-foreground hover:text-primary transition-colors inline-flex min-h-11 items-center text-sm"
                                 >
                                     {item.label}
                                 </a>
@@ -86,7 +87,7 @@ const FooterSection = ({ footerSection }: { footerSection: FooterSectionProps })
                     </a>
                 </h3>
             </section>
-        </div>
+        </footer>
     );
 };
 

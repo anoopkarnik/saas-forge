@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import NavbarSection from "./NavbarSection";
 import FooterSection from "./FooterSection";
 import { FooterSectionProps, NavbarSectionProps } from "@/lib/ts-types/landing";
-import { motion, useScroll, useSpring } from "framer-motion";
+import { motion, useScroll, useSpring, useReducedMotion } from "framer-motion";
 import { cn } from "@workspace/ui/lib/utils";
 
 interface TableOfContentsItem {
@@ -29,6 +29,7 @@ const LegalPageLayout = ({
     footerSection,
     tableOfContents,
 }: LegalPageLayoutProps) => {
+    const reducedMotion = useReducedMotion();
     const { scrollYProgress } = useScroll();
     const scaleX = useSpring(scrollYProgress, {
         stiffness: 100,
@@ -68,14 +69,14 @@ const LegalPageLayout = ({
             {/* Scroll Progress Bar */}
             <motion.div
                 className="fixed top-0 left-0 right-0 h-1 bg-primary z-50 origin-left"
-                style={{ scaleX }}
+                style={{ scaleX: reducedMotion ? 1 : scaleX }}
             />
 
-            <main className="relative pt-24 pb-16 lg:pt-32 lg:pb-24">
+            <main id="main-content" tabIndex={-1} className="relative pt-24 pb-16 lg:pt-32 lg:pb-24">
                 {/* Header Section */}
                 <div className="container mx-auto px-4 mb-16 text-center">
                     <motion.div
-                        initial={{ opacity: 0, y: 20 }}
+                        initial={reducedMotion ? false : { opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.5 }}
                     >
@@ -130,7 +131,7 @@ const LegalPageLayout = ({
 
                     {/* Main Content */}
                     <motion.div
-                        initial={{ opacity: 0, y: 20 }}
+                        initial={reducedMotion ? false : { opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.5, delay: 0.2 }}
                         className="flex-1 min-w-0"

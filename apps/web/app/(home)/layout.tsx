@@ -30,9 +30,9 @@ export default async function Layout({ children }: { children: React.ReactNode }
         <ErrorBoundary fallback={<ErrorState title='Error Retrieving Data' description='There was an error while retrieving the data.' />}>
           <SidebarProvider>
             <AppSidebar />
-            <div className="flex flex-col flex-1 max-h-screen">
+            <main id="main-content" tabIndex={-1} className="flex min-w-0 flex-1 flex-col pb-24">
               <GuestBanner />
-              <div className="flex items-center gap-4 py-2">
+              <div className="flex items-center gap-3 px-4 py-2">
                 <SidebarTrigger />
                 <BreadcrumbsHeader />
                 {/* scaffold:begin notifications */}
@@ -43,7 +43,7 @@ export default async function Layout({ children }: { children: React.ReactNode }
               </div>
               <Separator />
               {children}
-            </div>
+            </main>
           </SidebarProvider>
         </ErrorBoundary>
       </Suspense>

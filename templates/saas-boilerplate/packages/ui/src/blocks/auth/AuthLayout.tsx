@@ -9,8 +9,8 @@ interface AuthLayoutProps {
 
 const AuthLayout = ({ children, quote }: AuthLayoutProps) => {
     return (
-        <div className={`min-h-screen bg-background grid grid-cols-1 lg:grid-cols-2 w-full`}>
-            <div className="flex items-center justify-center bg-gradient-to-br from-primary to-sidebar dark:bg-gradient-to-br p-8 overflow-y-auto flex-1">
+        <main id="main-content" tabIndex={-1} className={`min-h-screen bg-background grid grid-cols-1 lg:grid-cols-2 w-full`}>
+            <div className="flex items-center justify-center bg-gradient-to-br from-primary to-sidebar dark:bg-gradient-to-br p-4 sm:p-8 overflow-y-auto flex-1">
                 <div className="w-full max-w-md">
                     {children}
                 </div>
@@ -20,7 +20,7 @@ const AuthLayout = ({ children, quote }: AuthLayoutProps) => {
                 <Quote quote={quote} />
             </div>
 
-        </div>
+        </main>
     );
 };
 

@@ -1,41 +1,28 @@
 "use client"
-import { usePathname, useRouter } from 'next/navigation'
-import React from 'react'
-import { Breadcrumb, BreadcrumbEllipsis, BreadcrumbItem, BreadcrumbList, BreadcrumbSeparator } from '@workspace/ui/components/shadcn/breadcrumb'
-import { Button } from '@workspace/ui/components/shadcn/button'
+import { usePathname } from "next/navigation"
+import Link from "next/link"
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@workspace/ui/components/shadcn/breadcrumb"
+import React from "react"
 
 export const BreadcrumbsHeader = () => {
-    const pathname = usePathname()
-    const paths = pathname === "/" ? [""]: pathname?.split("/")
-    const router = useRouter()
-    const getFullPath = (index: number) => {
-        return paths.slice(0, index + 1).join("/");
-      };
-    return (
-        <div className="flex items-center flex-start ">
-            <Breadcrumb>
-                <BreadcrumbList>
-                    <BreadcrumbItem>
-                        <Button variant={'ghost'} size={'sm'} 
-                        className='capitalize cursor-pointer  mx-0 px-0' 
-                        onClick={() => router.push("/")}>
-                            /
-                        </Button>
-                    </BreadcrumbItem>
-                    {paths.map((path, index) => (
-                        <React.Fragment key={index}>
-                            <BreadcrumbItem>
-                                <Button variant={'ghost'} size={'sm'} 
-                                className='capitalize cursor-pointer  mx-0 px-0'
-                                 onClick={() => router.push(getFullPath(index))}>
-                                    {path}
-                                </Button>
-                            </BreadcrumbItem>
-                            {index < paths.length - 1 && <BreadcrumbSeparator />}
-                        </React.Fragment>
-                    ))}
-                </BreadcrumbList>
-            </Breadcrumb>
-        </div>
-    )
+  const segments = usePathname().split("/").filter(Boolean)
+  return (
+    <Breadcrumb>
+      <BreadcrumbList>
+        <BreadcrumbItem>
+          <BreadcrumbLink asChild><Link href="/" className="inline-flex min-h-11 items-center">Home</Link></BreadcrumbLink>
+        </BreadcrumbItem>
+        {segments.map((segment, index) => (
+          <React.Fragment key={index}>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              {index === segments.length - 1
+                ? <BreadcrumbPage className="capitalize">{segment.replaceAll("-", " ").replace(/^./, char => char.toUpperCase())}</BreadcrumbPage>
+                : <span className="capitalize">{segment.replaceAll("-", " ").replace(/^./, char => char.toUpperCase())}</span>}
+            </BreadcrumbItem>
+          </React.Fragment>
+        ))}
+      </BreadcrumbList>
+    </Breadcrumb>
+  )
 }

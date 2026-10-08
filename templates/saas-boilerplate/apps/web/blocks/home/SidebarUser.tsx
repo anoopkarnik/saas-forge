@@ -4,6 +4,8 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { useTRPC } from "@/trpc/client";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useSession } from "@workspace/auth/better-auth/auth-client";
+import { SettingsDialog } from "@workspace/ui/components/home/SettingsDialog";
+import type { SidebarUserProps } from "@workspace/ui/components/home/SidebarUser";
 import UISidebarUser from "@workspace/ui/components/home/SidebarUser"
 // scaffold:begin billing
 import ProgressWithCredits from "@workspace/ui/components/home/ProgressWithCredits"
@@ -15,7 +17,10 @@ import { ApiKeysScreen } from "@/components/api-keys/ApiKeysScreen"
 import { WebhooksScreen } from "@/components/webhooks/WebhooksScreen"
 // scaffold:end webhooks
 
-const SidebarUser = () => {
+const SidebarUserContext = React.createContext<SidebarUserProps | null>(null);
+
+export function SidebarUserProvider({ children }: { children: React.ReactNode }) {
+  const [settingsOpen, setSettingsOpen] = React.useState(false);
   const router = useRouter();
   // scaffold:begin billing
   const searchParams = useSearchParams();
@@ -126,37 +131,43 @@ const SidebarUser = () => {
   }
   // scaffold:end billing
 
+  const userProps: SidebarUserProps = {
+    session, status, onNavigate, onSetPassword, onUpdateAvatar,
+    guestMail: process.env.NEXT_PUBLIC_GUEST_MAIL,
+    adminMail: process.env.NEXT_PUBLIC_ADMIN_MAIL,
+    onOpenSettings: () => setSettingsOpen(true),
+    // scaffold:begin billing
+    paymentGateway: process.env.NEXT_PUBLIC_PAYMENT_GATEWAY,
+    creditsData, purchases: purchases as any,
+    isBillingLoading: isCreditsLoading || isPurchasesLoading,
+    onCreateCheckoutSession,
+    // scaffold:end billing
+    // scaffold:begin api_keys
+    apiKeysContent: <ApiKeysScreen />,
+    // scaffold:end api_keys
+    // scaffold:begin webhooks
+    webhooksContent: <WebhooksScreen />,
+    // scaffold:end webhooks
+  };
+  return (
+    <SidebarUserContext.Provider value={userProps}>
+      {children}
+      <SettingsDialog {...userProps} open={settingsOpen} onOpenChange={setSettingsOpen} />
+    </SidebarUserContext.Provider>
+  );
+}
+
+const SidebarUser = () => {
+  const props = React.useContext(SidebarUserContext);
+  if (!props) throw new Error("SidebarUser requires SidebarUserProvider");
   return (
     <>
       {/* scaffold:begin billing */}
-      {process.env.NEXT_PUBLIC_PAYMENT_GATEWAY !== 'none' && (
-        <ProgressWithCredits creditsData={creditsData} />
-      )}
+      {props.paymentGateway !== 'none' && <ProgressWithCredits creditsData={props.creditsData} />}
       {/* scaffold:end billing */}
-      <UISidebarUser
-        session={session}
-        status={status}
-        onNavigate={onNavigate}
-        onSetPassword={onSetPassword}
-        onUpdateAvatar={onUpdateAvatar}
-        guestMail={process.env.NEXT_PUBLIC_GUEST_MAIL}
-        adminMail={process.env.NEXT_PUBLIC_ADMIN_MAIL}
-        // scaffold:begin billing
-        paymentGateway={process.env.NEXT_PUBLIC_PAYMENT_GATEWAY}
-        creditsData={creditsData}
-        purchases={purchases as any}
-        isBillingLoading={isCreditsLoading || isPurchasesLoading}
-        onCreateCheckoutSession={onCreateCheckoutSession}
-        // scaffold:end billing
-        // scaffold:begin api_keys
-        apiKeysContent={<ApiKeysScreen />}
-        // scaffold:end api_keys
-        // scaffold:begin webhooks
-        webhooksContent={<WebhooksScreen />}
-        // scaffold:end webhooks
-      />
+      <UISidebarUser {...props} />
     </>
-  )
-}
+  );
+};
 
 export default SidebarUser;

@@ -122,7 +122,7 @@ export default function SeoAdminPage() {
                     <Search className="h-6 w-6 text-primary" />
                 </div>
                 <div>
-                    <h1 className="text-2xl font-bold tracking-tight">
+                    <h1 className="page-title">
                         SEO Reports
                     </h1>
                     <p className="text-muted-foreground mt-1 text-sm">

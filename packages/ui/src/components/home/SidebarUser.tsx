@@ -44,6 +44,7 @@ export interface SidebarUserProps extends Omit<SettingsDialogProps, "children" |
   session?: any;
   status?: string;
   isSigningOut?: boolean;
+  onOpenSettings?: () => void;
 }
 
 const SidebarUser = ({
@@ -64,6 +65,7 @@ const SidebarUser = ({
   isSigningOut: externalIsSigningOut,
   apiKeysContent,
   webhooksContent,
+  onOpenSettings,
 }: SidebarUserProps) => {
 
   const { isMobile } = useSidebar()
@@ -73,15 +75,6 @@ const SidebarUser = ({
   const [internalIsSigningOut, setIsSigningOut] = useState(false)
 
   const isSigningOut = externalIsSigningOut || internalIsSigningOut;
-
-  const handleSettingsClick = (e: React.MouseEvent) => {
-    // Prevent the dropdown from closing
-    e.preventDefault()
-    e.stopPropagation()
-
-    // Open the settings dialog
-    setIsSettingsOpen(true)
-  }
 
   const handleSignout = async () => {
     setIsSigningOut(true)
@@ -109,9 +102,10 @@ const SidebarUser = ({
   }
 
   return (
+    <>
     <SidebarMenu>
       <SidebarMenuItem>
-        <DropdownMenu>
+        <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
               size="lg"
@@ -148,37 +142,14 @@ const SidebarUser = ({
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <SettingsDialog
-                open={isSettingsOpen}
-                onOpenChange={(open) => {
-                  setIsSettingsOpen(open)
-                  // Ensure dropdown remains open when dialog is closed
-                  if (!open) {
-                    setIsDropdownOpen(true)
-                  }
-                }}
-                onNavigate={onNavigate}
-                onSetPassword={onSetPassword}
-                onUpdateAvatar={onUpdateAvatar}
-                guestMail={guestMail}
-                adminMail={adminMail}
-                paymentGateway={paymentGateway}
-                creditsData={creditsData}
-                purchases={purchases}
-                isBillingLoading={isBillingLoading}
-                onCreateCheckoutSession={onCreateCheckoutSession}
-                openedTab={openedTab}
-                apiKeysContent={apiKeysContent}
-                webhooksContent={webhooksContent}
-              >
-                <DropdownMenuItem
-                  className="flex gap-2 cursor-pointer"
-                  onClick={handleSettingsClick}
-                >
-                  <Settings size={20} />
-                  Settings
-                </DropdownMenuItem>
-              </SettingsDialog>
+              <DropdownMenuItem className="flex gap-2 cursor-pointer" onSelect={() => {
+                setIsDropdownOpen(false);
+                if (onOpenSettings) onOpenSettings();
+                else setIsSettingsOpen(true);
+              }}>
+                <Settings size={20} aria-hidden="true" />
+                Settings
+              </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
@@ -213,6 +184,28 @@ const SidebarUser = ({
         </DropdownMenu>
       </SidebarMenuItem>
     </SidebarMenu>
+    {!onOpenSettings && (              <SettingsDialog
+                open={isSettingsOpen}
+                onOpenChange={(open) => {
+                  setIsSettingsOpen(open)
+
+                }}
+                onNavigate={onNavigate}
+                onSetPassword={onSetPassword}
+                onUpdateAvatar={onUpdateAvatar}
+                guestMail={guestMail}
+                adminMail={adminMail}
+                paymentGateway={paymentGateway}
+                creditsData={creditsData}
+                purchases={purchases}
+                isBillingLoading={isBillingLoading}
+                onCreateCheckoutSession={onCreateCheckoutSession}
+                openedTab={openedTab}
+                apiKeysContent={apiKeysContent}
+                webhooksContent={webhooksContent}
+              >
+              </SettingsDialog>)}
+    </>
   )
 }
 

@@ -137,7 +137,7 @@ export default function UserManagementPage() {
         <div className="container mx-auto py-10 px-4 md:px-8 max-w-7xl">
             <div className="flex justify-between items-center mb-8">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">User Management</h1>
+                    <h1 className="page-title">User Management</h1>
                     <p className="text-muted-foreground mt-2">
                         View and manage registered users in the system.
                     </p>

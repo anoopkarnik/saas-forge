@@ -105,7 +105,7 @@ export default function SiteSettingsPage() {
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-6 p-6">
       <div>
-        <h1 className="text-3xl font-bold">Settings</h1>
+        <h1 className="page-title">Settings</h1>
         <p className="mt-2 text-muted-foreground">
           Env vars are the defaults; a value saved here overrides them at runtime, with no redeploy. Sign-in
           buttons only show or hide: a provider still needs its credentials in env.

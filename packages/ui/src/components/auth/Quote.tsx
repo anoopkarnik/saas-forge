@@ -1,8 +1,9 @@
 "use client"
 import { QuoteProps } from "@workspace/auth/utils/typescript"
-import { motion } from "framer-motion"
+import { motion, useReducedMotion } from "framer-motion"
 
 const Quote = ({ quote }: { quote?: QuoteProps }) => {
+  const reducedMotion = useReducedMotion();
   return (
     <div className='relative h-full w-full flex flex-col justify-center items-center overflow-hidden bg-zinc-900 border-r border-border/50'>
       {/* Background Effects */}
@@ -11,7 +12,7 @@ const Quote = ({ quote }: { quote?: QuoteProps }) => {
 
       <div className="relative z-10 max-w-xl px-12">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={reducedMotion ? false : { opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
         >

@@ -2,10 +2,10 @@
 
 import React, { useState, useRef } from "react";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-} from "@workspace/ui/components/shadcn/dropdown-menu";
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@workspace/ui/components/shadcn/popover";
 import { MessageCircleQuestion } from "lucide-react";
 import { TiMessage } from "react-icons/ti";
 import { FaRobot, FaCalendarAlt } from "react-icons/fa";
@@ -22,7 +22,7 @@ type ActivePanel = "message" | "newsletter" | "assistant" | null;
 
 const Support = () => {
   const [open, setOpen] = useState(false);
-  const triggerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const router = useRouter();
   const calendlyUrl = useSiteConfig()["support.calendlyUrl"];
 
@@ -42,29 +42,29 @@ const Support = () => {
 
   return (
     <>
-      <DropdownMenu open={open} onOpenChange={handleOpenChange}>
-        <DropdownMenuTrigger asChild>
-          <div
+      <Popover open={open} onOpenChange={handleOpenChange}>
+        <PopoverTrigger asChild>
+          <button
+            type="button"
             ref={triggerRef}
-            role="button"
             aria-label="Open support panel"
-            className="fixed bottom-6 right-6 flex items-center justify-center w-14 h-14 rounded-full 
-              bg-primary text-primary-foreground cursor-pointer shadow-xl hover:shadow-2xl hover:scale-105 
+            className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] right-[max(1rem,env(safe-area-inset-right))] sm:bottom-6 sm:right-6 flex items-center justify-center w-14 h-14 rounded-full
+              bg-primary text-primary-foreground cursor-pointer shadow-xl hover:shadow-2xl hover:scale-105
               transition-all duration-300 z-50 hover:ring-2 hover:ring-primary/50"
           >
             <MessageCircleQuestion className="w-7 h-7" />
-          </div>
-        </DropdownMenuTrigger>
+          </button>
+        </PopoverTrigger>
 
-        <DropdownMenuContent
-          className="w-[320px] p-6 mr-6 mb-2 bg-card/95 backdrop-blur-xl border-border/50 shadow-2xl rounded-xl"
+        <PopoverContent
+          align="end" aria-label="Support options" className="w-[min(320px,calc(100vw-2rem))] max-h-[70dvh] overflow-y-auto p-4 mb-2 bg-card/95 backdrop-blur-xl border-border/50 shadow-2xl rounded-xl"
           sideOffset={10}
         >
           {/* Tiles – hidden when a panel is active */}
           {!activePanel && (
             <div className="grid grid-cols-2 gap-3">
-              {process.env.NEXT_PUBLIC_SUPPORT_MAIL && <div
-                className="group flex flex-col items-center gap-3 p-4 rounded-xl cursor-pointer 
+              {process.env.NEXT_PUBLIC_SUPPORT_MAIL && <button type="button"
+                className="group flex flex-col items-center gap-3 p-4 rounded-xl cursor-pointer
                   bg-muted/50 hover:bg-muted transition-all duration-200 border border-transparent hover:border-border/50"
                 onClick={() => togglePanel("message")}
               >
@@ -72,10 +72,10 @@ const Support = () => {
                   <TiMessage size={24} />
                 </div>
                 <div className="text-center text-xs font-medium">Send Message</div>
-              </div>}
+              </button>}
 
               {/* <div
-                className="group flex flex-col items-center gap-3 p-4 rounded-xl cursor-pointer 
+                className="group flex flex-col items-center gap-3 p-4 rounded-xl cursor-pointer
                   bg-muted/50 hover:bg-muted transition-all duration-200 border border-transparent hover:border-border/50"
                 onClick={() => togglePanel("newsletter")}
               >
@@ -85,22 +85,22 @@ const Support = () => {
                 <div className="text-center text-xs font-medium">Newsletter</div>
               </div> */}
 
-              <div
-                className="group flex flex-col items-center gap-3 p-4 rounded-xl cursor-pointer 
+              <button type="button"
+                className="group flex flex-col items-center gap-3 p-4 rounded-xl cursor-pointer
                   bg-muted/50 hover:bg-muted transition-all duration-200 border border-transparent hover:border-border/50"
-                onClick={() => router.push("/landing/doc")}
+                onClick={() => { setOpen(false); router.push("/landing/doc"); }}
               >
                 <div className="bg-indigo-500/10 text-indigo-500 group-hover:bg-indigo-500/20 group-hover:scale-110 transition-all duration-300 rounded-full p-3 flex items-center justify-center">
                   <IoNewspaper size={24} />
                 </div>
                 <div className="text-center text-xs font-medium">Documentation</div>
-              </div>
+              </button>
 
               {calendlyUrl && <a
                 href={calendlyUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group flex flex-col items-center gap-3 p-4 rounded-xl cursor-pointer 
+                className="group flex flex-col items-center gap-3 p-4 rounded-xl cursor-pointer
                   bg-muted/50 hover:bg-muted transition-all duration-200 border border-transparent hover:border-border/50"
               >
                 <div className="bg-cyan-500/10 text-cyan-500 group-hover:bg-cyan-500/20 group-hover:scale-110 transition-all duration-300 rounded-full p-3 flex items-center justify-center">
@@ -110,7 +110,7 @@ const Support = () => {
               </a>}
 
               {/* <div
-                className="group flex flex-col items-center gap-3 p-4 rounded-xl cursor-pointer 
+                className="group flex flex-col items-center gap-3 p-4 rounded-xl cursor-pointer
                   bg-muted/50 hover:bg-muted transition-all duration-200 border border-transparent hover:border-border/50"
                 onClick={() => togglePanel("assistant")}
               >
@@ -141,8 +141,8 @@ const Support = () => {
               <SaaSAssistantChatbot />
             )}
           </div>
-        </DropdownMenuContent>
-      </DropdownMenu>
+        </PopoverContent>
+      </Popover>
 
     </>
   );

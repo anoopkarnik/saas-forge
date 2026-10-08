@@ -114,7 +114,7 @@ export default function CMSAdminPage() {
                     <Settings2 className="h-6 w-6 text-primary" />
                 </div>
                 <div>
-                    <h1 className="text-2xl font-bold tracking-tight">Content Management</h1>
+                    <h1 className="page-title">Content Management</h1>
                     <p className="text-muted-foreground mt-1 text-sm">
                         Update your landing page content. Changes are saved to your CMS.
                     </p>

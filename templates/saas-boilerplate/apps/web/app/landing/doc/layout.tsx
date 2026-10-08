@@ -5,7 +5,7 @@ import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
 import { Suspense } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import DocSidebar from "@/blocks/landing/DocSidebar";
-import { SidebarProvider } from "@workspace/ui/components/shadcn/sidebar";
+import { SidebarProvider, SidebarTrigger } from "@workspace/ui/components/shadcn/sidebar";
 
 // Public docs shell — cache the render and revalidate every 10 minutes to match
 // landing/doc/[slug]/page.tsx instead of rendering it on every request.
@@ -21,9 +21,15 @@ const DocumentationPage = async ({ children }: { children: React.ReactNode }): P
       <Suspense fallback={<LoadingState title='Retrieving' description='Please wait while we retrieve the documentation page data' />}>
         <ErrorBoundary fallback={<ErrorState title='Error Retrieving Data' description='There was an error while retrieving the data.' />}>
           <SidebarProvider>
-            <div className="flex gap-4">
+            <div className="flex min-w-0 w-full gap-4">
               <DocSidebar />
-              {children}
+              <main id="main-content" tabIndex={-1} className="min-w-0 flex-1 pb-24">
+                <header className="sticky top-0 z-30 flex items-center gap-3 border-b bg-background px-4 py-2 lg:hidden">
+                  <SidebarTrigger />
+                  <span className="font-medium">Documentation</span>
+                </header>
+                {children}
+              </main>
             </div>
           </SidebarProvider>
         </ErrorBoundary>

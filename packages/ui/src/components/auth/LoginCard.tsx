@@ -62,7 +62,7 @@ const LoginCard = ({ showEmail, showGoogleProvider, showGithubProvider, showLink
                   <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
-                      <Input disabled={pending} type="email" placeholder='name@example.com' className="h-10" {...field} />
+                      <Input disabled={pending} autoComplete="email" type="email" placeholder='name@example.com' className="h-10" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -76,7 +76,7 @@ const LoginCard = ({ showEmail, showGoogleProvider, showGithubProvider, showLink
                       </button>
                     </div>
                     <FormControl>
-                      <Input disabled={pending} placeholder='******' type="password" className="h-10" {...field} />
+                      <Input disabled={pending} placeholder='******' type="password" autoComplete="current-password" className="h-10" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

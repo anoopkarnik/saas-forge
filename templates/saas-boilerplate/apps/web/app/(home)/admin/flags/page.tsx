@@ -177,7 +177,7 @@ export default function FeatureFlagsPage() {
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-6 p-6">
       <div>
-        <h1 className="text-3xl font-bold">Feature flags</h1>
+        <h1 className="page-title">Feature flags</h1>
         <p className="mt-2 text-muted-foreground">
           Per-user switches, evaluated on the server: rules run in order and the first match decides; otherwise the
           default applies. Changes apply on the next page load, with no redeploy. Global settings live in Settings.

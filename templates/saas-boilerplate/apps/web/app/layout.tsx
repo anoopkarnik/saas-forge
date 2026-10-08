@@ -38,6 +38,7 @@ export default async function RootLayout({
           <SiteConfigProvider config={config}>
             <FlagsProvider flags={flags}>
               <ThemeProvider defaultTheme={config["branding.themeType"]}>
+                <a href="#main-content" className="skip-link">Skip to main content</a>
                 {children}
                 <Support />
                 <Toaster />

@@ -206,18 +206,18 @@ const MyAccountSettings = ({ onNavigate, onSetPassword, onUpdateAvatar, guestMai
       <div className="flex flex-col gap-6">
         <section className="space-y-4">
           <h3 className="text-lg font-medium">Profile Picture</h3>
-          <div className="flex items-center gap-6">
+          <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:gap-6">
             <div className="relative group cursor-pointer shrink-0">
               <Avatar className="h-24 w-24 rounded-full border-4 border-background shadow-lg">
                 <AvatarImage src={session?.user?.image ?? ''} alt={session?.user?.name ?? ''} className="object-cover" />
                 <AvatarFallback className="text-3xl bg-muted">{session?.user?.name ? session?.user?.name[0]?.toUpperCase() : 'U'}</AvatarFallback>
               </Avatar>
-              <button onClick={handleAvatarClick} className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-200">
+              <button onClick={handleAvatarClick} className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 rounded-full opacity-0 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-ring transition-all duration-200">
                 <CameraIcon className="w-6 h-6 text-white mb-1" />
                 <span className="text-[10px] uppercase font-bold text-white tracking-wider">Upload</span>
               </button>
             </div>
-            <div className="text-sm text-muted-foreground w-64">
+            <div className="text-sm text-muted-foreground min-w-0 flex-1">
               Click the image to upload a new photo. standard formats (JPG, PNG) are supported.
             </div>
             {/* Hidden file input */}
@@ -227,7 +227,7 @@ const MyAccountSettings = ({ onNavigate, onSetPassword, onUpdateAvatar, guestMai
 
         <section className="space-y-4 max-w-md">
           <h3 className="text-lg font-medium">Username</h3>
-          <div className="flex gap-3 items-end">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
             <div className="w-full">
               <FloatingLabelInput id="name" label="Display Name" className="w-full bg-background" defaultValue={name} onChange={(e) => { setName(e.target.value) }} />
             </div>
@@ -251,8 +251,8 @@ const MyAccountSettings = ({ onNavigate, onSetPassword, onUpdateAvatar, guestMai
                   <FormItem>
                     <FormControl>
                       <div className="relative group">
-                        <FloatingLabelInput id="currentPassword" label="Current Password" type={showOldPassword ? "text" : "password"} className={`w-full pr-10 bg-background ${hasPassword === null ? 'opacity-50' : ''}`} disabled={hasPassword === null} {...field} />
-                        <button type="button" onClick={() => setShowOldPassword((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-foreground transition-colors">
+                        <FloatingLabelInput autoComplete="current-password" id="currentPassword" label="Current Password" type={showOldPassword ? "text" : "password"} className={`w-full pr-10 bg-background ${hasPassword === null ? 'opacity-50' : ''}`} disabled={hasPassword === null} {...field} />
+                        <button type="button" aria-label={showOldPassword ? "Hide old password" : "Show old password"} aria-pressed={showOldPassword} onClick={() => setShowOldPassword((v) => !v)} className="absolute right-0 top-1/2 -translate-y-1/2 flex size-11 items-center justify-center rounded-md text-muted-foreground hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring transition-colors">
                           {showOldPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                         </button>
                       </div>
@@ -262,13 +262,13 @@ const MyAccountSettings = ({ onNavigate, onSetPassword, onUpdateAvatar, guestMai
                 )} />
               )}
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <FormField control={form.control} name="newPassword" render={({ field }) => (
                   <FormItem>
                     <FormControl>
                       <div className="relative">
-                        <FloatingLabelInput id="password" label="New Password" type={showNewPassword ? "text" : "password"} className="w-full pr-10 bg-background" {...field} />
-                        <button type="button" onClick={() => setShowNewPassword((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-foreground transition-colors">
+                        <FloatingLabelInput autoComplete="new-password" id="password" label="New Password" type={showNewPassword ? "text" : "password"} className="w-full pr-10 bg-background" {...field} />
+                        <button type="button" aria-label={showNewPassword ? "Hide new password" : "Show new password"} aria-pressed={showNewPassword} onClick={() => setShowNewPassword((v) => !v)} className="absolute right-0 top-1/2 -translate-y-1/2 flex size-11 items-center justify-center rounded-md text-muted-foreground hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring transition-colors">
                           {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                         </button>
                       </div>
@@ -280,8 +280,8 @@ const MyAccountSettings = ({ onNavigate, onSetPassword, onUpdateAvatar, guestMai
                   <FormItem>
                     <FormControl>
                       <div className="relative">
-                        <FloatingLabelInput id="confirmPassword" label="Confirm Password" type={showConfirmPassword ? "text" : "password"} className="w-full pr-10 bg-background" {...field} />
-                        <button type="button" onClick={() => setShowConfirmPassword((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-foreground transition-colors">
+                        <FloatingLabelInput autoComplete="new-password" id="confirmPassword" label="Confirm Password" type={showConfirmPassword ? "text" : "password"} className="w-full pr-10 bg-background" {...field} />
+                        <button type="button" aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"} aria-pressed={showConfirmPassword} onClick={() => setShowConfirmPassword((v) => !v)} className="absolute right-0 top-1/2 -translate-y-1/2 flex size-11 items-center justify-center rounded-md text-muted-foreground hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring transition-colors">
                           {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                         </button>
                       </div>

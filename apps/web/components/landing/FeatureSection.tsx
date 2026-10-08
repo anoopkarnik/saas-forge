@@ -10,11 +10,12 @@ import {
 import { useEffect, useState } from "react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@workspace/ui/components/shadcn/accordion";
 import Image from "next/image";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { Layers } from "lucide-react";
 import { ReactElement } from "react";
 
 const FeatureSection = ({ featureSection }: { featureSection: FeatureSectionProps }): ReactElement => {
+  const reducedMotion = useReducedMotion();
 
   const [headingArray, setHeadingArray] = useState<string[]>([])
   const [featureImage, setFeatureImage] = useState<number>(0);
@@ -27,40 +28,40 @@ const FeatureSection = ({ featureSection }: { featureSection: FeatureSectionProp
   return (
     <section
       id="features"
-      className="container py-24 sm:py-32 relative overflow-hidden"
+      className="container mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24 relative overflow-hidden"
     >
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
+        initial={reducedMotion ? false : { opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, margin: "-100px" }}
         transition={{ duration: 0.5 }}
       >
         <h2 className="text-3xl md:text-4xl font-bold text-left leading-tight">
-          <span className="bg-gradient-to-b from-primary/60 to-primary text-transparent bg-clip-text">
+          <span className="text-primary">
             {headingArray.slice(0, Math.ceil(headingArray.length / 2)).join(" ")}
           </span>{" "}
           <span>
             {headingArray.slice(Math.ceil(headingArray.length / 2)).join(" ")}
           </span>
         </h2>
-        <p className="text-zinc-400 text-xl mb-12 opacity-90  mt-4">
+        <p className="text-muted-foreground text-xl mb-12   mt-4">
           {featureSection.description}
         </p>
       </motion.div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-20 items-center">
         <motion.div
-          initial={{ opacity: 0, x: -20 }}
+          initial={reducedMotion ? false : { opacity: 0, x: -20 }}
           whileInView={{ opacity: 1, x: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5, delay: 0.2 }}
         >
           <Accordion type="single" collapsible className="w-full" defaultValue="item-0">
             {featureSection.features?.map((feature, index) => (
-              <AccordionItem value={`item-${index}`} key={feature.title} onClick={() => setFeatureImage(index)} className="border-white/10">
+              <AccordionItem value={`item-${index}`} key={feature.title} onClick={() => setFeatureImage(index)} className="border-border">
                 <AccordionTrigger className="text-lg hover:text-primary transition-colors">{feature.title}</AccordionTrigger>
                 <AccordionContent>
-                  {feature.description && <p className="text-zinc-400 leading-relaxed">{feature.description}</p>}
+                  {feature.description && <p className="text-muted-foreground leading-relaxed">{feature.description}</p>}
                 </AccordionContent>
               </AccordionItem>
             ))}
@@ -68,11 +69,11 @@ const FeatureSection = ({ featureSection }: { featureSection: FeatureSectionProp
         </motion.div>
 
         <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
+          initial={reducedMotion ? false : { opacity: 0, scale: 0.95 }}
           whileInView={{ opacity: 1, scale: 1 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5, delay: 0.4 }}
-          className="relative h-[400px] w-full rounded-2xl overflow-hidden border border-white/10 shadow-2xl bg-zinc-900/50"
+          className="relative h-[400px] w-full rounded-2xl overflow-hidden border border-border shadow-2xl bg-card"
         >
           {featureSection.features?.map((feature, index) => {
             const isActive = index === featureImage;
@@ -90,9 +91,9 @@ const FeatureSection = ({ featureSection }: { featureSection: FeatureSectionProp
                     className="object-cover"
                   />
                 ) : (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-primary/5 via-transparent to-primary/5 border border-white/10">
+                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-primary/5 via-transparent to-primary/5 border border-border">
                     <Layers className="w-20 h-20 text-primary/20 mb-4 animate-pulse" />
-                    <p className="text-zinc-500 font-medium">Visual Preview</p>
+                    <p className="text-muted-foreground font-medium">Visual Preview</p>
                   </div>
                 )}
               </div>

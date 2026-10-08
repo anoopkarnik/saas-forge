@@ -23,12 +23,13 @@ export function StepChip({
             type="button"
             onClick={onClick}
             className={cn(
-                "flex min-w-[140px] items-center gap-3 rounded-2xl border px-4 py-3 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
+                "flex min-w-0 items-center gap-2 rounded-2xl border px-3 py-3 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
                 isActive
                     ? "border-primary bg-primary/10 shadow-sm"
                     : "border-border/60 bg-background hover:border-primary/40",
             )}
             aria-current={isActive ? "step" : undefined}
+            aria-label={`${step.title} ${step.description}${isComplete ? ". Complete" : ""}`}
         >
             <span
                 className={cn(
@@ -44,7 +45,7 @@ export function StepChip({
             </span>
             <span className="min-w-0">
                 <span className="block text-sm font-semibold">{step.title}</span>
-                <span className="block text-xs text-muted-foreground">
+                <span className="hidden xl:block text-xs text-muted-foreground">
                     {step.description}
                 </span>
             </span>

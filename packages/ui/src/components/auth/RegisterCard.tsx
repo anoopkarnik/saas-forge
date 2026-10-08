@@ -84,7 +84,7 @@ const RegisterCard = ({ showEmail, showGoogleProvider, showGithubProvider, showL
                         <Input
                           type={field.toLowerCase().includes('password') ? 'password' : field === 'email' ? 'email' : 'text'}
                           placeholder={field === 'confirmPassword' ? '******' : `Enter your ${field}`}
-                          autoComplete='off'
+                          autoComplete={field === 'name' ? 'name' : field === 'email' ? 'email' : 'new-password'}
                           className="h-10"
                           readOnly={field === 'email' && !!prefillEmail}
                           {...fieldProps}

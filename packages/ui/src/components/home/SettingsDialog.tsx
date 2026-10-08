@@ -108,19 +108,21 @@ export function SettingsDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {children || (
-          <>
-            <BadgeCheck />
-            Account
-          </>)}
-      </DialogTrigger>
-      <DialogContent className="overflow-hidden p-0 h-[85vh] w-full max-w-5xl sm:max-w-5xl md:rounded-2xl border-none shadow-2xl bg-card">
+      {children && <DialogTrigger asChild>
+        {children}
+      </DialogTrigger>}
+      <DialogContent className="overflow-hidden p-0 h-[85dvh] w-[calc(100%-2rem)] max-w-5xl sm:max-w-5xl md:rounded-2xl border-none shadow-2xl bg-card">
         <DialogTitle className="sr-only">Settings</DialogTitle>
         <DialogDescription className="sr-only">
           Customize your settings here.
         </DialogDescription>
-        <SidebarProvider className="w-full h-full min-h-0">
+        <SidebarProvider className="w-full h-full min-h-0 min-w-0 flex-col md:flex-row">
+          <nav aria-label="Account settings sections" className="border-b p-4 pr-12 md:hidden">
+            <label htmlFor="account-settings-section" className="sr-only">Settings section</label>
+            <select id="account-settings-section" value={currentOpenedTab} onChange={(event) => setCurrentOpenedTab(event.target.value)} className="min-h-11 w-full rounded-md border bg-background px-3 text-base focus-visible:outline-2 focus-visible:outline-ring">
+              {data.nav.map((item) => <option key={item.name} value={item.name}>{item.name}</option>)}
+            </select>
+          </nav>
           <Sidebar collapsible="none" className="min-w-[280px] hidden md:flex bg-muted/30 border-r border-border/50 h-full">
             <SidebarContent className="p-4">
               <SidebarGroup>
@@ -139,7 +141,6 @@ export function SettingsDialog({
                     {data.nav.map((item) => (
                       <SidebarMenuItem key={item.name}>
                         <SidebarMenuButton
-                          asChild
                           isActive={item.name === currentOpenedTab}
                           onClick={() => setCurrentOpenedTab(item.name)}
                           className={cn(
@@ -161,7 +162,7 @@ export function SettingsDialog({
               </SidebarGroup>
             </SidebarContent>
           </Sidebar>
-          <main className="flex flex-1 flex-col overflow-auto h-full bg-background/50">
+          <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-auto bg-background/50">
             {currentOpenedTab === "My Account" &&
               <MyAccountSettings
                 onNavigate={onNavigate}

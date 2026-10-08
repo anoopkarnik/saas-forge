@@ -640,7 +640,7 @@ export default function DashboardPage({
               }}
             >
               <Rocket className="mr-2 h-4 w-4" />
-              Deploy to Vercel (Coming Soon)
+              <span className="whitespace-normal text-left">Deploy to Vercel (Coming Soon)</span>
             </Button>
             {onSaveConfiguration ? (
               <Button
@@ -744,12 +744,12 @@ export default function DashboardPage({
             <Card
               key={section.id}
               className={cn(
-                "border-border/60 shadow-sm",
+                "min-w-0 border-border/60 shadow-sm",
                 section.id === "project" && "xl:col-span-2",
               )}
             >
               <CardHeader>
-                <CardTitle className="flex items-center justify-between gap-3">
+                <CardTitle className="flex flex-wrap items-center justify-between gap-3">
                   <span className="flex items-center gap-2">
                     <section.icon className={cn("h-5 w-5", section.color)} />
                     {section.title}
@@ -870,11 +870,11 @@ export default function DashboardPage({
     if (!currentStep) return null;
 
     return (
-      <div className="grid grid-cols-1 gap-8 xl:grid-cols-[minmax(0,1fr)_340px]">
-        <div className="space-y-6">
+      <div className="grid grid-cols-1 min-w-0 gap-8 xl:grid-cols-[minmax(0,1fr)_340px]">
+        <div className="min-w-0 space-y-6">
           <div className="space-y-4">
-            <div className="overflow-x-auto pb-1">
-              <div className="flex min-w-max gap-3">
+            <div className="min-w-0">
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
                 {WIZARD_STEPS.map((step, index) => (
                   <StepChip
                     key={step.id}
@@ -1346,7 +1346,7 @@ export default function DashboardPage({
                         size="lg"
                       >
                         <Rocket className="mr-2 h-4 w-4" />
-                        Deploy to Vercel (Coming Soon)
+                        <span className="whitespace-normal text-left">Deploy to Vercel (Coming Soon)</span>
                       </Button>
                     </div>
                   </div>
@@ -1410,10 +1410,10 @@ export default function DashboardPage({
           className="hidden"
         />
 
-        <div className="mx-auto flex w-full max-w-8xl flex-col gap-8 p-6 md:p-8">
+        <div className="mx-auto flex min-w-0 w-full max-w-7xl flex-col gap-8 p-6 md:p-8">
           <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div className="max-w-3xl">
-              <h1 className="text-balance text-3xl font-bold md:text-4xl">
+              <h1 className="page-title">
                 Beginner-Friendly Scaffold Setup
               </h1>
               <p className="mt-2 text-base text-muted-foreground">

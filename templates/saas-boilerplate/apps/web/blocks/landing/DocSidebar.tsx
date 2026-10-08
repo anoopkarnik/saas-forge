@@ -1,28 +1,23 @@
 "use client"
-import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupLabel, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@workspace/ui/components/shadcn/sidebar';
-import { usePathname, useRouter } from 'next/navigation';
+import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupLabel, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from '@workspace/ui/components/shadcn/sidebar';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import Image from 'next/image';
 import { Separator } from '@workspace/ui/components/shadcn/separator';
-import { DocumentationProps } from '@/lib/ts-types/doc';
 import { useTheme } from 'next-themes';
-import { ReactElement, useEffect, useState } from 'react';
+import { ReactElement } from 'react';
 import { cn } from '@workspace/ui/lib/utils';
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { useTRPC } from '@/trpc/client'
 
 const DocSidebar = (): ReactElement => {
-    const router = useRouter()
     const pathname = usePathname();
+    const { setOpenMobile } = useSidebar();
     const { theme } = useTheme();
     const trpc = useTRPC();
-    const [docCategories, setDocCategories] = useState<string[]>([]);
     const { data: documentation } = useSuspenseQuery(trpc.documentation.getDocumentationInfo.queryOptions())
 
-    useEffect(() => {
-        // Extract unique categories from docs  
-        const categories = Array.from(new Set(documentation.docs.map(doc => doc.Type)));
-        setDocCategories(categories);
-    }, [])
+    const docCategories = Array.from(new Set(documentation.docs.map(doc => doc.Type)));
 
     return (
         <Sidebar>
@@ -39,7 +34,7 @@ const DocSidebar = (): ReactElement => {
                                     <Image src={documentation?.darkLogo} alt={documentation?.title} fill className="object-contain" /> :
                                     <Image src={documentation?.logo} alt={documentation?.title} fill className="object-contain" />}
                             </div>
-                            <div className="hidden lg:flex flex-col items-start leading-none gap-0.5">
+                            <div className="flex flex-col items-start leading-none gap-0.5">
                                 <span className="font-bold text-foreground text-sm tracking-wide">{documentation?.title}</span>
                                 <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-sans">Documentation</span>
                             </div>
@@ -60,10 +55,9 @@ const DocSidebar = (): ReactElement => {
 
                                     {categoryDocs.map((doc) => (
                                         <SidebarMenuButton asChild tooltip={doc.Name} key={doc.id}
-                                            className={cn("cursor-pointer text-xs", pathname === doc.slug && "bg-sidebar-accent")}
-                                            onClick={() => router.push("/landing/doc/" + doc.slug as string)}>
+                                            className={cn("cursor-pointer text-sm", pathname === "/landing/doc/" + doc.slug && "bg-sidebar-accent")}>
 
-                                            <span>{doc.Name}</span>
+                                            <Link href={"/landing/doc/" + doc.slug} aria-current={pathname === "/landing/doc/" + doc.slug ? "page" : undefined} onClick={() => setOpenMobile(false)}>{doc.Name}</Link>
 
                                         </SidebarMenuButton>
                                     ))}

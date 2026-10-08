@@ -60,6 +60,7 @@
 @layer base {
   html {
     scroll-behavior: smooth;
+    scroll-padding-top: 5rem;
   }
 
   * {
@@ -69,4 +70,32 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+@layer base {
+  h1 { @apply text-balance; }
+  main:focus { outline: none; }
+}
+:where(button, a, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--foreground);
+  outline-offset: 3px;
+}
+main:focus { outline: none; }
+@layer components {
+  .skip-link {
+    @apply fixed left-4 top-4 z-[100] -translate-y-24 rounded-md bg-background px-4 py-3 font-medium text-foreground shadow-lg focus:translate-y-0;
+  }
+  .page-title { @apply text-2xl font-bold tracking-tight md:text-3xl; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@media (max-width: 1023px) {
+  [data-slot="button"] { min-height: 2.75rem; min-width: 2.75rem; }
 }

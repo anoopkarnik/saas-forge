@@ -235,13 +235,13 @@ export default function DocumentationAdminPage() {
 
     return (
         <div className="container mx-auto max-w-7xl px-4 py-8 md:px-8">
-            <div className="mb-8 flex items-start justify-between gap-4">
-                <div className="flex items-start gap-4">
+            <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
+                <div className="flex min-w-0 items-start gap-4">
                     <div className="rounded-xl bg-primary/10 p-3">
                         <FileText className="h-6 w-6 text-primary" />
                     </div>
                     <div>
-                        <h1 className="text-3xl font-bold tracking-tight">Documentation Management</h1>
+                        <h1 className="page-title">Documentation Management</h1>
                         <p className="mt-2 text-sm text-muted-foreground">
                             Create, edit, and organize your public documentation pages.
                         </p>
@@ -273,8 +273,8 @@ export default function DocumentationAdminPage() {
                     </CardHeader>
                 </Card>
             ) : (
-                <div className="grid gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
-                    <Card className="h-fit">
+                <div className="grid min-w-0 grid-cols-1 gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
+                    <Card className="min-w-0 h-fit">
                         <CardHeader className="pb-4">
                             <CardTitle className="text-lg">Documentation Pages</CardTitle>
                             <CardDescription>
@@ -291,11 +291,11 @@ export default function DocumentationAdminPage() {
                                         className={`w-full rounded-lg border p-4 text-left transition ${selectedId === doc.id ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"
                                             }`}
                                     >
-                                        <div className="mb-2 flex items-center justify-between gap-2">
+                                        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
                                             <div className="truncate font-medium">{doc.title}</div>
                                             <Badge variant="secondary">{doc.type}</Badge>
                                         </div>
-                                        <div className="space-y-1 text-xs text-muted-foreground">
+                                        <div className="space-y-1 text-xs text-muted-foreground [overflow-wrap:anywhere]">
                                             <div>Slug: {doc.slug}</div>
                                             <div>Order: {doc.order}</div>
                                         </div>
@@ -311,7 +311,7 @@ export default function DocumentationAdminPage() {
 
                     <Card>
                         <CardHeader>
-                            <div className="flex items-center justify-between gap-3">
+                            <div className="flex flex-wrap items-center justify-between gap-3">
                                 <div>
                                     <CardTitle>{selectedId === "new" ? "Create Documentation Page" : "Edit Documentation Page"}</CardTitle>
                                     <CardDescription>
@@ -371,7 +371,7 @@ export default function DocumentationAdminPage() {
                                         />
                                     </div>
 
-                                    <div className="flex items-center justify-between gap-3">
+                                    <div className="flex flex-wrap items-center justify-between gap-3">
                                         <p className="text-xs text-muted-foreground">
                                             {activeDoc?.lastUpdated
                                                 ? `Last updated ${new Date(activeDoc.lastUpdated).toLocaleString()}`

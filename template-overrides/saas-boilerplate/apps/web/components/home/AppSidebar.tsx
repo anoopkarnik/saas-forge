@@ -25,10 +25,11 @@ import { Gauge } from "lucide-react";
 import { Flag } from "lucide-react";
 // scaffold:end feature_flags
 import { usePathname, useRouter } from "next/navigation";
+import Link from "next/link";
 import { useTRPC } from "@/trpc/client";
 import { useQuery } from "@tanstack/react-query";
 import { useSession } from "@workspace/auth/better-auth/auth-client";
-import SidebarUser from "@/blocks/home/SidebarUser";
+import SidebarUser, { SidebarUserProvider } from "@/blocks/home/SidebarUser";
 import WorkspaceSlot from "@/components/organizations/WorkspaceSlot";
 
 export function AppSidebar() {
@@ -49,13 +50,14 @@ export function AppSidebar() {
   const isDark = mounted && (theme === "dark" || resolvedTheme === "dark");
 
   return (
+    <SidebarUserProvider>
     <Sidebar>
       <SidebarHeader className="p-4 pb-0">
         <SidebarMenu>
           <SidebarMenuItem>
-            <a
+            <Link
               role="button"
-              onClick={() => router.push("/")}
+              href="/"
               className="flex cursor-pointer items-center gap-3 px-2 font-cyberdyne"
             >
               <img
@@ -68,7 +70,7 @@ export function AppSidebar() {
               <div className="hidden bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-lg font-bold tracking-tight text-transparent lg:flex lg:flex-col lg:items-start">
                 {landingInfo?.navbarSection.title}
               </div>
-            </a>
+            </Link>
           </SidebarMenuItem>
         </SidebarMenu>
         <div className="pt-3">
@@ -243,6 +245,7 @@ export function AppSidebar() {
         </div>
       </SidebarFooter>
     </Sidebar>
+    </SidebarUserProvider>
   );
 }
 

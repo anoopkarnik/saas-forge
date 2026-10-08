@@ -35,7 +35,7 @@ export function AppSidebar() {
   const router = useRouter();
   const pathname = usePathname();
   const trpc = useTRPC();
-  const { data: landingInfo } = useQuery(trpc.landing.getLandingInfoFromNotion.queryOptions());
+  const { data: landingInfo } = useQuery(trpc.landing.getLandingInfo.queryOptions());
   const { data: session } = useSession();
   const isAdmin = session?.user?.role === "admin";
 

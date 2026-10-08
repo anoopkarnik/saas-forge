@@ -4,6 +4,7 @@
   "stageRoot": ".generated/saas-boilerplate",
   "overrideRoot": "template-overrides/saas-boilerplate",
   "include": [
+    ".agents",
     ".claude",
     ".eslintrc.js",
     ".dockerignore",

@@ -21,7 +21,7 @@ export default async function Layout({ children }: { children: React.ReactNode }
 
   const queryClient = getQueryClient();
   await Promise.all([
-    queryClient.ensureQueryData(trpc.landing.getLandingInfoFromNotion.queryOptions()),
+    queryClient.ensureQueryData(trpc.landing.getLandingInfo.queryOptions()),
   ]);
 
   return (

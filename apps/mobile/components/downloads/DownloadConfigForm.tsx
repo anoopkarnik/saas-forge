@@ -497,21 +497,10 @@ export default function DownloadConfigForm({ templateTitle, onBack }: Props) {
             </>)}
 
             {/* ── Landing / CMS Module ─────────────────────────────────── */}
-            {renderSection("landing", "Landing Module", "📄", "text-purple-500", "Notion-backed CMS content.", <>
+            {renderSection("landing", "Landing Module", "📄", "text-purple-500", "Landing page and docs content from Postgres or the repo.", <>
                 {renderSelect("CMS *", "NEXT_PUBLIC_CMS", CMS_OPTIONS)}
 
-                {formValues.NEXT_PUBLIC_CMS === "notion" && <>
-                    {renderField("Landing Database ID *", "LANDING_DATABASE_ID", "Notion database ID")}
-                    {renderField("Hero Database ID *", "HERO_DATABASE_ID", "Notion database ID")}
-                    {renderField("Feature Database ID *", "FEATURE_DATABASE_ID", "Notion database ID")}
-                    {renderField("Testimonial Database ID *", "TESTIMONIAL_DATABASE_ID", "Notion database ID")}
-                    {renderField("Pricing Database ID *", "PRICING_DATABASE_ID", "Notion database ID")}
-                    {renderField("FAQ Database ID *", "FAQ_DATABASE_ID", "Notion database ID")}
-                    {renderField("Footer Database ID *", "FOOTER_DATABASE_ID", "Notion database ID")}
-                    {renderField("Documentation Database ID *", "DOCUMENTATION_DATABASE_ID", "Notion database ID")}
-                    {renderField("Notion API Token *", "NOTION_API_TOKEN", "secret_...", true)}
-                </>}
-                {(formValues.NEXT_PUBLIC_CMS === "notion" || formValues.NEXT_PUBLIC_CMS === "postgres") && <>
+                {formValues.NEXT_PUBLIC_CMS === "postgres" && <>
                     {renderField("Upstash Redis REST URL *", "UPSTASH_REDIS_REST_URL", "https://...")}
                     {renderField("Upstash Redis REST Token *", "UPSTASH_REDIS_REST_TOKEN", "AX...", true)}
                 </>}

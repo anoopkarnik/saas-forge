@@ -21,13 +21,12 @@ The web app reads `apps/web/.env`, then `apps/web/.env.local` over it; shell and
 | `NEXT_PUBLIC_IMAGE_STORAGE` | `vercel_blob` | `BLOB_READ_WRITE_TOKEN` |
 | `NEXT_PUBLIC_IMAGE_STORAGE` | `cloudflare_r2` | `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME` |
 | `NEXT_PUBLIC_ALLOW_RATE_LIMIT` | `upstash` | `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` |
-| `NEXT_PUBLIC_CMS` | `notion` | `NOTION_API_TOKEN` |
 
 ## Project
 
 | Variable | Description |
 | --- | --- |
-| `NEXT_PUBLIC_SAAS_NAME` | Product name. Used in titles, emails, cookie names, cache keys, and to find the landing page row in Postgres or Notion. **Required** |
+| `NEXT_PUBLIC_SAAS_NAME` | Product name. Used in titles, emails, cookie names, cache keys, and to find the landing page row in Postgres. **Required** |
 | `NEXT_PUBLIC_SITE_DESCRIPTION` | Default meta description |
 | `NEXT_PUBLIC_COMPANY_NAME` | Company name in emails and legal pages |
 | `NEXT_PUBLIC_URL` | Public URL of the web app, without a trailing slash. **Required** |
@@ -38,9 +37,7 @@ The web app reads `apps/web/.env`, then `apps/web/.env.local` over it; shell and
 
 | Variable | Description |
 | --- | --- |
-| `NEXT_PUBLIC_CMS` | `constant`, `postgres` or `notion`. Unset means `notion` in the open-source repo, or the CMS you chose in a download |
-| `NOTION_API_TOKEN` | Notion integration secret (Notion CMS) |
-| `LANDING_DATABASE_ID`, `HERO_DATABASE_ID`, `FEATURE_DATABASE_ID`, `TESTIMONIAL_DATABASE_ID`, `PRICING_DATABASE_ID`, `FAQ_DATABASE_ID`, `FOOTER_DATABASE_ID`, `DOCUMENTATION_DATABASE_ID` | Notion database IDs (Notion CMS). See [Notion Setup](/landing/doc/notion-setup) |
+| `NEXT_PUBLIC_CMS` | `constant` or `postgres`. Unset means `postgres` in the open-source repo, or the CMS you chose in a download |
 
 ## Authentication
 

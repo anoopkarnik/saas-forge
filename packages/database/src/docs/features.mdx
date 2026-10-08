@@ -13,7 +13,7 @@ Everything SaaS Forge ships, grouped by what every project gets (core), what you
 - Hero, features, testimonials, pricing, FAQ and footer sections.
 - Terms of service, privacy policy, cancellation and refund, and contact pages.
 - A documentation site at `/landing/doc` with categories and a sidebar.
-- Content comes from code constants, Postgres (editable in the admin panel) or Notion.
+- Content comes from code constants or Postgres (editable in the admin panel).
 
 **Admin panel** ([details](/landing/doc/admin-panel))
 - Users: create, change role, ban, unban, remove, and create the demo guest account.
@@ -62,7 +62,7 @@ Some integrations have interchangeable providers. A download keeps only the prov
 | --- | --- | --- | --- |
 | Payment gateway | `NEXT_PUBLIC_PAYMENT_GATEWAY` | `stripe`, `dodo`, `none` | Billing |
 | Image storage | `NEXT_PUBLIC_IMAGE_STORAGE` | `vercel_blob`, `cloudflare_r2` | Core |
-| CMS | `NEXT_PUBLIC_CMS` | `constant`, `postgres`, `notion` | Core |
+| CMS | `NEXT_PUBLIC_CMS` | `constant`, `postgres` | Core |
 
 ## Platforms
 

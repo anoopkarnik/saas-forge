@@ -6,7 +6,7 @@ import { useSuspenseQuery } from "@tanstack/react-query"
 
 const ContactUs = (): ReactElement => {
     const trpc = useTRPC()
-    const { data } = useSuspenseQuery(trpc.landing.getLandingInfoFromNotion.queryOptions())
+    const { data } = useSuspenseQuery(trpc.landing.getLandingInfo.queryOptions())
 
     return (
         <div className="min-h-screen bg-background text-foreground flex flex-col">

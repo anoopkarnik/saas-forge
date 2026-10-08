@@ -19,7 +19,7 @@
       "label": "CMS",
       "env": "NEXT_PUBLIC_CMS",
       "module": null,
-      "values": ["constant", "postgres", "notion"]
+      "values": ["constant", "postgres"]
     }
   ]
 }

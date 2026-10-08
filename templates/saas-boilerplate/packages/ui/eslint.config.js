@@ -9,13 +9,12 @@ export default [
       "src/components/admin/**/*.tsx",
       "src/components/home/**/*.tsx",
       "src/components/mdx/**/*.tsx",
-      "src/components/notion/**/*.tsx",
       "src/components/payments/**/*.tsx",
       "src/lib/zod/**/*.ts",
       "src/lib/utils/scaffold.ts",
     ],
     rules: {
-      // These surfaces adapt loosely typed CMS, scaffold, Notion, and billing payloads.
+      // These surfaces adapt loosely typed CMS, scaffold, and billing payloads.
       "@typescript-eslint/no-explicit-any": "off",
     },
   },

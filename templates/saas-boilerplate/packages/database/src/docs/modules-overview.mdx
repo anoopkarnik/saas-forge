@@ -44,7 +44,7 @@ Some integrations have interchangeable providers. They are pruned the same way, 
 | --- | --- | --- | --- |
 | `payment_gateway` | `NEXT_PUBLIC_PAYMENT_GATEWAY` | `stripe`, `dodo`, `none` | Billing |
 | `image_storage` | `NEXT_PUBLIC_IMAGE_STORAGE` | `vercel_blob`, `cloudflare_r2` | Core |
-| `cms` | `NEXT_PUBLIC_CMS` | `constant`, `postgres`, `notion` | Core |
+| `cms` | `NEXT_PUBLIC_CMS` | `constant`, `postgres` | Core |
 
 A download keeps only the provider you picked and pins the default to it. Leave a toggle unset in the wizard to keep every choice, or set `KEEP_ALL_PROVIDERS=true`. Switching provider later is a free upgrade.
 

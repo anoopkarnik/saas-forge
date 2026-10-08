@@ -70,7 +70,6 @@ saas-forge/
 │   ├── auth/          # Authentication
 │   ├── database/      # Database & Prisma
 │   ├── email/         # Email templates
-│   ├── cms/           # CMS integration
 │   └── observability/ # Logging
 └── scripts/           # Build & CLI scripts
 ```
@@ -167,7 +166,7 @@ feat(auth): add LinkedIn OAuth provider
 fix(payments): resolve webhook signature validation
 docs: update installation instructions
 refactor(ui): simplify Button component API
-test(cms): add tests for Notion integration
+test(cms): add tests for the Postgres CMS
 ```
 
 ## Testing

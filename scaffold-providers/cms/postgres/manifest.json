@@ -1,7 +1,1 @@
-{
-  "selected": {
-    "textReplace": [
-      { "file": "apps/web/lib/cms-provider.ts", "find": "const DEFAULT_CMS = \"notion\";", "replace": "const DEFAULT_CMS = \"postgres\";" }
-    ]
-  }
-}
+{}

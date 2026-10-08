@@ -26,16 +26,7 @@ export const formSchema = z.object({
   NEXT_PUBLIC_PLATFORM: z.array(z.enum(["web", "mobile", "desktop"])).min(1, "Select at least one platform"),
 
   // Landing Module Variables
-  NEXT_PUBLIC_CMS: z.enum(['constant', 'postgres', 'notion', 'strapi']),
-  LANDING_DATABASE_ID: z.string().optional(),
-  HERO_DATABASE_ID: z.string().optional(),
-  FEATURE_DATABASE_ID: z.string().optional(),
-  TESTIMONIAL_DATABASE_ID: z.string().optional(),
-  PRICING_DATABASE_ID: z.string().optional(),
-  FAQ_DATABASE_ID: z.string().optional(),
-  FOOTER_DATABASE_ID: z.string().optional(),
-  DOCUMENTATION_DATABASE_ID: z.string().optional(),
-  NOTION_API_TOKEN: z.string().optional(),
+  NEXT_PUBLIC_CMS: z.enum(['constant', 'postgres', 'strapi']),
   UPSTASH_REDIS_REST_URL: z.string().optional(),
   UPSTASH_REDIS_REST_TOKEN: z.string().optional(),
 

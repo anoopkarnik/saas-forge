@@ -23,10 +23,10 @@ This README documents what is shipped today. It intentionally focuses on the liv
 
 ## ✨ What Ships Today
 
-- **Web app**: Next.js 15 app with auth flows, landing pages, Notion-backed documentation, legal pages, admin CMS, user management, uploads, payment webhooks, and the SaaS scaffold/download API.
+- **Web app**: Next.js 15 app with auth flows, landing pages, Postgres-backed documentation, legal pages, admin CMS, user management, uploads, payment webhooks, and the SaaS scaffold/download API.
 - **Desktop app**: Electron app with auth, documentation viewer, support surfaces, admin user management, and CMS screens.
 - **Mobile app**: Expo app with auth, documentation viewer, settings, support flows, and admin screens.
-- **Shared platform modules**: Better Auth, tRPC, Prisma/Postgres, Notion CMS utilities, React Email/Resend, shared UI components, Blob/R2 storage, BetterStack logging, Google Analytics, and Upstash rate limiting.
+- **Shared platform modules**: Better Auth, tRPC, Prisma/Postgres, React Email/Resend, shared UI components, Blob/R2 storage, BetterStack logging, Google Analytics, and Upstash rate limiting.
 - **Starter template workflow**: `templates/saas-boilerplate`, `template-overrides/saas-boilerplate`, and the clean staged copy at `.generated/saas-boilerplate`.
 
 ## 🧭 Choose Your Path
@@ -115,16 +115,7 @@ NEXT_PUBLIC_URL=
 NEXT_PUBLIC_THEME_TYPE="dark"
 
 ## CMS / DOCUMENTATION
-NEXT_PUBLIC_CMS="notion"
-LANDING_DATABASE_ID=
-HERO_DATABASE_ID=
-FEATURE_DATABASE_ID=
-TESTIMONIAL_DATABASE_ID=
-PRICING_DATABASE_ID=
-FAQ_DATABASE_ID=
-FOOTER_DATABASE_ID=
-DOCUMENTATION_DATABASE_ID=
-NOTION_API_TOKEN=
+NEXT_PUBLIC_CMS="postgres"
 
 ## AUTH
 NEXT_PUBLIC_AUTH_FRAMEWORK="better-auth"
@@ -195,7 +186,7 @@ Recommended required branch protection checks:
 - `Web Build`
 - `Docker Web Build`
 
-For Vercel, configure the project for `apps/web` and set preview and production environment variables separately. Required core values are `NEXT_PUBLIC_URL`, `DATABASE_URL`, and `BETTER_AUTH_SECRET`. Enable optional groups only when the matching integration is used: Notion CMS/database IDs, OAuth client IDs/secrets, `RESEND_API_KEY`, Blob/R2 storage, Upstash rate limiting, Stripe or Dodo payments, BetterStack, Google Analytics, and PageSpeed credentials.
+For Vercel, configure the project for `apps/web` and set preview and production environment variables separately. Required core values are `NEXT_PUBLIC_URL`, `DATABASE_URL`, and `BETTER_AUTH_SECRET`. Enable optional groups only when the matching integration is used: OAuth client IDs/secrets, `RESEND_API_KEY`, Blob/R2 storage, Upstash rate limiting, Stripe or Dodo payments, BetterStack, Google Analytics, and PageSpeed credentials.
 
 ### Docker self-hosting
 
@@ -228,7 +219,6 @@ saas-forge/
 │   └── mobile/               # Expo app
 ├── packages/
 │   ├── auth/                 # Better Auth setup and clients
-│   ├── cms/                  # Notion CMS utilities
 │   ├── database/             # Prisma schema, client, and seed scripts
 │   ├── email/                # Resend + React Email integration
 │   ├── observability/        # Logging utilities
@@ -275,7 +265,6 @@ Only `templates/saas-boilerplate` is part of the released template workflow toda
 | Web typecheck | `pnpm --dir apps/web typecheck` |
 | Mobile dev | `pnpm --dir apps/mobile dev` |
 | Desktop dev | `pnpm --dir apps/desktop dev` |
-| CMS package tests | `pnpm --filter @workspace/cms test` |
 
 ### Database
 

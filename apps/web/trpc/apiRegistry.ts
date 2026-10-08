@@ -43,7 +43,7 @@ export const API_REGISTRY: ApiGroup[] = [
     group: "landing",
     label: "Landing",
     calls: [
-      { name: "getLandingInfoFromNotion", type: "query", access: "public" },
+      { name: "getLandingInfo", type: "query", access: "public" },
       { name: "updateLandingInfo", type: "mutation", access: "admin" },
     ],
   },
@@ -51,7 +51,7 @@ export const API_REGISTRY: ApiGroup[] = [
     group: "documentation",
     label: "Documentation",
     calls: [
-      { name: "getDocumentationInfoFromNotion", type: "query", access: "public" },
+      { name: "getDocumentationInfo", type: "query", access: "public" },
       { name: "queryDocumentationBySlug", type: "query", access: "public" },
       { name: "listAdminDocs", type: "query", access: "adminGuestRead" },
       { name: "getAdminDocById", type: "query", access: "adminGuestRead" },

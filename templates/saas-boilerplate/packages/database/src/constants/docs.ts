@@ -105,20 +105,6 @@ export const documentationData = [
     "filePath": "content-management.mdx"
   },
   {
-    "title": "Notion Setup",
-    "slug": "notion-setup",
-    "type": "Configuration",
-    "order": 204,
-    "filePath": "notion-setup.mdx"
-  },
-  {
-    "title": "Notion Database Schema",
-    "slug": "database-schema",
-    "type": "Configuration",
-    "order": 205,
-    "filePath": "database-schema.mdx"
-  },
-  {
     "title": "Authentication Overview",
     "slug": "authentication-overview",
     "type": "Authentication",

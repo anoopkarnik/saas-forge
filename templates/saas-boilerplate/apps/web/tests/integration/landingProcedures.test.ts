@@ -21,23 +21,6 @@ vi.mock('@/server/redis', () => ({
   },
 }));
 
-// scaffold:begin cms.notion
-vi.mock('@workspace/cms/notion/page/updatePage', () => ({
-  updateNotionPage: vi.fn(),
-}));
-
-vi.mock('@workspace/cms/notion/page/createPage', () => ({
-  createNotionPage: vi.fn(),
-}));
-
-vi.mock('@workspace/cms/notion/page/trashPage', () => ({
-  trashPage: vi.fn(),
-}));
-
-vi.mock('@workspace/cms/notion/database/queryDatabase', () => ({
-  queryAllNotionDatabase: vi.fn(),
-}));
-// scaffold:end cms.notion
 
 vi.mock('@workspace/database/client', () => ({
   default: {
@@ -119,7 +102,7 @@ describe('Landing Router Integration Tests', () => {
     vi.unstubAllEnvs();
   });
 
-  describe('getLandingInfoFromNotion', () => {
+  describe('getLandingInfo', () => {
     // Any cacheable CMS: a download may pin the default to "constant", which skips Redis.
     beforeEach(() => vi.stubEnv('NEXT_PUBLIC_CMS', 'postgres'));
 
@@ -131,7 +114,7 @@ describe('Landing Router Integration Tests', () => {
       mockFetchLandingPageData.mockResolvedValue(mockLandingPageData);
 
       const caller = landingRouter.createCaller(createCallerContext());
-      const result = await caller.getLandingInfoFromNotion();
+      const result = await caller.getLandingInfo();
 
       expect(result).toEqual(mockLandingPageData);
       expect(mockFetchLandingPageData).toHaveBeenCalledTimes(1);
@@ -145,14 +128,14 @@ describe('Landing Router Integration Tests', () => {
       mockRedisGet.mockResolvedValue(mockLandingPageData);
 
       const caller = landingRouter.createCaller(createCallerContext());
-      const result = await caller.getLandingInfoFromNotion();
+      const result = await caller.getLandingInfo();
 
       expect(result).toEqual(mockLandingPageData);
       expect(mockRedisGet).toHaveBeenCalledWith('test saas-landing-page:cms:v1');
       expect(mockFetchLandingPageData).not.toHaveBeenCalled();
     });
 
-    it('should fetch from Notion and cache when Redis cache miss', async () => {
+    it('should fetch from the CMS and cache when Redis cache miss', async () => {
       vi.stubEnv('UPSTASH_REDIS_REST_URL', 'https://redis.test.com');
       vi.stubEnv('UPSTASH_REDIS_REST_TOKEN', 'test_token');
 
@@ -161,7 +144,7 @@ describe('Landing Router Integration Tests', () => {
       mockRedisSet.mockResolvedValue('OK');
 
       const caller = landingRouter.createCaller(createCallerContext());
-      const result = await caller.getLandingInfoFromNotion();
+      const result = await caller.getLandingInfo();
 
       expect(result).toEqual(mockLandingPageData);
       expect(mockRedisGet).toHaveBeenCalledWith('test saas-landing-page:cms:v1');
@@ -177,11 +160,11 @@ describe('Landing Router Integration Tests', () => {
       delete process.env.UPSTASH_REDIS_REST_URL;
       delete process.env.UPSTASH_REDIS_REST_TOKEN;
 
-      mockFetchLandingPageData.mockRejectedValue(new Error('Notion API failed'));
+      mockFetchLandingPageData.mockRejectedValue(new Error('CMS fetch failed'));
 
       const caller = landingRouter.createCaller(createCallerContext());
 
-      await expect(caller.getLandingInfoFromNotion()).rejects.toThrow('Notion API failed');
+      await expect(caller.getLandingInfo()).rejects.toThrow('CMS fetch failed');
     });
   });
 

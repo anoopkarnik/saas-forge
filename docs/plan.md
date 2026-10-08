@@ -610,7 +610,7 @@ The mobile app currently only has authentication screens (sign-in, sign-up, forg
 
 10. **Support / Contact Form** — Floating action button or settings menu item. Form: email, subject, message. Use `trpc.support.sendSupportMessage`.
 
-11. **Documentation Viewer** — List docs from `trpc.documentation.getDocumentationInfoFromNotion`. Detail screen rendering Notion blocks as React Native components.
+11. **Documentation Viewer** — List docs from `trpc.documentation.getDocumentationInfo`. Detail screen rendering Notion blocks as React Native components.
 
 12. **Toast Notifications** — Replace web `sonner` with `react-native-toast-message` or `burnt`. Show success/error feedback on all actions.
 

@@ -14,7 +14,7 @@ const DocumentationPage = async ({ children }: { children: React.ReactNode }): P
   const queryClient = getQueryClient();
   await Promise.all([
     // queryClient.ensureQueryData(trpc.portfolio.getPortfolioDataFromStrapi.queryOptions()),
-    queryClient.ensureQueryData(trpc.documentation.getDocumentationInfoFromNotion.queryOptions()),
+    queryClient.ensureQueryData(trpc.documentation.getDocumentationInfo.queryOptions()),
   ]);
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>

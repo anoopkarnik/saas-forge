@@ -20,7 +20,7 @@ export async function generateMetadata(): Promise<Metadata> {
 const HomePage = async (): Promise<ReactElement> => {
   const queryClient = getQueryClient();
   await Promise.all([
-    queryClient.ensureQueryData(trpc.landing.getLandingInfoFromNotion.queryOptions()),
+    queryClient.ensureQueryData(trpc.landing.getLandingInfo.queryOptions()),
   ]);
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>

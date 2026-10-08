@@ -25,7 +25,6 @@ Outside a terminal (CI, scripts) `pnpm doctor` behaves like `--check`. Secret va
    | Dodo Payments | `NEXT_PUBLIC_PAYMENT_GATEWAY=dodo` (Billing module), in the mode set by `DODO_PAYMENTS_ENVIRONMENT` |
    | Upstash Redis | `NEXT_PUBLIC_ALLOW_RATE_LIMIT=upstash` |
    | Vercel Blob or Cloudflare R2 | `NEXT_PUBLIC_IMAGE_STORAGE` picks it. Writes and deletes a probe file |
-   | Notion | `NEXT_PUBLIC_CMS=notion` |
 
    A rejected credential can be entered again on the spot.
 5. **Writes the env files** after showing which keys change in each file (values hidden). Files are written with `0600` permissions:

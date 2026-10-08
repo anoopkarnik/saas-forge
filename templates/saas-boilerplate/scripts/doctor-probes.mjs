@@ -294,16 +294,6 @@ async function probeR2(env, root) {
 }
 // scaffold:end image_storage.cloudflare_r2
 
-// scaffold:begin cms.notion
-async function probeNotion(env, fetchImpl) {
-  const { status, body } = await http(fetchImpl, "https://api.notion.com/v1/users/me", {
-    headers: { Authorization: `Bearer ${env.NOTION_API_TOKEN}`, "Notion-Version": "2022-06-28" },
-  });
-  if (status === 200) return ok(`integration "${body?.name ?? "unnamed"}" connected`);
-  if (status === 401) return fail("Notion rejected NOTION_API_TOKEN");
-  return warn(`could not verify (Notion answered ${status})`);
-}
-// scaffold:end cms.notion
 
 /**
  * The probes this env turns on. `keys` are the values a failed probe asks for
@@ -347,11 +337,6 @@ export function activeProbes(env, { root, fetchImpl = fetch }) {
     add("r2", "Cloudflare R2", keys, () => probeR2(env, root), true);
   }
   // scaffold:end image_storage.cloudflare_r2
-  // scaffold:begin cms.notion
-  if (env.NEXT_PUBLIC_CMS === "notion") {
-    add("notion", "Notion", ["NOTION_API_TOKEN"], () => probeNotion(env, fetchImpl));
-  }
-  // scaffold:end cms.notion
   return probes;
 }
 

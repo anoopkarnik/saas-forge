@@ -17,7 +17,7 @@ export default function AdminUsersRoute() {
     const navigate = useNavigate();
     const location = useLocation();
     const trpc = useTRPC() as any;
-    const { data: landingInfo } = useQuery(trpc.landing.getLandingInfoFromNotion.queryOptions());
+    const { data: landingInfo } = useQuery(trpc.landing.getLandingInfo.queryOptions());
     const { session, isPending, isAdmin } = useAdminGuard();
     const [users, setUsers] = useState<any[]>([]);
     const [isLoadingUsers, setIsLoadingUsers] = useState(true);

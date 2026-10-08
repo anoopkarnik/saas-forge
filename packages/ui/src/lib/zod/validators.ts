@@ -14,32 +14,6 @@ export const validatePlatform = (data: any, ctx: z.RefinementCtx) => {
 };
 
 export const validateCMS = (data: any, ctx: z.RefinementCtx) => {
-  if (data.NEXT_PUBLIC_CMS === "notion") {
-    const notionFields = [
-      "LANDING_DATABASE_ID",
-      "HERO_DATABASE_ID",
-      "FEATURE_DATABASE_ID",
-      "TESTIMONIAL_DATABASE_ID",
-      "PRICING_DATABASE_ID",
-      "FAQ_DATABASE_ID",
-      "FOOTER_DATABASE_ID",
-      "DOCUMENTATION_DATABASE_ID",
-      "NOTION_API_TOKEN",
-      "UPSTASH_REDIS_REST_URL",
-      "UPSTASH_REDIS_REST_TOKEN"
-    ] as const;
-
-    notionFields.forEach((field) => {
-      if (!data[field] || data[field]!.trim() === "") {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Required for Notion CMS",
-          path: [field],
-        });
-      }
-    });
-  }
-
   if (data.NEXT_PUBLIC_CMS === "postgres") {
     const postgresFields = [
       "UPSTASH_REDIS_REST_URL",
@@ -68,7 +42,7 @@ export const validateCMS = (data: any, ctx: z.RefinementCtx) => {
   if (data.NEXT_PUBLIC_CMS === "strapi") {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
-      message: "Strapi support is coming soon. Please select Notion.",
+      message: "Strapi support is coming soon. Please select Postgres.",
       path: ["NEXT_PUBLIC_CMS"],
     });
   }

@@ -6,7 +6,7 @@ import LegalPageLayout from '@/components/landing/LegalPageLayout'
 
 const TermsOfService = () => {
     const trpc = useTRPC()
-    const { data } = useSuspenseQuery(trpc.landing.getLandingInfoFromNotion.queryOptions())
+    const { data } = useSuspenseQuery(trpc.landing.getLandingInfo.queryOptions())
 
     const tableOfContents = [
         { id: "access-site", label: "Access to the Site" },

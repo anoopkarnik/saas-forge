@@ -69,14 +69,11 @@ describe("provider pruning", () => {
     expect(findScaffoldLeaks(variant.dir, ["billing"], undefined, { payment_gateway: "stripe" })).toEqual([]);
   });
 
-  it("drops the Notion package and SDKs when the CMS is Postgres", () => {
-    const variant = compile([], { cms: "postgres" });
+  it("pins the CMS default to the chosen provider", () => {
+    const variant = compile([], { cms: "constant" });
 
-    expect(variant.exists("packages/cms")).toBe(false);
-    expect(variant.deps).not.toHaveProperty("@workspace/cms");
-    expect(variant.read("packages/database/package.json")).not.toContain("@notionhq/client");
-    expect(variant.read("apps/web/lib/cms-provider.ts")).toContain('const DEFAULT_CMS = "postgres";');
-    expect(variant.read("pnpm-lock.yaml")).not.toMatch(/^ {2}packages\/cms:$/m);
+    expect(variant.read("apps/web/lib/cms-provider.ts")).toContain('const DEFAULT_CMS = "constant";');
+    expect(variant.read("apps/web/.env.example")).toMatch(/^NEXT_PUBLIC_CMS="constant"$/m);
   });
 
   it("keeps every provider when nothing is chosen", () => {

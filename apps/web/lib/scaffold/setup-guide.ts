@@ -42,7 +42,6 @@ const ENV_HINTS: Record<string, string> = {
   AUTH_LINKEDIN_CLIENT_ID: "LinkedIn Developers → your app → Auth.",
   AUTH_LINKEDIN_CLIENT_SECRET: "Same LinkedIn app.",
   RESEND_API_KEY: "Resend → API Keys.",
-  NOTION_API_TOKEN: "Notion → Settings → Connections → develop your own integration.",
   UPSTASH_REDIS_REST_URL: "Upstash → your Redis database → REST API.",
   UPSTASH_REDIS_REST_TOKEN: "Upstash → your Redis database → REST API.",
   BLOB_READ_WRITE_TOKEN: "Vercel → Storage → Blob → tokens.",

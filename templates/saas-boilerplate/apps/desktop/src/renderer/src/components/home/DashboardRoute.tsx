@@ -18,7 +18,7 @@ export default function DashboardRoute() {
     const navigate = useNavigate();
     const location = useLocation();
     const trpc = useTRPC() as any;
-    const { data: landingInfo } = useQuery(trpc.landing.getLandingInfoFromNotion.queryOptions());
+    const { data: landingInfo } = useQuery(trpc.landing.getLandingInfo.queryOptions());
     const { data: session, isPending, isRefetching } = useSession();
     const justLoggedIn = !!(location.state as any)?.justLoggedIn;
 

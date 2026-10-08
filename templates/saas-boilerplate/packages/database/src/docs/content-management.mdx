@@ -4,9 +4,8 @@ The landing page, the legal pages and these docs all come from one CMS, chosen w
 | --- | --- | --- | --- |
 | `constant` | TypeScript constants and MDX files in `packages/database/src` | No | Content that changes with code reviews |
 | `postgres` | Tables in `cms_schema`, seeded from the constants | Landing page and docs | Most products: edit in the browser, no extra service |
-| `notion` | Notion databases | Landing page | Teams that already write in Notion |
 
-A download keeps only the CMS you chose. The open-source repository keeps all three; with `NEXT_PUBLIC_CMS` unset it uses Notion.
+A download keeps only the CMS you chose. The open-source repository keeps both; with `NEXT_PUBLIC_CMS` unset it uses Postgres.
 
 ## The seed data
 
@@ -27,7 +26,7 @@ The documentation pages themselves are the `.mdx` files in `packages/database/sr
 
 ## Editing in the admin panel
 
-**Admin → CMS** (`/admin/cms`) edits the landing page with tabs for Navbar, Hero, Features, Testimonials, Pricing, FAQ and Legal. Images are uploaded through `/api/cms/upload` to your [file storage](/landing/doc/storage). It works with the Postgres and Notion CMS; with `constant` the content is read-only.
+**Admin → CMS** (`/admin/cms`) edits the landing page with tabs for Navbar, Hero, Features, Testimonials, Pricing, FAQ and Legal. Images are uploaded through `/api/cms/upload` to your [file storage](/landing/doc/storage). It works with the Postgres CMS; with `constant` the content is read-only.
 
 **Admin → Docs** (`/admin/doc`) creates, edits, reorders and deletes documentation pages. Each page has a title, a unique slug, a category (`type`), an order number and Markdown content. It works with the Postgres CMS only.
 
@@ -41,7 +40,7 @@ Link between pages with `/landing/doc/<slug>`.
 
 ## Caching
 
-With Upstash configured, the landing content and the docs index (titles, slugs, categories) are cached in Redis for an hour. Admin edits clear the cache, so changes appear immediately. If you change content directly in the database or in Notion, it appears within an hour, or immediately after deleting the keys `<name>-landing-page:cms:v1` and `<name>-documentation:v1`, where `<name>` is `NEXT_PUBLIC_SAAS_NAME` in lowercase.
+With Upstash configured, the landing content and the docs index (titles, slugs, categories) are cached in Redis for an hour. Admin edits clear the cache, so changes appear immediately. If you change content directly in the database, it appears within an hour, or immediately after deleting the keys `<name>-landing-page:cms:v1` and `<name>-documentation:v1`, where `<name>` is `NEXT_PUBLIC_SAAS_NAME` in lowercase.
 
 ## Replacing these docs with your own
 
@@ -50,6 +49,5 @@ These SaaS Forge docs are seeded into every new project. To publish your own pro
 - **Postgres CMS, in the browser:** delete or rewrite the pages in **Admin → Docs**.
 - **Postgres CMS, in code:** replace the files in `packages/database/src/docs/`, update `packages/database/src/constants/docs.ts`, and run `pnpm seed`. Seeding does not delete pages whose slugs you removed; delete those in the admin panel.
 - **Constant CMS:** replace the MDX files and `docs.ts`; they are read at request time.
-- **Notion CMS:** write pages in your documentation database ([Notion Setup](/landing/doc/notion-setup)). To export Notion docs to MDX files, run `pnpm exec tsx scripts/fetch-docs.ts` in `packages/database`.
 
 Some features link to specific doc slugs (the setup wizard links to `overview`, `authentication-overview`, `postgres`, `storage` and others in `packages/ui/src/lib/constants/module.ts`). Keep those slugs or update the links.

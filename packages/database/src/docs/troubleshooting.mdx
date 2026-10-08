@@ -40,13 +40,13 @@ No landing page row has a title equal to `NEXT_PUBLIC_SAAS_NAME`. Run `pnpm seed
 ## Content
 
 **Docs sidebar or landing page does not show a change**
-Content is cached in Redis for an hour. Admin edits clear it; direct database or Notion edits do not. Delete `<name>-documentation:v1` or `<name>-landing-page:cms:v1` (`<name>` is the lowercase product name) or wait.
+Content is cached in Redis for an hour. Admin edits clear it; direct database edits do not. Delete `<name>-documentation:v1` or `<name>-landing-page:cms:v1` (`<name>` is the lowercase product name) or wait.
 
 **`Invalid src prop … hostname is not configured under images`**
 An image URL points at a host missing from `images.remotePatterns` in `apps/web/next.config.mjs`. Add your Blob, R2 or CDN host.
 
 **Admin → Docs says editing is only available for Postgres**
-The docs editor needs `NEXT_PUBLIC_CMS="postgres"`. With `constant`, edit the MDX files; with Notion, edit in Notion.
+The docs editor needs `NEXT_PUBLIC_CMS="postgres"`. With `constant`, edit the MDX files.
 
 ## Authentication
 

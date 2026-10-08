@@ -50,9 +50,6 @@ const INTEGRATION_REQUIREMENTS: Array<{
   // scaffold:begin jobs
   { toggle: "JOBS_DRIVER", value: "inngest", keys: ["INNGEST_EVENT_KEY", "INNGEST_SIGNING_KEY"] },
   // scaffold:end jobs
-  // scaffold:begin cms.notion
-  { toggle: "NEXT_PUBLIC_CMS", value: "notion", keys: ["NOTION_API_TOKEN"] },
-  // scaffold:end cms.notion
 ];
 
 function isBlank(value: string | undefined): boolean {

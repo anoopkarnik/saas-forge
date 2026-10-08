@@ -167,43 +167,6 @@ export const WIZARD_FIELD_META: Partial<Record<WizardFieldName, WizardFieldMeta>
     helper: "The main database connection string for your app.",
     reviewLabel: "Database",
   },
-  LANDING_DATABASE_ID: {
-    label: "Landing Page Database ID",
-    helper: "Used when your marketing site content comes from Notion.",
-  },
-  HERO_DATABASE_ID: {
-    label: "Hero Section Database ID",
-    helper: "Used when your marketing site content comes from Notion.",
-  },
-  FEATURE_DATABASE_ID: {
-    label: "Features Database ID",
-    helper: "Used when your marketing site content comes from Notion.",
-  },
-  TESTIMONIAL_DATABASE_ID: {
-    label: "Testimonials Database ID",
-    helper: "Used when your marketing site content comes from Notion.",
-  },
-  PRICING_DATABASE_ID: {
-    label: "Pricing Database ID",
-    helper: "Used when your marketing site content comes from Notion.",
-  },
-  FAQ_DATABASE_ID: {
-    label: "FAQ Database ID",
-    helper: "Used when your marketing site content comes from Notion.",
-  },
-  FOOTER_DATABASE_ID: {
-    label: "Footer Database ID",
-    helper: "Used when your marketing site content comes from Notion.",
-  },
-  DOCUMENTATION_DATABASE_ID: {
-    label: "Documentation Database ID",
-    helper: "Used when your docs content comes from Notion.",
-  },
-  NOTION_API_TOKEN: {
-    label: "Notion Integration Token",
-    helper: "Lets the starter read your Notion content.",
-    reviewLabel: "Notion connected",
-  },
   UPSTASH_REDIS_REST_URL: {
     label: "Upstash REST URL",
     helper: "Shared by caching and rate-limiting features.",
@@ -368,7 +331,6 @@ const needsEmailProvider = (values: FormValues) =>
   (values.NEXT_PUBLIC_AUTH_PROVIDERS || []).includes("email_verification") ||
   (values.NEXT_PUBLIC_SUPPORT_FEATURES || []).includes("support_mail");
 
-const usesNotion = (values: FormValues) => values.NEXT_PUBLIC_CMS === "notion";
 const usesPostgresCms = (values: FormValues) => values.NEXT_PUBLIC_CMS === "postgres";
 const usesUpstashForRateLimit = (values: FormValues) =>
   (values.NEXT_PUBLIC_OBSERVABILITY_FEATURES || []).includes("rate_limiting");
@@ -442,15 +404,6 @@ export function getWizardStepFields(
  */
 export const SECRET_WIZARD_FIELDS = new Set<WizardFieldName>([
   "DATABASE_URL",
-  "LANDING_DATABASE_ID",
-  "HERO_DATABASE_ID",
-  "FEATURE_DATABASE_ID",
-  "TESTIMONIAL_DATABASE_ID",
-  "PRICING_DATABASE_ID",
-  "FAQ_DATABASE_ID",
-  "FOOTER_DATABASE_ID",
-  "DOCUMENTATION_DATABASE_ID",
-  "NOTION_API_TOKEN",
   "UPSTASH_REDIS_REST_URL",
   "UPSTASH_REDIS_REST_TOKEN",
   "BETTER_AUTH_SECRET",
@@ -500,31 +453,11 @@ function buildProviderGroups(values: FormValues): ProviderGroup[] {
       fields: ["DATABASE_URL"],
     },
     {
-      id: "notion",
-      title: "Notion",
-      description:
-        "Needed only if you want marketing content and docs to come from Notion.",
-      fields: usesNotion(values)
-        ? [
-            "LANDING_DATABASE_ID",
-            "HERO_DATABASE_ID",
-            "FEATURE_DATABASE_ID",
-            "TESTIMONIAL_DATABASE_ID",
-            "PRICING_DATABASE_ID",
-            "FAQ_DATABASE_ID",
-            "FOOTER_DATABASE_ID",
-            "DOCUMENTATION_DATABASE_ID",
-            "NOTION_API_TOKEN",
-          ]
-        : [],
-    },
-    {
       id: "upstash",
       title: "Upstash",
       description:
-        "Needed when you use Notion or Postgres CMS caching, or when you enable rate limiting.",
+        "Needed when you use Postgres CMS caching, or when you enable rate limiting.",
       fields:
-        usesNotion(values) ||
         usesPostgresCms(values) ||
         (usesUpstashForRateLimit(values) &&
           values.NEXT_PUBLIC_ALLOW_RATE_LIMIT === "upstash")
@@ -677,9 +610,7 @@ export function getReviewSummaryItems(values: FormValues) {
           ? "Static content in the repo"
           : values.NEXT_PUBLIC_CMS === "postgres"
             ? "Postgres-backed CMS"
-            : values.NEXT_PUBLIC_CMS === "notion"
-              ? "Notion-backed CMS"
-              : "Custom CMS",
+            : "Custom CMS",
     },
     {
       label: "Sign-In",
@@ -760,20 +691,9 @@ export function isWizardFieldRequired(
     case "AUTH_LINKEDIN_CLIENT_ID":
     case "AUTH_LINKEDIN_CLIENT_SECRET":
       return (values.NEXT_PUBLIC_AUTH_PROVIDERS || []).includes("linkedin");
-    case "LANDING_DATABASE_ID":
-    case "HERO_DATABASE_ID":
-    case "FEATURE_DATABASE_ID":
-    case "TESTIMONIAL_DATABASE_ID":
-    case "PRICING_DATABASE_ID":
-    case "FAQ_DATABASE_ID":
-    case "FOOTER_DATABASE_ID":
-    case "DOCUMENTATION_DATABASE_ID":
-    case "NOTION_API_TOKEN":
-      return usesNotion(values);
     case "UPSTASH_REDIS_REST_URL":
     case "UPSTASH_REDIS_REST_TOKEN":
       return (
-        usesNotion(values) ||
         usesPostgresCms(values) ||
         (usesUpstashForRateLimit(values) &&
           values.NEXT_PUBLIC_ALLOW_RATE_LIMIT === "upstash")

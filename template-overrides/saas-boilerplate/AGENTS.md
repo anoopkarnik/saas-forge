@@ -62,7 +62,6 @@ apps/
   mobile/                     Expo app
 packages/
   auth/                       Better Auth config and clients
-  cms/                        Notion CMS utilities
   database/                   Prisma schema, client, seed scripts
   email/                      React Email + Resend integration
   observability/              Logging utilities

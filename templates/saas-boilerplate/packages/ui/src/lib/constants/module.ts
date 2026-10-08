@@ -14,7 +14,7 @@ import {
   Bot
 } from "lucide-react";
 import React from "react";
-import { SiVercel, SiResend, SiNotion, SiUpstash } from "react-icons/si";
+import { SiVercel, SiResend, SiUpstash } from "react-icons/si";
 import { FaStripe } from "react-icons/fa";
 
 export interface ModuleField {
@@ -75,32 +75,15 @@ export const MODULE_CONFIG: ModuleSection[] = [
     icon: LayoutTemplate,
     color: "text-purple-500",
     borderColor: "border-l-purple-500",
-    description: "Notion-backed CMS content.",
-    documentation: [{ label: "Notion Setup", slug: "notion-setup" }],
+    description: "Landing page and docs content from Postgres or the repo.",
+    documentation: [{ label: "Content Management", slug: "content-management" }],
     fields: [
       { name: "NEXT_PUBLIC_CMS", description: "The CMS you want to use for your landing page.", required: true },
-      { name: "LANDING_DATABASE_ID", description: "Notion database ID for landing page content.", showIf: { field: "NEXT_PUBLIC_CMS", value: "notion" }, required: true },
-      { name: "HERO_DATABASE_ID", description: "Notion database ID for hero section content.", showIf: { field: "NEXT_PUBLIC_CMS", value: "notion" }, required: true },
-      { name: "FEATURE_DATABASE_ID", description: "Notion database ID for features section content.", showIf: { field: "NEXT_PUBLIC_CMS", value: "notion" }, required: true },
-      { name: "TESTIMONIAL_DATABASE_ID", description: "Notion database ID for testimonials content.", showIf: { field: "NEXT_PUBLIC_CMS", value: "notion" }, required: true },
-      { name: "PRICING_DATABASE_ID", description: "Notion database ID for pricing section content.", showIf: { field: "NEXT_PUBLIC_CMS", value: "notion" }, required: true },
-      { name: "FAQ_DATABASE_ID", description: "Notion database ID for FAQ section content.", showIf: { field: "NEXT_PUBLIC_CMS", value: "notion" }, required: true },
-      { name: "FOOTER_DATABASE_ID", description: "Notion database ID for footer content.", showIf: { field: "NEXT_PUBLIC_CMS", value: "notion" }, required: true },
-      { name: "DOCUMENTATION_DATABASE_ID", description: "Notion database ID for documentation content.", showIf: { field: "NEXT_PUBLIC_CMS", value: "notion" }, required: true },
-      { 
-        name: "NOTION_API_TOKEN", 
-        description: "Your Notion integration token.", 
-        showIf: { field: "NEXT_PUBLIC_CMS", value: "notion" }, 
-        required: true,
-        providerHints: [
-          { name: "Notion", url: "https://notion.so/my-integrations", color: "text-foreground", icon: SiNotion, tier: "Free", info: "Notion provides a free API for building integrations and CMS." },
-        ]
-      },
-      { name: "UPSTASH_REDIS_REST_URL", description: "REST URL for Upstash Redis.", showIf: { field: "NEXT_PUBLIC_CMS", value: ["notion", "postgres"] }, required: true },
+      { name: "UPSTASH_REDIS_REST_URL", description: "REST URL for Upstash Redis.", showIf: { field: "NEXT_PUBLIC_CMS", value: "postgres" }, required: true },
       { 
         name: "UPSTASH_REDIS_REST_TOKEN", 
         description: "REST Token for Upstash Redis.", 
-        showIf: { field: "NEXT_PUBLIC_CMS", value: ["notion", "postgres"] }, 
+        showIf: { field: "NEXT_PUBLIC_CMS", value: "postgres" }, 
         required: true,
         providerHints: [
           { name: "Upstash", url: "https://upstash.com", color: "text-[#00e9a3]", icon: SiUpstash, tier: "Free", info: "Serverless Redis with 10k requests/day free tier." },

@@ -16,7 +16,7 @@ const DocSidebar = (): ReactElement => {
     const { theme } = useTheme();
     const trpc = useTRPC();
     const [docCategories, setDocCategories] = useState<string[]>([]);
-    const { data: documentation } = useSuspenseQuery(trpc.documentation.getDocumentationInfoFromNotion.queryOptions())
+    const { data: documentation } = useSuspenseQuery(trpc.documentation.getDocumentationInfo.queryOptions())
 
     useEffect(() => {
         // Extract unique categories from docs  

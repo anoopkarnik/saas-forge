@@ -95,9 +95,6 @@ describe("findServerEnvIssues", () => {
     // scaffold:begin image_storage.cloudflare_r2
     ["NEXT_PUBLIC_IMAGE_STORAGE", "cloudflare_r2", ["R2_ACCOUNT_ID", "R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY", "R2_BUCKET_NAME"]],
     // scaffold:end image_storage.cloudflare_r2
-    // scaffold:begin cms.notion
-    ["NEXT_PUBLIC_CMS", "notion", ["NOTION_API_TOKEN"]],
-    // scaffold:end cms.notion
   ])("requires credentials when %s=%s", (toggle, value, keys) => {
     const issues = findServerEnvIssues({ ...baseEnv, [toggle as string]: value as string });
     expect(issues.map((i) => i.key).sort()).toEqual([...(keys as string[])].sort());

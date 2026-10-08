@@ -11,7 +11,7 @@ NEXT_PUBLIC_URL="https://acme.com"
 
 `NEXT_PUBLIC_SAAS_NAME` is used in page titles, emails, support-message subjects and Redis cache keys. It also has two effects worth knowing:
 
-- **It is the key of your landing content.** The Postgres and Notion CMS look up the landing page whose title equals this name. After renaming, run `pnpm seed` (Postgres) or rename the Notion row.
+- **It is the key of your landing content.** The Postgres CMS looks up the landing page whose title equals this name. After renaming, run `pnpm seed`.
 - **It names the session cookie.** The cookie prefix is the name in lowercase with non-alphanumerics replaced by dashes (`acme.session_token`). Renaming signs everyone out.
 
 ## Colors
@@ -39,7 +39,7 @@ To add your own brand theme:
 - **Favicon:** replace `apps/web/app/favicon.ico`.
 - **Default Open Graph image:** `/cms/hero_0.png`, set in `apps/web/lib/seo.ts`.
 
-Images served from another host (Vercel Blob, R2, Notion) must be allowed in `images.remotePatterns` in `apps/web/next.config.mjs`. See [File Storage](/landing/doc/storage).
+Images served from another host (Vercel Blob, R2) must be allowed in `images.remotePatterns` in `apps/web/next.config.mjs`. See [File Storage](/landing/doc/storage).
 
 ## Fonts
 

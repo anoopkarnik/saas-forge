@@ -21,7 +21,7 @@ export default function DashboardRoute() {
     const navigate = useNavigate();
     const location = useLocation();
     const trpc = useTRPC() as any;
-    const { data: landingInfo } = useQuery(trpc.landing.getLandingInfoFromNotion.queryOptions());
+    const { data: landingInfo } = useQuery(trpc.landing.getLandingInfo.queryOptions());
     const catalogQuery = useQuery(trpc.scaffold.catalog.queryOptions());
     // Do NOT pass fetchOptions here — that creates a separate atom/cache entry
     // from the one updated by authClient.signIn.email, causing an immediate false redirect.

@@ -2,9 +2,6 @@ import { fetchDocumentation } from "@/lib/functions/fetchDocumentation";
 import { DocumentationProps } from "@/lib/ts-types/doc";
 import { redis } from "@/server/redis";
 import { createTRPCRouter, baseProcedure, adminProcedure, guestReadableAdminProcedure } from "@/trpc/init";
-// scaffold:begin cms.notion
-import { retrieveBlocksTree } from "@workspace/cms/notion/block/retrieveBlockChildren";
-// scaffold:end cms.notion
 import { getCmsProvider } from "@/lib/cms-provider";
 import prisma from "@workspace/database/client";
 // scaffold:begin audit_log
@@ -16,8 +13,6 @@ import { z } from "zod";
 const DOCUMENTATION_CACHE_TTL_SECONDS = 3600; // 10 minutes
 const getDocumentationCacheKey = () =>
   `${(process.env.NEXT_PUBLIC_SAAS_NAME || "documentation").toLowerCase()}-documentation:v1`;
-const getDocumentationBlocksCacheKey = (id: string) =>
-  `${(process.env.NEXT_PUBLIC_SAAS_NAME || "documentation").toLowerCase()}-documentation:blocks:v1:${id}`;
 
 const documentationEditorSchema = z.object({
   title: z.string().trim().min(1, "Title is required"),
@@ -59,7 +54,7 @@ const clearDocumentationCache = async () => {
 };
 
 export const documentationRouter = createTRPCRouter({
-    getDocumentationInfoFromNotion: baseProcedure
+    getDocumentationInfo: baseProcedure
     .query(async () => {
       const cmsProvider = getCmsProvider();
 
@@ -135,36 +130,6 @@ export const documentationRouter = createTRPCRouter({
         return page.content;
       }
 
-      // scaffold:begin cms.notion
-      if (cmsProvider === "notion") {
-        // retrieveBlocksTree recurses one Notion API call per nested block, so it
-        // is the most expensive read on this path. Cache the assembled tree per
-        // doc id (TTL-only; the Notion CMS has no in-app write path to invalidate).
-        const blocksCacheEnabled =
-          !!process.env.UPSTASH_REDIS_REST_URL &&
-          !!process.env.UPSTASH_REDIS_REST_TOKEN;
-
-        if (blocksCacheEnabled) {
-          const cachedBlocks = await redis.get<any[]>(getDocumentationBlocksCacheKey(doc.id));
-          if (cachedBlocks) {
-            return cachedBlocks;
-          }
-        }
-
-        const blocks = await retrieveBlocksTree({
-          apiToken: process.env.NOTION_API_TOKEN!,
-          block_id: doc.id
-        });
-
-        if (blocksCacheEnabled) {
-          await redis.set(getDocumentationBlocksCacheKey(doc.id), blocks, {
-            ex: DOCUMENTATION_CACHE_TTL_SECONDS,
-          });
-        }
-
-        return blocks;
-      }
-      // scaffold:end cms.notion
 
       throw new Error(`CMS "${cmsProvider}" is not supported`);
     }),

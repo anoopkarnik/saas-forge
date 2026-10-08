@@ -89,7 +89,7 @@ export default function DocumentationAdminPage() {
     const refreshAdminQueries = async () => {
         await Promise.all([
             queryClient.invalidateQueries(trpc.documentation.listAdminDocs.queryFilter()),
-            queryClient.invalidateQueries(trpc.documentation.getDocumentationInfoFromNotion.queryFilter()),
+            queryClient.invalidateQueries(trpc.documentation.getDocumentationInfo.queryFilter()),
         ]);
     };
 

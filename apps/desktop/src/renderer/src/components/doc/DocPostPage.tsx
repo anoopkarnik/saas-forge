@@ -1,9 +1,10 @@
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { useTRPC } from '../../lib/trpc'
-import { Blocks } from '@workspace/ui/components/notion/block';
 import { motion } from 'framer-motion';
 import { formatDistanceToNow } from 'date-fns';
 import { ReactElement } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface Props {
   slug: string;
@@ -11,10 +12,10 @@ interface Props {
 
 const DocPostPage = ({ slug }: Props): ReactElement => {
   const trpc = useTRPC() as any;
-  const { data: blocks } = useSuspenseQuery(trpc.documentation.queryDocumentationBySlug.queryOptions({ slug: slug }))
-  const { data: documentation } = useSuspenseQuery(trpc.documentation.getDocumentationInfoFromNotion.queryOptions())
+  const { data: content } = useSuspenseQuery(trpc.documentation.queryDocumentationBySlug.queryOptions({ slug: slug }))
+  const { data: documentation } = useSuspenseQuery(trpc.documentation.getDocumentationInfo.queryOptions())
 
-  if (!blocks || (blocks as any[]).length === 0) {
+  if (!content) {
     return (
       <div className='flex flex-col items-center justify-center h-full'>
         <p className='text-muted-foreground'>No documentation found.</p>
@@ -49,7 +50,7 @@ const DocPostPage = ({ slug }: Props): ReactElement => {
         transition={{ duration: 0.6, delay: 0.2 }}
         className="prose prose-zinc dark:prose-invert prose-lg max-w-none mx-auto prose-headings:font-bold prose-headings:tracking-tight prose-a:text-primary hover:prose-a:underline prose-img:rounded-xl prose-img:shadow-lg"
       >
-        <Blocks blocks={(blocks as any[]) || []} />
+        <ReactMarkdown remarkPlugins={[remarkGfm]}>{content as string}</ReactMarkdown>
       </motion.article>
     </div>
   )

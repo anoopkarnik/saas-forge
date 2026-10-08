@@ -187,7 +187,7 @@ const HeroSection = ({ heroSection }: { heroSection: HeroSectionProps }): ReactE
                       <div className="p-4 rounded-full bg-white/5 group-hover/placeholder:scale-110 transition-transform duration-500">
                         <span className="text-4xl">✨</span>
                       </div>
-                      <p className="text-zinc-400 font-light">Add your product screenshots in Notion</p>
+                      <p className="text-zinc-400 font-light">Add your product screenshots in the CMS</p>
                     </div>
                   )}
                   <div className="absolute top-8 left-1/2 -translate-x-1/2 -translate-y-1/2 

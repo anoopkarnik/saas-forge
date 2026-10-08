@@ -10,15 +10,6 @@ export type FormState = {
     NEXT_PUBLIC_URL: string;
     // Landing / CMS
     NEXT_PUBLIC_CMS: string;
-    LANDING_DATABASE_ID: string;
-    HERO_DATABASE_ID: string;
-    FEATURE_DATABASE_ID: string;
-    TESTIMONIAL_DATABASE_ID: string;
-    PRICING_DATABASE_ID: string;
-    FAQ_DATABASE_ID: string;
-    FOOTER_DATABASE_ID: string;
-    DOCUMENTATION_DATABASE_ID: string;
-    NOTION_API_TOKEN: string;
     UPSTASH_REDIS_REST_URL: string;
     UPSTASH_REDIS_REST_TOKEN: string;
     // Auth
@@ -87,16 +78,7 @@ export const DEFAULT_FORM: FormState = {
     NEXT_PUBLIC_SAAS_NAME: "",
     NEXT_PUBLIC_COMPANY_NAME: "",
     NEXT_PUBLIC_URL: "",
-    NEXT_PUBLIC_CMS: "notion",
-    LANDING_DATABASE_ID: "",
-    HERO_DATABASE_ID: "",
-    FEATURE_DATABASE_ID: "",
-    TESTIMONIAL_DATABASE_ID: "",
-    PRICING_DATABASE_ID: "",
-    FAQ_DATABASE_ID: "",
-    FOOTER_DATABASE_ID: "",
-    DOCUMENTATION_DATABASE_ID: "",
-    NOTION_API_TOKEN: "",
+    NEXT_PUBLIC_CMS: "postgres",
     UPSTASH_REDIS_REST_URL: "",
     UPSTASH_REDIS_REST_TOKEN: "",
     NEXT_PUBLIC_AUTH_FRAMEWORK: "better-auth",
@@ -182,7 +164,6 @@ export const PLATFORM_OPTIONS = [
 export const CMS_OPTIONS = [
     { value: "constant", label: "Constant" },
     { value: "postgres", label: "Postgres" },
-    { value: "notion", label: "Notion" },
     { value: "strapi", label: "Strapi (Coming Soon)", disabled: true },
 ];
 

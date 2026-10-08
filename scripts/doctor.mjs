@@ -117,9 +117,6 @@ const HINTS = {
   // scaffold:end jobs
   UPSTASH_REDIS_REST_URL: "https://console.upstash.com/redis → your database → REST API.",
   UPSTASH_REDIS_REST_TOKEN: "Same Upstash database → REST API.",
-  // scaffold:begin cms.notion
-  NOTION_API_TOKEN: "https://www.notion.so/profile/integrations → your integration → Internal Integration Secret.",
-  // scaffold:end cms.notion
 };
 
 /** Shape checks for values boot validation accepts as any non-empty string. */

@@ -16,7 +16,7 @@ import React from 'react'
 
 const LandingPage = () => {
   const trpc = useTRPC()
-  const { data } = useSuspenseQuery(trpc.landing.getLandingInfoFromNotion.queryOptions())
+  const { data } = useSuspenseQuery(trpc.landing.getLandingInfo.queryOptions())
   return (
     <div className='flex flex-col items-center justify-center relative overflow-x-hidden'>
       <NavbarSection navbarSection={data.navbarSection} />

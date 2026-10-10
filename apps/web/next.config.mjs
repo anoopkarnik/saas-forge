@@ -8,10 +8,13 @@ const scaffoldTraceRoots = [
   "../../templates/saas-boilerplate",
 ]
 const scaffoldTraceEntries = [
+  ".agents/**/*",
+  ".claude/**/*",
   ".eslintrc.js",
   ".gitignore",
   ".github/**/*",
   "apps/**/*",
+  "AGENTS.md",
   "CLAUDE.md",
   "docs/**/*",
   "LICENSE",

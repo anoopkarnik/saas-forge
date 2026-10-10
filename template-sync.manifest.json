@@ -48,6 +48,7 @@
     "packages/database/src/generated",
     "apps/web/app/api/scaffold",
     "apps/web/tests/integration/scaffoldRoute.test.ts",
+    "apps/web/app/(home)/page.test.tsx",
     "packages/database/prisma/scaffold.prisma",
     "packages/database/prisma/migrations/20260817001340_project_upgrade",
     "packages/database/prisma/migrations/20261005162142_scaffold_build_cache",

@@ -22,6 +22,14 @@ export function OnboardingPanel() {
   const complete = useMutation(trpc.onboarding.complete.mutationOptions({ onSuccess: refresh }));
 
   const data = state.data;
+  if (state.isError) {
+    return (
+      <div role="alert" className="flex flex-wrap items-center gap-2 rounded-lg border border-destructive/30 p-3 text-sm">
+        <span>Could not load welcome setup.</span>
+        <Button type="button" variant="outline" size="sm" onClick={() => state.refetch()}>Retry</Button>
+      </div>
+    );
+  }
   if (!data) return null;
 
   return (

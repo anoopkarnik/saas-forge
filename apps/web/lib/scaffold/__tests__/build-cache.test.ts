@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import JSZip from "jszip";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const { compileSpy } = vi.hoisted(() => ({ compileSpy: vi.fn() }));
@@ -77,6 +78,11 @@ describe("getOrBuildBaseArchive", () => {
     expect(store.objects.size).toBe(2);
     expect(first.manifest.envExamples["apps/web/.env.example"]).toContain("NEXT_PUBLIC_URL");
     expect(first.manifest.files.some((file) => file.path === "pnpm-lock.yaml")).toBe(true);
+    const zip = await JSZip.loadAsync(first.bytes);
+    for (const file of ["AGENTS.md", ".agents/skills/brand/SKILL.md", ".claude/settings.json"]) {
+      expect(first.manifest.files.some((entry) => entry.path === file)).toBe(true);
+      expect(zip.file(`saas-forge-app/${file}`)).not.toBeNull();
+    }
 
     const second = await getOrBuildBaseArchive({ scaffoldRoot, modules: [], platforms: ["web"], store });
     expect(second.cacheHit).toBe(true);
@@ -90,7 +96,15 @@ describe("getOrBuildBaseArchive", () => {
     await store.put("old-key.zip", zip, "application/zip");
     await store.put(
       "old-key.manifest.json",
-      new TextEncoder().encode(JSON.stringify({ buildKey: "old-key", files: [], envExamples: {} })),
+      new TextEncoder().encode(JSON.stringify({
+        buildKey: "old-key",
+        files: [
+          { path: "AGENTS.md", size: 1 },
+          { path: ".agents/skills/brand/SKILL.md", size: 1 },
+          { path: ".claude/settings.json", size: 1 },
+        ],
+        envExamples: {},
+      })),
       "application/json",
     );
     const result = await getOrBuildBaseArchive({
@@ -103,6 +117,26 @@ describe("getOrBuildBaseArchive", () => {
     expect(result).toMatchObject({ cacheHit: true, manifest: { buildKey: "old-key" } });
     expect(compileSpy).not.toHaveBeenCalled();
   });
+
+  it("rebuilds an older cached download that omitted agent files", async () => {
+    const store = memoryStore();
+    await store.put("old-key.zip", new Uint8Array([1, 2, 3]), "application/zip");
+    await store.put(
+      "old-key.manifest.json",
+      new TextEncoder().encode(JSON.stringify({ buildKey: "old-key", files: [], envExamples: {} })),
+      "application/json",
+    );
+
+    const result = await getOrBuildBaseArchive({
+      scaffoldRoot,
+      modules: [],
+      platforms: ["web"],
+      preferredBuildKey: "old-key",
+      store,
+    });
+    expect(result.cacheHit).toBe(false);
+    expect(result.manifest.files.some((file) => file.path === "AGENTS.md")).toBe(true);
+  }, 60_000);
 
   it("still builds when the cache is unreachable", async () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
@@ -131,6 +165,6 @@ describe("BUILDER_VERSION", () => {
     expect(
       { version: BUILDER_VERSION, hash },
       "Builder sources changed: if archive output changes, bump BUILDER_VERSION; then record the new hash here.",
-    ).toEqual({ version: 6, hash: "53212985c6d47b6b" });
+    ).toEqual({ version: 7, hash: "6c583691051bc754" });
   });
 });

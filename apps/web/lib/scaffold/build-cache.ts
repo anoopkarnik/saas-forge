@@ -26,7 +26,7 @@ import {
  * Bump whenever the output of buildBaseArchive or compileScaffoldVariant
  * changes; build-cache.test.ts fails when their sources change without it.
  */
-export const BUILDER_VERSION = 6;
+export const BUILDER_VERSION = 7;
 
 /** Neutral top-level folder of a cached archive, renamed per download. */
 export const BASE_ROOT = "saas-forge-app";
@@ -64,6 +64,11 @@ export type BaseManifest = {
 };
 
 export type BaseArchive = { bytes: Uint8Array<ArrayBuffer>; manifest: BaseManifest };
+
+function hasAgentFiles(manifest: BaseManifest): boolean {
+  const paths = manifest.files.map((file) => file.path);
+  return paths.includes("AGENTS.md") && paths.some((file) => file.startsWith(".agents/")) && paths.some((file) => file.startsWith(".claude/"));
+}
 
 export interface BuildCacheStore {
   get(objectKey: string): Promise<Uint8Array<ArrayBuffer> | null>;
@@ -268,7 +273,7 @@ export async function getOrBuildBaseArchive(input: {
         ]);
         if (bytes && manifestBytes) {
           const manifest = JSON.parse(new TextDecoder().decode(manifestBytes)) as BaseManifest;
-          return { bytes, manifest, cacheHit: true };
+          if (hasAgentFiles(manifest)) return { bytes, manifest, cacheHit: true };
         }
       } catch (err) {
         console.warn("[scaffold] build cache read failed; building instead", err);

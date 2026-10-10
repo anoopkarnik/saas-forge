@@ -8,6 +8,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { useTRPC } from "@/trpc/client";
 import { ScaffoldPreview } from "@/components/scaffold-preview/ScaffoldPreview";
+import { OnboardingPanel } from "@/components/onboarding/OnboardingPanel";
 import { secretEnvFiles, splitSecretEnv } from "@workspace/ui/lib/scaffold-secrets";
 import { appendFilesToZip } from "@workspace/ui/lib/zip-append";
 
@@ -96,25 +97,28 @@ export default function Page() {
     }
   };
 
-  if (!catalogQuery.data) {
-    return (
-      <div className="flex h-[50vh] items-center justify-center">
-        {catalogQuery.isError ? (
-          <p className="text-sm text-muted-foreground">Could not load scaffold prices. Refresh to try again.</p>
-        ) : (
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        )}
-      </div>
-    );
-  }
-
   return (
-    <DashboardPage
-      catalog={catalogQuery.data}
-      renderPreview={(selection) => <ScaffoldPreview {...selection} />}
-      onSubmitConfiguration={handleSubmitConfiguration}
-      onSaveConfiguration={handleSaveConfiguration}
-      docsBaseUrl={process.env.NEXT_PUBLIC_URL!}
-    />
+    <>
+      <div className="mx-auto w-full max-w-7xl px-6 pt-6 md:px-8">
+        <OnboardingPanel />
+      </div>
+      {catalogQuery.data ? (
+        <DashboardPage
+          catalog={catalogQuery.data}
+          renderPreview={(selection) => <ScaffoldPreview {...selection} />}
+          onSubmitConfiguration={handleSubmitConfiguration}
+          onSaveConfiguration={handleSaveConfiguration}
+          docsBaseUrl={process.env.NEXT_PUBLIC_URL!}
+        />
+      ) : (
+        <div className="flex h-[50vh] items-center justify-center">
+          {catalogQuery.isError ? (
+            <p className="text-sm text-muted-foreground">Could not load scaffold prices. Refresh to try again.</p>
+          ) : (
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          )}
+        </div>
+      )}
+    </>
   );
 }

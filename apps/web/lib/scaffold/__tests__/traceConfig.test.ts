@@ -68,6 +68,19 @@ describe("output file tracing", () => {
     expect(traced(config.outputFileTracingIncludes, "/api/scaffold/trpc/[trpc]")).toContain(STARTER);
   });
 
+  it("ships agent instructions and hidden agent directories with scaffold downloads", () => {
+    for (const route of ["/api/scaffold", "/api/v1/projects/[slug]/download"]) {
+      const includes = traced(config.outputFileTracingIncludes, route);
+      for (const root of ["../../templates/saas-boilerplate", "../../.generated/saas-boilerplate"]) {
+        expect(includes, route).toEqual(expect.arrayContaining([
+          `${root}/AGENTS.md`,
+          `${root}/.agents/**/*`,
+          `${root}/.claude/**/*`,
+        ]));
+      }
+    }
+  });
+
   it("keeps the starter out of the main tRPC function", () => {
     expect(traced(config.outputFileTracingIncludes, "/api/trpc/[trpc]")).not.toContain(STARTER);
     expect(traced(config.outputFileTracingExcludes, "/api/trpc/[trpc]")).toContain("../../templates/**");

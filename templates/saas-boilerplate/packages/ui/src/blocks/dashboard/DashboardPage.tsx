@@ -729,8 +729,6 @@ export default function DashboardPage({
         </CardContent>
       </Card>
 
-      {renderPresetJourney()}
-
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
         {MODULE_CONFIG.map((section) => {
           if (
@@ -906,10 +904,10 @@ export default function DashboardPage({
                       />
                       <StartChoiceCard
                         title="Use a Preset"
-                        description="Start from a proven setup path, then customize the details."
+                        description="Coming soon — presets are not available yet."
                         icon={<Sparkles className="h-5 w-5" />}
-                        active={entryChoice === "preset"}
-                        onClick={() => setEntryChoice("preset")}
+                        active={false}
+                        disabled
                       />
                       <StartChoiceCard
                         title="Set Up Manually"
@@ -1417,8 +1415,8 @@ export default function DashboardPage({
                 Beginner-Friendly Scaffold Setup
               </h1>
               <p className="mt-2 text-base text-muted-foreground">
-                Start with a preset, import an existing config, or walk through
-                the setup one understandable step at a time.
+                Import an existing config, or walk through the setup one
+                understandable step at a time.
               </p>
             </div>
 

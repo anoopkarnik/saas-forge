@@ -7,22 +7,25 @@ export function StartChoiceCard({
     icon,
     active,
     onClick,
+    disabled = false,
 }: {
     title: string;
     description: string;
     icon: React.ReactNode;
     active: boolean;
-    onClick: () => void;
+    onClick?: () => void;
+    disabled?: boolean;
 }) {
     return (
         <button
             type="button"
             onClick={onClick}
+            disabled={disabled}
             className={cn(
-                "rounded-2xl border p-5 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
+                "rounded-2xl border p-5 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 disabled:cursor-not-allowed disabled:opacity-50",
                 active
                     ? "border-primary bg-primary/10 shadow-sm"
-                    : "border-border/60 bg-background hover:border-primary/40",
+                    : "border-border/60 bg-background enabled:hover:border-primary/40",
             )}
         >
             <div className="flex items-start gap-3">

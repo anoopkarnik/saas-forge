@@ -122,7 +122,8 @@ export function generateSetupGuide(input: SetupGuideInput): SetupGuide {
             "Install uv (https://docs.astral.sh/uv/) and Python 3.12, then run `uv sync` in apps/backend.",
             "Set BACKEND_URL and BACKEND_HMAC_SECRET (`openssl rand -hex 32`) in apps/web/.env; use the same secret for the backend. `pnpm doctor` generates it and copies it to apps/backend/.env.",
             "Postgres needs the pgvector extension for RAG collections.",
-            "Start it with `docker compose up backend-api backend-worker`, or follow apps/backend/README.md.",
+            "Set JOBS_DRIVER=inngest and configure INNGEST_EVENT_KEY and INNGEST_SIGNING_KEY. Sync /api/inngest with Inngest before dispatching AI jobs.",
+            "Start it with `docker compose up backend-api`, or follow apps/backend/README.md.",
           ],
         },
       ]

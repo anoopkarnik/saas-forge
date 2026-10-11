@@ -100,6 +100,9 @@ export function findServerEnvIssues(env: Env): ServerEnvIssue[] {
     const hmacIssue = secretIssue("BACKEND_HMAC_SECRET", env.BACKEND_HMAC_SECRET);
     if (hmacIssue) issues.push(hmacIssue);
   }
+  if (!isBlank(env.BACKEND_URL) && env.JOBS_DRIVER !== "inngest") {
+    issues.push({ key: "JOBS_DRIVER", message: "must be inngest when BACKEND_URL enables AI jobs" });
+  }
   // scaffold:end ai_agents
 
   // scaffold:begin webhooks

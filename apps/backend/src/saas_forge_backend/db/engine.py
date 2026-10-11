@@ -42,7 +42,7 @@ def get_sessionmaker() -> async_sessionmaker[AsyncSession]:
 
 
 async def session_scope() -> AsyncIterator[AsyncSession]:
-    """FastAPI dependency / ARQ helper for a request-scoped session."""
+    """FastAPI dependency for a request-scoped session."""
     sm = get_sessionmaker()
     async with sm() as session:
         yield session

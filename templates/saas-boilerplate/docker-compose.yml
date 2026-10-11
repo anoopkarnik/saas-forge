@@ -23,15 +23,6 @@ services:
     volumes:
       - postgres-data:/var/lib/postgresql/data
 
-  redis:
-    image: redis:7-alpine
-    restart: unless-stopped
-    command: ["redis-server", "--appendonly", "yes"]
-    ports:
-      - "${REDIS_PORT:-6379}:6379"
-    volumes:
-      - redis-data:/data
-
   web:
     build:
       context: .
@@ -51,6 +42,10 @@ services:
       # scaffold:begin ai_agents
       BACKEND_URL: http://backend-api:8000
       BACKEND_HMAC_SECRET: ${BACKEND_HMAC_SECRET:?set BACKEND_HMAC_SECRET in .env (openssl rand -hex 32)}
+      JOBS_DRIVER: inngest
+      INNGEST_EVENT_KEY: ${INNGEST_EVENT_KEY:?set INNGEST_EVENT_KEY in .env}
+      INNGEST_SIGNING_KEY: ${INNGEST_SIGNING_KEY:?set INNGEST_SIGNING_KEY in .env}
+      INNGEST_BASE_URL: ${INNGEST_BASE_URL:-}
       # scaffold:end ai_agents
     ports:
       - "${WEB_PORT:-3000}:3000"
@@ -65,12 +60,9 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      redis:
-        condition: service_started
     environment:
       APP_ENV: production
       BACKEND_DATABASE_URL: postgresql+asyncpg://postgres:postgres@postgres:5432/saas_forge
-      REDIS_URL: redis://redis:6379/0
       BACKEND_HMAC_SECRET: ${BACKEND_HMAC_SECRET:?set BACKEND_HMAC_SECRET in .env (openssl rand -hex 32)}
       LOG_FORMAT: ${LOG_FORMAT:-pretty}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
@@ -88,32 +80,7 @@ services:
     # use web's proxy at /api/ai/agents/.../stream. Do not re-add a host-port
     # mapping; the backend's only legitimate ingress is `web`.
 
-  backend-worker:
-    build:
-      context: .
-      dockerfile: Dockerfile.backend
-      target: worker
-    restart: unless-stopped
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_started
-    environment:
-      APP_ENV: production
-      BACKEND_DATABASE_URL: postgresql+asyncpg://postgres:postgres@postgres:5432/saas_forge
-      REDIS_URL: redis://redis:6379/0
-      BACKEND_HMAC_SECRET: ${BACKEND_HMAC_SECRET:?set BACKEND_HMAC_SECRET in .env (openssl rand -hex 32)}
-      LOG_FORMAT: ${LOG_FORMAT:-pretty}
-      LOG_LEVEL: ${LOG_LEVEL:-INFO}
-      RAG_VECTOR_STORE: ${RAG_VECTOR_STORE:-pgvector}
-      RAG_EMBEDDER: ${RAG_EMBEDDER:-openai:text-embedding-3-small}
-      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
-      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
-      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-}
   # scaffold:end ai_agents
 
 volumes:
   postgres-data:
-  redis-data:

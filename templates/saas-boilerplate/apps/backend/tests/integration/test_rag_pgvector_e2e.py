@@ -1,4 +1,3 @@
-import asyncio
 import os
 from unittest.mock import patch
 
@@ -18,14 +17,11 @@ async def test_rag_pgvector_full_round_trip():
     from sqlalchemy import text
 
     from saas_forge_backend.db.engine import get_sessionmaker
-    from saas_forge_backend.db.models import AiJobStatus
+    from saas_forge_backend.db.models import AiJobRun, AiJobStatus
     from saas_forge_backend.db.repositories import (
         collections as collections_repo,
     )
-    from saas_forge_backend.db.repositories import (
-        jobs as jobs_repo,
-    )
-    from saas_forge_backend.jobs.queue import enqueue_ingest_document_job
+    from saas_forge_backend.rag.direct_ingest import run_ingestion
 
     sm = get_sessionmaker()
     user_id = new_id()
@@ -49,40 +45,28 @@ async def test_rag_pgvector_full_round_trip():
             embedding_dims=1536,
         )
 
-    # Insert a PENDING ingest job. Embedding requires a real OpenAI key; in CI we
-    # use a fake embedder via env. For local runs, set OPENAI_API_KEY.
+    # Embedding requires a real OpenAI key for this integration test.
     if not os.getenv("OPENAI_API_KEY"):
         pytest.skip("OPENAI_API_KEY not set; pgvector e2e needs real embeddings")
 
     job_id = new_id()
+    payload = {
+        "collection_id": collection_id,
+        "title": "Capitals",
+        "source": {
+            "type": "text",
+            "content": "Paris is the capital of France. Tokyo is the capital of Japan.",
+        },
+    }
     async with sm() as s, s.begin():
-        await jobs_repo.insert_pending(
-            s, job_id=job_id, user_id=user_id, org_id=None,
-            agent_id="rag_ingest",
-            input_payload={
-                "collection_id": collection_id,
-                "title": "Capitals",
-                "source": {
-                    "type": "text",
-                    "content": "Paris is the capital of France. Tokyo is the capital of Japan.",
-                },
-            },
-        )
-    await enqueue_ingest_document_job(job_id)
-
-    # Poll for completion.
-    deadline = asyncio.get_event_loop().time() + 60
-    final = None
-    while asyncio.get_event_loop().time() < deadline:
-        async with sm() as s:
-            row = await jobs_repo.get(s, job_id)
-        if row is not None and row.status in {AiJobStatus.SUCCEEDED, AiJobStatus.FAILED}:
-            final = row
-            break
-        await asyncio.sleep(0.5)
-    assert final is not None and final.status == AiJobStatus.SUCCEEDED
-    assert final.result is not None
-    assert final.result["chunk_count"] >= 1
+        s.add(AiJobRun(
+            id=job_id, userId=user_id, orgId=None, agentId="rag_ingest",
+            status=AiJobStatus.RUNNING, input=payload,
+        ))
+    first = await run_ingestion(job_id, user_id, None, payload)
+    repeated = await run_ingestion(job_id, user_id, None, payload)
+    assert first == repeated
+    assert int(first["chunk_count"]) >= 1
 
     # Now run rag_chat with a mocked LLM (we only verify retrieval works).
     from langchain_core.messages import AIMessageChunk

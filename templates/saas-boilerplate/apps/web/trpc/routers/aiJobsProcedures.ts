@@ -1,11 +1,9 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import db from "@workspace/database/client";
-import { Redis } from "@upstash/redis";
+import { inngest } from "@workspace/jobs/inngest";
 import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
-import { enqueueJob } from "@/lib/backend/client";
-
-const upstash = Redis.fromEnv();
+import { cancelAiJob, dispatchAiJob } from "@/lib/ai-jobs/service";
 
 const createInput = z.object({
   agentId: z.string().min(1),
@@ -35,17 +33,9 @@ export const aiJobsRouter = createTRPCRouter({
         select: { id: true },
       });
       try {
-        const kind = input.agentId === "rag_ingest" ? "ingest" : "agent";
-        await enqueueJob({
-          jobId: row.id,
-          userId: ctx.session.user.id,
-          orgId: null,
-          agentId: input.agentId,
-          input: input.input,
-          kind,
-        });
+        await dispatchAiJob({ id: row.id, agentId: input.agentId });
       } catch (err) {
-        console.error("[aiJobs.create] enqueue failed; row stays PENDING for reaper", err);
+        console.error("[aiJobs.create] dispatch failed; row stays PENDING for recovery", err);
       }
       return { jobId: row.id };
     }),
@@ -53,14 +43,17 @@ export const aiJobsRouter = createTRPCRouter({
   status: protectedProcedure
     .input(statusInput)
     .query(async ({ ctx, input }) => {
-      const live = (await upstash.hgetall<Record<string, string>>(`job:${input.jobId}`)) ?? {};
       const row = await (db as any).aiJobRun.findFirst({
         where: { id: input.jobId, userId: ctx.session.user.id },
       });
       if (!row) throw new TRPCError({ code: "NOT_FOUND" });
 
-      const status = (live.status ?? row.status) as
+      const status = row.status as
         | "PENDING" | "RUNNING" | "SUCCEEDED" | "FAILED" | "CANCELLED";
+      const latest = await (db as any).aiJobEvent.findFirst({
+        where: { jobId: input.jobId }, orderBy: { seq: "desc" },
+        select: { seq: true, type: true, at: true },
+      });
 
       return {
         id: row.id,
@@ -69,13 +62,7 @@ export const aiJobsRouter = createTRPCRouter({
         created_at: row.createdAt,
         started_at: row.startedAt,
         finished_at: row.finishedAt,
-        latest_event: live.latest_event_seq
-          ? {
-              seq: Number(live.latest_event_seq),
-              type: live.latest_event_type ?? "unknown",
-              at: live.last_heartbeat ?? new Date().toISOString(),
-            }
-          : undefined,
+        latest_event: latest ? { seq: latest.seq, type: latest.type, at: latest.at.toISOString() } : undefined,
         result: status === "SUCCEEDED" ? row.result : undefined,
         error: status === "FAILED"
           ? { code: row.errorCode ?? "UNKNOWN", message: row.errorMessage ?? "" }
@@ -111,21 +98,15 @@ export const aiJobsRouter = createTRPCRouter({
   cancel: protectedProcedure
     .input(cancelInput)
     .mutation(async ({ ctx, input }) => {
-      const owned = await (db as any).aiJobRun.findFirst({
-        where: { id: input.jobId, userId: ctx.session.user.id },
-        select: { id: true, status: true },
-      });
-      if (!owned) throw new TRPCError({ code: "NOT_FOUND" });
-
-      if (["SUCCEEDED", "FAILED", "CANCELLED"].includes(owned.status)) {
-        return { ok: true, already_terminal: true };
+      const outcome = await cancelAiJob(input.jobId, ctx.session.user.id);
+      if (outcome === "missing") throw new TRPCError({ code: "NOT_FOUND" });
+      if (outcome === "cancelled") {
+        try {
+          await inngest.send({ name: "ai/job.cancelled", data: { jobId: input.jobId } });
+        } catch (error) {
+          console.error("[aiJobs.cancel] cancellation event failed; row is cancelled", error);
+        }
       }
-
-      await (db as any).aiJobRun.update({
-        where: { id: input.jobId },
-        data: { status: "CANCELLED", finishedAt: new Date() },
-      });
-      await upstash.hset(`job:${input.jobId}`, { cancel_requested: "1", status: "CANCELLED" });
-      return { ok: true };
+      return outcome === "cancelled" ? { ok: true } : { ok: true, already_terminal: true };
     }),
 });

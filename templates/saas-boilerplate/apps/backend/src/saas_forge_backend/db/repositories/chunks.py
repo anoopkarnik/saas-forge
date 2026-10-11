@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable, Sequence
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from saas_forge_backend.db.models import AiDocumentChunk
@@ -60,3 +60,7 @@ async def list_for_document(session: AsyncSession, document_id: str) -> list[AiD
         .order_by(AiDocumentChunk.seq.asc())
     )
     return list((await session.execute(stmt)).scalars().all())
+
+
+async def delete_for_document(session: AsyncSession, document_id: str) -> None:
+    await session.execute(delete(AiDocumentChunk).where(AiDocumentChunk.documentId == document_id))

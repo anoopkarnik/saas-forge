@@ -234,5 +234,3 @@ jobs:
       - uses: actions/checkout@v4
       - name: Build api image
         run: docker build -f Dockerfile.backend --target api -t saas-forge-backend:api .
-      - name: Build worker image
-        run: docker build -f Dockerfile.backend --target worker -t saas-forge-backend:worker .

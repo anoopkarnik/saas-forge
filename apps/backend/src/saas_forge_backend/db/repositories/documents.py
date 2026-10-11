@@ -36,14 +36,18 @@ async def create(
     return row
 
 
-async def mark_ready(session: AsyncSession, *, document_id: str, chunk_count: int) -> None:
+async def mark_ready(
+    session: AsyncSession, *, document_id: str, chunk_count: int, byte_size: int | None = None
+) -> None:
     await session.execute(
         update(AiDocument)
         .where(AiDocument.id == document_id)
         .values(
             status=AiDocumentStatus.READY,
             chunkCount=chunk_count,
+            byteSize=byte_size,
             indexedAt=datetime.now(UTC),
+            errorMessage=None,
         )
     )
 
@@ -53,6 +57,14 @@ async def mark_failed(session: AsyncSession, *, document_id: str, error: str) ->
         update(AiDocument)
         .where(AiDocument.id == document_id)
         .values(status=AiDocumentStatus.FAILED, errorMessage=error)
+    )
+
+
+async def mark_ingesting(session: AsyncSession, *, document_id: str) -> None:
+    await session.execute(
+        update(AiDocument)
+        .where(AiDocument.id == document_id)
+        .values(status=AiDocumentStatus.INGESTING, chunkCount=0, byteSize=None, errorMessage=None)
     )
 
 

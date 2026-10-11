@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import io
 import logging
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from typing import Any
 
@@ -27,6 +28,10 @@ class IngestionResult:
 
 
 class UnsupportedSource(Exception):
+    pass
+
+
+class IngestionCancelled(Exception):
     pass
 
 
@@ -59,7 +64,10 @@ async def ingest(
     collection_id: str,
     document_id: str,
     embedder: Embeddings,
+    should_cancel: Callable[[], Awaitable[bool]] | None = None,
 ) -> IngestionResult:
+    if should_cancel and await should_cancel():
+        raise IngestionCancelled("AI ingestion cancelled")
     src_type = source.get("type")
     if src_type == "text":
         text = str(source.get("content", ""))
@@ -80,6 +88,8 @@ async def ingest(
         raise UnsupportedSource(f"unknown source type: {src_type}")
 
     chunks = split_text(text, ChunkingConfig.from_input(chunking))
+    if should_cancel and await should_cancel():
+        raise IngestionCancelled("AI ingestion cancelled")
     if not chunks:
         return IngestionResult(chunk_count=0, byte_size=byte_size)
 
@@ -99,6 +109,9 @@ async def ingest(
             ],
         )
 
+    if should_cancel and await should_cancel():
+        raise IngestionCancelled("AI ingestion cancelled")
+
     store = get_vector_store(collection_id, embedder)
     docs = [
         Document(
@@ -116,4 +129,6 @@ async def ingest(
         metadatas=[d.metadata for d in docs],
         ids=[f"{document_id}:{i}" for i in range(len(chunks))],
     )
+    if should_cancel and await should_cancel():
+        raise IngestionCancelled("AI ingestion cancelled")
     return IngestionResult(chunk_count=len(chunks), byte_size=byte_size)

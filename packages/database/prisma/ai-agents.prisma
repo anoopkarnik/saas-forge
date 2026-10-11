@@ -2,7 +2,7 @@
 // Removed from a download when the module is not selected.
 
 // ============================================================================
-// Backend job runner + RAG (added by FastAPI backend integration; see
+// AI job history + RAG (added by FastAPI backend integration; see
 // docs/superpowers/specs/2026-05-31-21-fastapi-ai-backend-langgraph-design.mdx)
 // ============================================================================
 
@@ -30,6 +30,8 @@ model AiJobRun {
   startedAt       DateTime?
   finishedAt      DateTime?
   lastHeartbeatAt DateTime?
+  inngestRunId    String?
+  lastDispatchAt  DateTime?
   events          AiJobEvent[]
   user            User         @relation("AiJobRuns", fields: [userId], references: [id], onDelete: Cascade)
 

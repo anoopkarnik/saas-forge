@@ -35,7 +35,7 @@ describe("GET /api/v1/scaffold/pricing", () => {
     expect(billing.implemented).toBe(true);
     expect(billing.available).toBe(true);
     const agents = body.modules.find((m: any) => m.id === "ai_agents");
-    expect(agents.requires).toEqual(["ai"]);
+    expect(agents.requires).toEqual(["ai", "jobs"]);
 
     const multi = body.modules.find((m: any) => m.id === "multi_tenancy");
     expect(multi.downloadEnabled).toBe(true);

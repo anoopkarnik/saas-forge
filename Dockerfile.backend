@@ -31,8 +31,3 @@ FROM app AS api
 WORKDIR /app/apps/backend
 EXPOSE 8000
 CMD ["uv","run","--no-sync","uvicorn","saas_forge_backend.main:app","--host","0.0.0.0","--port","8000","--workers","2"]
-
-# --- Worker runtime ---
-FROM app AS worker
-WORKDIR /app/apps/backend
-CMD ["uv","run","--no-sync","arq","saas_forge_backend.jobs.worker.WorkerSettings"]

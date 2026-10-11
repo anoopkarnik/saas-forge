@@ -12,6 +12,10 @@
     "saas_forge_backend",
     "Dockerfile.backend",
     "AiJobRun",
+    "aiJobFunctions",
+    "ai/agent.requested",
+    "ai/ingest.requested",
+    "ai/job.cancelled",
     "AiCollection",
     "CREATE EXTENSION IF NOT EXISTS vector"
   ],
@@ -25,13 +29,15 @@
       "apps/web/trpc/routers/aiJobsProcedures.ts",
       "apps/web/trpc/routers/__tests__/aiJobs.test.ts",
       "apps/web/lib/backend",
+      "apps/web/lib/ai-jobs",
       "packages/observability/src/signed-fetch.ts",
       "packages/observability/src/signed-fetch.test.ts",
       "packages/database/prisma/ai-agents.prisma",
       "packages/database/prisma/migrations/20260601142139_ai_events_tables",
       "packages/database/prisma/migrations/20260601143928_pgvector_embedding",
       "packages/database/prisma/migrations/20260608123000_drop_ai_document_chunk_embedding_idx",
-      "packages/database/prisma/migrations/20261005133657_modified_the_schema_so_that_modules_can_be_deleted"
+      "packages/database/prisma/migrations/20261005133657_modified_the_schema_so_that_modules_can_be_deleted",
+      "packages/database/prisma/migrations/20261010080725_added_ai_jobs"
     ],
     "jsonRemove": [
       {

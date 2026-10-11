@@ -5,7 +5,6 @@
 # Required Coolify environment variables:
 #   DOCKERHUB_NAMESPACE          (e.g. anoopkarnik)
 #   BACKEND_DATABASE_URL         (postgresql+asyncpg://...@host:5432/db?ssl=require)
-#   REDIS_URL                    (rediss://default:<TCP-PASSWORD>@<host>:6379)
 #   BACKEND_HMAC_SECRET          (must match apps/web/.env on the Next.js side)
 #   OPENAI_API_KEY               (or ANTHROPIC_API_KEY / OLLAMA_BASE_URL — whichever you use)
 #
@@ -24,12 +23,10 @@
 #   METRICS_ENABLED=false
 #   OTEL_EXPORTER_OTLP_ENDPOINT=
 #
-# Postgres + Redis are intentionally NOT defined here — they're external
-# (Cloud SQL Postgres + Upstash Redis). Don't add them.
+# Postgres is intentionally NOT defined here — it is external.
 #
 # In Coolify: attach a domain to the backend-api service. Coolify's proxy
-# (Traefik) terminates TLS and forwards to container port 8000. The worker
-# has no inbound traffic so no domain.
+# (Traefik) terminates TLS and forwards to container port 8000.
 
 services:
   backend-api:
@@ -38,7 +35,6 @@ services:
     environment:
       APP_ENV: production
       BACKEND_DATABASE_URL: ${BACKEND_DATABASE_URL}
-      REDIS_URL: ${REDIS_URL}
       BACKEND_HMAC_SECRET: ${BACKEND_HMAC_SECRET}
       BACKEND_HMAC_SECRET_NEXT: ${BACKEND_HMAC_SECRET_NEXT:-}
       RAG_VECTOR_STORE: ${RAG_VECTOR_STORE:-pgvector}
@@ -61,23 +57,3 @@ services:
       timeout: 5s
       retries: 3
       start_period: 15s
-
-  backend-worker:
-    image: ${DOCKERHUB_NAMESPACE}/saas-forge-backend-worker:${IMAGE_TAG:-latest}
-    restart: always
-    environment:
-      APP_ENV: production
-      BACKEND_DATABASE_URL: ${BACKEND_DATABASE_URL}
-      REDIS_URL: ${REDIS_URL}
-      BACKEND_HMAC_SECRET: ${BACKEND_HMAC_SECRET}
-      RAG_VECTOR_STORE: ${RAG_VECTOR_STORE:-pgvector}
-      RAG_EMBEDDER: ${RAG_EMBEDDER:-openai:text-embedding-3-small}
-      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
-      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
-      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-}
-      QDRANT_URL: ${QDRANT_URL:-}
-      QDRANT_API_KEY: ${QDRANT_API_KEY:-}
-      LOG_LEVEL: ${LOG_LEVEL:-INFO}
-      LOG_FORMAT: ${LOG_FORMAT:-json}
-      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}

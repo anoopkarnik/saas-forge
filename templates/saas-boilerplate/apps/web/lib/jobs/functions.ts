@@ -10,6 +10,9 @@ import { NonRetriableError } from "inngest";
 import { enqueue, getJob, listJobs, listSchedules, PermanentJobError, type JobDefinition } from "@workspace/jobs/index";
 import { inngest, jobEvent, type JobEventData } from "@workspace/jobs/inngest";
 import { claimScheduleWindow, recordDeadLetter } from "@/lib/jobs/service";
+// scaffold:begin ai_agents
+import { aiJobFunctions } from "@/lib/ai-jobs/functions";
+// scaffold:end ai_agents
 
 /**
  * The Inngest functions served at /api/inngest: one per job (retries come from
@@ -79,5 +82,11 @@ export function jobFunctions() {
       async () => ({ ran: await fireSchedule(schedule.name, new Date()) }),
     ),
   );
-  return [...jobFns, ...scheduleFns];
+  return [
+    ...jobFns,
+    ...scheduleFns,
+    // scaffold:begin ai_agents
+    ...aiJobFunctions,
+    // scaffold:end ai_agents
+  ];
 }

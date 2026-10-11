@@ -93,7 +93,11 @@ function planVariants() {
   // Pairwise mode covers every module alone and every pair; with few modules it
   // equals the full sweep, and it stays bounded as the catalogue grows.
   const moduleSets = subsets(modules)
-    .filter((selection) => full || selection.length <= 2 || selection.length === modules.length)
+    .filter((selection) => full || selection.length <= 2 || selection.length === modules.length ||
+      registry.modules.some((module) =>
+        selection.length === module.requires.length + 1 &&
+        selection.includes(module.id) &&
+        module.requires.every((required) => selection.includes(required))))
     .filter(isValidCombination);
 
   // Every module set compiles with all platforms so desktop and mobile typecheck;

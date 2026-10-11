@@ -741,7 +741,10 @@ export function compileScaffoldVariant({
 }) {
   fs.cpSync(baseRoot, tempDir, {
     recursive: true,
-    filter: (src) => !SCAFFOLD_IGNORE_DIRS.has(path.basename(src)) && !isLocalEnvFile(path.basename(src)),
+    filter: (src) =>
+      !SCAFFOLD_IGNORE_DIRS.has(path.basename(src)) &&
+      !isLocalEnvFile(path.basename(src)) &&
+      path.relative(baseRoot, src) !== path.join("packages", "database", "src", "generated"),
   });
 
   const selectedModuleSet = new Set(selectedModules);

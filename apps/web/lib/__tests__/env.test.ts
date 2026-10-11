@@ -58,7 +58,7 @@ describe("findServerEnvIssues", () => {
   it("requires BACKEND_HMAC_SECRET only when BACKEND_URL is set", () => {
     expect(findServerEnvIssues(baseEnv)).toEqual([]);
     const issues = findServerEnvIssues({ ...baseEnv, BACKEND_URL: "http://backend:8000" });
-    expect(issues.map((i) => i.key)).toEqual(["BACKEND_HMAC_SECRET"]);
+    expect(issues.map((i) => i.key)).toEqual(["BACKEND_HMAC_SECRET", "JOBS_DRIVER"]);
   });
   // scaffold:end ai_agents
 

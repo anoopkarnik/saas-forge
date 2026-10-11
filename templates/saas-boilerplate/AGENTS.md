@@ -131,7 +131,7 @@ Background jobs (`packages/jobs`):
 - Email goes through the `email.send` job: call `sendEmail({ template, ... })` from `@workspace/email/jobs`, not the Resend senders directly.
 <!-- scaffold:begin jobs -->
 - Without a queue (tests, development, no jobs module) `enqueue` runs the job inline with the same retries. With `JOBS_DRIVER=inngest` it sends a `jobs/<name>` event to Inngest; `/api/inngest` serves one function per job and per schedule (`apps/web/lib/jobs/functions.ts`). A job that fails every attempt becomes a `JobRun` dead letter on `/admin/jobs` with replay; `ScheduleRun` makes each cron window fire once. Register new jobs in a module `functions.ts` imports.
-- The Python ARQ worker (`apps/backend`) stays for AI agent and RAG work; product work (email, cleanups, notifications, webhooks) uses these jobs.
+- Web Inngest functions own AI agent and RAG job lifecycle too. The Python backend exposes signed execution APIs and checks the web-owned job row for cancellation; it has no ARQ worker.
 <!-- scaffold:end jobs -->
 
 <!-- scaffold:begin notifications -->

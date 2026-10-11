@@ -50,6 +50,7 @@ describe("buildProjectZip", () => {
     // Desktop was not selected; secrets have nowhere to go.
     expect(zip.file("demo/apps/desktop/.env")).toBeNull();
     expect(zip.file("demo/packages/database/.env")).toBeNull();
+    expect(zip.file("demo/packages/database/src/generated/prisma/internal/class.ts")).toBeNull();
 
     expect(zip.file("demo/pnpm-lock.yaml")).not.toBeNull();
     expect(zip.file("demo/SETUP.md")).not.toBeNull();

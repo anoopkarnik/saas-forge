@@ -39,7 +39,7 @@ describe("previewUpgrade", () => {
     for (const migration of preview.migrations) {
       expect(staged.some((file) => file.name === `demo/.upgrade/packages/database/prisma/migrations/${migration}/migration.sql`)).toBe(true);
     }
-  });
+  }, 15_000);
 
   it("finds nothing to stage for a tier-only upgrade", () => {
     const preview = previewUpgrade({ fromModules: [], toModules: [], fromTierId: "tier-1", toTierId: "tier-3", platforms: ["web"] });

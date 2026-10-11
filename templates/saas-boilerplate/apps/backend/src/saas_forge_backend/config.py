@@ -18,7 +18,6 @@ class Settings(BaseSettings):
 
     # Core
     backend_database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5433/saas_forge"
-    redis_url: str = "redis://localhost:6379/0"
     backend_hmac_secret: str
     backend_hmac_secret_next: str | None = None
 
@@ -61,7 +60,7 @@ class Settings(BaseSettings):
                 problems.append(f"{name} must be at least {MIN_SECRET_LENGTH} characters")
 
         # The defaults point at localhost and only make sense for local dev.
-        for field in ("backend_database_url", "redis_url"):
+        for field in ("backend_database_url",):
             if field not in self.model_fields_set:
                 problems.append(f"{field.upper()} must be set explicitly")
 

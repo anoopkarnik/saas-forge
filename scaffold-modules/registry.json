@@ -44,11 +44,12 @@
     {
       "id": "ai_agents",
       "label": "AI Agents & RAG (Python)",
-      "description": "FastAPI service with LangGraph agents, background AI jobs, RAG collections over pgvector, and the streaming agent proxy. Requires the AI Platform.",
+      "description": "FastAPI execution with LangGraph agents and RAG, dispatched by web Inngest. Requires AI Platform and Jobs.",
       "default": false,
       "creditsCost": 30,
       "requires": [
-        "ai"
+        "ai",
+        "jobs"
       ],
       "incompatibleWith": [],
       "downloadEnabled": true,

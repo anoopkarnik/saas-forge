@@ -1,18 +1,18 @@
 # @workspace/backend — FastAPI AI service
 
-Long-running and agentic AI workloads (LangGraph + LangChain) for SaaS Forge. Internal-only service; web is the single trust boundary.
+AI agent and RAG execution (LangGraph + LangChain) for SaaS Forge. Web Inngest manages asynchronous jobs; this service exposes signed execution APIs.
 
 ## Prerequisites
 
 - Python 3.12
 - [uv](https://github.com/astral-sh/uv)
-- A running Postgres (with `pgvector`) and Redis — the repo's `docker-compose.yml` provides both.
+- A running Postgres with `pgvector` — the repo's `docker-compose.yml` provides it.
 
 ## Quickstart (local dev)
 
 ```bash
 # From repo root, the first time:
-docker compose up --build --detach postgres redis
+docker compose up --build --detach postgres
 pnpm migrate              # applies Prisma migrations; appends pgvector SQL — see docs/superpowers/notes/2026-05-31-ai-backend-migration.md
 
 # Install Python deps:
@@ -21,8 +21,6 @@ pnpm --filter @workspace/backend build   # runs `uv sync --frozen`
 # Run the API:
 pnpm dev                                 # starts web + backend API via turbo
 
-# In a separate terminal, run the worker:
-pnpm --filter @workspace/backend dev:worker
 ```
 
 The API will be at `http://localhost:8000`. Health probe:
@@ -45,12 +43,11 @@ src/saas_forge_backend/
 ├── config.py            pydantic-settings (env-driven)
 ├── security/hmac.py     HMAC verification middleware
 ├── db/                  SQLAlchemy engine + models + repositories
-├── api/routes/          FastAPI route handlers (agents, jobs, health)
+├── api/routes/          FastAPI route handlers (agents, ingestion, health)
 ├── api/sse.py           SSE event format
 ├── llm/factory.py       provider:model → LangChain ChatModel
 ├── rag/                 VectorStore factory, embedders, splitters, KnowledgeSource, ingestion
 ├── agents/registry.py   agent_id → run function map
-├── jobs/                ARQ worker + tasks + reaper
 └── observability/       structlog, optional Prometheus + OTEL
 ```
 
@@ -79,17 +76,11 @@ uv run pytest                          # unit + mocked
 BACKEND_INTEGRATION=1 \
 BACKEND_HMAC_SECRET=x \
 BACKEND_DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5433/saas_forge \
-REDIS_URL=redis://localhost:6379/0 \
 uv run pytest tests/integration         # integration (needs compose services)
 ```
 
 ## Deployment
 
-The `Dockerfile.backend` builds two targets — `api` and `worker` — from one image. Deploy both per environment. Recommended targets:
-
-- **Fly.io** — two `fly.toml` files, one per process.
-- **Railway** — two services from one repo.
-- **Render** — two services targeting different `Dockerfile` stages.
-- **Kubernetes** — two `Deployments` from one image.
+The `Dockerfile.backend` builds the `api` target. Deploy the web Inngest functions before changing job dispatch. Generate the Prisma migration for the new `AiJobRun` fields with `pnpm migrate`, deploy the schema, then deploy the web and backend services. Drain the old ARQ worker before removing it.
 
 Backend should NOT be exposed to the public internet. Either co-locate with web on a private network, or front it with a private load balancer the web service can reach.

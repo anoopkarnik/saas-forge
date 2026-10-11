@@ -16,7 +16,6 @@ import {
   Save,
   Settings2,
   Sparkles,
-  Upload,
 } from "lucide-react";
 
 import { Button } from "@workspace/ui/components/shadcn/button";
@@ -71,6 +70,7 @@ import {
   getWizardStepFields,
   isWizardFieldComplete,
   isWizardFieldRequired,
+  SECRET_WIZARD_FIELDS,
   WIZARD_STEPS,
   type EntryChoice,
   type ProviderGroup,
@@ -232,6 +232,9 @@ export default function DashboardPage({
   const accountGroups = React.useMemo(
     () => getAccountsProviderGroups(values),
     [values],
+  );
+  const advancedChoiceFields = new Set(
+    WIZARD_STEPS.flatMap((step) => getWizardStepFields(step.id, values)),
   );
   const reviewSummary = React.useMemo(
     () => getReviewSummaryItems(values),
@@ -530,7 +533,11 @@ export default function DashboardPage({
     try {
       await onSaveConfiguration({
         name: safeName,
-        config: values as Record<string, unknown>,
+        config: Object.fromEntries(
+          Object.entries(values).filter(
+            ([key]) => !isSecretEnvKey(key) && !SECRET_WIZARD_FIELDS.has(key as WizardFieldName),
+          ),
+        ),
         modules: values.SELECTED_MODULES || [],
         platforms: values.NEXT_PUBLIC_PLATFORM || ["web"],
         productTypeId: presetProductTypeId ?? undefined,
@@ -617,19 +624,10 @@ export default function DashboardPage({
           <div>
             <h2 className="text-xl font-semibold">Advanced Setup</h2>
             <p className="text-sm text-muted-foreground">
-              Power-user view with every form section visible at once.
+              All setup choices in one view. Add credentials after download.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={openImportPicker}
-              className="touch-manipulation"
-            >
-              <Upload className="mr-2 h-4 w-4" />
-              Import .env
-            </Button>
             <Button
               type="button"
               variant="outline"
@@ -730,7 +728,11 @@ export default function DashboardPage({
       </Card>
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-        {MODULE_CONFIG.map((section) => {
+        {MODULE_CONFIG.filter(
+          (section) =>
+            section.id === "project" ||
+            section.fields.some((field) => advancedChoiceFields.has(field.name as WizardFieldName)),
+        ).map((section) => {
           if (
             section.id === "payment" &&
             !(values.SELECTED_MODULES || []).includes("billing")
@@ -818,6 +820,9 @@ export default function DashboardPage({
 
                 {section.fields
                   .filter((field) => {
+                    if (!advancedChoiceFields.has(field.name as WizardFieldName)) {
+                      return false;
+                    }
                     if (field.showIf) {
                       const dependencyValue = form.getValues(
                         field.showIf.field as keyof FormValues,
@@ -997,6 +1002,25 @@ export default function DashboardPage({
 
                 {currentStep.id === "features" ? (
                   <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                    <div className="lg:col-span-2">
+                      <FeaturePanel
+                        title="Optional Features"
+                        question="Which paid capabilities should your scaffold include?"
+                        description="Choose from every available module. Required modules are included automatically."
+                      >
+                        <div className="grid gap-3 md:grid-cols-2">
+                          {availableModules.map((module) => (
+                            <ModuleToggleCard
+                              key={module.id}
+                              module={module}
+                              selected={(values.SELECTED_MODULES || []).includes(module.id)}
+                              onToggle={() => toggleScaffoldModule(module.id)}
+                            />
+                          ))}
+                        </div>
+                      </FeaturePanel>
+                    </div>
+
                     <FeaturePanel
                       title="Marketing Content"
                       question="How do you want to manage your landing page and docs?"
@@ -1049,56 +1073,6 @@ export default function DashboardPage({
                       )}
                     </FeaturePanel>
 
-                    <FeaturePanel
-                      title="Take Payments"
-                      question="Should the scaffold include checkout, billing, and credits flows?"
-                      description="Enable this only if you want payment UI, transaction history, and webhooks already wired in."
-                    >
-                      {availableModules.filter(
-                        (module) => module.id === "billing",
-                      ).map((module) => (
-                        <ModuleToggleCard
-                          key={module.id}
-                          module={module}
-                          selected={(values.SELECTED_MODULES || []).includes(module.id)}
-                          onToggle={() => toggleScaffoldModule(module.id)}
-                        />
-                      ))}
-                    </FeaturePanel>
-
-                    <FeaturePanel
-                      title="AI Capabilities"
-                      question="Should the downloadable scaffold include the AI module?"
-                      description="Enable this for model integrations, streaming responses, and the starter AI workspace."
-                    >
-                      {availableModules.filter(
-                        (module) => module.id === "ai" || module.id === "ai_agents",
-                      ).map((module) => (
-                        <ModuleToggleCard
-                          key={module.id}
-                          module={module}
-                          selected={(values.SELECTED_MODULES || []).includes(module.id)}
-                          onToggle={() => toggleScaffoldModule(module.id)}
-                        />
-                      ))}
-                    </FeaturePanel>
-
-                    <FeaturePanel
-                      title="Teams & Organizations"
-                      question="Will customers work together in shared workspaces?"
-                      description="Enable this for workspaces, member invites, workspace switching, and owner/admin/member/viewer roles."
-                    >
-                      {availableModules.filter(
-                        (module) => module.id === "multi_tenancy",
-                      ).map((module) => (
-                        <ModuleToggleCard
-                          key={module.id}
-                          module={module}
-                          selected={(values.SELECTED_MODULES || []).includes(module.id)}
-                          onToggle={() => toggleScaffoldModule(module.id)}
-                        />
-                      ))}
-                    </FeaturePanel>
                   </div>
                 ) : null}
 
@@ -1432,8 +1406,7 @@ export default function DashboardPage({
                 <div>
                   <p className="text-sm font-semibold">Advanced Setup</p>
                   <p className="text-xs text-muted-foreground">
-                    Toggle the dense power-user form when you want every setting
-                    visible.
+                    View all setup choices on one page.
                   </p>
                 </div>
                 <Switch

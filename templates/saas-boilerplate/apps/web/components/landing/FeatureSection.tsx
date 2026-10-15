@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import { FeatureSectionProps } from "@/lib/ts-types/landing";
 import { Badge } from "@workspace/ui/components/shadcn/badge";
 import {
@@ -15,6 +16,7 @@ import { Layers } from "lucide-react";
 import { ReactElement } from "react";
 
 const FeatureSection = ({ featureSection }: { featureSection: FeatureSectionProps }): ReactElement => {
+  const t = useTranslations("landing");
   const reducedMotion = useReducedMotion();
 
   const [headingArray, setHeadingArray] = useState<string[]>([])
@@ -85,7 +87,7 @@ const FeatureSection = ({ featureSection }: { featureSection: FeatureSectionProp
                 {feature.imageUrl ? (
                   <Image
                     src={feature.imageUrl}
-                    alt={feature.title || "Feature Image"}
+                    alt={feature.title || t("feature.imageAlt")}
                     fill
                     sizes="(max-width: 768px) 100vw, 50vw"
                     className="object-cover"
@@ -93,7 +95,7 @@ const FeatureSection = ({ featureSection }: { featureSection: FeatureSectionProp
                 ) : (
                   <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-primary/5 via-transparent to-primary/5 border border-border">
                     <Layers className="w-20 h-20 text-primary/20 mb-4 animate-pulse" />
-                    <p className="text-muted-foreground font-medium">Visual Preview</p>
+                    <p className="text-muted-foreground font-medium">{t("feature.visualPreview")}</p>
                   </div>
                 )}
               </div>

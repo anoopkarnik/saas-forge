@@ -1,4 +1,5 @@
 "use client"
+import { useTranslations } from "next-intl";
 import { ArrowRight, BookIcon } from "lucide-react";
 import { Button } from "@workspace/ui/components/shadcn/button";
 import { useEffect, useState } from "react";
@@ -21,6 +22,7 @@ const BackgroundBeams = dynamic(
 );
 
 const HeroSection = ({ heroSection }: { heroSection: HeroSectionProps }): ReactElement => {
+  const t = useTranslations("landing");
   const [isClientReady, setIsClientReady] = useState(false);
   const router = useRouter()
   const reducedMotion = useReducedMotion();
@@ -46,8 +48,8 @@ const HeroSection = ({ heroSection }: { heroSection: HeroSectionProps }): ReactE
     return () => window.cancelAnimationFrame(frameId);
   }, [])
 
-  const tagline = heroSection.tagline?.trim() || "Build and launch your SaaS faster";
-  const description = heroSection.description?.trim() || "Ship your product with a production-ready SaaS foundation.";
+  const tagline = heroSection.tagline?.trim() || t("hero.titleFallback");
+  const description = heroSection.description?.trim() || t("hero.descriptionFallback");
   const taglineArray = tagline.split(/\s+/);
 
   // Simple string replacer for basic youtube links to convert them to embed format
@@ -113,7 +115,7 @@ const HeroSection = ({ heroSection }: { heroSection: HeroSectionProps }): ReactE
           <HeroCodeBlock
 
             language="bash"
-            code={heroSection.codeSnippet || "Coming Soon"}
+            code={heroSection.codeSnippet || t("hero.comingSoon")}
           />
         </motion.div>
         <motion.div
@@ -130,7 +132,7 @@ const HeroSection = ({ heroSection }: { heroSection: HeroSectionProps }): ReactE
             onClick={() => router.push("/landing/doc")}
           >
             <BookIcon size={15} />
-            <p className="text-sm">Documentation</p>
+            <p className="text-sm">{t("hero.documentation")}</p>
           </Button>
           <form method="post" action="/api/demo-login" onSubmit={openDemo}>
             <Button
@@ -148,7 +150,7 @@ const HeroSection = ({ heroSection }: { heroSection: HeroSectionProps }): ReactE
             size="default"
             onClick={() => router.push("/sign-up")}
           >
-            <p className="text-sm">Getting Started</p>
+            <p className="text-sm">{t("hero.gettingStarted")}</p>
             <ArrowRight size={15} />
           </Button>
         </motion.div>
@@ -166,7 +168,7 @@ const HeroSection = ({ heroSection }: { heroSection: HeroSectionProps }): ReactE
                 <CarouselItem className="flex items-center justify-center relative w-full aspect-video">
                   <iframe
                     src={embedUrl}
-                    title="Product Video"
+                    title={t("hero.productVideo")}
                     width="100%"
                     height="100%"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -181,7 +183,7 @@ const HeroSection = ({ heroSection }: { heroSection: HeroSectionProps }): ReactE
                   {image.imageUrl ? (
                     <Image
                       src={image.imageUrl}
-                      alt={image.title || "Hero Slide"}
+                      alt={image.title || t("hero.slideAlt")}
                       width={1920}
                       height={1080}
                       className="rounded-lg mx-auto object-cover h-full aspect-video"
@@ -193,7 +195,7 @@ const HeroSection = ({ heroSection }: { heroSection: HeroSectionProps }): ReactE
                       <div className="p-4 rounded-full bg-white/5 group-hover/placeholder:scale-110 transition-transform duration-500">
                         <span className="text-4xl">✨</span>
                       </div>
-                      <p className="text-zinc-400 font-light">Add your product screenshots in the CMS</p>
+                      <p className="text-zinc-400 font-light">{t("hero.addScreenshots")}</p>
                     </div>
                   )}
                   <div className="absolute top-8 left-1/2 -translate-x-1/2 -translate-y-1/2 

@@ -1,0 +1,19 @@
+{
+  "nav": { "features": "Funciones", "testimonials": "Testimonios", "faq": "Preguntas frecuentes", "openMenu": "Abrir menú de navegación", "github": "Ver repositorio de GitHub", "login": "Iniciar sesión" },
+  "hero": {
+    "titleFallback": "Crea y lanza tu SaaS más rápido",
+    "descriptionFallback": "Lanza tu producto sobre una base SaaS lista para producción.",
+    "comingSoon": "Próximamente",
+    "documentation": "Documentación",
+    "gettingStarted": "Primeros pasos",
+    "productVideo": "Vídeo del producto",
+    "slideAlt": "Diapositiva principal",
+    "addScreenshots": "Añade capturas de tu producto en el CMS"
+  },
+  "feature": { "imageAlt": "Imagen de la función", "visualPreview": "Vista previa" },
+  "pricing": { "mostPopular": "Más popular" },
+  "testimonials": { "label": "Testimonios de clientes" },
+  "footer": { "madeBy": "© 2026 Creado por" },
+  "docs": { "documentation": "Documentación", "breadcrumb": "Documentación", "notFound": "No se encontró documentación.", "lastUpdated": "Última actualización:" },
+  "meta": { "title": "Crea y despliega productos SaaS" }
+}

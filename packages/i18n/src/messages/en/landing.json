@@ -1,0 +1,19 @@
+{
+  "nav": { "features": "Features", "testimonials": "Testimonials", "faq": "FAQ", "openMenu": "Open navigation menu", "github": "View GitHub repository", "login": "Login" },
+  "hero": {
+    "titleFallback": "Build and launch your SaaS faster",
+    "descriptionFallback": "Ship your product with a production-ready SaaS foundation.",
+    "comingSoon": "Coming Soon",
+    "documentation": "Documentation",
+    "gettingStarted": "Getting Started",
+    "productVideo": "Product Video",
+    "slideAlt": "Hero Slide",
+    "addScreenshots": "Add your product screenshots in the CMS"
+  },
+  "feature": { "imageAlt": "Feature Image", "visualPreview": "Visual Preview" },
+  "pricing": { "mostPopular": "Most popular" },
+  "testimonials": { "label": "Customer testimonials" },
+  "footer": { "madeBy": "© 2026 Made by" },
+  "docs": { "documentation": "Documentation", "breadcrumb": "Docs", "notFound": "No documentation found.", "lastUpdated": "Last updated:" },
+  "meta": { "title": "Build and deploy SaaS products" }
+}

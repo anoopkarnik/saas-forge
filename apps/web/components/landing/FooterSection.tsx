@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { useTheme } from "next-themes";
@@ -7,6 +8,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import { ReactElement } from "react";
 
 const FooterSection = ({ footerSection }: { footerSection: FooterSectionProps }): ReactElement => {
+    const t = useTranslations("landing");
   const reducedMotion = useReducedMotion();
     const [footerTypes, setFooterTypes] = useState<any>([]);
     const { theme } = useTheme();
@@ -76,7 +78,7 @@ const FooterSection = ({ footerSection }: { footerSection: FooterSectionProps })
 
             <section className="container pb-14 text-center text-sm opacity-80">
                 <h3>
-                    &copy; 2026 Made by {" "}
+                    {t("footer.madeBy")}{" "}
                     <a
                         rel="noreferrer noopener"
                         target="_blank"

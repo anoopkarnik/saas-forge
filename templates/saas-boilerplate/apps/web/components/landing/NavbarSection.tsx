@@ -21,6 +21,10 @@ import Image from 'next/image';
 import { NavbarSectionProps } from "@/lib/ts-types/landing";
 import { useRouter } from "next/navigation";
 import { ReactElement } from "react";
+import { useLocale, useTranslations } from "next-intl";
+import type { Locale } from "@workspace/i18n/config";
+import { LocaleSwitcher } from "@workspace/ui/components/misc/LocaleSwitcher";
+import { useChangeLocale } from "@/hooks/useChangeLocale";
 
 const NavbarSection = ({ navbarSection }: { navbarSection: NavbarSectionProps }): ReactElement => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
@@ -28,6 +32,9 @@ const NavbarSection = ({ navbarSection }: { navbarSection: NavbarSectionProps })
   const [mounted, setMounted] = useState(false);
   const [starCount, setStarCount] = useState<number>(0);
   const router = useRouter()
+  const t = useTranslations("landing.nav");
+  const locale = useLocale() as Locale;
+  const changeLocale = useChangeLocale();
 
   useEffect(() => {
     setMounted(true);
@@ -86,7 +93,7 @@ const NavbarSection = ({ navbarSection }: { navbarSection: NavbarSectionProps })
               open={isOpen}
               onOpenChange={setIsOpen}
             >
-              <SheetTrigger aria-label="Open navigation menu" className="flex size-11 items-center justify-center rounded-md">
+              <SheetTrigger aria-label={t("openMenu")} className="flex size-11 items-center justify-center rounded-md">
                 <MenuIcon aria-hidden="true" className="flex md:hidden h-5 w-5" />
               </SheetTrigger>
 
@@ -102,26 +109,26 @@ const NavbarSection = ({ navbarSection }: { navbarSection: NavbarSectionProps })
                     rel="noreferrer noopener" href={"/landing#features"} onClick={() => setIsOpen(false)}
                     className={buttonVariants({ variant: "ghost" })}
                   >
-                    Features
+                    {t("features")}
                   </a>
                   <a
                     rel="noreferrer noopener" href={"/landing#testimonials"} onClick={() => setIsOpen(false)}
                     className={buttonVariants({ variant: "ghost" })}
                   >
-                    Testimonials
+                    {t("testimonials")}
                   </a>
                   <a
                     rel="noreferrer noopener" href={"/landing#faq"} onClick={() => setIsOpen(false)}
                     className={buttonVariants({ variant: "ghost" })}
                   >
-                    FAQ
+                    {t("faq")}
                   </a>
 
                   <a
                     rel="noreferrer noopener"
                     href={navbarSection.githubLink}
                     target="_blank"
-                    aria-label="View GitHub repository"
+                    aria-label={t("github")}
                     className={`w-[110px] border ${buttonVariants({
                       variant: "secondary",
                     })}`}
@@ -149,28 +156,29 @@ const NavbarSection = ({ navbarSection }: { navbarSection: NavbarSectionProps })
               rel="noreferrer noopener" href={"/landing#features"} onClick={() => setIsOpen(false)}
               className={buttonVariants({ variant: "ghost" })}
             >
-              Features
+              {t("features")}
             </a>
             <a
               rel="noreferrer noopener" href={"/landing#testimonials"} onClick={() => setIsOpen(false)}
               className={buttonVariants({ variant: "ghost" })}
             >
-              Testimonials
+              {t("testimonials")}
             </a>
             <a
               rel="noreferrer noopener" href={"/landing#faq"} onClick={() => setIsOpen(false)}
               className={buttonVariants({ variant: "ghost" })}
             >
-              FAQ
+              {t("faq")}
             </a>
           </nav>
           <div className="flex items-center gap-2">
+            <LocaleSwitcher value={locale} onChange={changeLocale} id="landing-locale" className="h-9" />
             <div className="hidden md:flex gap-2">
               <a
                 rel="noreferrer noopener"
                 href={navbarSection.githubLink}
                 target="_blank"
-                    aria-label="View GitHub repository"
+                    aria-label={t("github")}
                 className={`border flex items-center ${buttonVariants({ variant: "secondary" })}`}
               >
                 <GitHubLogoIcon className=" w-5 h-5" />
@@ -183,7 +191,7 @@ const NavbarSection = ({ navbarSection }: { navbarSection: NavbarSectionProps })
               size="sm"
               onClick={() => router.push("/sign-in")}
             >
-              <p className="text-sm">Login</p>
+              <p className="text-sm">{t("login")}</p>
             </Button>
           </div>
         </NavigationMenuList>

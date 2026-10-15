@@ -1,4 +1,5 @@
 "use client"
+import { useTranslations } from 'next-intl';
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupLabel, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from '@workspace/ui/components/shadcn/sidebar';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -11,6 +12,7 @@ import { useSuspenseQuery } from '@tanstack/react-query'
 import { useTRPC } from '@/trpc/client'
 
 const DocSidebar = (): ReactElement => {
+    const t = useTranslations("landing");
     const pathname = usePathname();
     const { setOpenMobile } = useSidebar();
     const { theme } = useTheme();
@@ -36,7 +38,7 @@ const DocSidebar = (): ReactElement => {
                             </div>
                             <div className="flex flex-col items-start leading-none gap-0.5">
                                 <span className="font-bold text-foreground text-sm tracking-wide">{documentation?.title}</span>
-                                <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-sans">Documentation</span>
+                                <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-sans">{t("docs.documentation")}</span>
                             </div>
                         </a>
                     </SidebarMenuItem>

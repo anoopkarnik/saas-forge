@@ -7,25 +7,28 @@ import type { Metadata } from "next";
 import { siteMetadata } from "@/lib/site-config/metadata";
 import { ReactElement, Suspense } from "react";
 import { ErrorBoundary } from "react-error-boundary";
+import { getTranslations } from "next-intl/server";
 
 export const revalidate = 600;
 
 export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("landing.meta");
   return siteMetadata({
-    title: "Build and deploy SaaS products",
+    title: t("title"),
     pathname: "/landing",
   });
 }
 
 const HomePage = async (): Promise<ReactElement> => {
+  const t = await getTranslations("common");
   const queryClient = getQueryClient();
   await Promise.all([
     queryClient.ensureQueryData(trpc.landing.getLandingInfo.queryOptions()),
   ]);
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
-      <Suspense fallback={<LoadingState title='Retrieving' description='Please wait while we retrieve the landing page data' />}>
-        <ErrorBoundary fallback={<ErrorState title='Error Retrieving Data' description='There was an error while retrieving the data.' />}>
+      <Suspense fallback={<LoadingState title={t("retrieving.title")} description={t("retrieving.description")} />}>
+        <ErrorBoundary fallback={<ErrorState title={t("retrieveError.title")} description={t("retrieveError.description")} />}>
           <LandingPage />
         </ErrorBoundary>
       </Suspense>

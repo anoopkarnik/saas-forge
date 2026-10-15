@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import {
   Carousel,
@@ -16,6 +17,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import { ReactElement } from "react";
 
 const TestimonialSection = ({ testimonialSection }: { testimonialSection: TestimonialSectionProps }): ReactElement => {
+  const t = useTranslations("landing");
   const [api, setApi] = useState<CarouselApi>();
   const [playing, setPlaying] = useState(false);
   const reducedMotion = useReducedMotion();
@@ -67,7 +69,7 @@ const TestimonialSection = ({ testimonialSection }: { testimonialSection: Testim
             viewport={{ once: true }}
             transition={{ duration: 0.5, delay: 0.2 }}
           >
-            <Carousel setApi={setApi} className="w-full" aria-label="Customer testimonials" onFocusCapture={() => setPlaying(false)} onMouseEnter={() => setPlaying(false)}>
+            <Carousel setApi={setApi} className="w-full" aria-label={t("testimonials.label")} onFocusCapture={() => setPlaying(false)} onMouseEnter={() => setPlaying(false)}>
               <CarouselContent>
                 {testimonialSection.testimonials?.map((testimonial) => (
                   <CarouselItem className="lg:basis-1/4" key={testimonial.name}>

@@ -9,6 +9,7 @@
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "test": "turbo test",
     "test:coverage": "turbo test:coverage",
+    "i18n:check": "pnpm --dir packages/i18n exec vitest run src/catalogue.test.ts",
     "generate": "cd packages/database && pnpm run generate",
     "migrate": "cd packages/database && pnpm run migrate",
     "seed": "cd packages/database && pnpm run seed",

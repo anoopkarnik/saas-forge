@@ -10,7 +10,7 @@ import { isEmailAllowedToRegister, type RegistrationMode } from "./registration"
 import { createAuthMiddleware, APIError, getSessionFromCtx } from "better-auth/api";
 import { isGuestAccountMutation } from "./guestGuard";
 import { userAdditionalFields } from "./user-fields";
-import { toLocale } from "@workspace/i18n/config";
+import { emailLocale } from "./email-locale";
 import {
     createPersonalOrganization,
     getInitialActiveOrganizationId,
@@ -97,7 +97,7 @@ const options = {
         changeEmail: {
             enabled: true,
             sendChangeEmailConfirmation: async ({user, newEmail, url, token}, request) => {
-                await sendEmail({ template: "verification", email: newEmail, url, locale: toLocale((user as { locale?: unknown }).locale) })
+                await sendEmail({ template: "verification", email: newEmail, url, locale: emailLocale(user, request) })
             }
         },
         deleteUser: {
@@ -129,14 +129,14 @@ const options = {
         enabled: true,
         autoSignIn: false,
         requireEmailVerification: true,
-        sendResetPassword : async ({user, url}) =>{
-            await sendEmail({ template: "reset", email: user.email, url, locale: toLocale((user as { locale?: unknown }).locale) })
+        sendResetPassword : async ({user, url}, request) =>{
+            await sendEmail({ template: "reset", email: user.email, url, locale: emailLocale(user, request) })
         }
     },
     emailVerification: {
         sendOnSignUp: true,
         autoSignInAfterVerification: true,
-        sendVerificationEmail: async({user,token})=>{
+        sendVerificationEmail: async({user,token}, request)=>{
             console.log("Sending verification email to:", user.email);
             const fullUser = await db.user.findUnique({
                 where: { id: user.id },
@@ -157,7 +157,7 @@ const options = {
             
             const verificationUrl = `${appUrl}/api/auth/verify-email?token=${token}
             &callbackURL=${appUrl}/email-verified`;
-            await sendEmail({ template: "verification", email: user.email, url: verificationUrl, locale: toLocale((user as { locale?: unknown }).locale) })
+            await sendEmail({ template: "verification", email: user.email, url: verificationUrl, locale: emailLocale(user, request) })
         },
     },
     databaseHooks: {

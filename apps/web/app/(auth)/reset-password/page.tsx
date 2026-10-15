@@ -8,9 +8,11 @@ import ErrorPage from '@workspace/ui/blocks/auth/ErrorPage'
 import ResetPasswordPage from '@workspace/ui/blocks/auth/ResetPasswordPage'
 import LoadingCard from '@workspace/ui/components/auth/LoadingCard'
 import { useRouter } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 
 const ResetPasswordContent = () => {
   const router = useRouter()
+  const t = useTranslations()
 
   const [error, setError] = useState<string | undefined>(undefined)
   const [success, setSuccess] = useState<string | undefined>(undefined)
@@ -27,9 +29,9 @@ const ResetPasswordContent = () => {
         setError(error)
         return
       }
-      setSuccess("Password reset successfully")
+      setSuccess(t('auth.reset.success'))
     } catch {
-      setError("Something went wrong!")
+      setError(t('common.somethingWentWrong'))
     }
   }
 

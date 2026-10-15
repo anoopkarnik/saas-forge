@@ -1,8 +1,10 @@
 import { Card, CardContent } from '@workspace/ui/components/shadcn/card';
 import { LoadingCardProps } from '@workspace/auth/utils/typescript';
 import { BeatLoader } from 'react-spinners';
+import { useTranslations } from 'use-intl';
 
-const LoadingCard = ({title="Loading",description="Please wait while we are loading the page!"}:LoadingCardProps) => {
+const LoadingCard = ({ title, description }: LoadingCardProps) => {
+  const t = useTranslations('common')
 
   return (
     <div className='w-full flex items-center justify-center mt-10 min-h-full'>
@@ -10,10 +12,10 @@ const LoadingCard = ({title="Loading",description="Please wait while we are load
         <CardContent>
           <div className='flex flex-col items-center justify-center gap-4'>
             <div className='text-4xl animate-pulse text-center mb-4'>
-              {title}
+              {title ?? t('loading.title')}
             </div>
             <div className='text-lg animate-pulse text-center'>
-              {description}
+              {description ?? t('loading.description')}
             </div>
             <BeatLoader size={20} />
           </div>

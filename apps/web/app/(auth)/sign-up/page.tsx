@@ -9,12 +9,15 @@ import { RegisterSchema } from '@workspace/auth/utils/zod'
 import RegisterPage from '@workspace/ui/blocks/auth/RegisterPage'
 import LoadingCard from '@workspace/ui/components/auth/LoadingCard'
 import { useRouter } from 'next/navigation'
+import { useLocale, useTranslations } from 'next-intl'
 import { useTRPC } from '@/trpc/client'
 import { useQuery } from '@tanstack/react-query'
 import { useSiteConfig } from '@/components/site-config/SiteConfigProvider'
 
 const RegisterContent = () => {
   const router = useRouter()
+  const t = useTranslations('auth.register')
+  const locale = useLocale()
   const searchParams = useSearchParams()
 
   const inviteToken = searchParams.get('invite') ?? ''
@@ -38,9 +41,9 @@ const RegisterContent = () => {
   useEffect(() => {
     const error = searchParams.get('error')
     if (error === 'OAuthAccountNotLinked') {
-      setUrlError('This email is already in use with another provider.')
+      setUrlError(t('accountNotLinked'))
     }
-  }, [searchParams])
+  }, [searchParams, t])
 
   const loginWithSocials = async (type: string) => {
     await authClient.signIn.social({
@@ -50,7 +53,8 @@ const RegisterContent = () => {
   }
 
   const register = async (data: z.infer<typeof RegisterSchema>) => {
-    const result = await authClient.signUp.email(data)
+    // The locale is saved on the new user, so the verification email is in this language.
+    const result = await authClient.signUp.email({ ...data, locale })
     return result
   }
 
@@ -68,7 +72,7 @@ const RegisterContent = () => {
       onSignInClick={() => router.push('/sign-in')}
       onTermsOfServiceClick={() => router.push('/terms')}
       onPrivacyPolicyClick={() => router.push('/privacy')}
-      errorMessage={blockedByInviteOnly ? 'Sign-ups are invite-only. Please use your invitation link.' : urlError}
+      errorMessage={blockedByInviteOnly ? t('inviteOnly') : urlError}
     />
   )
 }

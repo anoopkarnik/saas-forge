@@ -4,9 +4,11 @@ import React, { useState } from 'react'
 import { authClient } from '@workspace/auth/better-auth/auth-client'
 import ForgotPasswordPage from '@workspace/ui/blocks/auth/ForgotPasswordPage'
 import { useRouter } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 
 const ForgotPasswordClient = () => {
     const router = useRouter()
+    const t = useTranslations()
 
 
     const [error, setError] = useState<string | undefined>()
@@ -20,9 +22,9 @@ const ForgotPasswordClient = () => {
                 setError(error)
                 return
             }
-            setSuccess("Check your email for the reset link")
+            setSuccess(t('auth.forgot.sent'))
         } catch {
-            setError("Something went wrong!")
+            setError(t('common.somethingWentWrong'))
         }
     }
 

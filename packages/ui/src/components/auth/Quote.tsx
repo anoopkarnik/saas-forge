@@ -1,9 +1,11 @@
 "use client"
 import { QuoteProps } from "@workspace/auth/utils/typescript"
 import { motion, useReducedMotion } from "framer-motion"
+import { useTranslations } from "use-intl"
 
 const Quote = ({ quote }: { quote?: QuoteProps }) => {
   const reducedMotion = useReducedMotion();
+  const t = useTranslations("auth.quote");
   return (
     <div className='relative h-full w-full flex flex-col justify-center items-center overflow-hidden bg-zinc-900 border-r border-border/50'>
       {/* Background Effects */}
@@ -21,15 +23,15 @@ const Quote = ({ quote }: { quote?: QuoteProps }) => {
           </svg>
 
           <blockquote className='text-3xl md:text-4xl font-bold font-serif leading-tight text-white mb-8 tracking-tight'>
-            "{quote?.quote || "The real competitive advantage is not ideas — it’s speed of execution"}"
+            "{quote?.quote || t("text")}"
           </blockquote>
 
           <div className="flex flex-col gap-1">
             <cite className='not-italic text-lg font-semibold text-white/90'>
-              {quote?.author || "Reid Hoffman"}
+              {quote?.author || t("author")}
             </cite>
             <span className='text-sm text-white/50 font-medium uppercase tracking-wider'>
-              {quote?.credential || "Co-founder of LinkedIn"}
+              {quote?.credential || t("credential")}
             </span>
           </div>
         </motion.div>

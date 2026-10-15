@@ -14,13 +14,16 @@ import {
 } from '@workspace/ui/components/shadcn/form'
 import { FormResult } from './FormResult';
 import LoadingButton from '@workspace/ui/components/misc/LoadingButton';
-import { ForgotPasswordSchema } from '@workspace/auth/utils/zod';
+import { useTranslations } from 'use-intl';
+import { useAuthSchemas } from '@workspace/ui/hooks/useAuthSchemas';
 import { ForgotPasswordCardProps } from '@workspace/auth/utils/typescript';
 import { Input } from '@workspace/ui/components/shadcn/input';
 
 const ForgotPasswordCard = ({ errorMessage, successMessage, resetFunction, onBackToLoginClick }
   : ForgotPasswordCardProps
 ) => {
+  const t = useTranslations('auth')
+  const { ForgotPasswordSchema } = useAuthSchemas()
   const [pending, setPending] = useState(false)
   const form = useForm<z.infer<typeof ForgotPasswordSchema>>({
     resolver: zodResolver(ForgotPasswordSchema),
@@ -38,9 +41,9 @@ const ForgotPasswordCard = ({ errorMessage, successMessage, resetFunction, onBac
   return (
     <Card className='w-full max-w-md border-border/50 shadow-xl bg-card/50 backdrop-blur-sm'>
       <CardHeader className="space-y-1 pb-6">
-        <h2 className='text-3xl font-bold tracking-tight text-center'>Forgot Password</h2>
+        <h2 className='text-3xl font-bold tracking-tight text-center'>{t('forgot.title')}</h2>
         <p className='text-sm text-muted-foreground text-center'>
-          Enter your email to reset your password
+          {t('forgot.subtitle')}
         </p>
       </CardHeader>
       <CardContent>
@@ -49,7 +52,7 @@ const ForgotPasswordCard = ({ errorMessage, successMessage, resetFunction, onBac
             <div className='space-y-4 mb-4'>
               <FormField control={form.control} name="email" render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Email</FormLabel>
+                  <FormLabel>{t('email')}</FormLabel>
                   <FormControl>
                     <Input type="email" placeholder='name@example.com' className="h-10" {...field} />
                   </FormControl>
@@ -60,7 +63,7 @@ const ForgotPasswordCard = ({ errorMessage, successMessage, resetFunction, onBac
             {errorMessage && <FormResult type="error" message={JSON.stringify(errorMessage)} />}
             {successMessage && <FormResult type="success" message={JSON.stringify(successMessage)} />}
             <LoadingButton variant="default" className="w-full h-10 font-medium" pending={pending}>
-              Send Reset Link
+              {t('forgot.submit')}
             </LoadingButton>
           </form>
         </Form>
@@ -68,7 +71,7 @@ const ForgotPasswordCard = ({ errorMessage, successMessage, resetFunction, onBac
       <CardFooter className='flex justify-center pt-2'>
         <Button onClick={onBackToLoginClick} variant={'ghost'}
           className='text-sm text-center font-normal hover:bg-muted'>
-          Back to Login
+          {t('backToLogin')}
         </Button>
       </CardFooter>
     </Card>

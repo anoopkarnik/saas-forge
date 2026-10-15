@@ -25,6 +25,7 @@ import { Gauge } from "lucide-react";
 import { Flag } from "lucide-react";
 // scaffold:end feature_flags
 import { usePathname, useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useTRPC } from "@/trpc/client";
 import { useQuery } from "@tanstack/react-query";
@@ -39,6 +40,19 @@ export function AppSidebar() {
   const { data: landingInfo } = useQuery(trpc.landing.getLandingInfo.queryOptions());
   const { data: session } = useSession();
   const isAdmin = session?.user?.role === "admin";
+  const t = useTranslations("nav");
+  // scaffold:begin billing
+  const tBilling = useTranslations("billing");
+  // scaffold:end billing
+  // scaffold:begin jobs
+  const tJobs = useTranslations("jobs");
+  // scaffold:end jobs
+  // scaffold:begin audit_log
+  const tAudit = useTranslations("audit_log");
+  // scaffold:end audit_log
+  // scaffold:begin feature_flags
+  const tFlags = useTranslations("feature_flags");
+  // scaffold:end feature_flags
 
   const { theme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
@@ -80,12 +94,12 @@ export function AppSidebar() {
       <SidebarContent className="p-3">
         <SidebarGroup>
           <SidebarGroupLabel className="mb-2 px-2 text-xs font-medium uppercase tracking-wider text-muted-foreground/70">
-            Application
+            {t("application")}
           </SidebarGroupLabel>
           <SidebarMenu className="gap-1">
             <SidebarMenuItem>
               <SidebarMenuButton
-                tooltip="Home"
+                tooltip={t("home")}
                 className={cn(
                   "h-10 cursor-pointer transition-all duration-200 ease-in-out hover:pl-3",
                   pathname === "/" && "bg-sidebar-accent font-medium text-sidebar-accent-foreground shadow-sm"
@@ -94,14 +108,14 @@ export function AppSidebar() {
               >
                 <div className="flex items-center gap-3">
                   <HomeIcon className="h-5 w-5 text-emerald-500" />
-                  <div className="text-xs">Home</div>
+                  <div className="text-xs">{t("home")}</div>
                 </div>
               </SidebarMenuButton>
             </SidebarMenuItem>
             {/* scaffold:begin billing */}
             <SidebarMenuItem>
               <SidebarMenuButton
-                tooltip="Usage"
+                tooltip={tBilling("nav.usage")}
                 className={cn(
                   "h-10 cursor-pointer transition-all duration-200 ease-in-out hover:pl-3",
                   pathname === "/usage" && "bg-sidebar-accent font-medium text-sidebar-accent-foreground shadow-sm"
@@ -110,7 +124,7 @@ export function AppSidebar() {
               >
                 <div className="flex items-center gap-3">
                   <Gauge className="h-5 w-5 text-cyan-500" />
-                  <div className="text-xs">Usage</div>
+                  <div className="text-xs">{tBilling("nav.usage")}</div>
                 </div>
               </SidebarMenuButton>
             </SidebarMenuItem>
@@ -121,12 +135,12 @@ export function AppSidebar() {
         {isAdmin && (
           <SidebarGroup>
             <SidebarGroupLabel className="mb-2 px-2 text-xs font-medium uppercase tracking-wider text-muted-foreground/70">
-              Admin
+              {t("admin")}
             </SidebarGroupLabel>
             <SidebarMenu className="gap-1">
               <SidebarMenuItem>
                 <SidebarMenuButton
-                  tooltip="Manage Users"
+                  tooltip={t("manageUsers")}
                   className={cn(
                     "h-10 cursor-pointer transition-all duration-200 ease-in-out hover:pl-3",
                     pathname === "/admin/users" && "bg-sidebar-accent font-medium text-sidebar-accent-foreground shadow-sm"
@@ -135,13 +149,13 @@ export function AppSidebar() {
                 >
                   <div className="flex items-center gap-3">
                     <Users className="h-5 w-5 text-blue-500" />
-                    <div className="text-xs">User Management</div>
+                    <div className="text-xs">{t("userManagement")}</div>
                   </div>
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton
-                  tooltip="CMS"
+                  tooltip={t("cms")}
                   className={cn(
                     "h-10 cursor-pointer transition-all duration-200 ease-in-out hover:pl-3",
                     pathname === "/admin/cms" && "bg-sidebar-accent font-medium text-sidebar-accent-foreground shadow-sm"
@@ -150,13 +164,13 @@ export function AppSidebar() {
                 >
                   <div className="flex items-center gap-3">
                     <Database className="h-5 w-5 text-red-500" />
-                    <div className="text-xs">CMS</div>
+                    <div className="text-xs">{t("cms")}</div>
                   </div>
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton
-                  tooltip="Documentation"
+                  tooltip={t("documentation")}
                   className={cn(
                     "h-10 cursor-pointer transition-all duration-200 ease-in-out hover:pl-3",
                     pathname === "/admin/doc" && "bg-sidebar-accent font-medium text-sidebar-accent-foreground shadow-sm"
@@ -165,14 +179,14 @@ export function AppSidebar() {
                 >
                   <div className="flex items-center gap-3">
                     <FileText className="h-5 w-5 text-amber-500" />
-                    <div className="text-xs">Documentation</div>
+                    <div className="text-xs">{t("documentation")}</div>
                   </div>
                 </SidebarMenuButton>
               </SidebarMenuItem>
               {/* scaffold:begin jobs */}
               <SidebarMenuItem>
                 <SidebarMenuButton
-                  tooltip="Background jobs"
+                  tooltip={tJobs("nav.title")}
                   className={cn(
                     "h-10 cursor-pointer transition-all duration-200 ease-in-out hover:pl-3",
                     pathname === "/admin/jobs" && "bg-sidebar-accent font-medium text-sidebar-accent-foreground shadow-sm"
@@ -181,7 +195,7 @@ export function AppSidebar() {
                 >
                   <div className="flex items-center gap-3">
                     <Timer className="h-5 w-5 text-sky-500" />
-                    <div className="text-xs">Background jobs</div>
+                    <div className="text-xs">{tJobs("nav.title")}</div>
                   </div>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -189,7 +203,7 @@ export function AppSidebar() {
               {/* scaffold:begin audit_log */}
               <SidebarMenuItem>
                 <SidebarMenuButton
-                  tooltip="Audit log"
+                  tooltip={tAudit("nav.title")}
                   className={cn(
                     "h-10 cursor-pointer transition-all duration-200 ease-in-out hover:pl-3",
                     pathname === "/admin/audit" && "bg-sidebar-accent font-medium text-sidebar-accent-foreground shadow-sm"
@@ -198,7 +212,7 @@ export function AppSidebar() {
                 >
                   <div className="flex items-center gap-3">
                     <ScrollText className="h-5 w-5 text-teal-500" />
-                    <div className="text-xs">Audit log</div>
+                    <div className="text-xs">{tAudit("nav.title")}</div>
                   </div>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -206,7 +220,7 @@ export function AppSidebar() {
               {/* scaffold:begin feature_flags */}
               <SidebarMenuItem>
                 <SidebarMenuButton
-                  tooltip="Feature flags"
+                  tooltip={tFlags("nav.title")}
                   className={cn(
                     "h-10 cursor-pointer transition-all duration-200 ease-in-out hover:pl-3",
                     pathname === "/admin/flags" && "bg-sidebar-accent font-medium text-sidebar-accent-foreground shadow-sm"
@@ -215,14 +229,14 @@ export function AppSidebar() {
                 >
                   <div className="flex items-center gap-3">
                     <Flag className="h-5 w-5 text-orange-500" />
-                    <div className="text-xs">Feature flags</div>
+                    <div className="text-xs">{tFlags("nav.title")}</div>
                   </div>
                 </SidebarMenuButton>
               </SidebarMenuItem>
               {/* scaffold:end feature_flags */}
               <SidebarMenuItem>
                 <SidebarMenuButton
-                  tooltip="Settings"
+                  tooltip={t("settings")}
                   className={cn(
                     "h-10 cursor-pointer transition-all duration-200 ease-in-out hover:pl-3",
                     pathname === "/admin/settings" && "bg-sidebar-accent font-medium text-sidebar-accent-foreground shadow-sm"
@@ -231,7 +245,7 @@ export function AppSidebar() {
                 >
                   <div className="flex items-center gap-3">
                     <Settings className="h-5 w-5 text-slate-500" />
-                    <div className="text-xs">Settings</div>
+                    <div className="text-xs">{t("settings")}</div>
                   </div>
                 </SidebarMenuButton>
               </SidebarMenuItem>

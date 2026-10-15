@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { useTRPC } from "@/trpc/client";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useSession } from "@workspace/auth/better-auth/auth-client";
+import { useChangeLocale } from "@/hooks/useChangeLocale";
 import { SettingsDialog } from "@workspace/ui/components/home/SettingsDialog";
 import type { SidebarUserProps } from "@workspace/ui/components/home/SidebarUser";
 import UISidebarUser from "@workspace/ui/components/home/SidebarUser"
@@ -27,6 +28,7 @@ export function SidebarUserProvider({ children }: { children: React.ReactNode })
   // scaffold:end billing
   const trpc = useTRPC();
   const { data: session, status, refetch: refetchSession } = useSession();
+  const changeLocale = useChangeLocale();
 
   // scaffold:begin billing
   // Poll for credit updates after returning from payment checkout
@@ -136,6 +138,7 @@ export function SidebarUserProvider({ children }: { children: React.ReactNode })
     guestMail: process.env.NEXT_PUBLIC_GUEST_MAIL,
     adminMail: process.env.NEXT_PUBLIC_ADMIN_MAIL,
     onOpenSettings: () => setSettingsOpen(true),
+    onLocaleChange: changeLocale,
     // scaffold:begin billing
     paymentGateway: process.env.NEXT_PUBLIC_PAYMENT_GATEWAY,
     creditsData, purchases: purchases as any,

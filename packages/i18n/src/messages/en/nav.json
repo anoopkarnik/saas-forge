@@ -1,0 +1,21 @@
+{
+  "application": "Application",
+  "admin": "Admin",
+  "home": "Home",
+  "settings": "Settings",
+  "userManagement": "User Management",
+  "manageUsers": "Manage Users",
+  "cms": "CMS",
+  "documentation": "Documentation",
+  "scaffolds": "Scaffolds",
+  "projects": "Projects",
+  "creditsUsage": "Credits usage",
+  "seoReports": "SEO Reports",
+  "aiManagement": "AI Management",
+  "apiManagement": "API Management",
+  "portfolio": "Download Portfolio Boilerplate",
+  "saasLanding": "Download SaaS Company Landing Page",
+  "hikingLanding": "Download Hiking Company Landing Page",
+  "comingSoon": "{label} (Coming Soon)",
+  "support": { "open": "Open support panel", "options": "Support options", "sendMessage": "Send Message", "documentation": "Documentation", "bookMeeting": "Book Meeting" }
+}

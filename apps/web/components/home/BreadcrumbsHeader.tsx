@@ -3,14 +3,16 @@ import { usePathname } from "next/navigation"
 import Link from "next/link"
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@workspace/ui/components/shadcn/breadcrumb"
 import React from "react"
+import { useTranslations } from "next-intl"
 
 export const BreadcrumbsHeader = () => {
+  const t = useTranslations("nav")
   const segments = usePathname().split("/").filter(Boolean)
   return (
     <Breadcrumb>
       <BreadcrumbList>
         <BreadcrumbItem>
-          <BreadcrumbLink asChild><Link href="/" className="inline-flex min-h-11 items-center">Home</Link></BreadcrumbLink>
+          <BreadcrumbLink asChild><Link href="/" className="inline-flex min-h-11 items-center">{t("home")}</Link></BreadcrumbLink>
         </BreadcrumbItem>
         {segments.map((segment, index) => (
           <React.Fragment key={index}>

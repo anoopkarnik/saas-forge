@@ -22,7 +22,9 @@
       "apps/web/lib/jobs",
       "apps/web/trpc/routers/jobsProcedures.ts",
       "packages/database/prisma/jobs.prisma",
-      "packages/database/prisma/migrations/20261007033702_jobs"
+      "packages/database/prisma/migrations/20261007033702_jobs",
+      "packages/i18n/src/messages/en/jobs.json",
+      "packages/i18n/src/messages/es/jobs.json"
     ],
     "jsonRemove": [
       { "file": "packages/jobs/package.json", "keys": { "dependencies": ["inngest"] } },

@@ -1,5 +1,7 @@
 import auth from "./auth.json";
 import common from "./common.json";
+import home from "./home.json";
+import nav from "./nav.json";
 import settings from "./settings.json";
 // scaffold:begin billing
 import billing from "./billing.json";
@@ -10,10 +12,21 @@ import api_keys from "./api_keys.json";
 // scaffold:begin webhooks
 import webhooks from "./webhooks.json";
 // scaffold:end webhooks
+// scaffold:begin jobs
+import jobs from "./jobs.json";
+// scaffold:end jobs
+// scaffold:begin audit_log
+import audit_log from "./audit_log.json";
+// scaffold:end audit_log
+// scaffold:begin feature_flags
+import feature_flags from "./feature_flags.json";
+// scaffold:end feature_flags
 
 const messages = {
   auth,
   common,
+  home,
+  nav,
   settings,
   // scaffold:begin billing
   billing,
@@ -24,6 +37,15 @@ const messages = {
   // scaffold:begin webhooks
   webhooks,
   // scaffold:end webhooks
+  // scaffold:begin jobs
+  jobs,
+  // scaffold:end jobs
+  // scaffold:begin audit_log
+  audit_log,
+  // scaffold:end audit_log
+  // scaffold:begin feature_flags
+  feature_flags,
+  // scaffold:end feature_flags
 };
 
 export default messages;

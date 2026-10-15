@@ -5,6 +5,7 @@ import { getQueryClient, trpc } from "@/trpc/server"
 import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
 import { Suspense } from "react";
 import { ErrorBoundary } from "react-error-boundary";
+import { getTranslations } from "next-intl/server";
 import { SidebarProvider, SidebarTrigger } from "@workspace/ui/components/shadcn/sidebar";
 import { Separator } from "@workspace/ui/components/shadcn/separator";
 import { BreadcrumbsHeader } from "@/components/home/BreadcrumbsHeader"
@@ -19,6 +20,7 @@ import { NotificationsBell } from "@/components/notifications/NotificationsBell"
 
 export default async function Layout({ children }: { children: React.ReactNode }): Promise<React.ReactElement> {
 
+  const t = await getTranslations("common");
   const queryClient = getQueryClient();
   await Promise.all([
     queryClient.ensureQueryData(trpc.landing.getLandingInfo.queryOptions()),
@@ -26,8 +28,8 @@ export default async function Layout({ children }: { children: React.ReactNode }
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
-      <Suspense fallback={<LoadingState title='Retrieving' description='Please wait while we retrieve the landing page data' />}>
-        <ErrorBoundary fallback={<ErrorState title='Error Retrieving Data' description='There was an error while retrieving the data.' />}>
+      <Suspense fallback={<LoadingState title={t("retrieving.title")} description={t("retrieving.description")} />}>
+        <ErrorBoundary fallback={<ErrorState title={t("retrieveError.title")} description={t("retrieveError.description")} />}>
           <SidebarProvider>
             <AppSidebar />
             <main id="main-content" tabIndex={-1} className="flex min-w-0 flex-1 flex-col pb-24">

@@ -20,7 +20,9 @@
       "apps/web/app/(home)/admin/audit",
       "apps/web/components/audit",
       "packages/database/prisma/audit.prisma",
-      "packages/database/prisma/migrations/20261007114952_audit_log"
+      "packages/database/prisma/migrations/20261007114952_audit_log",
+      "packages/i18n/src/messages/en/audit_log.json",
+      "packages/i18n/src/messages/es/audit_log.json"
     ]
   }
 }

@@ -17,6 +17,7 @@ import Message from "@/components/support/Message";
 import Newsletter from "@/components/support/Newsletter";
 import { useRouter } from "next/navigation";
 import { useSiteConfig } from "@/components/site-config/SiteConfigProvider";
+import { useTranslations } from "next-intl";
 
 type ActivePanel = "message" | "newsletter" | "assistant" | null;
 
@@ -25,6 +26,7 @@ const Support = () => {
   const triggerRef = useRef<HTMLButtonElement>(null);
   const router = useRouter();
   const calendlyUrl = useSiteConfig()["support.calendlyUrl"];
+  const t = useTranslations("nav.support");
 
   const [activePanel, setActivePanel] = useState<ActivePanel>(null);
 
@@ -47,7 +49,7 @@ const Support = () => {
           <button
             type="button"
             ref={triggerRef}
-            aria-label="Open support panel"
+            aria-label={t("open")}
             className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] right-[max(1rem,env(safe-area-inset-right))] sm:bottom-6 sm:right-6 flex items-center justify-center w-14 h-14 rounded-full
               bg-primary text-primary-foreground cursor-pointer shadow-xl hover:shadow-2xl hover:scale-105
               transition-all duration-300 z-50 hover:ring-2 hover:ring-primary/50"
@@ -57,7 +59,7 @@ const Support = () => {
         </PopoverTrigger>
 
         <PopoverContent
-          align="end" aria-label="Support options" className="w-[min(320px,calc(100vw-2rem))] max-h-[70dvh] overflow-y-auto p-4 mb-2 bg-card/95 backdrop-blur-xl border-border/50 shadow-2xl rounded-xl"
+          align="end" aria-label={t("options")} className="w-[min(320px,calc(100vw-2rem))] max-h-[70dvh] overflow-y-auto p-4 mb-2 bg-card/95 backdrop-blur-xl border-border/50 shadow-2xl rounded-xl"
           sideOffset={10}
         >
           {/* Tiles – hidden when a panel is active */}
@@ -71,7 +73,7 @@ const Support = () => {
                 <div className="bg-orange-500/10 text-orange-500 group-hover:bg-orange-500/20 group-hover:scale-110 transition-all duration-300 rounded-full p-3 flex items-center justify-center">
                   <TiMessage size={24} />
                 </div>
-                <div className="text-center text-xs font-medium">Send Message</div>
+                <div className="text-center text-xs font-medium">{t("sendMessage")}</div>
               </button>}
 
               {/* <div
@@ -93,7 +95,7 @@ const Support = () => {
                 <div className="bg-indigo-500/10 text-indigo-500 group-hover:bg-indigo-500/20 group-hover:scale-110 transition-all duration-300 rounded-full p-3 flex items-center justify-center">
                   <IoNewspaper size={24} />
                 </div>
-                <div className="text-center text-xs font-medium">Documentation</div>
+                <div className="text-center text-xs font-medium">{t("documentation")}</div>
               </button>
 
               {calendlyUrl && <a
@@ -106,7 +108,7 @@ const Support = () => {
                 <div className="bg-cyan-500/10 text-cyan-500 group-hover:bg-cyan-500/20 group-hover:scale-110 transition-all duration-300 rounded-full p-3 flex items-center justify-center">
                   <FaCalendarAlt size={24} />
                 </div>
-                <div className="text-center text-xs font-medium">Book Meeting</div>
+                <div className="text-center text-xs font-medium">{t("bookMeeting")}</div>
               </a>}
 
               {/* <div

@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import type { ReactNode } from "react";
-import { render, screen } from "@testing-library/react";
+import { screen } from "@testing-library/react";
+import { renderWithIntl } from "../../test/intl";
 import { AppSidebar } from "./AppSidebar";
 
 vi.mock("next-themes", () => ({ useTheme: () => ({ theme: "light", resolvedTheme: "light" }) }));
@@ -21,7 +22,7 @@ vi.mock("@workspace/ui/components/shadcn/sidebar", () => {
 
 describe("AppSidebar slots", () => {
   it("renders the workspace slot in the header", () => {
-    render(
+    renderWithIntl(
       <AppSidebar
         navbarConfig={null}
         pathname="/"

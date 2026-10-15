@@ -1,0 +1,21 @@
+{
+  "application": "Aplicación",
+  "admin": "Administración",
+  "home": "Inicio",
+  "settings": "Configuración",
+  "userManagement": "Gestión de usuarios",
+  "manageUsers": "Gestionar usuarios",
+  "cms": "CMS",
+  "documentation": "Documentación",
+  "scaffolds": "Plantillas",
+  "projects": "Proyectos",
+  "creditsUsage": "Uso de créditos",
+  "seoReports": "Informes SEO",
+  "aiManagement": "Gestión de IA",
+  "apiManagement": "Gestión de API",
+  "portfolio": "Descargar plantilla de portafolio",
+  "saasLanding": "Descargar landing page de empresa SaaS",
+  "hikingLanding": "Descargar landing page de empresa de senderismo",
+  "comingSoon": "{label} (próximamente)",
+  "support": { "open": "Abrir panel de soporte", "options": "Opciones de soporte", "sendMessage": "Enviar mensaje", "documentation": "Documentación", "bookMeeting": "Reservar reunión" }
+}

@@ -1,3 +1,4 @@
+import { toLocale } from "@workspace/i18n/config";
 import { randomBytes } from "crypto";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
@@ -66,7 +67,7 @@ const invitesRouter = createTRPCRouter({
         return created;
       });
 
-      await sendEmail({ template: "invitation", email, url: buildInviteUrl(token, email), company });
+      await sendEmail({ template: "invitation", email, url: buildInviteUrl(token, email), company, locale: toLocale(ctx.session.user.locale) });
       // scaffold:begin notifications
       await notify(invitationSent, ctx.session.user.id, { email });
       // scaffold:end notifications
@@ -113,7 +114,7 @@ const invitesRouter = createTRPCRouter({
         // scaffold:end audit_log
         return row;
       });
-      await sendEmail({ template: "invitation", email: existing.email, url: buildInviteUrl(token, existing.email), company });
+      await sendEmail({ template: "invitation", email: existing.email, url: buildInviteUrl(token, existing.email), company, locale: toLocale(ctx.session.user.locale) });
       return updated;
     }),
 

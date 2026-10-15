@@ -53,6 +53,6 @@ describe("Inngest functions", () => {
     });
 
     expect(error).toBeUndefined();
-    expect(senders.sendVerificationEmail).toHaveBeenCalledWith("ada@example.com", "https://app.test/v");
+    expect(senders.sendVerificationEmail).toHaveBeenCalledWith("ada@example.com", "https://app.test/v", undefined);
   });
 });

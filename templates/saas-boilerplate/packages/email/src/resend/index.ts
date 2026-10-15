@@ -3,9 +3,11 @@ import EmailVerification from '../templates/EmailVerification';
 import ResetPassword from '../templates/ResetPassword';
 import Invitation from '../templates/Invitation';
 import { render } from "@react-email/render";
+import type { Locale } from "@workspace/i18n/config";
+import { emailTranslator } from "../i18n";
 
-export const sendVerificationEmail = async (email: string, verificationUrl: string) => {
-    const subject = "Verify Your Email Address";
+export const sendVerificationEmail = async (email: string, verificationUrl: string, locale?: Locale) => {
+    const subject = emailTranslator(locale)("verification.subject");
     const resend = getResendClient()
     if (!resend) {
         warnEmailSkipped(subject, email, verificationUrl);
@@ -13,7 +15,7 @@ export const sendVerificationEmail = async (email: string, verificationUrl: stri
     }
     const from = process.env.NEXT_PUBLIC_SUPPORT_MAIL!;
     const company = process.env.NEXT_PUBLIC_COMPANY_NAME || "Company";
-    const html = await render(EmailVerification({ verificationLink: verificationUrl, company }))
+    const html = await render(EmailVerification({ verificationLink: verificationUrl, company, locale }))
     return resend.emails.send({
         from: from,
         to: email,
@@ -22,8 +24,8 @@ export const sendVerificationEmail = async (email: string, verificationUrl: stri
     })
 }
 
-export const sendResetEmail = async (email: string, resetUrl: string) => {
-  let subject = "Reset your password";
+export const sendResetEmail = async (email: string, resetUrl: string, locale?: Locale) => {
+  const subject = emailTranslator(locale)("reset.subject");
   const resend = getResendClient()
   if (!resend) {
     warnEmailSkipped(subject, email, resetUrl);
@@ -32,7 +34,7 @@ export const sendResetEmail = async (email: string, resetUrl: string) => {
 
   let from = process.env.NEXT_PUBLIC_SUPPORT_MAIL!;
   const company = process.env.NEXT_PUBLIC_COMPANY_NAME || "Company";
-  const html = await render(ResetPassword({ resetPasswordLink: resetUrl, company }))
+  const html = await render(ResetPassword({ resetPasswordLink: resetUrl, company, locale }))
   return resend.emails.send({
     from,
     to: email,
@@ -41,15 +43,15 @@ export const sendResetEmail = async (email: string, resetUrl: string) => {
   });
 }
 
-export const sendInvitationEmail = async (email: string, inviteUrl: string, company: string) => {
-  const subject = `You're invited to ${company}`;
+export const sendInvitationEmail = async (email: string, inviteUrl: string, company: string, locale?: Locale) => {
+  const subject = emailTranslator(locale)("invitation.subject", { company });
   const resend = getResendClient()
   if (!resend) {
     warnEmailSkipped(subject, email, inviteUrl);
     return null;
   }
   const from = process.env.NEXT_PUBLIC_SUPPORT_MAIL!;
-  const html = await render(Invitation({ inviteLink: inviteUrl, company }))
+  const html = await render(Invitation({ inviteLink: inviteUrl, company, locale }))
   return resend.emails.send({
     from,
     to: email,

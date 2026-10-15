@@ -19,7 +19,7 @@ describe("email.send", () => {
 
     await sendEmail({ template: "verification", email: "ada@example.com", url: "https://app.test/verify" });
 
-    expect(senders.sendVerificationEmail).toHaveBeenCalledWith("ada@example.com", "https://app.test/verify");
+    expect(senders.sendVerificationEmail).toHaveBeenCalledWith("ada@example.com", "https://app.test/verify", undefined);
   });
 
   it("retries when Resend reports an error", async () => {
@@ -39,5 +39,17 @@ describe("email.send", () => {
       "Failed to send support message",
     );
     expect(senders.sendSupportEmail).toHaveBeenCalledOnce();
+  });
+
+  it("accepts payloads queued before locale existed, and a supported locale", () => {
+    expect(emailJob.schema.safeParse({ template: "reset", email: "a@b.c", url: "u" }).success).toBe(true);
+    expect(emailJob.schema.safeParse({ template: "reset", email: "a@b.c", url: "u", locale: "es" }).success).toBe(true);
+    expect(emailJob.schema.safeParse({ template: "reset", email: "a@b.c", url: "u", locale: "xx" }).success).toBe(false);
+  });
+
+  it("sends in the recipient's locale", async () => {
+    senders.sendResetEmail.mockResolvedValue({ data: { id: "e2" }, error: null });
+    await sendEmail({ template: "reset", email: "ada@example.com", url: "u", locale: "es" });
+    expect(senders.sendResetEmail).toHaveBeenCalledWith("ada@example.com", "u", "es");
   });
 });

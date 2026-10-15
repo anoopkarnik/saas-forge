@@ -1,0 +1,28 @@
+{
+  "hello": "Hello,",
+  "buttonFallback": "If the button above doesn't work, copy and paste the following link into your browser:",
+  "rights": "© {year} {company}. All rights reserved.",
+  "questions": "If you have any questions, feel free to reply to this email",
+  "verification": {
+    "subject": "Verify Your Email Address",
+    "heading": "Verify Your Email",
+    "body": "Thank you for registering with us! Please click the button below to verify your email address:",
+    "button": "Verify Email",
+    "ignore": "If you did not create an account, no further action is required."
+  },
+  "reset": {
+    "subject": "Reset your password",
+    "heading": "Reset your Password",
+    "body": "Please click the button below to reset your password:",
+    "button": "Reset Password",
+    "ignore": "If you do not want to reset your password, no further action is required."
+  },
+  "invitation": {
+    "subject": "You're invited to {company}",
+    "heading": "You're invited to {company}",
+    "body": "You've been invited to join {company}. Click below to create your account:",
+    "button": "Accept Invitation",
+    "linkFallback": "If the button above doesn't work, copy and paste this link into your browser:",
+    "expires": "This invitation will expire in 7 days."
+  }
+}

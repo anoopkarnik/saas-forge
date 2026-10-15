@@ -24,7 +24,9 @@
       "packages/email/src/templates/Notification.tsx",
       "packages/email/src/resend/notification.ts",
       "packages/database/prisma/notifications.prisma",
-      "packages/database/prisma/migrations/20261007103304_notifications"
+      "packages/database/prisma/migrations/20261007103304_notifications",
+      "packages/i18n/src/messages/en/notifications.json",
+      "packages/i18n/src/messages/es/notifications.json"
     ]
   }
 }

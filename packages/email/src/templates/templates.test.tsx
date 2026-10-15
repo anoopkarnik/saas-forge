@@ -43,4 +43,17 @@ describe('Email Templates', () => {
             expect(html).toContain("Acme");
         });
     });
+
+    describe('localized templates', () => {
+        it('renders the verification email in Spanish', async () => {
+            const html = await render(EmailVerification({ verificationLink: "https://x.test/v", company: "Acme", locale: "es" }));
+            expect(html).toContain('Verifica tu correo electrónico');
+            expect(html).toContain('Todos los derechos reservados');
+        });
+
+        it('renders the reset email in Spanish', async () => {
+            const html = await render(ResetPassword({ resetPasswordLink: "https://x.test/r", company: "Acme", locale: "es" }));
+            expect(html).toContain('Restablece tu contraseña');
+        });
+    });
 });

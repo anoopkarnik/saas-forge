@@ -36,7 +36,9 @@
       "apps/web/components/organizations",
       "apps/desktop/src/renderer/src/components/organizations",
       "apps/mobile/components/organizations",
-      "apps/mobile/lib/organization-api.ts"
+      "apps/mobile/lib/organization-api.ts",
+      "packages/i18n/src/messages/en/multi_tenancy.json",
+      "packages/i18n/src/messages/es/multi_tenancy.json"
     ],
     "copy": [
       {

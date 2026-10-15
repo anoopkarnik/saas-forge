@@ -10,6 +10,7 @@ import { isEmailAllowedToRegister, type RegistrationMode } from "./registration"
 import { createAuthMiddleware, APIError, getSessionFromCtx } from "better-auth/api";
 import { isGuestAccountMutation } from "./guestGuard";
 import { userAdditionalFields } from "./user-fields";
+import { toLocale } from "@workspace/i18n/config";
 import {
     createPersonalOrganization,
     getInitialActiveOrganizationId,
@@ -96,7 +97,7 @@ const options = {
         changeEmail: {
             enabled: true,
             sendChangeEmailConfirmation: async ({user, newEmail, url, token}, request) => {
-                await sendEmail({ template: "verification", email: newEmail, url })
+                await sendEmail({ template: "verification", email: newEmail, url, locale: toLocale((user as { locale?: unknown }).locale) })
             }
         },
         deleteUser: {
@@ -129,7 +130,7 @@ const options = {
         autoSignIn: false,
         requireEmailVerification: true,
         sendResetPassword : async ({user, url}) =>{
-            await sendEmail({ template: "reset", email: user.email, url })
+            await sendEmail({ template: "reset", email: user.email, url, locale: toLocale((user as { locale?: unknown }).locale) })
         }
     },
     emailVerification: {
@@ -156,7 +157,7 @@ const options = {
             
             const verificationUrl = `${appUrl}/api/auth/verify-email?token=${token}
             &callbackURL=${appUrl}/email-verified`;
-            await sendEmail({ template: "verification", email: user.email, url: verificationUrl })
+            await sendEmail({ template: "verification", email: user.email, url: verificationUrl, locale: toLocale((user as { locale?: unknown }).locale) })
         },
     },
     databaseHooks: {

@@ -4,6 +4,7 @@
 // auth.ts spreads `organizationPlugins` and calls the three helpers below; when
 // the module is not selected in a scaffold, this file is replaced by a stub that
 // exports an empty plugin list and no-op helpers, so auth.ts never changes.
+import { toLocale } from "@workspace/i18n/config";
 import { randomBytes } from "node:crypto";
 import { organization } from "better-auth/plugins";
 import { createAccessControl } from "better-auth/plugins/access";
@@ -35,7 +36,7 @@ type InvitationEmailData = {
     email: string;
     role: string;
     organization: { name: string };
-    inviter: { user: { name?: string | null; email: string } };
+    inviter: { user: { name?: string | null; email: string; locale?: string | null } };
 };
 
 export const sendInvitationEmail = async (data: InvitationEmailData) => {
@@ -47,6 +48,8 @@ export const sendInvitationEmail = async (data: InvitationEmailData) => {
         inviterName: data.inviter.user.name || data.inviter.user.email,
         role: data.role,
         inviteUrl: `${appUrl}/accept-invitation/${data.id}`,
+        // The invitee has no account yet; the inviter's language is the best guess.
+        locale: toLocale(data.inviter.user.locale),
     });
 };
 

@@ -1,0 +1,12 @@
+{
+  "email": {
+    "invitation": {
+      "subject": "{inviter} te ha invitado a {organization}",
+      "heading": "Únete a {organization} en {company}",
+      "body": "{inviter} te ha invitado a unirte al espacio de trabajo {organization} como {role}.",
+      "button": "Ver invitación",
+      "help": "Inicia sesión (o crea una cuenta) con esta dirección de correo para aceptar. También puedes aceptarla más tarde desde el menú de espacios de trabajo de la aplicación.",
+      "expires": "Esta invitación caduca en 7 días."
+    }
+  }
+}

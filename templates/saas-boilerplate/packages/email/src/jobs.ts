@@ -1,14 +1,18 @@
 import { defineJob, enqueue, PermanentJobError } from "@workspace/jobs/index";
 import { z } from "zod";
+import { LOCALES } from "@workspace/i18n/config";
 import { sendInvitationEmail, sendResetEmail, sendSupportEmail, sendVerificationEmail } from "./resend/index";
 // scaffold:begin multi_tenancy
 import { sendOrganizationInvitationEmail } from "./resend/organization";
 // scaffold:end multi_tenancy
 
+// Optional, so events queued before locales existed still validate.
+const locale = z.enum(LOCALES).optional();
+
 const message = z.discriminatedUnion("template", [
-  z.object({ template: z.literal("verification"), email: z.string(), url: z.string() }),
-  z.object({ template: z.literal("reset"), email: z.string(), url: z.string() }),
-  z.object({ template: z.literal("invitation"), email: z.string(), url: z.string(), company: z.string() }),
+  z.object({ template: z.literal("verification"), email: z.string(), url: z.string(), locale }),
+  z.object({ template: z.literal("reset"), email: z.string(), url: z.string(), locale }),
+  z.object({ template: z.literal("invitation"), email: z.string(), url: z.string(), company: z.string(), locale }),
   z.object({ template: z.literal("support"), subject: z.string(), body: z.string() }),
   // scaffold:begin multi_tenancy
   z.object({
@@ -18,6 +22,7 @@ const message = z.discriminatedUnion("template", [
     inviterName: z.string(),
     role: z.string(),
     inviteUrl: z.string(),
+    locale,
   }),
   // scaffold:end multi_tenancy
 ]);
@@ -27,17 +32,17 @@ export type EmailMessage = z.infer<typeof message>;
 async function deliver(input: EmailMessage) {
   switch (input.template) {
     case "verification":
-      return sendVerificationEmail(input.email, input.url);
+      return sendVerificationEmail(input.email, input.url, input.locale);
     case "reset":
-      return sendResetEmail(input.email, input.url);
+      return sendResetEmail(input.email, input.url, input.locale);
     case "invitation":
-      return sendInvitationEmail(input.email, input.url, input.company);
+      return sendInvitationEmail(input.email, input.url, input.company, input.locale);
     case "support":
       return sendSupportEmail(input.subject, input.body);
     // scaffold:begin multi_tenancy
     case "organization-invitation": {
-      const { email, organizationName, inviterName, role, inviteUrl } = input;
-      return sendOrganizationInvitationEmail({ email, organizationName, inviterName, role, inviteUrl });
+      const { email, organizationName, inviterName, role, inviteUrl, locale } = input;
+      return sendOrganizationInvitationEmail({ email, organizationName, inviterName, role, inviteUrl, locale });
     }
     // scaffold:end multi_tenancy
   }

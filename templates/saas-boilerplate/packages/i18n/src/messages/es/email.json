@@ -1,0 +1,28 @@
+{
+  "hello": "Hola:",
+  "buttonFallback": "Si el botón anterior no funciona, copia y pega el siguiente enlace en tu navegador:",
+  "rights": "© {year} {company}. Todos los derechos reservados.",
+  "questions": "Si tienes alguna pregunta, responde a este correo",
+  "verification": {
+    "subject": "Verifica tu dirección de correo electrónico",
+    "heading": "Verifica tu correo electrónico",
+    "body": "¡Gracias por registrarte! Haz clic en el botón de abajo para verificar tu dirección de correo electrónico:",
+    "button": "Verificar correo",
+    "ignore": "Si no has creado una cuenta, no tienes que hacer nada."
+  },
+  "reset": {
+    "subject": "Restablece tu contraseña",
+    "heading": "Restablece tu contraseña",
+    "body": "Haz clic en el botón de abajo para restablecer tu contraseña:",
+    "button": "Restablecer contraseña",
+    "ignore": "Si no quieres restablecer tu contraseña, no tienes que hacer nada."
+  },
+  "invitation": {
+    "subject": "Te han invitado a {company}",
+    "heading": "Te han invitado a {company}",
+    "body": "Te han invitado a unirte a {company}. Haz clic abajo para crear tu cuenta:",
+    "button": "Aceptar invitación",
+    "linkFallback": "Si el botón anterior no funciona, copia y pega este enlace en tu navegador:",
+    "expires": "Esta invitación caduca en 7 días."
+  }
+}

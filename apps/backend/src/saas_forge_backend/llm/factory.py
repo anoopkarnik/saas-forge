@@ -6,6 +6,7 @@ from pydantic import SecretStr
 from saas_forge_backend.config import get_settings
 
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
+NVIDIA_BASE_URL = "https://integrate.api.nvidia.com/v1"
 
 
 class UnsupportedProvider(Exception):
@@ -48,6 +49,18 @@ def resolve_chat_model(value: str, *, temperature: float = 0.2) -> BaseChatModel
             temperature=temperature,
             api_key=SecretStr(settings.openrouter_api_key),
             base_url=OPENROUTER_BASE_URL,
+        )
+
+    if provider == "nvidia":
+        if not settings.nvidia_api_key:
+            raise MissingProviderCredentials("NVIDIA_API_KEY not set")
+        from langchain_openai import ChatOpenAI
+        return ChatOpenAI(
+            model=model,
+            temperature=temperature,
+            api_key=SecretStr(settings.nvidia_api_key),
+            base_url=NVIDIA_BASE_URL,
+            max_retries=0,
         )
 
     if provider == "anthropic":

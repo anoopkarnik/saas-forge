@@ -1,3 +1,4 @@
+import { getLaunchpadPreferences } from "@/lib/scaffold/launchpad/service";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { guardRoute } from "@/server/routeGuard";
@@ -91,6 +92,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  const guidePreferences = await getLaunchpadPreferences(session.user.id, { projectId: project.id }, true);
   try {
     await chargeScaffoldCredits({
       userId: session.user.id,
@@ -116,6 +118,7 @@ export async function POST(req: NextRequest) {
   let kit;
   try {
     kit = buildUpgradeKit({
+      guidePreferences,
       name: project.name,
       projectName: project.slug,
       fromModules,

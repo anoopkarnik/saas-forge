@@ -65,6 +65,32 @@ Agents are invocable as:
 
 Update `llm/factory.py:resolve_chat_model`. Add a credential env var to `config.py` and `.env.example`. Add a registry entry to `turbo.json:globalEnv`.
 
+## Project Launchpad (root app)
+
+The root app registers `launchpad_v1` for optional task help from saved project settings.
+The Launchpad checklist itself is curated and available without AI or a queue.
+New checklist-generation requests are rejected; the agent retains generation support for older queued work.
+Set `NVIDIA_API_KEY`; `NVIDIA_LAUNCHPAD_MODEL` defaults to
+`nvidia:nvidia/nemotron-3-ultra-550b-a55b`. Only server configuration chooses the model;
+The shared NVIDIA factory uses `https://integrate.api.nvidia.com/v1`.
+Set server-only `OPENROUTER_API_KEY` to enable fallback to
+`google/gemini-3.1-flash-lite` at `https://openrouter.ai/api/v1` when NVIDIA times out,
+fails, or cannot produce validated guidance. The fallback model is fixed on the server.
+NVIDIA gets up to 90 seconds when fallback is configured; both providers share the
+180-second attempt budget and a single repair. OpenRouter bills the configured account;
+Launchpad does not charge user credits. Without its key, NVIDIA retains the full budget.
+See [OpenRouter model pricing and structured-output support](https://openrouter.ai/google/gemini-3.1-flash-lite).
+
+Requests contain a bounded source pack and optional task/question/history.
+No project brief, credentials, or arbitrary project configuration is sent.
+The agent validates JSON results against source IDs, commands, file paths, dependencies
+and anchor coverage before emitting a final event. It emits safe status events only,
+performs at most one structured-output repair, and stops after 180 seconds.
+Launchpad registration and implementation are excluded from the released starter.
+
+[NVIDIA JSON mode documentation](https://docs.nvidia.com/nim/large-language-models/2.0.6/day-0/get-started-nemotron-3-ultra.html)
+describes the structured response format used by this agent.
+
 ## Environment variables
 
 See `.env.example` for the canonical list with defaults.

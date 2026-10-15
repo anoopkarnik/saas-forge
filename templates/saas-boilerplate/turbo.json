@@ -47,6 +47,8 @@
     }
   },
   "globalEnv": [
+    "NVIDIA_API_KEY",
+    "NVIDIA_LAUNCHPAD_MODEL",
     "AUTH_GITHUB_CLIENT_ID",
     "AUTH_GITHUB_CLIENT_SECRET",
     "AUTH_GOOGLE_CLIENT_ID",

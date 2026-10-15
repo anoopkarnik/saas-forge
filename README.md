@@ -35,6 +35,18 @@ This README documents what is shipped today. It intentionally focuses on the liv
 
 Choose this if you want the scaffold/download system, all three apps, and the shared packages.
 
+### Guide a saved project from setup to production
+
+Open a project’s Launchpad for an immediate, curated checklist for **Run locally → Build your MVP → Launch → Operate**, filtered by its saved modules, providers, platforms and deployment choice. The checklist needs no AI request, interview, generation wait or draft acceptance. Small steps explain where to go, the settings and file paths involved, expected results and common fixes, with visible documentation links. Earlier applicable completed work is retained separately; new steps are never automatically marked complete. Markdown exports and downloaded `SETUP.md` use the same curated walkthrough.
+
+**Ask for help** is optional AI assistance for explaining or troubleshooting the selected task. It never edits the guide or marks progress complete. Opening, navigating and downloading the guide do not start AI jobs.
+
+Optional task help uses the existing signed Python backend and web-managed AI jobs. Set server-only `NVIDIA_API_KEY` and optionally `NVIDIA_LAUNCHPAD_MODEL` in `apps/backend/.env`; the default is `nvidia:nvidia/nemotron-3-ultra-550b-a55b`, using `https://integrate.api.nvidia.com/v1`. When `OPENROUTER_API_KEY` is configured, NVIDIA failures automatically use `google/gemini-3.1-flash-lite` through OpenRouter. The fallback is paid from the configured OpenRouter account; Launchpad does not charge user credits. NVIDIA gets up to 90 seconds when fallback is available, within the shared 180-second attempt budget. Both providers share one malformed-output repair; transient failures use the existing single job retry. Limits are one active operation per project, two concurrent AI calls across the app, and 30 owner-initiated guide operations per user per UTC day. Cancellation, retry, and resumption are available. The agent only creates guidance and never executes commands, edits code, or deploys. Only selected project choices, bundled guide instructions, and bounded help messages go to the provider; keep credentials out of answers.
+
+NVIDIA currently lists the [hosted model endpoint](https://build.nvidia.com/nvidia/nemotron-3-ultra-550b-a55b) as free, but its [API trial terms](https://assets.ngc.nvidia.com/products/api-catalog/legal/NVIDIA%20API%20Trial%20Terms%20of%20Service.pdf) restrict production use of the service and generated content. Verify entitlement before production use; matching another project’s integration does not grant it. AI-specific state uses the existing JSON column and requires no additional migration.
+
+The source app requires the new `ProjectLaunchpad` database model to be migrated before using persistent progress. Generate that migration with the repository's normal `pnpm migrate` workflow; scaffolded starters do not include this project-management model.
+
 ### Use the shipped SaaS starter
 
 Choose this if you want to validate or inspect the clean SaaS starter that the scaffold flow packages from `templates/saas-boilerplate`.

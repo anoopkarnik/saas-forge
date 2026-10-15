@@ -1,6 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
+import { ArrowRight, MoreHorizontal, Rocket } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@workspace/ui/components/shadcn/dropdown-menu";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Button } from "@workspace/ui/components/shadcn/button";
@@ -43,11 +51,19 @@ async function downloadFromConfig(
   expectedTotalCredits: number | undefined,
 ) {
   // Saved configs hold no secrets; splitting keeps any stray one off the wire.
-  const { publicEnv: envVars } = splitSecretEnv(buildEnvVarsFromForm(config as FormValues));
+  const { publicEnv: envVars } = splitSecretEnv(
+    buildEnvVarsFromForm(config as FormValues),
+  );
   const response = await fetch("/api/scaffold", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name: slug, envVars, modules, expectedTotalCredits }),
+    body: JSON.stringify({
+      name: slug,
+      projectSlug: slug,
+      envVars,
+      modules,
+      expectedTotalCredits,
+    }),
   });
   if (response.status === 409) throw new Error(PRICE_CHANGED);
   if (!response.ok) {
@@ -77,7 +93,13 @@ async function upgradeProject(
   const response = await fetch("/api/scaffold/upgrade", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ slug, modules, tierId, expectedTotalCredits, providers }),
+    body: JSON.stringify({
+      slug,
+      modules,
+      tierId,
+      expectedTotalCredits,
+      providers,
+    }),
   });
   if (response.status === 409) throw new Error(PRICE_CHANGED);
   if (!response.ok) {
@@ -95,45 +117,68 @@ async function upgradeProject(
   document.body.removeChild(a);
 }
 
-function ProjectRow({ project }: { project: ProjectListItem }) {
+type LaunchpadSummary = {
+  completed: number;
+  total: number;
+  started: boolean;
+  nextTask: { title: string } | null;
+};
+
+function ProjectRow({
+  project,
+  summary,
+  progressError,
+}: {
+  project: ProjectListItem;
+  summary?: LaunchpadSummary;
+  progressError: boolean;
+}) {
   const trpc = useTRPC();
   const scaffoldTrpc = useScaffoldTRPC();
   const qc = useQueryClient();
-  const [open, setOpen] = useState(false);
   const [notesOpen, setNotesOpen] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [targetTier, setTargetTier] = useState(project.tierId);
   const [extraModules, setExtraModules] = useState<string[]>([]);
-  const [providerChoices, setProviderChoices] = useState<Record<string, string>>({});
+  const [providerChoices, setProviderChoices] = useState<
+    Record<string, string>
+  >({});
   const [isUpgrading, setIsUpgrading] = useState(false);
 
-  const targetModules = Array.from(new Set([...project.modules, ...extraModules]));
-  const catalog = useQuery({ ...trpc.scaffold.catalog.queryOptions(), enabled: upgradeOpen });
+  const targetModules = Array.from(
+    new Set([...project.modules, ...extraModules]),
+  );
+  const catalog = useQuery({
+    ...trpc.scaffold.catalog.queryOptions(),
+    enabled: upgradeOpen,
+  });
 
   const detail = useQuery({
     ...trpc.project.get.queryOptions({ slug: project.slug }),
-    enabled: open || upgradeOpen,
+    enabled: upgradeOpen,
   });
-  const savedConfig = ((detail.data as { config?: Record<string, unknown> } | undefined)?.config ?? {});
+  const savedConfig =
+    (detail.data as { config?: Record<string, unknown> } | undefined)?.config ??
+    {};
   // Providers this project can switch: pruned per choice (not kept all) and in a selected module.
   const providerToggles =
     savedConfig.KEEP_ALL_PROVIDERS === "true"
       ? []
-      : (catalog.data?.providers ?? []).filter((toggle) => !toggle.module || targetModules.includes(toggle.module));
+      : (catalog.data?.providers ?? []).filter(
+          (toggle) => !toggle.module || targetModules.includes(toggle.module),
+        );
   const providerSwitches = Object.fromEntries(
     Object.entries(providerChoices).filter(([id, value]) => {
       const toggle = providerToggles.find((entry) => entry.id === id);
       return toggle && value !== String(savedConfig[toggle.env] ?? "");
     }),
   );
-  const guide = useQuery({
-    ...trpc.project.setupGuide.queryOptions({ slug: project.slug }),
-    enabled: open,
-  });
   const estimate = useQuery({
-    ...scaffoldTrpc.project.estimateDownload.queryOptions({ slug: project.slug }),
-    enabled: open,
+    ...scaffoldTrpc.project.estimateDownload.queryOptions({
+      slug: project.slug,
+    }),
+    enabled: isDownloading,
   });
   const upgradeEstimate = useQuery({
     ...trpc.project.estimateUpgrade.queryOptions({
@@ -147,7 +192,12 @@ function ProjectRow({ project }: { project: ProjectListItem }) {
   const duplicate = useMutation(
     trpc.project.duplicate.mutationOptions({
       onSuccess: async () => {
-        await qc.invalidateQueries({ queryKey: trpc.project.list.queryKey() });
+        await Promise.all([
+          qc.invalidateQueries({ queryKey: trpc.project.list.queryKey() }),
+          qc.invalidateQueries({
+            queryKey: trpc.project.launchpadSummaries.queryKey(),
+          }),
+        ]);
         toast.success("Project duplicated");
       },
     }),
@@ -155,7 +205,12 @@ function ProjectRow({ project }: { project: ProjectListItem }) {
   const remove = useMutation(
     trpc.project.delete.mutationOptions({
       onSuccess: async () => {
-        await qc.invalidateQueries({ queryKey: trpc.project.list.queryKey() });
+        await Promise.all([
+          qc.invalidateQueries({ queryKey: trpc.project.list.queryKey() }),
+          qc.invalidateQueries({
+            queryKey: trpc.project.launchpadSummaries.queryKey(),
+          }),
+        ]);
         toast.success("Project deleted");
       },
     }),
@@ -175,7 +230,12 @@ function ProjectRow({ project }: { project: ProjectListItem }) {
       const config = record?.config ?? {};
       // The server compares against the catalog price and charges nothing when
       // this exact build is already owned.
-      await downloadFromConfig(project.slug, config, project.modules, estimate.data?.fullCredits);
+      await downloadFromConfig(
+        project.slug,
+        config,
+        project.modules,
+        estimate.data?.fullCredits,
+      );
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Download failed");
     } finally {
@@ -196,12 +256,14 @@ function ProjectRow({ project }: { project: ProjectListItem }) {
             ))}
             {project.releasesBehind > 0 ? (
               <Badge variant="outline">
-                {project.releasesBehind} release{project.releasesBehind === 1 ? "" : "s"} behind
+                {project.releasesBehind} release
+                {project.releasesBehind === 1 ? "" : "s"} behind
               </Badge>
             ) : null}
           </div>
           <p className="text-xs text-muted-foreground">
-            {project.platforms.join(", ")} · boilerplate v{project.templateVersion} · updated{" "}
+            {project.platforms.join(", ")} · boilerplate v
+            {project.templateVersion} · updated{" "}
             {new Date(project.updatedAt).toLocaleDateString()}
           </p>
         </div>
@@ -209,10 +271,11 @@ function ProjectRow({ project }: { project: ProjectListItem }) {
           <Button size="sm" onClick={handleDownload} disabled={isDownloading}>
             {isDownloading ? "Downloading…" : "Download"}
           </Button>
-          <Button size="sm" variant="outline" onClick={() => setOpen((v) => !v)}>
-            {open ? "Hide setup" : "Setup guide"}
-          </Button>
-          <Button size="sm" variant="outline" onClick={() => setNotesOpen((v) => !v)}>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setNotesOpen((v) => !v)}
+          >
             {notesOpen ? "Hide what's new" : "What's new"}
           </Button>
           <Button
@@ -222,22 +285,33 @@ function ProjectRow({ project }: { project: ProjectListItem }) {
           >
             {upgradeOpen ? "Cancel upgrade" : "Upgrade"}
           </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            disabled={duplicate.isPending}
-            onClick={() => duplicate.mutate({ slug: project.slug })}
-          >
-            Duplicate
-          </Button>
-          <Button
-            size="sm"
-            variant="destructive"
-            disabled={remove.isPending}
-            onClick={() => remove.mutate({ slug: project.slug })}
-          >
-            Delete
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                size="icon"
+                variant="outline"
+                className="min-h-11 min-w-11"
+                aria-label={`Actions for ${project.name}`}
+              >
+                <MoreHorizontal aria-hidden="true" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                disabled={duplicate.isPending}
+                onSelect={() => duplicate.mutate({ slug: project.slug })}
+              >
+                Duplicate project
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="text-destructive focus:text-destructive"
+                disabled={remove.isPending}
+                onSelect={() => remove.mutate({ slug: project.slug })}
+              >
+                Delete project
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
@@ -249,59 +323,34 @@ function ProjectRow({ project }: { project: ProjectListItem }) {
         </div>
       ) : null}
 
-      {open ? (
-        <div className="flex flex-col gap-4 rounded-md bg-muted/40 p-4 text-sm">
-          {estimate.data ? (
-            <p className="text-muted-foreground">
-              Download cost:{" "}
-              <span className="font-medium text-foreground">
-                {estimate.data.credits} credits
-              </span>
-              {estimate.data.alreadyBuilt ? " (you already own this build, so it is free)" : null}
-            </p>
-          ) : null}
-
-          {guide.isLoading ? (
-            <p className="text-muted-foreground">Loading setup guide…</p>
-          ) : guide.data ? (
-            <div className="flex flex-col gap-4">
-              <div>
-                <h3 className="mb-1 font-medium">Accounts to create</h3>
-                <ul className="list-disc pl-5 text-muted-foreground">
-                  {guide.data.accounts.map((a) => (
-                    <li key={a}>{a}</li>
-                  ))}
-                </ul>
-              </div>
-              <div>
-                <h3 className="mb-1 font-medium">Environment variables to fill</h3>
-                <ul className="list-disc pl-5 text-muted-foreground">
-                  {guide.data.secrets.map((s) => (
-                    <li key={s}>
-                      <code className="text-xs">{s}</code>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <div>
-                <h3 className="mb-1 font-medium">Steps</h3>
-                <ol className="list-decimal pl-5 text-muted-foreground">
-                  {guide.data.steps.map((step) => (
-                    <li key={step.title}>
-                      <span className="text-foreground">{step.title}</span>
-                      <ul className="list-disc pl-5">
-                        {step.details.map((d) => (
-                          <li key={d}>{d}</li>
-                        ))}
-                      </ul>
-                    </li>
-                  ))}
-                </ol>
-              </div>
-            </div>
-          ) : null}
+      <div className="flex flex-col gap-4 rounded-lg border border-primary/20 bg-primary/5 p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <p className="flex items-center gap-2 text-sm font-medium">
+            <Rocket className="size-4 text-primary" aria-hidden="true" />{" "}
+            Project Launchpad
+          </p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {summary?.nextTask
+              ? `Next: ${summary.nextTask.title}`
+              : summary
+                ? "Revisit your launch and production checks."
+                : "Your guide from a working starter to production."}
+          </p>
+          <p className="mt-2 text-xs text-muted-foreground">
+            {summary
+              ? `${summary.completed} of ${summary.total} tasks complete`
+              : progressError
+                ? "Progress unavailable — open the Launchpad to retry."
+                : "Loading progress…"}
+          </p>
         </div>
-      ) : null}
+        <Button asChild className="min-h-11 w-full shrink-0 sm:w-auto">
+          <Link href={`/projects/${project.slug}/launchpad`}>
+            {summary?.started ? "Continue setup" : "Open Launchpad"}
+            <ArrowRight aria-hidden="true" />
+          </Link>
+        </Button>
+      </div>
 
       {upgradeOpen ? (
         <div className="flex flex-col gap-3 rounded-md border bg-muted/30 p-4 text-sm">
@@ -322,29 +371,29 @@ function ProjectRow({ project }: { project: ProjectListItem }) {
           </div>
           <div className="flex flex-col gap-1">
             <span className="font-medium">Add modules</span>
-            {(catalog.data?.modules ?? []).filter(
-              (m) => m.available && !project.modules.includes(m.id),
-            ).map((m) => (
-              <label key={m.id} className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={extraModules.includes(m.id)}
-                  onChange={(e) =>
-                    setExtraModules((prev) =>
-                      e.target.checked
-                        ? [...prev, m.id]
-                        : prev.filter((x) => x !== m.id),
-                    )
-                  }
-                />
-                <span>
-                  {m.label}{" "}
-                  <span className="text-muted-foreground">
-                    (+{m.creditsCost} credits)
+            {(catalog.data?.modules ?? [])
+              .filter((m) => m.available && !project.modules.includes(m.id))
+              .map((m) => (
+                <label key={m.id} className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={extraModules.includes(m.id)}
+                    onChange={(e) =>
+                      setExtraModules((prev) =>
+                        e.target.checked
+                          ? [...prev, m.id]
+                          : prev.filter((x) => x !== m.id),
+                      )
+                    }
+                  />
+                  <span>
+                    {m.label}{" "}
+                    <span className="text-muted-foreground">
+                      (+{m.creditsCost} credits)
+                    </span>
                   </span>
-                </span>
-              </label>
-            ))}
+                </label>
+              ))}
             {project.modules.length ? (
               <p className="text-xs text-muted-foreground">
                 Already included: {project.modules.join(", ")}
@@ -361,10 +410,17 @@ function ProjectRow({ project }: { project: ProjectListItem }) {
                     <span className="w-36">{toggle.label}</span>
                     <select
                       value={providerChoices[toggle.id] ?? current}
-                      onChange={(e) => setProviderChoices((prev) => ({ ...prev, [toggle.id]: e.target.value }))}
+                      onChange={(e) =>
+                        setProviderChoices((prev) => ({
+                          ...prev,
+                          [toggle.id]: e.target.value,
+                        }))
+                      }
                       className="w-44 rounded border bg-background p-1 text-sm"
                     >
-                      {current && !toggle.values.includes(current) ? <option value={current}>{current}</option> : null}
+                      {current && !toggle.values.includes(current) ? (
+                        <option value={current}>{current}</option>
+                      ) : null}
                       {toggle.values.map((value) => (
                         <option key={value} value={value}>
                           {value}
@@ -376,7 +432,8 @@ function ProjectRow({ project }: { project: ProjectListItem }) {
                 );
               })}
               <p className="text-xs text-muted-foreground">
-                Switching a provider is free: the kit swaps the provider&apos;s code, SDK and env vars.
+                Switching a provider is free: the kit swaps the provider&apos;s
+                code, SDK and env vars.
               </p>
             </div>
           ) : null}
@@ -420,6 +477,9 @@ function ProjectRow({ project }: { project: ProjectListItem }) {
                   await qc.invalidateQueries({
                     queryKey: trpc.project.list.queryKey(),
                   });
+                  await qc.invalidateQueries({
+                    queryKey: trpc.project.launchpadSummaries.queryKey(),
+                  });
                   setUpgradeOpen(false);
                   setExtraModules([]);
                   setProviderChoices({});
@@ -444,6 +504,7 @@ function ProjectRow({ project }: { project: ProjectListItem }) {
 export function ProjectList() {
   const trpc = useTRPC();
   const list = useQuery(trpc.project.list.queryOptions());
+  const progress = useQuery(trpc.project.launchpadSummaries.queryOptions());
 
   if (list.isLoading)
     return <p className="text-sm text-muted-foreground">Loading…</p>;
@@ -457,8 +518,8 @@ export function ProjectList() {
       <div>
         <h1 className="page-title">My Projects</h1>
         <p className="text-sm text-muted-foreground">
-          Saved configurations you can download or upgrade. Secrets are never stored — each
-          project ships with a setup guide for the env vars it needs.
+          Download your starter, follow its Launchpad from setup to production,
+          and keep it up to date.
         </p>
       </div>
 
@@ -466,13 +527,20 @@ export function ProjectList() {
 
       {rows.length === 0 ? (
         <p className="rounded-md border border-dashed p-6 text-sm text-muted-foreground">
-          You haven&apos;t saved any project configurations yet. Build one on the dashboard and click
-          &ldquo;Save configuration&rdquo;.
+          You haven&apos;t saved any project configurations yet. Build one on
+          the dashboard and click &ldquo;Save configuration&rdquo;.
         </p>
       ) : (
         <ul className="flex flex-col gap-3">
           {rows.map((project) => (
-            <ProjectRow key={project.id} project={project} />
+            <ProjectRow
+              key={project.id}
+              project={project}
+              summary={progress.data?.find(
+                (item) => item.slug === project.slug,
+              )}
+              progressError={progress.isError}
+            />
           ))}
         </ul>
       )}

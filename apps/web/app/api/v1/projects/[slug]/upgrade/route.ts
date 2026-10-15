@@ -1,3 +1,4 @@
+import { getLaunchpadPreferences } from "@/lib/scaffold/launchpad/service";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { authenticateApiKey } from "@/server/authenticateApiKey";
@@ -148,6 +149,7 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
 
   const idempotencyKey = req.headers.get("Idempotency-Key") || undefined;
 
+  const guidePreferences = await getLaunchpadPreferences(auth.userId, { projectId: project.id }, true);
   let charge;
   try {
     charge = await chargeScaffoldCredits({
@@ -175,6 +177,7 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
   let kit;
   try {
     kit = buildUpgradeKit({
+      guidePreferences,
       name: project.name,
       projectName: project.slug,
       fromModules,

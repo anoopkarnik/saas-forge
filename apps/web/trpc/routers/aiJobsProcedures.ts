@@ -22,6 +22,7 @@ export const aiJobsRouter = createTRPCRouter({
   create: protectedProcedure
     .input(createInput)
     .mutation(async ({ ctx, input }) => {
+      if (input.agentId.startsWith("launchpad_")) throw new TRPCError({ code: "FORBIDDEN", message: "Use the project's Launchpad to request guidance." });
       const row = await (db as any).aiJobRun.create({
         data: {
           userId: ctx.session.user.id,

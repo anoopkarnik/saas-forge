@@ -59,6 +59,9 @@ vi.mock("@/server/authenticateApiKey", () => ({
 }));
 vi.mock("@workspace/database/client", () => ({
   default: {
+    projectLaunchpad: {
+      findUnique: async () => ({ state: { mode: "founder", deployment: "docker" } }),
+    },
     projectConfig: {
       findFirst: mockFindFirst,
       update: mockUpdate,
@@ -190,7 +193,7 @@ describe("POST /api/v1/projects/[slug]/upgrade", () => {
     expect(mockCharge).toHaveBeenCalledWith(
       expect.objectContaining({ amount: 23, idempotencyKey: "idem-9" }),
     );
-    expect(mockBuildKit).toHaveBeenCalled();
+    expect(mockBuildKit).toHaveBeenCalledWith(expect.objectContaining({ guidePreferences: { mode: "founder", deployment: "docker", launchpadState: {mode:"founder",deployment:"docker"} } }));
     expect(mockUpdate).toHaveBeenCalled();
   });
 });

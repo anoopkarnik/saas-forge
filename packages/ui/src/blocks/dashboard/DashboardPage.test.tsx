@@ -125,9 +125,51 @@ describe("DashboardPage advanced setup", () => {
     fireEvent.change(screen.getByLabelText("Project Name (Folder Name)"), {
       target: { value: "demo" },
     });
-    fireEvent.click(screen.getByRole("button", { name: /Save configuration/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Save configuration/i }));
 
     await waitFor(() => expect(onSaveConfiguration).toHaveBeenCalledOnce());
     expect(onSaveConfiguration.mock.calls[0]?.[0].config).not.toHaveProperty("DATABASE_URL");
+  });
+});
+
+describe("DashboardPage saved scaffold flow", () => {
+  it("saves the review configuration without downloading or deploying", async () => {
+    const onSaveConfiguration = vi.fn();
+    const onSubmitConfiguration = vi.fn();
+    render(
+      <DashboardPage
+        catalog={catalog}
+        onSubmitConfiguration={onSubmitConfiguration}
+        onSaveConfiguration={onSaveConfiguration}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: /^Basics/ }));
+    fireEvent.change(screen.getByLabelText("Project Folder Name"), {
+      target: { value: "demo" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /^Review/ }));
+
+    expect(screen.queryByRole("button", { name: /Download Boilerplate/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: /Deploy to Vercel/ })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: /Save configuration/i }));
+    await waitFor(() => expect(onSaveConfiguration).toHaveBeenCalledOnce());
+    expect(onSaveConfiguration).toHaveBeenCalledWith(expect.objectContaining({
+      name: "demo", modules: [], platforms: ["web"],
+    }));
+    expect(onSubmitConfiguration).not.toHaveBeenCalled();
+  });
+
+  it("offers saving as the only scaffold action in advanced setup", () => {
+    render(
+      <DashboardPage
+        catalog={catalog}
+        onSubmitConfiguration={vi.fn()}
+        onSaveConfiguration={vi.fn()}
+      />,
+    );
+    fireEvent.click(screen.getByRole("switch", { name: "Toggle advanced scaffold setup" }));
+    expect(screen.getByRole("button", { name: /Save configuration/i })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /Download Boilerplate/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: /Deploy to Vercel/ })).toBeNull();
   });
 });

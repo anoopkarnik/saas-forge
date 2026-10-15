@@ -39,6 +39,8 @@
     "scripts/doctor-probes.mjs"
   ],
   "exclude": [
+    "apps/backend/src/saas_forge_backend/agents/launchpad.py",
+    "apps/backend/tests/test_launchpad_agent.py",
     ".claude/settings.local.json",
     "apps/mobile/components/downloads",
     "apps/web/vitest-coverage-output.txt",
@@ -69,10 +71,16 @@
     "apps/web/components/projects",
     "apps/web/trpc/scaffold-client.ts",
     "packages/database/prisma/migrations/20261005224052_release_emails",
+    "packages/database/prisma/migrations/20261011035513_added_setup_guide",
     "packages/email/src/resend/release.ts",
-    "packages/email/src/templates/ReleaseNotes.tsx"
+    "packages/email/src/templates/ReleaseNotes.tsx",
+    "apps/web/trpc/routers/__tests__/launchpadAgentBoundary.test.ts",
+    "apps/web/app/api/ai/agents/__tests__/launchpadAgentBoundary.test.ts"
   ],
   "templateOverrides": [
+    "apps/backend/package.json",
+    "apps/backend/src/saas_forge_backend/agents/registry.py",
+    "apps/web/lib/jobs/functions.ts",
     "AGENTS.md",
     "CLAUDE.md",
     "UPGRADING.md",

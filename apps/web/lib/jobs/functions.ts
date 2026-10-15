@@ -10,6 +10,7 @@ import { NonRetriableError } from "inngest";
 import { enqueue, getJob, listJobs, listSchedules, PermanentJobError, type JobDefinition } from "@workspace/jobs/index";
 import { inngest, jobEvent, type JobEventData } from "@workspace/jobs/inngest";
 import { claimScheduleWindow, recordDeadLetter } from "@/lib/jobs/service";
+import { launchpadJobFunction } from "@/lib/scaffold/launchpad/ai-jobs";
 // scaffold:begin ai_agents
 import { aiJobFunctions } from "@/lib/ai-jobs/functions";
 // scaffold:end ai_agents
@@ -83,6 +84,7 @@ export function jobFunctions() {
     ),
   );
   return [
+    launchpadJobFunction,
     ...jobFns,
     ...scheduleFns,
     // scaffold:begin ai_agents

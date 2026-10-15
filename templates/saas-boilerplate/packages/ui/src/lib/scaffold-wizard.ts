@@ -55,7 +55,7 @@ export const WIZARD_STEPS: WizardStep[] = [
   {
     id: "review",
     title: "Review",
-    description: "Check your setup and download the scaffold.",
+    description: "Check your scaffold configuration.",
   },
 ];
 

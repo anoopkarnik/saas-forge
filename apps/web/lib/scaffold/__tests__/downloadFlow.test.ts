@@ -1,5 +1,6 @@
 // @vitest-environment node
 import archiver from "archiver";
+import JSZip from "jszip";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 type Job = { id: string; userId: string; creditsSpent: number; status: string; buildKey: string | null; refundedAt: Date | null };
@@ -47,6 +48,8 @@ const { db, state, mockBase } = vi.hoisted(() => {
 });
 
 vi.mock("@workspace/database/client", () => ({ default: db }));
+const { guidePreferences } = vi.hoisted(() => ({ guidePreferences: vi.fn(async () => ({ mode: "founder", deployment: "docker" })) }));
+vi.mock("@/lib/scaffold/launchpad/service", () => ({ getLaunchpadPreferences: guidePreferences }));
 const { logUsage } = vi.hoisted(() => ({ logUsage: vi.fn(async () => true) }));
 vi.mock("@/lib/usage/record", () => ({ logUsage }));
 vi.mock("@/lib/scaffold/build-cache", () => ({
@@ -101,6 +104,13 @@ describe("downloadScaffold", () => {
     expect(state.jobs[0]).toMatchObject({ status: "ready", buildKey: "build-key-1", creditsSpent: 30 });
   });
 
+  it("appends the saved owner's guide preferences even on a cached build", async () => {
+    const result = await downloadScaffold({ ...input, projectSlug: "demo" });
+    expect(guidePreferences).toHaveBeenCalledWith("u1", { projectId: undefined, slug: "demo" }, true);
+    const setup = await (await JSZip.loadAsync(result.bytes)).file("demo/SETUP.md")!.async("string");
+    expect(setup).toContain("Web deployment: docker");
+    expect(setup).not.toContain("Deploy the web app on Vercel");
+  });
   it("re-downloads an owned build for free", async () => {
     await downloadScaffold(input);
     const again = await downloadScaffold(input);

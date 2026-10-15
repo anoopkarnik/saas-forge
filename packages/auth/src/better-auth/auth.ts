@@ -9,6 +9,7 @@ import { DESKTOP_APP_ORIGIN } from "./desktop-origin";
 import { isEmailAllowedToRegister, type RegistrationMode } from "./registration";
 import { createAuthMiddleware, APIError, getSessionFromCtx } from "better-auth/api";
 import { isGuestAccountMutation } from "./guestGuard";
+import { userAdditionalFields } from "./user-fields";
 import {
     createPersonalOrganization,
     getInitialActiveOrganizationId,
@@ -91,16 +92,7 @@ const options = {
         }
     },
     user: {
-        additionalFields: {
-            creditsUsed: {
-                type: "number",
-                required: false,
-            },
-            creditsTotal: {
-                type: "number",
-                required: false,
-            },
-        },
+        additionalFields: userAdditionalFields,
         changeEmail: {
             enabled: true,
             sendChangeEmailConfirmation: async ({user, newEmail, url, token}, request) => {

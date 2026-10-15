@@ -11,6 +11,9 @@ import { createAuthMiddleware, APIError, getSessionFromCtx } from "better-auth/a
 import { isGuestAccountMutation } from "./guestGuard";
 import { userAdditionalFields } from "./user-fields";
 import { emailLocale } from "./email-locale";
+// scaffold:begin analytics
+import { trackSignedIn, trackSignedUp } from "./analytics";
+// scaffold:end analytics
 import {
     createPersonalOrganization,
     getInitialActiveOrganizationId,
@@ -183,7 +186,7 @@ const options = {
                         });
                     }
                 },
-                after: async (user) => {
+                after: async (user, ctx) => {
                     const userCount = await db.user.count();
                     if (userCount === 1) {
                         await db.user.update({
@@ -197,6 +200,9 @@ const options = {
                         data: { status: "ACCEPTED", acceptedAt: new Date() },
                     });
                     await createPersonalOrganization(user);
+                    // scaffold:begin analytics
+                    await trackSignedUp(user.id, ctx);
+                    // scaffold:end analytics
                 },
             },
         },
@@ -207,6 +213,11 @@ const options = {
                     if (!activeOrganizationId) return;
                     return { data: { ...session, activeOrganizationId } };
                 },
+                // scaffold:begin analytics
+                after: async (session, ctx) => {
+                    await trackSignedIn(session.userId, ctx);
+                },
+                // scaffold:end analytics
             },
         },
     },

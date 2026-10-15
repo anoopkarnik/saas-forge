@@ -76,6 +76,13 @@ import {
   type WizardStepId,
 } from "../../lib/scaffold-wizard";
 
+/** Wizard interactions a host can measure; the SaaS Forge platform sends them to product analytics. */
+export type WizardEvent =
+  | { name: "wizard.step_viewed"; properties: { step: WizardStepId; index: number } }
+  | { name: "wizard.preset_selected"; properties: { preset: string } }
+  | { name: "wizard.module_toggled"; properties: { module: ScaffoldModuleId; selected: boolean } }
+  | { name: "scaffold.quote_shown"; properties: { totalCredits: number; modules: ScaffoldModuleId[] } };
+
 interface DashboardPageProps {
   /** Prices and modules from the server's `scaffold.catalog`. */
   catalog: ScaffoldCatalog;
@@ -103,6 +110,7 @@ interface DashboardPageProps {
     modules: ScaffoldModuleId[];
     platforms: Array<"web" | "desktop" | "mobile">;
   }) => React.ReactNode;
+  onEvent?: (event: WizardEvent) => void;
 }
 
 
@@ -187,8 +195,13 @@ export default function DashboardPage({
   docsBaseUrl = "",
   onNavigateDoc,
   renderPreview,
+  onEvent,
 }: DashboardPageProps) {
   const isGuest = useIsGuest();
+  const emit = React.useRef(onEvent);
+  React.useEffect(() => {
+    emit.current = onEvent;
+  });
   const [isDownloading, setIsDownloading] = React.useState(false);
   const [isSaving, setIsSaving] = React.useState(false);
   const [selectedPreset, setSelectedPreset] =
@@ -318,6 +331,7 @@ export default function DashboardPage({
     (preset: ResolvedPreset) => {
       setSelectedPreset(preset);
       setEntryChoice("preset");
+      emit.current?.({ name: "wizard.preset_selected", properties: { preset: preset.id } });
 
       for (const [key, value] of Object.entries(preset.values)) {
         form.setValue(key as keyof FormValues, value as never, {
@@ -341,6 +355,10 @@ export default function DashboardPage({
     (moduleId: ScaffoldModuleId) => {
       const currentModules = form.getValues("SELECTED_MODULES") || [];
       const nextModules = toggleModule(catalog, currentModules, moduleId);
+      emit.current?.({
+        name: "wizard.module_toggled",
+        properties: { module: moduleId, selected: nextModules.includes(moduleId) },
+      });
 
       form.setValue("SELECTED_MODULES", nextModules, {
         shouldDirty: true,
@@ -443,6 +461,19 @@ export default function DashboardPage({
 
     setCurrentStepIndex((prev) => Math.min(prev + 1, WIZARD_STEPS.length - 1));
   }, [currentStepIndex, validateStep]);
+
+  React.useEffect(() => {
+    const step = WIZARD_STEPS[currentStepIndex];
+    if (!step) return;
+    emit.current?.({ name: "wizard.step_viewed", properties: { step: step.id, index: currentStepIndex } });
+    if (step.id === "review") {
+      const modules = (form.getValues("SELECTED_MODULES") || []) as ScaffoldModuleId[];
+      emit.current?.({
+        name: "scaffold.quote_shown",
+        properties: { totalCredits: quoteFromCatalog(catalog, modules).totalCredits, modules },
+      });
+    }
+  }, [catalog, currentStepIndex, form]);
 
   const handleBack = React.useCallback(() => {
     setCurrentStepIndex((prev) => Math.max(prev - 1, 0));

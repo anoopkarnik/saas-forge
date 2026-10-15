@@ -9,6 +9,9 @@ import { notify } from "@/lib/notifications/notify";
 // scaffold:begin webhooks
 import { emitWebhook } from "@/lib/webhooks/service";
 // scaffold:end webhooks
+// scaffold:begin analytics
+import { track } from "@workspace/analytics/server";
+// scaffold:end analytics
 
 // Created lazily: `next build` evaluates this module while collecting page data,
 // and the Stripe constructor throws when STRIPE_SECRET_KEY is absent at build time.
@@ -128,6 +131,9 @@ export async function POST(request: NextRequest) {
                 { userId },
             );
             // scaffold:end webhooks
+            // scaffold:begin analytics
+            await track("billing.checkout_completed", { credits, gateway: "stripe" }, { distinctId: userId });
+            // scaffold:end analytics
             return NextResponse.json({
                 message: "Checkout session completed and credits updated",
             }, { status: 200 });

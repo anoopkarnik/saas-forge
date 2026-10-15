@@ -19,6 +19,9 @@ import { emitWebhook } from '@/lib/webhooks/service';
 import { audit, userActor } from '@/lib/audit/audit';
 import type { AuditAction, AuditMetadata } from '@/lib/audit/actions';
 // scaffold:end audit_log
+// scaffold:begin analytics
+import { track } from '@workspace/analytics/server';
+// scaffold:end analytics
 import {
   getActiveOrganizationId,
   orgProcedure,
@@ -181,6 +184,13 @@ export const organizationRouter = createTRPCRouter({
         }),
       );
       await setSessionActiveOrganization(ctx.session.session.id, organization.id);
+      // scaffold:begin analytics
+      await track(
+        'org.created',
+        { organizationId: organization.id },
+        { distinctId: ctx.session.user.id, headers: ctx.headers, groups: { organization: organization.id } },
+      );
+      // scaffold:end analytics
       return { id: organization.id as string, name: organization.name as string, slug: organization.slug as string };
     }),
 
@@ -299,6 +309,13 @@ export const organizationRouter = createTRPCRouter({
         role: input.role,
       });
       // scaffold:end audit_log
+      // scaffold:begin analytics
+      await track(
+        'org.member_invited',
+        { organizationId: ctx.org.id, role: input.role },
+        { distinctId: ctx.session.user.id, headers: ctx.headers, groups: { organization: ctx.org.id } },
+      );
+      // scaffold:end analytics
       return { id: invitation?.id as string };
     }),
 

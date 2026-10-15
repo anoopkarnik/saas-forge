@@ -24,6 +24,9 @@ import {
 } from "@/lib/helper/aiWebhook";
 import { aiChatRequestSchema, type AiChatMessage } from "@/lib/zod/aiChat";
 import { announceUsageAlerts, recordUsage } from "@/lib/usage/record";
+// scaffold:begin analytics
+import { track } from "@workspace/analytics/server";
+// scaffold:end analytics
 // scaffold:begin notifications
 import { notifyIfCreditsLow } from "@/lib/notifications/notify";
 // scaffold:end notifications
@@ -221,6 +224,13 @@ export async function POST(req: Request) {
   if (persistedMessages.length) {
     await (db as any).aiMessage.createMany({ data: persistedMessages });
   }
+  // scaffold:begin analytics
+  await track(
+    "ai.chat_sent",
+    { provider: resolvedModel?.provider ?? AI_WEBHOOK_PROVIDER, model: resolvedModel?.modelId ?? AI_WEBHOOK_MODEL },
+    { distinctId: userId, headers: req.headers },
+  );
+  // scaffold:end analytics
 
   if (isN8nWebhookProvider(activeProvider)) {
     logAIEvent({

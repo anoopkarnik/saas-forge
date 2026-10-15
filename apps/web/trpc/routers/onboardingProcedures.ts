@@ -11,6 +11,9 @@ import {
   WIZARD_STEPS,
 } from "@/lib/onboarding/service";
 import { createTRPCRouter, protectedProcedure } from "../init";
+// scaffold:begin analytics
+import { track } from "@workspace/analytics/server";
+// scaffold:end analytics
 
 // Onboarding (onboarding module): a skippable wizard and a setup checklist.
 // The read-only demo guest sees neither; protectedProcedure blocks its writes.
@@ -33,6 +36,11 @@ export const onboardingRouter = createTRPCRouter({
     )
     .mutation(async ({ ctx, input }) => {
       await saveAnswers(ctx.session.user.id, input);
+      // scaffold:begin analytics
+      if (input.finish) {
+        await track("onboarding.step_completed", { step: "wizard" }, { distinctId: ctx.session.user.id, headers: ctx.headers });
+      }
+      // scaffold:end analytics
       return { ok: true };
     }),
 
@@ -54,6 +62,9 @@ export const onboardingRouter = createTRPCRouter({
       if (error instanceof OnboardingTaskError) throw new TRPCError({ code: "BAD_REQUEST", message: error.message });
       throw error;
     }
+    // scaffold:begin analytics
+    await track("onboarding.step_completed", { step: input.taskKey }, { distinctId: ctx.session.user.id, headers: ctx.headers });
+    // scaffold:end analytics
     return { ok: true };
   }),
 });

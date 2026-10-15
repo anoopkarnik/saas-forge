@@ -231,6 +231,12 @@ Onboarding (`apps/web/lib/onboarding`):
 - Checklist tasks live in `tasks.ts`, each module's inside its markers. Give a task a `done(userId)` check on real data (avatar set, key created); a task without one is completed by `onboarding.complete`. The wizard and checklist render on the home page, never block anything, and can be turned off in Settings (`onboarding.wizard`, `onboarding.checklist`) or by the `onboarding.checklist` flag. The demo guest sees neither.
 - After installing it in an app that already has users, run `pnpm --dir packages/database backfill:onboarding` so existing users are not shown the wizard.
 
+Product analytics (`packages/analytics`, guide and event registry in its `README.md`):
+
+- Add an event to `src/events.ts` (typed properties: ids, counts and enums, never emails or names) inside its module's markers, and never rename one. Server code calls `await track(event, props, { distinctId: userId, headers, groups })` from `@workspace/analytics/server`; it skips visitors who declined, Do Not Track or Global Privacy Control, gives up after 1s and never throws. Browser code uses `@workspace/analytics/client`. Wrap call sites in other modules' files in `analytics` markers.
+- Adapters: PostHog when `NEXT_PUBLIC_POSTHOG_KEY` is set, console logging in development, otherwise nothing loads. No autocapture or session recording. `AnalyticsProvider` (root layout) identifies users by id and, when the `analytics.consentRequired` setting is on, shows a consent banner before PostHog loads. Google Analytics and `/admin/seo` are separate.
+- Downloader-funnel events (wizard, downloads, upgrades) are root-only: they are declared in `apps/web/lib/scaffold/analytics-events.ts`, which augments the event map, and documented with a PostHog dashboard in `docs/analytics/`. The wizard reports through its `onEvent` prop.
+
 Internationalization (`packages/i18n`):
 
 - Locales live in `src/config.ts` (`en`, `es`). The active one comes from `User.locale`, then the `NEXT_LOCALE` cookie, then `Accept-Language`, then the `i18n.defaultLocale` site setting. There is no URL prefix.

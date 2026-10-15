@@ -8,6 +8,9 @@ import Stripe from 'stripe';
 import { z } from "zod";
 import db from "@workspace/database/client";
 import { TRPCError } from "@trpc/server";
+// scaffold:begin analytics
+import { track } from "@workspace/analytics/server";
+// scaffold:end analytics
 
 // Used when NEXT_PUBLIC_PAYMENT_GATEWAY is unset. A download keeps only the
 // gateway the buyer chose, and pins this default to it.
@@ -118,6 +121,9 @@ export const billingRouter = createTRPCRouter({
           customer_email: ctx.session.user.email ?? undefined,
           metadata: { userId: String(userId), credits: String(input.credits) }
         });
+        // scaffold:begin analytics
+        await track("billing.checkout_started", { credits: input.credits, gateway }, { distinctId: userId, headers: ctx.headers });
+        // scaffold:end analytics
         
         return { checkoutUrl: session.url };
       }
@@ -135,6 +141,9 @@ export const billingRouter = createTRPCRouter({
           },
           metadata: { userId: String(userId), credits: String(input.credits) }
         });
+        // scaffold:begin analytics
+        await track("billing.checkout_started", { credits: input.credits, gateway }, { distinctId: userId, headers: ctx.headers });
+        // scaffold:end analytics
         return { checkoutUrl: session.checkout_url };
       }
       // scaffold:end payment_gateway.dodo

@@ -9,12 +9,18 @@ import { Loader2 } from "lucide-react";
 import { useTRPC } from "@/trpc/client";
 import { ScaffoldPreview } from "@/components/scaffold-preview/ScaffoldPreview";
 import { OnboardingPanel } from "@/components/onboarding/OnboardingPanel";
+import { track } from "@workspace/analytics/client";
 
 export default function Page() {
   const trpc = useTRPC();
   const router = useRouter();
   const saveConfiguration = useMutation(trpc.project.save.mutationOptions());
   const catalogQuery = useQuery(trpc.scaffold.catalog.queryOptions());
+  const modulesAvailable = catalogQuery.data?.modules.filter((module) => module.available).length;
+
+  React.useEffect(() => {
+    if (modulesAvailable !== undefined) track("wizard.opened", { modulesAvailable });
+  }, [modulesAvailable]);
 
   const handleSaveConfiguration = async (payload: {
     name: string;
@@ -35,6 +41,8 @@ export default function Page() {
         modules: payload.modules,
         config: payload.config,
       });
+
+      track("wizard.project_saved", { modules: payload.modules, platforms: payload.platforms });
 
       const strippedNote = res.strippedKeys.length
         ? ` ${res.strippedKeys.length} secret value(s) were not stored — fill them via the setup guide.`
@@ -59,6 +67,7 @@ export default function Page() {
           catalog={catalogQuery.data}
           renderPreview={(selection) => <ScaffoldPreview {...selection} />}
           onSaveConfiguration={handleSaveConfiguration}
+          onEvent={(event) => track(event.name, event.properties)}
           docsBaseUrl={process.env.NEXT_PUBLIC_URL!}
         />
       ) : (

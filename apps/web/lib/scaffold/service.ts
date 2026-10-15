@@ -25,6 +25,7 @@ import { generateSetupGuide } from "@/lib/scaffold/setup-guide";
 import { getLaunchpadPreferences } from "./launchpad/service";
 import type { GuideMode, DeploymentPath, LaunchpadState } from "./launchpad/types";
 import { logUsage } from "@/lib/usage/record";
+import { track } from "@workspace/analytics/server";
 import {
   BASE_ROOT,
   computeBuildKey,
@@ -521,6 +522,8 @@ export type DownloadScaffoldInput = BuildProjectZipInput & {
   idempotencyKey?: string | null;
   /** Free regardless of ownership (e.g. an unchanged saved project). */
   free?: boolean;
+  /** The buyer's request, so product analytics honours their opt-out. */
+  requestHeaders?: Headers | null;
 };
 
 export type DownloadScaffoldResult = {
@@ -546,35 +549,55 @@ export async function downloadScaffold(input: DownloadScaffoldInput): Promise<Do
   const providers = input.providers ?? selectionProviders(input.envVars, modules);
   const buildKey = scaffoldBuildKey(modules, input.platforms, providers);
   const free = input.free || (await ownsBuild(input.userId, buildKey));
+  const analytics = { distinctId: input.userId, headers: input.requestHeaders };
+  const failed = (error: string) =>
+    track("scaffold.download_failed", { source: input.source, modules, error }, analytics);
+  await track(
+    "scaffold.download_started",
+    { source: input.source, modules, platforms: input.platforms, free },
+    analytics,
+  );
 
-  const charge = await chargeScaffoldCredits({
-    userId: input.userId,
-    amount: free ? 0 : pricing.totalCredits,
-    idempotencyKey: input.idempotencyKey,
-    job: {
-      type: "download",
-      source: input.source,
-      projectId: input.projectId ?? null,
-      toModules: modules,
-      toTierId: input.tierId,
-      templateVersion: getTemplateVersion(),
-      status: "building",
-      buildKey,
-      platforms: input.platforms,
-      projectName: input.projectName,
-      envVars: input.envVars,
-    },
-  });
+  let charge: Awaited<ReturnType<typeof chargeScaffoldCredits>>;
+  try {
+    charge = await chargeScaffoldCredits({
+      userId: input.userId,
+      amount: free ? 0 : pricing.totalCredits,
+      idempotencyKey: input.idempotencyKey,
+      job: {
+        type: "download",
+        source: input.source,
+        projectId: input.projectId ?? null,
+        toModules: modules,
+        toTierId: input.tierId,
+        templateVersion: getTemplateVersion(),
+        status: "building",
+        buildKey,
+        platforms: input.platforms,
+        projectName: input.projectName,
+        envVars: input.envVars,
+      },
+    });
+  } catch (err) {
+    await failed(err instanceof InsufficientCreditsError ? err.code : "charge_failed");
+    throw err;
+  }
 
   let build: BuildProjectZipResult;
   try {
     build = await buildProjectZip({ ...input, modules, providers, guidePreferences });
   } catch (err) {
     await refundScaffoldJob(charge.jobId);
+    await failed("build_failed");
     throw err;
   }
 
   await db.scaffoldJob.update({ where: { id: charge.jobId }, data: { status: "ready" } });
+  await track(
+    "scaffold.download_completed",
+    { source: input.source, modules, cacheHit: build.cacheHit, charged: charge.charged },
+    analytics,
+  );
   return {
     bytes: build.bytes,
     charged: charge.charged,

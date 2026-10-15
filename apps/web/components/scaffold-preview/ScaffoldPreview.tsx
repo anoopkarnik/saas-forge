@@ -18,6 +18,7 @@ import {
   type PreviewFile,
 } from "@workspace/ui/lib/scaffold-preview";
 import { useScaffoldTRPC } from "@/trpc/scaffold-client";
+import { track } from "@workspace/analytics/client";
 
 type Selection = { modules: string[]; platforms: Array<"web" | "desktop" | "mobile"> };
 
@@ -142,7 +143,10 @@ export function ScaffoldPreview({ modules, platforms }: Selection) {
                 <button
                   type="button"
                   className="flex w-full items-center gap-2 rounded-md px-1 py-1 text-left hover:bg-muted/50"
-                  onClick={() => setOpenFolder(open ? null : folder)}
+                  onClick={() => {
+                    if (!open) track("wizard.preview_opened", { view: "folder" });
+                    setOpenFolder(open ? null : folder);
+                  }}
                   aria-expanded={open}
                 >
                   <ChevronRight className={`h-3.5 w-3.5 shrink-0 transition-transform ${open ? "rotate-90" : ""}`} />
@@ -178,7 +182,16 @@ export function ScaffoldPreview({ modules, platforms }: Selection) {
         </div>
 
         <div className="space-y-2 border-t pt-3">
-          <Button type="button" size="sm" variant="outline" onClick={() => setExact(true)} disabled={exact}>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              track("wizard.preview_opened", { view: "exact" });
+              setExact(true);
+            }}
+            disabled={exact}
+          >
             <FileCode2 className="mr-2 h-4 w-4" /> Exact build and file samples
           </Button>
           {exact && build.isLoading ? (

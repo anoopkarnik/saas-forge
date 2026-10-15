@@ -142,6 +142,7 @@ export async function POST(req: NextRequest) {
     const download = await downloadScaffold({
       userId: session.user.id,
       source: "web",
+      requestHeaders: req.headers,
       name: projectName,
       projectSlug: body.projectSlug,
       projectName,

@@ -91,6 +91,7 @@ export default [
       "app/landing/page.tsx",
       "components/home/**/*.tsx",
       "components/i18n/**/*.tsx",
+      "components/analytics/**/*.tsx",
       "blocks/Support.tsx",
       "blocks/home/**/*.tsx",
       "components/landing/{NavbarSection,FooterSection,HeroSection,FeatureSection,PricingItem,TestimonialSection}.tsx",

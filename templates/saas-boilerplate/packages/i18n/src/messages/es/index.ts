@@ -29,6 +29,9 @@ import webhooks from "./webhooks.json";
 // scaffold:begin feature_flags
 import feature_flags from "./feature_flags.json";
 // scaffold:end feature_flags
+// scaffold:begin analytics
+import analytics from "./analytics.json";
+// scaffold:end analytics
 
 const messages = {
   auth,
@@ -62,6 +65,9 @@ const messages = {
   // scaffold:begin feature_flags
   feature_flags,
   // scaffold:end feature_flags
+  // scaffold:begin analytics
+  analytics,
+  // scaffold:end analytics
 };
 
 export default messages;

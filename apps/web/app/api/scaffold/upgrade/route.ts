@@ -10,6 +10,7 @@ import {
   type ScaffoldModuleId,
 } from "@/lib/scaffold-modules";
 import { getTemplateVersion } from "@/lib/scaffold/template-version";
+import { track } from "@workspace/analytics/server";
 import {
   InsufficientCreditsError,
   ScaffoldRootNotFoundError,
@@ -158,6 +159,11 @@ export async function POST(req: NextRequest) {
     }),
     config: providers.config,
   });
+  await track(
+    "upgrade.purchased",
+    { source: "web", addedModules: delta.addedModules, tierSteps: delta.tierSteps, deltaCredits: delta.deltaCredits },
+    { distinctId: session.user.id, headers: req.headers },
+  );
 
   return new NextResponse(kit.stream as any, {
     headers: {

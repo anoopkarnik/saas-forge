@@ -10,6 +10,7 @@ import {
   type ScaffoldModuleId,
 } from "@/lib/scaffold-modules";
 import { getTemplateVersion } from "@/lib/scaffold/template-version";
+import { track } from "@workspace/analytics/server";
 import { getProjectReleases, loadReleases } from "@/lib/scaffold/releases";
 import {
   InsufficientCreditsError,
@@ -219,6 +220,11 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
     lastBuiltHash: computeBuildHash(nextProject),
     config: providers.config,
   });
+  await track(
+    "upgrade.purchased",
+    { source: "api", addedModules: delta.addedModules, tierSteps: delta.tierSteps, deltaCredits: delta.deltaCredits },
+    { distinctId: auth.userId, headers: req.headers },
+  );
 
   return new NextResponse(kit.stream as any, {
     headers: {

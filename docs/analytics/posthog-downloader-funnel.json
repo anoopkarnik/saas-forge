@@ -1,0 +1,339 @@
+{
+  "template_name": "SaaS Forge downloader funnel",
+  "dashboard_description": "Where buyers drop off between opening the wizard and downloading a starter, which modules they want, and how downloads and upgrades perform. Events are listed in docs/analytics/README.md.",
+  "dashboard_filters": {},
+  "tags": [
+    "downloader"
+  ],
+  "tiles": [
+    {
+      "type": "INSIGHT",
+      "name": "Wizard to download",
+      "description": "Opened the wizard, saw the price on review, saved a project, then downloaded it.",
+      "query": {
+        "kind": "InsightVizNode",
+        "source": {
+          "kind": "FunnelsQuery",
+          "series": [
+            {
+              "kind": "EventsNode",
+              "event": "wizard.opened",
+              "name": "wizard.opened"
+            },
+            {
+              "kind": "EventsNode",
+              "event": "scaffold.quote_shown",
+              "name": "scaffold.quote_shown"
+            },
+            {
+              "kind": "EventsNode",
+              "event": "wizard.project_saved",
+              "name": "wizard.project_saved"
+            },
+            {
+              "kind": "EventsNode",
+              "event": "scaffold.download_completed",
+              "name": "scaffold.download_completed"
+            }
+          ],
+          "dateRange": {
+            "date_from": "-30d"
+          },
+          "funnelsFilter": {
+            "funnelVizType": "steps",
+            "funnelWindowInterval": 14,
+            "funnelWindowIntervalUnit": "day"
+          }
+        }
+      }
+    },
+    {
+      "type": "INSIGHT",
+      "name": "Wizard step drop-off",
+      "description": "How far buyers get through the five wizard steps.",
+      "query": {
+        "kind": "InsightVizNode",
+        "source": {
+          "kind": "FunnelsQuery",
+          "series": [
+            {
+              "kind": "EventsNode",
+              "event": "wizard.step_viewed",
+              "name": "Step: start",
+              "properties": [
+                {
+                  "key": "step",
+                  "value": [
+                    "start"
+                  ],
+                  "operator": "exact",
+                  "type": "event"
+                }
+              ]
+            },
+            {
+              "kind": "EventsNode",
+              "event": "wizard.step_viewed",
+              "name": "Step: basics",
+              "properties": [
+                {
+                  "key": "step",
+                  "value": [
+                    "basics"
+                  ],
+                  "operator": "exact",
+                  "type": "event"
+                }
+              ]
+            },
+            {
+              "kind": "EventsNode",
+              "event": "wizard.step_viewed",
+              "name": "Step: features",
+              "properties": [
+                {
+                  "key": "step",
+                  "value": [
+                    "features"
+                  ],
+                  "operator": "exact",
+                  "type": "event"
+                }
+              ]
+            },
+            {
+              "kind": "EventsNode",
+              "event": "wizard.step_viewed",
+              "name": "Step: accounts",
+              "properties": [
+                {
+                  "key": "step",
+                  "value": [
+                    "accounts"
+                  ],
+                  "operator": "exact",
+                  "type": "event"
+                }
+              ]
+            },
+            {
+              "kind": "EventsNode",
+              "event": "wizard.step_viewed",
+              "name": "Step: review",
+              "properties": [
+                {
+                  "key": "step",
+                  "value": [
+                    "review"
+                  ],
+                  "operator": "exact",
+                  "type": "event"
+                }
+              ]
+            }
+          ],
+          "dateRange": {
+            "date_from": "-30d"
+          },
+          "funnelsFilter": {
+            "funnelVizType": "steps",
+            "funnelWindowInterval": 1,
+            "funnelWindowIntervalUnit": "day"
+          }
+        }
+      }
+    },
+    {
+      "type": "INSIGHT",
+      "name": "Preview to save",
+      "description": "Buyers who opened the file preview and then saved a project. Compare with the wizard funnel to see whether the preview helps.",
+      "query": {
+        "kind": "InsightVizNode",
+        "source": {
+          "kind": "FunnelsQuery",
+          "series": [
+            {
+              "kind": "EventsNode",
+              "event": "wizard.preview_opened",
+              "name": "wizard.preview_opened"
+            },
+            {
+              "kind": "EventsNode",
+              "event": "wizard.project_saved",
+              "name": "wizard.project_saved"
+            }
+          ],
+          "dateRange": {
+            "date_from": "-30d"
+          },
+          "funnelsFilter": {
+            "funnelVizType": "steps",
+            "funnelWindowInterval": 14,
+            "funnelWindowIntervalUnit": "day"
+          }
+        }
+      }
+    },
+    {
+      "type": "INSIGHT",
+      "name": "Modules selected",
+      "description": "Module toggles that switched a module on, per module.",
+      "query": {
+        "kind": "InsightVizNode",
+        "source": {
+          "kind": "TrendsQuery",
+          "series": [
+            {
+              "kind": "EventsNode",
+              "event": "wizard.module_toggled",
+              "name": "wizard.module_toggled",
+              "properties": [
+                {
+                  "key": "selected",
+                  "value": [
+                    true
+                  ],
+                  "operator": "exact",
+                  "type": "event"
+                }
+              ],
+              "math": "total"
+            }
+          ],
+          "interval": "day",
+          "dateRange": {
+            "date_from": "-30d"
+          },
+          "trendsFilter": {
+            "display": "ActionsBarValue"
+          },
+          "breakdownFilter": {
+            "breakdown": "module",
+            "breakdown_type": "event"
+          }
+        }
+      }
+    },
+    {
+      "type": "INSIGHT",
+      "name": "Downloads by source",
+      "description": "Completed downloads from the site (web) and the CLI and API (api).",
+      "query": {
+        "kind": "InsightVizNode",
+        "source": {
+          "kind": "TrendsQuery",
+          "series": [
+            {
+              "kind": "EventsNode",
+              "event": "scaffold.download_completed",
+              "name": "scaffold.download_completed",
+              "math": "total"
+            }
+          ],
+          "interval": "day",
+          "dateRange": {
+            "date_from": "-30d"
+          },
+          "trendsFilter": {
+            "display": "ActionsLineGraph"
+          },
+          "breakdownFilter": {
+            "breakdown": "source",
+            "breakdown_type": "event"
+          }
+        }
+      }
+    },
+    {
+      "type": "INSIGHT",
+      "name": "Build cache hits",
+      "description": "Completed downloads served from the build cache (true) or compiled (false).",
+      "query": {
+        "kind": "InsightVizNode",
+        "source": {
+          "kind": "TrendsQuery",
+          "series": [
+            {
+              "kind": "EventsNode",
+              "event": "scaffold.download_completed",
+              "name": "scaffold.download_completed",
+              "math": "total"
+            }
+          ],
+          "interval": "day",
+          "dateRange": {
+            "date_from": "-30d"
+          },
+          "trendsFilter": {
+            "display": "ActionsPie"
+          },
+          "breakdownFilter": {
+            "breakdown": "cacheHit",
+            "breakdown_type": "event"
+          }
+        }
+      }
+    },
+    {
+      "type": "INSIGHT",
+      "name": "Download failures",
+      "description": "Failed downloads by reason: insufficient_credits, charge_failed or build_failed.",
+      "query": {
+        "kind": "InsightVizNode",
+        "source": {
+          "kind": "TrendsQuery",
+          "series": [
+            {
+              "kind": "EventsNode",
+              "event": "scaffold.download_failed",
+              "name": "scaffold.download_failed",
+              "math": "total"
+            }
+          ],
+          "interval": "day",
+          "dateRange": {
+            "date_from": "-30d"
+          },
+          "trendsFilter": {
+            "display": "ActionsLineGraph"
+          },
+          "breakdownFilter": {
+            "breakdown": "error",
+            "breakdown_type": "event"
+          }
+        }
+      }
+    },
+    {
+      "type": "INSIGHT",
+      "name": "Upgrade preview to purchase",
+      "description": "Project owners who previewed an upgrade and bought it within 14 days.",
+      "query": {
+        "kind": "InsightVizNode",
+        "source": {
+          "kind": "FunnelsQuery",
+          "series": [
+            {
+              "kind": "EventsNode",
+              "event": "upgrade.preview_viewed",
+              "name": "upgrade.preview_viewed"
+            },
+            {
+              "kind": "EventsNode",
+              "event": "upgrade.purchased",
+              "name": "upgrade.purchased"
+            }
+          ],
+          "dateRange": {
+            "date_from": "-30d"
+          },
+          "funnelsFilter": {
+            "funnelVizType": "steps",
+            "funnelWindowInterval": 14,
+            "funnelWindowIntervalUnit": "day"
+          }
+        }
+      }
+    }
+  ]
+}

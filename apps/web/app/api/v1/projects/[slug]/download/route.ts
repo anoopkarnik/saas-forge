@@ -67,6 +67,7 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
     download = await downloadScaffold({
       userId: auth.userId,
       source: "api",
+      requestHeaders: req.headers,
       projectId: project.id,
       idempotencyKey: req.headers.get("Idempotency-Key") || undefined,
       free: alreadyBuilt,

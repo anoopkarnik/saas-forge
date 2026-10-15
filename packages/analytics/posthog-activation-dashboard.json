@@ -1,0 +1,100 @@
+{
+  "template_name": "Activation",
+  "dashboard_description": "Sign-ups, how people sign up, and whether they come back. Uses the core events every starter sends.",
+  "dashboard_filters": {},
+  "tags": [
+    "activation"
+  ],
+  "tiles": [
+    {
+      "type": "INSIGHT",
+      "name": "Sign-up to return visit",
+      "description": "Users who signed up and signed in again within 7 days.",
+      "query": {
+        "kind": "InsightVizNode",
+        "source": {
+          "kind": "FunnelsQuery",
+          "series": [
+            {
+              "kind": "EventsNode",
+              "event": "auth.signed_up",
+              "name": "auth.signed_up"
+            },
+            {
+              "kind": "EventsNode",
+              "event": "auth.signed_in",
+              "name": "auth.signed_in"
+            }
+          ],
+          "dateRange": {
+            "date_from": "-30d"
+          },
+          "funnelsFilter": {
+            "funnelVizType": "steps",
+            "funnelWindowInterval": 7,
+            "funnelWindowIntervalUnit": "day"
+          }
+        }
+      }
+    },
+    {
+      "type": "INSIGHT",
+      "name": "Sign-ups by method",
+      "description": "New accounts per day, split by email or OAuth provider.",
+      "query": {
+        "kind": "InsightVizNode",
+        "source": {
+          "kind": "TrendsQuery",
+          "series": [
+            {
+              "kind": "EventsNode",
+              "event": "auth.signed_up",
+              "name": "auth.signed_up",
+              "math": "total"
+            }
+          ],
+          "interval": "day",
+          "dateRange": {
+            "date_from": "-30d"
+          },
+          "trendsFilter": {
+            "display": "ActionsLineGraph"
+          },
+          "breakdownFilter": {
+            "breakdown": "method",
+            "breakdown_type": "event"
+          }
+        }
+      }
+    },
+    {
+      "type": "INSIGHT",
+      "name": "Weekly return rate",
+      "description": "Share of each week's sign-ups who sign in again in later weeks.",
+      "query": {
+        "kind": "InsightVizNode",
+        "source": {
+          "kind": "RetentionQuery",
+          "dateRange": {
+            "date_from": "-8w"
+          },
+          "retentionFilter": {
+            "period": "Week",
+            "totalIntervals": 8,
+            "retentionType": "retention_first_time",
+            "targetEntity": {
+              "id": "auth.signed_up",
+              "name": "auth.signed_up",
+              "type": "events"
+            },
+            "returningEntity": {
+              "id": "auth.signed_in",
+              "name": "auth.signed_in",
+              "type": "events"
+            }
+          }
+        }
+      }
+    }
+  ]
+}

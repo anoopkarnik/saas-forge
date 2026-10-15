@@ -1,0 +1,31 @@
+{
+  "id": "analytics",
+  "ownedIdentifiers": [
+    "@workspace/analytics",
+    "posthog",
+    "POSTHOG",
+    "AnalyticsProvider",
+    "analytics.consentRequired",
+    "trackSignedUp",
+    "trackSignedIn",
+    "sf_analytics_consent"
+  ],
+  "unselected": {
+    "remove": [
+      "packages/analytics",
+      "packages/auth/src/better-auth/analytics.ts",
+      "packages/auth/src/better-auth/analytics.test.ts",
+      "apps/web/components/analytics",
+      "packages/i18n/src/messages/en/analytics.json",
+      "packages/i18n/src/messages/es/analytics.json"
+    ],
+    "jsonRemove": [
+      { "file": "apps/web/package.json", "keys": { "dependencies": ["@workspace/analytics"] } },
+      { "file": "packages/auth/package.json", "keys": { "dependencies": ["@workspace/analytics"] } },
+      { "file": "turbo.json", "keys": { "globalEnv": ["NEXT_PUBLIC_POSTHOG_HOST", "NEXT_PUBLIC_POSTHOG_KEY"] } }
+    ],
+    "textReplace": [
+      { "file": "packages/auth/src/better-auth/auth.ts", "find": "after: async (user, ctx) => {", "replace": "after: async (user) => {" }
+    ]
+  }
+}

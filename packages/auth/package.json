@@ -20,6 +20,7 @@
   "dependencies": {
     "@better-auth/expo": "^1.5.5",
     "@hookform/resolvers": "^5.2.2",
+    "@workspace/analytics": "workspace:*",
     "@workspace/database": "workspace:*",
     "@workspace/email": "workspace:*",
     "@workspace/i18n": "workspace:^",

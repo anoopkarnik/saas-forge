@@ -32,6 +32,7 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
     const download = await downloadScaffold({
       userId: guard.session.user.id,
       source: "web",
+      requestHeaders: req.headers,
       projectId: job.projectId,
       free: true,
       name: projectName,

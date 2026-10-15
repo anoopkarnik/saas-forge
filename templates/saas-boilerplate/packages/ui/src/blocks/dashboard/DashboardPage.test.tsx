@@ -26,6 +26,7 @@ const moduleLabels: Record<ScaffoldModuleId, string> = {
   webhooks: "Outgoing webhooks",
   feature_flags: "Feature flags",
   onboarding: "Onboarding",
+  analytics: "Product analytics",
 };
 
 describe("DashboardPage preset availability", () => {
@@ -56,7 +57,7 @@ describe("DashboardPage manual features", () => {
   it("offers every available paid module and includes required modules in the price", () => {
     const ids: ScaffoldModuleId[] = [
       "billing", "multi_tenancy", "ai", "ai_agents", "api_keys", "jobs",
-      "notifications", "audit_log", "webhooks", "feature_flags", "onboarding",
+      "notifications", "audit_log", "webhooks", "feature_flags", "onboarding", "analytics",
     ];
     const fullCatalog: ScaffoldCatalog = {
       ...catalog,
@@ -171,5 +172,32 @@ describe("DashboardPage saved scaffold flow", () => {
     expect(screen.getByRole("button", { name: /Save configuration/i })).toBeTruthy();
     expect(screen.queryByRole("button", { name: /Download Boilerplate/ })).toBeNull();
     expect(screen.queryByRole("button", { name: /Deploy to Vercel/ })).toBeNull();
+  });
+});
+
+describe("DashboardPage events", () => {
+  it("reports step views, module toggles and the quote shown on review", () => {
+    const onEvent = vi.fn();
+    const withBilling: ScaffoldCatalog = {
+      ...catalog,
+      modules: [
+        { id: "billing", label: "Billing & Payments", description: "", creditsCost: 10, available: true, requires: [], incompatibleWith: [] },
+      ],
+    };
+    render(<DashboardPage catalog={withBilling} onSubmitConfiguration={vi.fn()} onEvent={onEvent} />);
+    expect(onEvent).toHaveBeenCalledWith({ name: "wizard.step_viewed", properties: { step: "start", index: 0 } });
+
+    fireEvent.click(screen.getByRole("button", { name: /^Features/ }));
+    fireEvent.click(screen.getByRole("button", { name: /^Billing & Payments/ }));
+    expect(onEvent).toHaveBeenCalledWith({
+      name: "wizard.module_toggled",
+      properties: { module: "billing", selected: true },
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /^Review/ }));
+    expect(onEvent).toHaveBeenCalledWith({
+      name: "scaffold.quote_shown",
+      properties: { totalCredits: 30, modules: ["billing"] },
+    });
   });
 });

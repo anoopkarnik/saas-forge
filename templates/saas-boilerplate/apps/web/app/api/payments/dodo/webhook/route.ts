@@ -8,6 +8,9 @@ import { notify } from "@/lib/notifications/notify";
 // scaffold:begin webhooks
 import { emitWebhook } from "@/lib/webhooks/service";
 // scaffold:end webhooks
+// scaffold:begin analytics
+import { track } from "@workspace/analytics/server";
+// scaffold:end analytics
 
 export async function POST(req: NextRequest) {
 
@@ -130,6 +133,9 @@ export async function POST(req: NextRequest) {
           { userId },
         );
         // scaffold:end webhooks
+        // scaffold:begin analytics
+        await track("billing.checkout_completed", { credits: Number(credits), gateway: "dodo" }, { distinctId: userId });
+        // scaffold:end analytics
 
         // Revalidate the entire layout cache so updated credits show immediately everywhere
         revalidatePath("/", "layout");

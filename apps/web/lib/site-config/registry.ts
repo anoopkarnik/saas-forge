@@ -116,6 +116,16 @@ export const SETTINGS = {
     env: "NEXT_PUBLIC_GOOGLE_ANALYTICS_MEASUREMENT_ID",
     default: "",
   }),
+  // scaffold:begin analytics
+  "analytics.consentRequired": setting({
+    group: "Analytics",
+    label: "Ask visitors before product analytics",
+    description: "Shows a consent banner; PostHog loads only after a visitor accepts. Google Analytics is not affected.",
+    public: true,
+    schema: z.boolean(),
+    default: false,
+  }),
+  // scaffold:end analytics
   "registration.mode": setting({
     group: "Registration",
     label: "Who can sign up",

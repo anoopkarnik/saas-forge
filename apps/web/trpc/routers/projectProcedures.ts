@@ -37,6 +37,7 @@ import {
   upgradeProviders,
 } from "@/lib/scaffold/service";
 import { getTemplateVersion } from "@/lib/scaffold/template-version";
+import { track } from "@workspace/analytics/server";
 
 // ---------------------------------------------------------------------------
 // Input schemas
@@ -291,6 +292,11 @@ export const projectRouter = createTRPCRouter({
         release.entries
           .filter((entry) => entry.type === "breaking" || entry.migration)
           .map((entry) => ({ ...entry, version: release.version })),
+      );
+      await track(
+        "upgrade.preview_viewed",
+        { addedModules: preview.delta.addedModules, deltaCredits: preview.delta.deltaCredits },
+        { distinctId: ctx.session.user.id, headers: ctx.headers },
       );
       return { ...preview, warnings };
     }),

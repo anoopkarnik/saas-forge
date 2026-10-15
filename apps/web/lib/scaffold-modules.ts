@@ -15,7 +15,8 @@ export type ScaffoldModuleId =
   | "audit_log"
   | "webhooks"
   | "feature_flags"
-  | "onboarding";
+  | "onboarding"
+  | "analytics";
 
 type RegistryModuleEntry = {
   id: ScaffoldModuleId;

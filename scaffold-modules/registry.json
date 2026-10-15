@@ -133,6 +133,17 @@
       "incompatibleWith": [],
       "downloadEnabled": true,
       "implemented": true
+    },
+    {
+      "id": "analytics",
+      "label": "Product analytics",
+      "description": "Typed product events on PostHog (or console logging in development): sign-up, sign-in and an event per module, sent from the server with ids only. No autocapture, Do Not Track and Global Privacy Control honoured, and an optional consent banner set in Settings.",
+      "default": false,
+      "creditsCost": 5,
+      "requires": [],
+      "incompatibleWith": [],
+      "downloadEnabled": true,
+      "implemented": true
     }
   ]
 }

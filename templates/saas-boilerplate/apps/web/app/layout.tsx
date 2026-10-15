@@ -19,6 +19,9 @@ import { getLocale } from "next-intl/server";
 import { DEFAULT_LOCALE, toLocale } from "@workspace/i18n/config";
 import { getMessages } from "@workspace/i18n/messages";
 import { IntlClientProvider } from "@/components/i18n/IntlClientProvider";
+// scaffold:begin analytics
+import { AnalyticsProvider } from "@/components/analytics/AnalyticsProvider";
+// scaffold:end analytics
 
 export async function generateMetadata(): Promise<Metadata> {
   return { metadataBase: new URL(getSiteUrl()), ...(await siteMetadata()) };
@@ -51,6 +54,9 @@ export default async function RootLayout({
                 <Analytics />
                 <SpeedInsights />
                 {gaId ? <GoogleAnalytics gaId={gaId} /> : null}
+                {/* scaffold:begin analytics */}
+                <AnalyticsProvider />
+                {/* scaffold:end analytics */}
               </ThemeProvider>
             </FlagsProvider>
           </SiteConfigProvider>

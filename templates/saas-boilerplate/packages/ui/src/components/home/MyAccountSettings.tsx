@@ -17,7 +17,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import SettingsHeadar from "@workspace/ui/components/home/SettingsHeader";
 import { authClient, useSession } from "@workspace/auth/better-auth/auth-client";
 
-import { ResetPasswordSettingsSchema, AddPasswordSchema } from "@workspace/auth/utils/zod";
+import { useTranslations } from "use-intl";
+import { useAuthSchemas } from "@workspace/ui/hooks/useAuthSchemas";
 import { toast } from "sonner";
 import { FormResult } from "@workspace/ui/components/auth/FormResult";
 
@@ -33,6 +34,8 @@ export interface MyAccountSettingsProps {
 const MyAccountSettings = ({ onNavigate, onSetPassword, onUpdateAvatar, guestMail, adminMail }: MyAccountSettingsProps) => {
 
   const { pending, data: session } = useSession();
+  const t = useTranslations("settings.account");
+  const { ResetPasswordSettingsSchema, AddPasswordSchema } = useAuthSchemas();
 
   const [name, setName] = useState<string>(session?.user?.name as string)
   const [showOldPassword, setShowOldPassword] = useState(false);
@@ -63,14 +66,14 @@ const MyAccountSettings = ({ onNavigate, onSetPassword, onUpdateAvatar, guestMai
     try {
       const res = await onSetPassword(data);
       if (res?.error) {
-        toast.error("Failed to add password", { description: res.error });
+        toast.error(t("toast.passwordAddFailed"), { description: res.error });
       } else {
-        toast.success("Password added successfully!");
+        toast.success(t("toast.passwordAdded"));
         setHasPassword(true);
         form.reset();
       }
     } catch (error: any) {
-      toast.error("Failed to add password", { description: error.message });
+      toast.error(t("toast.passwordAddFailed"), { description: error.message });
     } finally {
       setIsPendingSetPassword(false);
     }
@@ -79,8 +82,8 @@ const MyAccountSettings = ({ onNavigate, onSetPassword, onUpdateAvatar, guestMai
   const inputFileRef = useRef<HTMLInputElement>(null);
   const [deleteAccountConfirmation, setDeleteAccountConfirmation] = useState('');
 
-  const title = "My Account"
-  const description = "For modifying Email, you need to verify your new email address"
+  const title = t("title")
+  const description = t("description")
 
 
   // Use the appropriate schema based on whether user has a password
@@ -105,13 +108,13 @@ const MyAccountSettings = ({ onNavigate, onSetPassword, onUpdateAvatar, guestMai
 
   async function handleSubmit(data: z.infer<typeof ResetPasswordSettingsSchema | typeof AddPasswordSchema>) {
     if (pending || !session?.user) {
-      toast.error("Unauthorized", { description: "Session not loaded. Try again in a second." });
+      toast.error(t("toast.unauthorized"), { description: t("toast.sessionNotLoaded") });
       return;
     }
     setPasswordError("");
     setPasswordSuccess("");
     if (session?.user?.email === guestMail || session?.user?.email === adminMail) {
-      setPasswordError("Guest account cannot modify password");
+      setPasswordError(t("guestCannotChangePassword"));
       return;
     }
 
@@ -132,31 +135,31 @@ const MyAccountSettings = ({ onNavigate, onSetPassword, onUpdateAvatar, guestMai
       revokeOtherSessions: true
     })
     if (error) {
-      toast.error("Error", { description: error?.statusText })
+      toast.error(t("toast.error"), { description: error?.statusText })
     }
     else {
-      toast.success("Successfully modified password")
+      toast.success(t("toast.passwordChanged"))
       form.reset();
     }
   }
 
   const handleDeleteAccount = async () => {
     if (session?.user?.email === guestMail || session?.user?.email === adminMail) {
-      setDeleteAccountError("Guest account cannot be deleted");
+      setDeleteAccountError(t("guestCannotDelete"));
       return;
     }
-    if (deleteAccountConfirmation !== 'permanently delete') {
-      setDeleteAccountError("Please type 'permanently delete' to confirm");
+    if (deleteAccountConfirmation.trim() !== t("deletePhrase")) {
+      setDeleteAccountError(t("deleteConfirmError", { phrase: t("deletePhrase") }));
       return;
     }
     const { error } = await authClient.deleteUser({
       callbackURL: "/landing" // you can provide a callback URL to redirect after deletion
     });
     if (error) {
-      toast.error("Error", { description: error })
+      toast.error(t("toast.error"), { description: error })
     }
     else {
-      toast.success("Successfully deleted Account")
+      toast.success(t("toast.accountDeleted"))
       if (onNavigate) {
         onNavigate("/landing")
       }
@@ -167,11 +170,11 @@ const MyAccountSettings = ({ onNavigate, onSetPassword, onUpdateAvatar, guestMai
   const handleName = async (name: string) => {
     const { error } = await authClient.updateUser({ name })
     if (error) {
-      toast.error("Error", { description: error.message || error.statusText || "Unable to update name" })
+      toast.error(t("toast.error"), { description: error.message || error.statusText || t("toast.nameUpdateFailed") })
 
     }
     else {
-      toast.success("Successfully modified name")
+      toast.success(t("toast.nameUpdated"))
     }
   }
 
@@ -185,16 +188,16 @@ const MyAccountSettings = ({ onNavigate, onSetPassword, onUpdateAvatar, guestMai
     if (onUpdateAvatar) {
       const { url, error } = await onUpdateAvatar(file);
       if (error) {
-        toast.error("Upload failed", { description: error });
+        toast.error(t("toast.uploadFailed"), { description: error });
         return;
       }
       if (url) {
         const { error: updateError } = await authClient.updateUser({ image: url });
-        if (updateError) toast.error("Error", { description: updateError.statusText });
-        else toast.success("Successfully Updated Image");
+        if (updateError) toast.error(t("toast.error"), { description: updateError.statusText });
+        else toast.success(t("toast.imageUpdated"));
       }
     } else {
-      toast.error("Avatar update is not supported in this environment");
+      toast.error(t("toast.avatarUnsupported"));
     }
   }
 
@@ -205,7 +208,7 @@ const MyAccountSettings = ({ onNavigate, onSetPassword, onUpdateAvatar, guestMai
       {/* Profile Section */}
       <div className="flex flex-col gap-6">
         <section className="space-y-4">
-          <h3 className="text-lg font-medium">Profile Picture</h3>
+          <h3 className="text-lg font-medium">{t("profilePicture")}</h3>
           <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:gap-6">
             <div className="relative group cursor-pointer shrink-0">
               <Avatar className="h-24 w-24 rounded-full border-4 border-background shadow-lg">
@@ -214,11 +217,11 @@ const MyAccountSettings = ({ onNavigate, onSetPassword, onUpdateAvatar, guestMai
               </Avatar>
               <button onClick={handleAvatarClick} className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 rounded-full opacity-0 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-ring transition-all duration-200">
                 <CameraIcon className="w-6 h-6 text-white mb-1" />
-                <span className="text-[10px] uppercase font-bold text-white tracking-wider">Upload</span>
+                <span className="text-[10px] uppercase font-bold text-white tracking-wider">{t("upload")}</span>
               </button>
             </div>
             <div className="text-sm text-muted-foreground min-w-0 flex-1">
-              Click the image to upload a new photo. standard formats (JPG, PNG) are supported.
+              {t("uploadHint")}
             </div>
             {/* Hidden file input */}
             <input ref={inputFileRef} type="file" className="hidden" accept="image/*" onChange={(e) => handleAvatar(e)} />
@@ -226,12 +229,12 @@ const MyAccountSettings = ({ onNavigate, onSetPassword, onUpdateAvatar, guestMai
         </section>
 
         <section className="space-y-4 max-w-md">
-          <h3 className="text-lg font-medium">Username</h3>
+          <h3 className="text-lg font-medium">{t("username")}</h3>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
             <div className="w-full">
-              <FloatingLabelInput id="name" label="Display Name" className="w-full bg-background" defaultValue={name} onChange={(e) => { setName(e.target.value) }} />
+              <FloatingLabelInput id="name" label={t("displayName")} className="w-full bg-background" defaultValue={name} onChange={(e) => { setName(e.target.value) }} />
             </div>
-            <Button onClick={() => handleName(name as string)} variant="secondary" className="shrink-0 h-10 px-6 ">Update</Button>
+            <Button onClick={() => handleName(name as string)} variant="secondary" className="shrink-0 h-10 px-6 ">{t("update")}</Button>
           </div>
         </section>
       </div>
@@ -239,8 +242,8 @@ const MyAccountSettings = ({ onNavigate, onSetPassword, onUpdateAvatar, guestMai
       {/* Password Section */}
       <section className="pt-8 mt-4 border-t border-border/40">
         <div className="mb-6">
-          <h3 className="text-lg font-medium">Security</h3>
-          <p className="text-sm text-muted-foreground mt-1">Manage your password and authentication methods.</p>
+          <h3 className="text-lg font-medium">{t("security")}</h3>
+          <p className="text-sm text-muted-foreground mt-1">{t("securityDescription")}</p>
         </div>
 
         <div className="max-w-md">
@@ -251,8 +254,8 @@ const MyAccountSettings = ({ onNavigate, onSetPassword, onUpdateAvatar, guestMai
                   <FormItem>
                     <FormControl>
                       <div className="relative group">
-                        <FloatingLabelInput autoComplete="current-password" id="currentPassword" label="Current Password" type={showOldPassword ? "text" : "password"} className={`w-full pr-10 bg-background ${hasPassword === null ? 'opacity-50' : ''}`} disabled={hasPassword === null} {...field} />
-                        <button type="button" aria-label={showOldPassword ? "Hide old password" : "Show old password"} aria-pressed={showOldPassword} onClick={() => setShowOldPassword((v) => !v)} className="absolute right-0 top-1/2 -translate-y-1/2 flex size-11 items-center justify-center rounded-md text-muted-foreground hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring transition-colors">
+                        <FloatingLabelInput autoComplete="current-password" id="currentPassword" label={t("currentPassword")} type={showOldPassword ? "text" : "password"} className={`w-full pr-10 bg-background ${hasPassword === null ? 'opacity-50' : ''}`} disabled={hasPassword === null} {...field} />
+                        <button type="button" aria-label={showOldPassword ? t("hideCurrent") : t("showCurrent")} aria-pressed={showOldPassword} onClick={() => setShowOldPassword((v) => !v)} className="absolute right-0 top-1/2 -translate-y-1/2 flex size-11 items-center justify-center rounded-md text-muted-foreground hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring transition-colors">
                           {showOldPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                         </button>
                       </div>
@@ -267,8 +270,8 @@ const MyAccountSettings = ({ onNavigate, onSetPassword, onUpdateAvatar, guestMai
                   <FormItem>
                     <FormControl>
                       <div className="relative">
-                        <FloatingLabelInput autoComplete="new-password" id="password" label="New Password" type={showNewPassword ? "text" : "password"} className="w-full pr-10 bg-background" {...field} />
-                        <button type="button" aria-label={showNewPassword ? "Hide new password" : "Show new password"} aria-pressed={showNewPassword} onClick={() => setShowNewPassword((v) => !v)} className="absolute right-0 top-1/2 -translate-y-1/2 flex size-11 items-center justify-center rounded-md text-muted-foreground hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring transition-colors">
+                        <FloatingLabelInput autoComplete="new-password" id="password" label={t("newPassword")} type={showNewPassword ? "text" : "password"} className="w-full pr-10 bg-background" {...field} />
+                        <button type="button" aria-label={showNewPassword ? t("hideNew") : t("showNew")} aria-pressed={showNewPassword} onClick={() => setShowNewPassword((v) => !v)} className="absolute right-0 top-1/2 -translate-y-1/2 flex size-11 items-center justify-center rounded-md text-muted-foreground hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring transition-colors">
                           {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                         </button>
                       </div>
@@ -280,8 +283,8 @@ const MyAccountSettings = ({ onNavigate, onSetPassword, onUpdateAvatar, guestMai
                   <FormItem>
                     <FormControl>
                       <div className="relative">
-                        <FloatingLabelInput autoComplete="new-password" id="confirmPassword" label="Confirm Password" type={showConfirmPassword ? "text" : "password"} className="w-full pr-10 bg-background" {...field} />
-                        <button type="button" aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"} aria-pressed={showConfirmPassword} onClick={() => setShowConfirmPassword((v) => !v)} className="absolute right-0 top-1/2 -translate-y-1/2 flex size-11 items-center justify-center rounded-md text-muted-foreground hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring transition-colors">
+                        <FloatingLabelInput autoComplete="new-password" id="confirmPassword" label={t("confirmPassword")} type={showConfirmPassword ? "text" : "password"} className="w-full pr-10 bg-background" {...field} />
+                        <button type="button" aria-label={showConfirmPassword ? t("hideConfirm") : t("showConfirm")} aria-pressed={showConfirmPassword} onClick={() => setShowConfirmPassword((v) => !v)} className="absolute right-0 top-1/2 -translate-y-1/2 flex size-11 items-center justify-center rounded-md text-muted-foreground hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring transition-colors">
                           {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                         </button>
                       </div>
@@ -295,7 +298,7 @@ const MyAccountSettings = ({ onNavigate, onSetPassword, onUpdateAvatar, guestMai
                 <FormResult type="error" message={passwordError} />
                 <FormResult type="success" message={passwordSuccess} />
                 <Button type="submit" className="min-w-[140px]" disabled={hasPassword === null || isPendingSetPassword}>
-                  {isPendingSetPassword ? "Updating..." : hasPassword ? "Update Password" : "Set Password"}
+                  {isPendingSetPassword ? t("updating") : hasPassword ? t("updatePassword") : t("setPassword")}
                 </Button>
               </div>
             </form>
@@ -306,20 +309,20 @@ const MyAccountSettings = ({ onNavigate, onSetPassword, onUpdateAvatar, guestMai
       {/* Danger Zone */}
       <section className="pt-8 mt-8 border-t border-destructive/20">
         <div className="bg-destructive/10 border border-destructive/20 rounded-xl p-6">
-          <h3 className="text-lg font-medium text-destructive mb-2">Danger Zone</h3>
-          <p className="text-sm text-destructive/80 mb-6">Permanently delete your account and all associated data. This action cannot be undone.</p>
+          <h3 className="text-lg font-medium text-destructive mb-2">{t("dangerZone")}</h3>
+          <p className="text-sm text-destructive/80 mb-6">{t("dangerDescription")}</p>
 
           <div className="flex gap-4 items-end max-w-md">
             <div className="w-full">
               <FloatingLabelInput
                 id="permanently delete"
-                label="Type 'permanently delete' to confirm"
+                label={t("deleteConfirmLabel", { phrase: t("deletePhrase") })}
                 type="text"
                 className="w-full bg-background border-destructive/30 focus:border-destructive"
                 onChange={(e) => { setDeleteAccountConfirmation(e.target.value) }}
               />
             </div>
-            <Button variant="destructive" onClick={handleDeleteAccount} className="shrink-0 my-2">Delete Account</Button>
+            <Button variant="destructive" onClick={handleDeleteAccount} className="shrink-0 my-2">{t("deleteAccount")}</Button>
           </div>
           {deleteAccountError && (
             <div className="mt-2 text-sm text-destructive font-medium">{deleteAccountError}</div>

@@ -19,7 +19,9 @@
       "apps/web/trpc/routers/webhookProcedures.ts",
       "apps/web/components/webhooks",
       "packages/database/prisma/webhooks.prisma",
-      "packages/database/prisma/migrations/20261007123820_webhooks"
+      "packages/database/prisma/migrations/20261007123820_webhooks",
+      "packages/i18n/src/messages/en/webhooks.json",
+      "packages/i18n/src/messages/es/webhooks.json"
     ],
     "jsonRemove": [
       {

@@ -24,7 +24,9 @@
       "apps/web/trpc/routers/__tests__/apiKeys.test.ts",
       "packages/auth/src/api-keys",
       "packages/database/prisma/api-keys.prisma",
-      "packages/database/prisma/migrations/20260608090000_add_api_keys"
+      "packages/database/prisma/migrations/20260608090000_add_api_keys",
+      "packages/i18n/src/messages/en/api_keys.json",
+      "packages/i18n/src/messages/es/api_keys.json"
     ],
     "jsonRemove": [
       {

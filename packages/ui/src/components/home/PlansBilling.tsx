@@ -6,14 +6,16 @@ import CreditsPurchase, { CreditsPurchaseProps } from '@workspace/ui/components/
 import { TransactionHistoryCard, TransactionHistoryCardProps } from '@workspace/ui/components/payments/TransactionHistoryCard';
 import { Skeleton } from '@workspace/ui/components/shadcn/skeleton';
 import SettingsHeader from '@workspace/ui/components/home/SettingsHeader';
+import { useTranslations } from 'use-intl';
 
 export interface PlansBillingProps extends BalanceCardProps, CreditsPurchaseProps, TransactionHistoryCardProps {
     paymentGateway?: string;
 }
 
 const PlansBilling = ({ creditsData, isLoading, purchases, onCreateCheckoutSession, paymentGateway }: PlansBillingProps) => {
+    const t = useTranslations('billing');
     return (
-        <SettingsHeader title="Billing" description="Manage your credits, and view transaction history.">
+        <SettingsHeader title={t('title')} description={t('description')}>
             {/* Balance & Credits */}
             <Suspense fallback={<Skeleton className="h-[200px] w-full rounded-xl" />}>
                 <BalanceCard creditsData={creditsData} isLoading={isLoading} />

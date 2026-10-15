@@ -1,4 +1,5 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, screen, waitFor } from "@testing-library/react";
+import { renderWithIntl } from "../../test/intl";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
@@ -55,7 +56,7 @@ describe("MyAccountSettings", () => {
       },
     });
 
-    render(<MyAccountSettings />);
+    renderWithIntl(<MyAccountSettings />);
 
     fireEvent.change(screen.getByLabelText("Display Name"), {
       target: { value: "Updated Guest" },
@@ -68,5 +69,11 @@ describe("MyAccountSettings", () => {
         description: "This is a read-only demo account.",
       });
     });
+  });
+
+  it("asks for the Spanish confirmation phrase in Spanish", async () => {
+    mocks.listAccounts.mockResolvedValue({ data: [{ providerId: "credential" }] });
+    renderWithIntl(<MyAccountSettings />, { locale: "es" });
+    expect(screen.getByLabelText("Escribe «eliminar permanentemente» para confirmar")).toBeTruthy();
   });
 });

@@ -11,6 +11,7 @@ import {
 } from "lucide-react"
 import { useTheme } from "next-themes"
 import React, { useEffect, useState } from "react"
+import { useTranslations } from "use-intl"
 
 import {
   Avatar,
@@ -66,7 +67,10 @@ const SidebarUser = ({
   apiKeysContent,
   webhooksContent,
   onOpenSettings,
+  onLocaleChange,
 }: SidebarUserProps) => {
+
+  const t = useTranslations("settings.menu")
 
   const { isMobile } = useSidebar()
   const { setTheme, theme } = useTheme()
@@ -148,7 +152,7 @@ const SidebarUser = ({
                 else setIsSettingsOpen(true);
               }}>
                 <Settings size={20} aria-hidden="true" />
-                Settings
+                {t("settings")}
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
@@ -157,20 +161,20 @@ const SidebarUser = ({
                 <DropdownMenuSubTrigger className="flex gap-2 cursor-pointer">
                   <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
                   <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-                  <span>Theme</span>
+                  <span>{t("theme")}</span>
                 </DropdownMenuSubTrigger>
                 <DropdownMenuSubContent>
                   <DropdownMenuItem onClick={() => setTheme("light")} className="cursor-pointer gap-2">
                     <Sun className="h-4 w-4" />
-                    <span>Light</span>
+                    <span>{t("light")}</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setTheme("dark")} className="cursor-pointer gap-2">
                     <Moon className="h-4 w-4" />
-                    <span>Dark</span>
+                    <span>{t("dark")}</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setTheme("system")} className="cursor-pointer gap-2">
                     <Laptop className="h-4 w-4" />
-                    <span>System</span>
+                    <span>{t("system")}</span>
                   </DropdownMenuItem>
                 </DropdownMenuSubContent>
               </DropdownMenuSub>
@@ -178,7 +182,7 @@ const SidebarUser = ({
             <DropdownMenuSeparator />
             <DropdownMenuItem className="flex gap-2 cursor-pointer" onClick={handleSignout}>
               <LogOut size={20} />
-              Log out
+              {t("logout")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -203,6 +207,7 @@ const SidebarUser = ({
                 openedTab={openedTab}
                 apiKeysContent={apiKeysContent}
                 webhooksContent={webhooksContent}
+                onLocaleChange={onLocaleChange}
               >
               </SettingsDialog>)}
     </>

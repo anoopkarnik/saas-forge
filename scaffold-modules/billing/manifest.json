@@ -46,7 +46,9 @@
       "apps/web/trpc/routers/usageProcedures.ts",
       "apps/web/app/(home)/usage",
       "packages/database/prisma/usage.prisma",
-      "packages/database/prisma/migrations/20261007154251_usage_ledger"
+      "packages/database/prisma/migrations/20261007154251_usage_ledger",
+      "packages/i18n/src/messages/en/billing.json",
+      "packages/i18n/src/messages/es/billing.json"
     ],
     "jsonRemove": [
       {

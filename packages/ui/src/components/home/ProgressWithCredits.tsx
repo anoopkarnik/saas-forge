@@ -3,6 +3,7 @@
 import React from "react";
 import { Progress } from "@workspace/ui/components/shadcn/progress";
 import { useSession } from "@workspace/auth/better-auth/auth-client";
+import { useTranslations } from "use-intl";
 
 export interface ProgressWithCreditsProps {
   creditsData?: { creditsTotal: number; creditsUsed: number };
@@ -11,6 +12,7 @@ export interface ProgressWithCreditsProps {
 const ProgressWithCredits = ({ creditsData }: ProgressWithCreditsProps) => {
 
   const { data: session } = useSession();
+  const t = useTranslations("billing");
 
   // Show skeleton when session data is not available
   if (!session || !session.user || (creditsData?.creditsUsed === undefined && session.user.creditsUsed === undefined) || (creditsData?.creditsTotal === undefined && session.user.creditsTotal === undefined)) {
@@ -31,7 +33,7 @@ const ProgressWithCredits = ({ creditsData }: ProgressWithCreditsProps) => {
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center justify-between">
-        <div className="text-xs">Credits Used</div>
+        <div className="text-xs">{t("creditsUsed")}</div>
         <div className="text-xs">{`${creditsUsed}/${creditsTotal}`}</div>
       </div>
       <Progress value={(creditsUsed * 100) / creditsTotal} />

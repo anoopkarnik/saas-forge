@@ -1,78 +1,151 @@
-# Internationalization / i18n
+# Internationalization / i18n — Foundation and Core Web
+
+Revised 2026-10-15. The April version was a direction note written before scaffold modules, runtime site config, route policy, jobs and notifications existed. This revision fixes the open decisions against the current code. The roadmap README deferred i18n "until after rank 13"; ranks 2–19 are done.
 
 ## Context
 
-SaaS Forge currently assumes English-first UI copy across web, desktop, mobile, emails, and documentation-adjacent product surfaces. User-facing strings are embedded directly throughout components, which makes future localization harder with every new screen added.
+User-facing copy is hardcoded English across web, `packages/ui`, desktop, mobile and emails (about 340 `.tsx` files). Two copies of `formatDate`/`formatAmount` (`packages/ui/src/lib/utils`, `apps/web/lib/utils`) pin `en-US`, and the root layout renders `<html lang="en">`. Every new module screen adds to the surface we would have to retrofit.
 
-Because the repo spans three client surfaces plus email templates and admin UI, this is exactly the kind of cross-cutting concern that becomes expensive if delayed too long.
+## Decisions
 
-## Why This Priority
+| Question | Decision |
+|---|---|
+| Audience | Both: saas-forge.com and every downloaded starter use the same infrastructure. |
+| Packaging | Core and always on: not a scaffold module, not charged. An optional module would force a `t()`-vs-literal compiler transform over every string. |
+| Locale selection | No URL prefix. Locale comes from `User.locale`, then the `NEXT_LOCALE` cookie, then `Accept-Language`, then the `i18n.defaultLocale` site setting, then `en`. URLs, `route-policy.ts`, middleware gating, override paths and manifest paths are unchanged. |
+| Library | `next-intl` on web (without i18n routing); `use-intl` (its framework-neutral core) in `packages/ui`, so desktop (Vite) and later mobile reuse the same components. |
+| Locales | `en` (source) and `es` (drafted by Claude, marked for native review). |
+| Scope of this spec | Foundation plus core web surfaces. Modules, admin, desktop, mobile and notification content follow as separate specs. |
 
-This is ranked seventh because i18n is both painful to retrofit and high leverage across every shipped surface. It deserves to land before more UI-heavy roadmap items expand the untranslated surface area.
+## Architecture
 
-It stays behind `#6 Background Jobs` because jobs unlock more infrastructure-dependent product capabilities. It stays ahead of `#8 Feature Flags` and `#9 Onboarding` because flags and onboarding can be layered onto an i18n-ready product, whereas retrofitting localization later means revisiting nearly every existing screen.
+### `packages/i18n` (`@workspace/i18n`)
 
-## Overview
+New workspace package. It never imports `apps/*` (arch-check), and `template-sync.manifest.json` already includes `packages`, so it ships with the starter.
 
-Introduce a shared internationalization framework for web first, with a translation model that can extend cleanly to desktop, mobile, and email templates.
+- `config.ts`: `LOCALES = ["en", "es"] as const`, `type Locale`, `DEFAULT_LOCALE = "en"`, `LOCALE_COOKIE = "NEXT_LOCALE"`, `isLocale()`, and `resolveLocale({ userLocale, cookie, acceptLanguage, siteDefault })`. Invalid values at any step are skipped.
+- `messages/<locale>/<namespace>.json`: one file per namespace. Core namespaces: `common`, `nav`, `auth`, `settings`, `landing`, `errors`, `email`.
+- `messages/<locale>/index.ts`: a barrel that statically imports the locale's namespaces. Module-owned namespaces sit in marker regions (see "Scaffold modules").
+- `messages.ts`: `getMessages(locale)` returns the locale's catalogue deep-merged over English, so a missing translation always falls back to English and never to a raw key.
+- `format.ts`: `formatDate`, `formatDateTime`, `formatRelative`, `formatNumber`, `formatCurrency(amountMinor, currency, locale)`. Every function takes `locale` with a default of `DEFAULT_LOCALE`. The two existing `formatDate`/`formatAmount` files become re-exports, so callers that pass no locale behave exactly as today.
+- `types.ts`: `AppConfig` augmentation, `Messages = typeof import("./messages/en").default`, `Locale = (typeof LOCALES)[number]`. A misspelt or missing English key is a type error.
 
-Initial scope:
+### Web (`apps/web`)
 
-- locale-aware routing on web
-- translation dictionaries with English default
-- language switcher
-- localized date/number/currency formatting
-- admin-safe pattern for translating runtime content later
+- `i18n/request.ts`: next-intl `getRequestConfig`. It reads `NEXT_LOCALE` and `Accept-Language` from `headers()`, `user.locale` from the cookie-cached Better Auth session (the root layout already reads the session for flags), and `i18n.defaultLocale` from `getSiteConfig()`, then calls `resolveLocale`.
+- `next.config.mjs`: wrap with `createNextIntlPlugin("./i18n/request.ts")`.
+- Root layout: `<html lang={locale}>`, plus `NextIntlClientProvider` with the merged catalogue. The layout is already dynamic (`connection()`), so per-request resolution adds no new cost. While only core namespaces exist, the whole catalogue goes to the client; per-route namespace picking waits until module screens are extracted.
+- `onError`: throw in `test`, `console.error` with the key path in development, log once in production. `getMessageFallback` returns the English string when one exists.
+- Site config: new setting `i18n.defaultLocale` (group "Localization", public, `z.enum(LOCALES)`, env `NEXT_PUBLIC_DEFAULT_LOCALE`, default `en`), editable in `/admin/settings` without a redeploy.
+- No middleware change and no new API route (`routePolicy.test.ts` is unaffected).
 
-## Main Approach
+### Shared UI (`packages/ui`)
 
-Adopt a single translation strategy for user-facing strings and shared copy keys, rather than allowing each app surface to localize independently.
+- Components import `useTranslations`/`useFormatter` from `use-intl` only, never from `next-intl`.
+- `components/misc/LocaleSwitcher.tsx` is presentational: `locales`, `value`, `onChange`, with labels from `common.locales.*`.
+- Web mounts it in `SettingsDialog` for signed-in users and in the landing nav for visitors.
 
-Key implementation direction:
+### Persisting the choice
 
-- Integrate a modern Next.js-compatible i18n library for App Router.
-- Extract hardcoded UI strings into translation namespaces grouped by product area.
-- Add locale routing and a shared language selector for the web app.
-- Define a shared key naming convention that desktop/mobile can also consume.
-- Keep CMS content and user-generated content separate from UI localization so those concerns do not get mixed.
-- Add formatting utilities for dates, numbers, and currency to avoid ad hoc locale handling.
+- `User.locale String?` in `packages/database/prisma/user.prisma`. `null` means never chosen. This needs one additive migration, which the owner generates with `pnpm migrate`.
+- Register `locale` in Better Auth `user.additionalFields` (`type: "string"`, `required: false`, `input: true`, validated against `LOCALES`).
+- The switcher calls `authClient.updateUser({ locale })`, then sets the cookie and runs `router.refresh()`. Better Auth rewrites the cached session cookie on `updateUser`, so the 5-minute cookie cache never serves a stale locale. The same call works later from desktop and mobile.
+- Planning must confirm the additional-field validator and the cookie-cache refresh on the installed Better Auth version. If either is missing, the fallback is a `user.setLocale` protected tRPC mutation that validates, writes `User.locale` and sets the cookie.
+- The sign-up form submits the current locale, so the verification email is localized from the first send.
+- The guest/demo user is read-only: the switcher sets only the cookie.
 
-Phasing:
+### Emails
 
-- Phase 1: web app shell, auth, dashboard, landing, and common components.
-- Phase 2: email templates and desktop/mobile shared copy.
-- Phase 3: RTL support and translated admin-managed content strategy.
+- The `email.send` payload gets `locale: z.enum(LOCALES).optional()`. Because it is optional, events already queued in Inngest still validate and render in English.
+- Templates translate with `use-intl`'s `createTranslator({ locale, messages, namespace: "email" })`, which needs no React provider.
 
-## Deliverables
+| Email | Locale |
+|---|---|
+| Verification, reset password, change-email confirmation | Recipient's `user.locale` (Better Auth passes the user) |
+| Admin invitation, organization invitation | Inviter's current locale (the recipient has no account yet) |
+| Support message (to the operator) | Site default |
+| Release emails (root only) | English, unchanged |
+| Notification email | Layout (footer, button) in the recipient's locale. Title and body were rendered at emit time and are not translated yet. |
 
-1. i18n framework integration and locale-aware routing.
-2. Translation message files with English baseline.
-3. Language switcher and persisted locale preference.
-4. Shared translation helpers for components and server-rendered content.
-5. Formatting utilities for locale-aware dates, numbers, and currencies.
-6. Developer workflow for extracting and validating translation keys.
+## Scaffold modules
 
-## Likely Files / Systems Affected
+- A string that only appears inside a module's markers gets its key in that module's namespace (`billing.nav.usage`), never in a shared namespace. A shared namespace file holding a module's key would trip `findScaffoldLeaks` when that module is unselected.
+- Module namespace files (`packages/i18n/messages/*/billing.json`) are listed in the module's `unselected.remove`.
+- Barrel imports use ordinary TypeScript markers:
 
-- `apps/web/app/**/*`
-- `packages/ui/src/**/*`
-- `packages/email/src/**/*`
-- `apps/desktop/**/*`
-- `apps/mobile/**/*`
-- docs or contributor instructions for localization workflow
+```ts
+import common from "./common.json";
+// scaffold:begin billing
+import billing from "./billing.json";
+// scaffold:end billing
 
-## Risks / Dependencies
+export default {
+  common,
+  // scaffold:begin billing
+  billing,
+  // scaffold:end billing
+};
+```
 
-- String extraction must be disciplined or the repo will end up with hybrid localized/non-localized screens.
-- CMS-managed landing content should not be incorrectly treated as compile-time translation copy.
-- Multi-surface reuse should be designed carefully so desktop/mobile are not blocked on web-specific library APIs.
-- Runtime site config may later want locale defaults per deployment or per org.
+- This spec creates module namespaces only for module-marked items inside the shared files it extracts (sidebar entries, Settings tabs such as PlansBilling). Each module's own screens are extracted in its follow-up spec.
+- `BUILDER_VERSION` does not change: compile and archive logic are unchanged, and only starter content changes.
+
+## Guards against drift
+
+- **Typed keys**: a missing or misspelt English key fails `pnpm --dir apps/web typecheck`.
+- **`pnpm i18n:check`** (`scripts/i18n-check.mjs`, added to CI): every locale has exactly English's namespaces and keys, every message parses as ICU, and placeholders and plural/select arguments match English.
+- **No new literals**: ESLint `react/jsx-no-literals` (JSX children only, not props) is enabled on the directories this spec extracts. Each follow-up spec adds its directories.
+
+## Extraction scope
+
+| Surface | Files |
+|---|---|
+| Auth | `packages/ui/src/blocks/auth/*`; the pages under `apps/web/app/(auth)` |
+| App shell | `packages/ui/src/components/sidebar/AppSidebar.tsx`; `packages/ui/src/components/home/*` (SettingsDialog and its tabs, SidebarUser); `apps/web/components/home/*`; `apps/web/blocks/Support.tsx` |
+| Shared misc | `ErrorState`, `LoadingState`, `LoadingButton`, `GuestBanner`, `CustomDialogHeader` |
+| Landing chrome | Nav, footer, CTA and doc-sidebar labels in `apps/web/blocks/landing`. CMS-supplied text is untouched. |
+| Starter overrides | `template-overrides/saas-boilerplate/apps/web/components/home/AppSidebar.tsx`, `.../app/(home)/page.tsx` |
+| Emails | `EmailVerification`, `ResetPassword`, `Invitation`, `OrganizationInvitation`, `Footer`, the `Notification` layout |
+| Metadata | `generateMetadata` titles of the pages above |
+
+Formatting in these surfaces uses `useFormatter()` (client) or `getFormatter()` (server). The remaining `toLocale*` call sites move with their module specs.
+
+### Out of scope
+
+- Legal pages (privacy, terms, refunds) stay English. Translated legal text needs per-locale legal review, so it is content, not UI copy.
+- Admin, module screens, desktop, mobile, CMS landing content, Postgres docs, notification content, RTL, URL-prefixed public pages.
+
+## Testing
+
+- `packages/i18n`: resolution order and invalid-value skipping; English fallback merge; `en` vs `es` output for each formatter.
+- `i18n:check`: fixtures for a missing key, an extra key, a placeholder mismatch and an unparsable message.
+- UI: a `renderWithIntl` test helper. Existing tests (AppSidebar, MyAccountSettings, GuestBanner) keep passing in `en`; one `es` render per surface asserts translated text.
+- Web: request config picks user over cookie over header over site default, and ignores an invalid cookie.
+- Email: each in-scope template renders in `es`; an `email.send` payload without `locale` validates and renders in English.
+- Auth: `updateUser` rejects `locale: "xx"`.
+- Scaffold: `pnpm scaffold:matrix` (module namespace files dropped, leak check clean), `pnpm template:check-sync`, `pnpm template:build`.
 
 ## Verification
 
-1. The web app can render at least two locales with route-aware navigation.
-2. Shared UI components stop hardcoding user-visible strings directly.
-3. Locale preference persists between navigations and sessions.
-4. Auth, landing, and dashboard flows show translated copy consistently.
-5. Date, number, and currency displays adapt correctly by locale.
-6. Missing translation keys fail loudly in development rather than silently falling back unpredictably.
+1. Web renders in `en` and `es`. The choice persists across navigation, reloads and new sessions on another device (cookie plus `User.locale`), URLs are unchanged, and `<html lang>` matches.
+2. In-scope shared components contain no JSX string literals, and lint enforces it.
+3. Auth, the app shell, settings, landing chrome and the core emails show Spanish consistently.
+4. Dates, numbers and currency in those surfaces follow the active locale.
+5. A missing English key fails typecheck; a missing `es` key fails `i18n:check` in CI; a runtime miss throws in tests and logs in development.
+6. Changing `i18n.defaultLocale` in `/admin/settings` changes the locale, without a redeploy, for visitors with no saved choice whose browser languages include no supported locale.
+
+## Documentation
+
+- CLAUDE.md: an i18n section covering namespaces and key naming, the module namespace rule, `use-intl` in `packages/ui`, and adding a locale.
+- `apps/web/.env.example`: `NEXT_PUBLIC_DEFAULT_LOCALE`.
+- README: an "Adding a language" note.
+
+## Follow-up specs
+
+1. Module screens (billing, AI, organizations, API keys, webhooks, audit, flags, onboarding, jobs, usage), one namespace each.
+2. Admin surfaces.
+3. Desktop: `IntlProvider` with `User.locale`.
+4. Mobile: `use-intl` on Expo; confirm Hermes `Intl` coverage.
+5. Notifications rendered at read time from `type` and `data`, so stored rows translate.
+6. RTL, translated CMS landing content and docs.
+7. Optional locale-prefixed public pages with `hreflang`, if SEO in other languages becomes a goal.

@@ -1,7 +1,7 @@
 import { getRequestConfig } from "next-intl/server";
 import { cookies, headers } from "next/headers";
 import { auth } from "@workspace/auth/better-auth/auth";
-import { LOCALE_COOKIE, resolveLocale } from "@workspace/i18n/config";
+import { INTL_TIME_ZONE, LOCALE_COOKIE, resolveLocale } from "@workspace/i18n/config";
 import { getMessages } from "@workspace/i18n/messages";
 import { onIntlError } from "@workspace/i18n/errors";
 import { getSiteConfig } from "@/lib/site-config/service";
@@ -21,5 +21,5 @@ export default getRequestConfig(async () => {
     acceptLanguage: requestHeaders.get("accept-language"),
     siteDefault: config["i18n.defaultLocale"],
   });
-  return { locale, messages: getMessages(locale), onError: onIntlError };
+  return { locale, messages: getMessages(locale), timeZone: INTL_TIME_ZONE, onError: onIntlError };
 });

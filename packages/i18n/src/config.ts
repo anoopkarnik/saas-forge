@@ -3,6 +3,11 @@ export type Locale = (typeof LOCALES)[number];
 export const DEFAULT_LOCALE: Locale = "en";
 /** next-intl's conventional cookie name; holds the visitor's last choice. */
 export const LOCALE_COOKIE = "NEXT_LOCALE";
+/**
+ * next-intl needs one time zone on server and client to render identical markup.
+ * App dates are formatted with ./format.ts in the viewer's own time zone instead.
+ */
+export const INTL_TIME_ZONE = "UTC";
 
 export function isLocale(value: unknown): value is Locale {
   return typeof value === "string" && (LOCALES as readonly string[]).includes(value);

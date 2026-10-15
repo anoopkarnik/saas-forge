@@ -47,4 +47,8 @@ describe("i18n request config", () => {
     expect(config.locale).toBe("es");
     expect(config.messages.common.language).toBe("Idioma");
   });
+
+  it("sets a time zone so server and client render the same markup", async () => {
+    expect((await run() as unknown as { timeZone?: string }).timeZone).toBe("UTC");
+  });
 });

@@ -15,6 +15,10 @@ import { getPublicSiteConfig } from "@/lib/site-config/service";
 import { SiteConfigProvider } from "@/components/site-config/SiteConfigProvider";
 import { FlagsProvider } from "@/components/flags/FlagsProvider";
 import { evaluateFlagsForRequest } from "@/lib/flags/flags";
+import { getLocale } from "next-intl/server";
+import { DEFAULT_LOCALE, toLocale } from "@workspace/i18n/config";
+import { getMessages } from "@workspace/i18n/messages";
+import { IntlClientProvider } from "@/components/i18n/IntlClientProvider";
 
 export async function generateMetadata(): Promise<Metadata> {
   return { metadataBase: new URL(getSiteUrl()), ...(await siteMetadata()) };
@@ -28,12 +32,14 @@ export default async function RootLayout({
 }>): Promise<React.ReactElement> {
   // Site config changes at runtime (/admin/settings), so never bake it in at build.
   await connection();
-  const [config, flags] = await Promise.all([getPublicSiteConfig(), evaluateFlagsForRequest()]);
+  const [config, flags, requestLocale] = await Promise.all([getPublicSiteConfig(), evaluateFlagsForRequest(), getLocale()]);
+  const locale = toLocale(requestLocale) ?? DEFAULT_LOCALE;
   const gaId = config["analytics.gaMeasurementId"];
 
   return (
-    <html lang="en" suppressHydrationWarning className={`theme-${config["branding.theme"]}`}>
+    <html lang={locale} suppressHydrationWarning className={`theme-${config["branding.theme"]}`}>
       <body className={`${geistSans.className} ${geistMono.variable} ${cyberdyne.variable} `}>
+        <IntlClientProvider locale={locale} messages={getMessages(locale)}>
         <TRPCReactProvider>
           <SiteConfigProvider config={config}>
             <FlagsProvider flags={flags}>
@@ -49,6 +55,7 @@ export default async function RootLayout({
             </FlagsProvider>
           </SiteConfigProvider>
         </TRPCReactProvider>
+        </IntlClientProvider>
       </body>
     </html>
   )

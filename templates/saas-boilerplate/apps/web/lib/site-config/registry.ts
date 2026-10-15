@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { SECRET_NAME_PATTERN } from "@/lib/env";
+import { DEFAULT_LOCALE, LOCALES } from "@workspace/i18n/config";
 
 /**
  * Settings an admin can change at runtime from /admin/settings. Each one
@@ -122,6 +123,15 @@ export const SETTINGS = {
     schema: z.enum(["OPEN", "INVITE_ONLY"]),
     storageKey: "registration_mode",
     default: "OPEN",
+  }),
+  "i18n.defaultLocale": setting({
+    group: "Localization",
+    label: "Default language",
+    description: "For visitors with no saved choice whose browser languages are not supported.",
+    public: true,
+    schema: z.enum(LOCALES),
+    env: "NEXT_PUBLIC_DEFAULT_LOCALE",
+    default: DEFAULT_LOCALE,
   }),
   // scaffold:begin onboarding
   "onboarding.wizard": setting({

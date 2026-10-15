@@ -1,4 +1,5 @@
 import path from "path"
+import createNextIntlPlugin from "next-intl/plugin"
 import { fileURLToPath } from "url"
 
 const appRoot = path.dirname(fileURLToPath(import.meta.url))
@@ -161,4 +162,6 @@ const nextConfig = {
   },
 }
 
-export default nextConfig
+const withNextIntl = createNextIntlPlugin("./i18n/request.ts")
+
+export default withNextIntl(nextConfig)

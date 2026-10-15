@@ -9,60 +9,12 @@ import { Loader2 } from "lucide-react";
 import { useTRPC } from "@/trpc/client";
 import { ScaffoldPreview } from "@/components/scaffold-preview/ScaffoldPreview";
 import { OnboardingPanel } from "@/components/onboarding/OnboardingPanel";
-import { secretEnvFiles, splitSecretEnv } from "@workspace/ui/lib/scaffold-secrets";
-import { appendFilesToZip } from "@workspace/ui/lib/zip-append";
 
 export default function Page() {
   const trpc = useTRPC();
   const router = useRouter();
   const saveConfiguration = useMutation(trpc.project.save.mutationOptions());
   const catalogQuery = useQuery(trpc.scaffold.catalog.queryOptions());
-
-  const handleSubmitConfiguration = async (
-    safeName: string,
-    envVars: Record<string, string>,
-    modules: string[],
-    expectedTotalCredits: number,
-  ) => {
-    try {
-      // Secrets never leave the browser: the server builds from public values
-      // and the secrets are added to the ZIP here.
-      const { publicEnv, secrets } = splitSecretEnv(envVars);
-      const response = await fetch("/api/scaffold", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: safeName, envVars: publicEnv, modules, expectedTotalCredits }),
-      });
-
-      if (response.status === 409) {
-        await catalogQuery.refetch();
-        toast.error("Prices changed since you opened the wizard. Check the new total and download again.");
-        return;
-      }
-      if (!response.ok) {
-        throw new Error("Failed to download");
-      }
-
-      // Create blob and trigger download
-      const zip = appendFilesToZip(
-        new Uint8Array(await response.arrayBuffer()),
-        secretEnvFiles(safeName, secrets),
-      );
-      const blob = new Blob([zip], { type: "application/zip" });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${safeName}.zip`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-    } catch (error) {
-      console.error("Download failed:", error);
-      toast.error("Download failed. Please try again.");
-      throw error;
-    }
-  };
 
   const handleSaveConfiguration = async (payload: {
     name: string;
@@ -106,7 +58,6 @@ export default function Page() {
         <DashboardPage
           catalog={catalogQuery.data}
           renderPreview={(selection) => <ScaffoldPreview {...selection} />}
-          onSubmitConfiguration={handleSubmitConfiguration}
           onSaveConfiguration={handleSaveConfiguration}
           docsBaseUrl={process.env.NEXT_PUBLIC_URL!}
         />

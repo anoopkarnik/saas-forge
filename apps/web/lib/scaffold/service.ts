@@ -22,6 +22,8 @@ import { tierOrder } from "@/lib/scaffold/project-rules";
 import { isSecretEnvKey } from "@/lib/scaffold/secret-keys";
 import { getTemplateVersion } from "@/lib/scaffold/template-version";
 import { generateSetupGuide } from "@/lib/scaffold/setup-guide";
+import { getLaunchpadPreferences } from "./launchpad/service";
+import type { GuideMode, DeploymentPath, LaunchpadState } from "./launchpad/types";
 import { logUsage } from "@/lib/usage/record";
 import {
   BASE_ROOT,
@@ -101,6 +103,7 @@ export type BuildProjectZipInput = {
   versionId: string;
   /** Public wizard values written into the web, mobile and desktop .env files. Secrets are refused. */
   envVars?: Record<string, string>;
+  guidePreferences?: { mode: GuideMode; deployment: DeploymentPath; launchpadState?: LaunchpadState };
   /** Serve this earlier cached build if it still exists (re-downloads). */
   preferredBuildKey?: string | null;
   /** Providers to keep; defaults to those the envVars choose. */
@@ -238,6 +241,9 @@ export async function buildProjectZip(
     versionId: input.versionId,
     modules,
     config: input.config,
+    platforms: input.platforms,
+    templateVersion: getTemplateVersion(),
+    ...input.guidePreferences,
   });
 
   const root = input.projectName;
@@ -507,6 +513,8 @@ export async function ownsBuild(userId: string, buildKey: string): Promise<boole
 }
 
 export type DownloadScaffoldInput = BuildProjectZipInput & {
+  /** Saved-project downloads use that owner's guide preferences. */
+  projectSlug?: string;
   userId: string;
   source: "web" | "api";
   projectId?: string | null;
@@ -530,6 +538,9 @@ export type DownloadScaffoldResult = {
  */
 export async function downloadScaffold(input: DownloadScaffoldInput): Promise<DownloadScaffoldResult> {
   if (input.envVars) assertNoSecrets(input.envVars);
+  const guidePreferences = input.projectId || input.projectSlug
+    ? await getLaunchpadPreferences(input.userId, { projectId: input.projectId, slug: input.projectSlug }, true)
+    : input.guidePreferences;
   const modules = validateSelectedModules(input.modules);
   const pricing = calculateScaffoldCredits(modules);
   const providers = input.providers ?? selectionProviders(input.envVars, modules);
@@ -557,7 +568,7 @@ export async function downloadScaffold(input: DownloadScaffoldInput): Promise<Do
 
   let build: BuildProjectZipResult;
   try {
-    build = await buildProjectZip({ ...input, modules, providers });
+    build = await buildProjectZip({ ...input, modules, providers, guidePreferences });
   } catch (err) {
     await refundScaffoldJob(charge.jobId);
     throw err;
@@ -675,6 +686,7 @@ export function computeUpgradeDelta(input: {
 }
 
 export type BuildUpgradeKitInput = {
+  guidePreferences?: { mode: GuideMode; deployment: DeploymentPath; launchpadState?: LaunchpadState };
   name: string;
   projectName: string;
   fromModules: ScaffoldModuleId[];
@@ -815,6 +827,9 @@ export function buildUpgradeKit(
       versionId: input.versionId,
       modules: toModules,
       config: input.config,
+      platforms: input.platforms,
+      templateVersion: getTemplateVersion(),
+      ...input.guidePreferences,
     });
 
     const spec = {

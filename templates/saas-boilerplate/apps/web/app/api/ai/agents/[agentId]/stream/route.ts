@@ -15,6 +15,7 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
   const { session } = guard;
 
   const { agentId } = await ctx.params;
+  if (agentId.startsWith("launchpad_")) return NextResponse.json({ error: "Use the project's Launchpad to request guidance." }, { status: 403 });
   let input: Record<string, unknown> = {};
   try {
     input = (await req.json()) as Record<string, unknown>;

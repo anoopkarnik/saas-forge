@@ -30,6 +30,8 @@ class Settings(BaseSettings):
     anthropic_api_key: str | None = None
     openrouter_api_key: str | None = None
     ollama_base_url: str | None = None
+    nvidia_api_key: str | None = None
+    nvidia_launchpad_model: str = "nvidia:nvidia/nemotron-3-ultra-550b-a55b"
 
     # Qdrant (optional)
     qdrant_url: str | None = None

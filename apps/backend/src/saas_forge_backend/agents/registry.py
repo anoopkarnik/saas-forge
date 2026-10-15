@@ -39,6 +39,7 @@ REGISTRY = AgentRegistry()
 
 def register_default_agents() -> None:
     from saas_forge_backend.agents.echo_llm import run as echo_run
+    from saas_forge_backend.agents.launchpad import run as launchpad_run
     from saas_forge_backend.agents.noop import run as noop_run
     from saas_forge_backend.agents.rag_chat import run as rag_chat_run
     if "noop" not in REGISTRY.ids():
@@ -47,6 +48,8 @@ def register_default_agents() -> None:
         REGISTRY.register("echo_llm", echo_run)
     if "rag_chat" not in REGISTRY.ids():
         REGISTRY.register("rag_chat", rag_chat_run)
+    if "launchpad_v1" not in REGISTRY.ids():
+        REGISTRY.register("launchpad_v1", launchpad_run)
     # Document ingestion uses the signed /rag/ingest endpoint.
     # registry, because ingestion is exclusively asynchronous and does not stream events
     # via the agent contract.

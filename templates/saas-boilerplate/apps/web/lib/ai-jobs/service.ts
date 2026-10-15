@@ -6,6 +6,7 @@ import { inngest } from "@workspace/jobs/inngest";
 export type DispatchableAiJob = { id: string; agentId: string };
 
 const eventName = (agentId: string) =>
+  agentId === "launchpad_v1" ? "launchpad/operation.requested" :
   agentId === "rag_ingest" ? "ai/ingest.requested" : "ai/agent.requested";
 
 export async function dispatchAiJob(job: DispatchableAiJob): Promise<void> {

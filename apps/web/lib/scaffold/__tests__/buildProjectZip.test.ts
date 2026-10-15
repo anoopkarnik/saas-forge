@@ -56,6 +56,14 @@ describe("buildProjectZip", () => {
     expect(zip.file("demo/SETUP.md")).not.toBeNull();
   }, 60_000);
 
+  it("uses the selected Launchpad presentation and deployment in SETUP.md", async () => {
+    const { bytes } = await buildProjectZip({ ...base, platforms: ["web"], guidePreferences: { mode: "founder", deployment: "docker" } });
+    const setup = await (await readZip(bytes)).file("demo/SETUP.md")!.async("string");
+    expect(setup).toContain("Web deployment: docker");
+    expect(setup).toContain("Review the production container configuration");
+    expect(setup).not.toContain("Connect the repository to Vercel");
+    expect(setup).not.toContain("Agent prompt:");
+  }, 60_000);
   it("refuses secrets before building anything", async () => {
     await expect(
       buildProjectZip({ ...base, platforms: ["web"], envVars: { DATABASE_URL: "postgresql://canary" } }),

@@ -24,9 +24,10 @@ describe("Inngest functions", () => {
     const response = await GET(new Request("http://localhost:3000/api/inngest") as never, undefined as never);
     const body = await response.json();
 
-    // Generic jobs and the two AI execution functions each serve a failure handler.
+    // Generic jobs and registered AI execution functions each serve a failure handler.
     const jobs = listJobs().length;
-    expect(body.function_count).toBe(jobFunctions().length + jobs + 2);
+    const executions = jobFunctions().filter((fn) => ["ai-agent-run", "ai-document-ingest", "launchpad-operation"].includes(fn.id())).length;
+    expect(body.function_count).toBe(jobFunctions().length + jobs + executions);
     expect(jobFunctions().map((fn) => fn.id())).toEqual(
       expect.arrayContaining([
         "email.send",

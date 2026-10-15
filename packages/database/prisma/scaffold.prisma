@@ -28,6 +28,7 @@ model ProjectConfig {
     updatedAt       DateTime  @updatedAt
 
     builds          ScaffoldJob[]
+    launchpad       ProjectLaunchpad?
 
     @@unique([userId, slug])
     @@index([userId])
@@ -115,5 +116,15 @@ model ReleaseEmail {
     sentAt  DateTime @default(now())
 
     @@id([userId, version])
+    @@schema("scaffold_schema")
+}
+
+/// Owner-scoped setup progress; never part of a project's scaffold config.
+model ProjectLaunchpad {
+    projectId String        @id
+    project   ProjectConfig @relation(fields: [projectId], references: [id], onDelete: Cascade)
+    state     Json
+    updatedAt DateTime      @updatedAt
+
     @@schema("scaffold_schema")
 }

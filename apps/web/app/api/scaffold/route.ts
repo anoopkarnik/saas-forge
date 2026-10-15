@@ -117,6 +117,9 @@ export async function POST(req: NextRequest) {
     const { session } = guard;
 
     const body = await req.json();
+    if (body.projectSlug !== undefined && (typeof body.projectSlug !== "string" || body.projectSlug.length < 1 || body.projectSlug.length > 100)) {
+      return jsonWithCors(req, { error: "Invalid project slug" }, 400);
+    }
     const projectName = sanitizeProjectName(body.name ?? "");
     const envVars: Record<string, string> = body.envVars ?? {};
     assertNoSecrets(envVars);
@@ -140,6 +143,7 @@ export async function POST(req: NextRequest) {
       userId: session.user.id,
       source: "web",
       name: projectName,
+      projectSlug: body.projectSlug,
       projectName,
       modules,
       platforms,

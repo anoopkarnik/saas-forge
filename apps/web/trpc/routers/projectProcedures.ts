@@ -28,6 +28,7 @@ import {
 } from "@/lib/scaffold/release-emails";
 import { getProjectReleases, loadReleases } from "@/lib/scaffold/releases";
 import { generateSetupGuide } from "@/lib/scaffold/setup-guide";
+import { launchpadProcedures } from "@/lib/scaffold/launchpad/procedures";
 import {
   ownsBuild,
   previewUpgrade,
@@ -120,6 +121,7 @@ async function getOwnedProject(userId: string, slug: string) {
 // ---------------------------------------------------------------------------
 
 export const projectRouter = createTRPCRouter({
+  ...launchpadProcedures,
   list: protectedProcedure.query(async ({ ctx }) => {
     const projects = await listProjects(ctx.session.user.id);
     const releases = loadReleases();
@@ -331,6 +333,8 @@ export const projectRouter = createTRPCRouter({
         versionId: project.versionId,
         modules: project.modules as ScaffoldModuleId[],
         config: (project.config ?? {}) as Record<string, unknown>,
+        platforms: project.platforms,
+        templateVersion: project.templateVersion,
       });
     }),
 });

@@ -12,7 +12,6 @@ import {
   FileUp,
   Layers3,
   Lock,
-  Rocket,
   Save,
   Settings2,
   Sparkles,
@@ -59,7 +58,6 @@ import {
 import EnvField from "../../components/home/EnvField";
 import {
   buildEnvVarsFromForm,
-  buildVercelDeployUrl,
   parseEnvFile,
 } from "../../lib/utils/scaffold";
 import { formatList } from "../../lib/utils/formatList";
@@ -81,7 +79,8 @@ import {
 interface DashboardPageProps {
   /** Prices and modules from the server's `scaffold.catalog`. */
   catalog: ScaffoldCatalog;
-  onSubmitConfiguration: (
+  /** Legacy download action for hosts without saved project support. */
+  onSubmitConfiguration?: (
     safeName: string,
     envVars: Record<string, string>,
     modules: ScaffoldModuleId[],
@@ -461,7 +460,7 @@ export default function DashboardPage({
 
         const envVars = buildEnvVarsFromForm(submittedValues);
         const modules = submittedValues.SELECTED_MODULES || [];
-        await onSubmitConfiguration(
+        await onSubmitConfiguration?.(
           safeName,
           envVars,
           modules,
@@ -526,6 +525,7 @@ export default function DashboardPage({
         type: "manual",
         message: "Add a project name before saving.",
       });
+      setCurrentStepIndex(getFirstStepForField("name"));
       form.setFocus("name");
       return;
     }
@@ -550,10 +550,36 @@ export default function DashboardPage({
   }, [
     onSaveConfiguration,
     form,
+    getFirstStepForField,
     presetProductTypeId,
     presetTierId,
     presetVersionId,
   ]);
+
+  const renderConfigurationAction = () =>
+    onSaveConfiguration ? (
+      <Button
+        type="button"
+        onClick={handleSaveConfiguration}
+        disabled={isSaving || isGuest}
+        size="lg"
+        className="touch-manipulation"
+      >
+        <Save className="mr-2 h-4 w-4" />
+        {isSaving ? "Saving…" : "Save Configuration"}
+      </Button>
+    ) : onSubmitConfiguration ? (
+      <Button
+        type="button"
+        onClick={handleFinalDownload}
+        disabled={isDownloading || missingLabels.length > 0 || isGuest}
+        size="lg"
+        className="touch-manipulation"
+      >
+        <Download className="mr-2 h-4 w-4" />
+        {isDownloading ? "Downloading…" : "Download Boilerplate"}
+      </Button>
+    ) : null;
 
   const renderWizardField = React.useCallback(
     (name: WizardFieldName, sectionId: string) => {
@@ -628,39 +654,7 @@ export default function DashboardPage({
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              disabled
-              onClick={() => {
-                const url = buildVercelDeployUrl(form.getValues());
-                window.open(url, "_blank", "noopener,noreferrer");
-              }}
-            >
-              <Rocket className="mr-2 h-4 w-4" />
-              <span className="whitespace-normal text-left">Deploy to Vercel (Coming Soon)</span>
-            </Button>
-            {onSaveConfiguration ? (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleSaveConfiguration}
-                disabled={isSaving || isGuest}
-                className="touch-manipulation"
-              >
-                <Save className="mr-2 h-4 w-4" />
-                {isSaving ? "Saving…" : "Save configuration"}
-              </Button>
-            ) : null}
-            <Button
-              type="button"
-              onClick={handleFinalDownload}
-              disabled={isDownloading || isGuest}
-              className="touch-manipulation"
-            >
-              <Download className="mr-2 h-4 w-4" />
-              {isDownloading ? "Downloading…" : "Download Boilerplate"}
-            </Button>
+            {renderConfigurationAction()}
           </div>
         </div>
       </div>
@@ -1119,43 +1113,43 @@ export default function DashboardPage({
                           What You&apos;re Building
                         </CardTitle>
                         <CardDescription>
-                          A quick, human-readable summary before download.
+                          Review your scaffold configuration.
                         </CardDescription>
                       </CardHeader>
-                      <CardContent className="grid gap-3 md:grid-cols-2">
+                      <CardContent className="grid min-w-0 grid-cols-1 gap-3 wrap-anywhere md:grid-cols-2">
                         <div className="rounded-2xl border border-border/60 p-4">
                           <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                             Basics
                           </p>
                           <div className="mt-3 space-y-2 text-sm">
-                            <div className="flex items-center justify-between gap-3">
-                              <span className="text-muted-foreground">
+                            <div className="flex items-start justify-between gap-3">
+                              <span className="shrink-0 text-muted-foreground">
                                 Project
                               </span>
-                              <span className="font-medium">
+                              <span className="min-w-0 text-right font-medium">
                                 {values.NEXT_PUBLIC_SAAS_NAME ||
                                   "Not named yet"}
                               </span>
                             </div>
-                            <div className="flex items-center justify-between gap-3">
-                              <span className="text-muted-foreground">
+                            <div className="flex items-start justify-between gap-3">
+                              <span className="shrink-0 text-muted-foreground">
                                 Company
                               </span>
-                              <span className="font-medium">
+                              <span className="min-w-0 text-right font-medium">
                                 {values.NEXT_PUBLIC_COMPANY_NAME || "Not set"}
                               </span>
                             </div>
-                            <div className="flex items-center justify-between gap-3">
-                              <span className="text-muted-foreground">URL</span>
-                              <span className="font-medium">
+                            <div className="flex items-start justify-between gap-3">
+                              <span className="shrink-0 text-muted-foreground">URL</span>
+                              <span className="min-w-0 text-right font-medium">
                                 {values.NEXT_PUBLIC_URL || "Not set"}
                               </span>
                             </div>
-                            <div className="flex items-center justify-between gap-3">
-                              <span className="text-muted-foreground">
+                            <div className="flex items-start justify-between gap-3">
+                              <span className="shrink-0 text-muted-foreground">
                                 Platforms
                               </span>
-                              <span className="font-medium">
+                              <span className="min-w-0 text-right font-medium">
                                 {formatList(values.NEXT_PUBLIC_PLATFORM || [])}
                               </span>
                             </div>
@@ -1167,19 +1161,19 @@ export default function DashboardPage({
                             Credits
                           </p>
                           <div className="mt-3 space-y-2 text-sm">
-                            <div className="flex items-center justify-between gap-3">
-                              <span className="text-muted-foreground">
+                            <div className="flex items-start justify-between gap-3">
+                              <span className="shrink-0 text-muted-foreground">
                                 Base starter
                               </span>
-                              <span className="font-medium">
+                              <span className="min-w-0 text-right font-medium">
                                 {pricing.baseCredits} credits
                               </span>
                             </div>
-                            <div className="flex items-center justify-between gap-3">
-                              <span className="text-muted-foreground">
+                            <div className="flex items-start justify-between gap-3">
+                              <span className="shrink-0 text-muted-foreground">
                                 Extra features
                               </span>
-                              <span className="font-medium">
+                              <span className="min-w-0 text-right font-medium">
                                 {pricing.moduleCredits.length > 0
                                   ? pricing.moduleCredits
                                       .map(
@@ -1190,8 +1184,8 @@ export default function DashboardPage({
                                   : "None"}
                               </span>
                             </div>
-                            <div className="flex items-center justify-between gap-3">
-                              <span className="text-muted-foreground">
+                            <div className="flex items-start justify-between gap-3">
+                              <span className="shrink-0 text-muted-foreground">
                                 Total
                               </span>
                               <span className="text-lg font-semibold">
@@ -1261,12 +1255,14 @@ export default function DashboardPage({
                             <Check className="h-4 w-4 text-emerald-500" />
                           )}
                           {missingLabels.length > 0
-                            ? "Missing Before Download"
-                            : "Ready to Download"}
+                            ? "Remaining Setup Details"
+                            : "Configuration Complete"}
                         </CardTitle>
                         <CardDescription>
                           {missingLabels.length > 0
-                            ? "These are the remaining items still blocking a clean scaffold download."
+                            ? onSaveConfiguration
+                              ? "You can save now and finish these details later."
+                              : "Finish these details before downloading."
                             : "The required setup details are filled in."}
                         </CardDescription>
                       </CardHeader>
@@ -1293,34 +1289,14 @@ export default function DashboardPage({
                     </Card>
 
                     <div className="flex flex-col gap-3 md:flex-row">
-                      <Button
-                        type="button"
-                        onClick={handleFinalDownload}
-                        disabled={
-                          isDownloading || missingLabels.length > 0 || isGuest
-                        }
-                        size="lg"
-                        className="touch-manipulation"
-                      >
-                        <Download className="mr-2 h-4 w-4" />
-                        {isDownloading
-                          ? "Downloading…"
-                          : "Download Boilerplate"}
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        disabled
-                        onClick={() => {
-                          const url = buildVercelDeployUrl(form.getValues());
-                          window.open(url, "_blank", "noopener,noreferrer");
-                        }}
-                        size="lg"
-                      >
-                        <Rocket className="mr-2 h-4 w-4" />
-                        <span className="whitespace-normal text-left">Deploy to Vercel (Coming Soon)</span>
-                      </Button>
+                      {renderConfigurationAction()}
                     </div>
+                    {onSaveConfiguration ? (
+                      <p className="text-sm text-muted-foreground">
+                        Save your configuration, then download the boilerplate
+                        from My Projects.
+                      </p>
+                    ) : null}
                   </div>
                 ) : null}
               </CardContent>
@@ -1346,7 +1322,7 @@ export default function DashboardPage({
           </div>
         </div>
 
-        <div className="flex flex-col gap-4">
+        <div className="flex min-w-0 flex-col gap-4">
           <WizardSummary
             currentStepIndex={currentStepIndex}
             completionByStep={completionByStep}

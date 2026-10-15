@@ -22,6 +22,7 @@
     "@trpc/tanstack-react-query": "^11.11.0",
     "@workspace/auth": "workspace:*",
     "@workspace/database": "workspace:*",
+    "@workspace/i18n": "workspace:^",
     "@workspace/ui": "workspace:*",
     "date-fns": "^4.1.0",
     "electron-store": "^10.x",
@@ -36,6 +37,7 @@
     "react-router-dom": "^7.x",
     "remark-gfm": "^4.0.1",
     "sonner": "^2.0.7",
+    "use-intl": "^4.14.9",
     "zod": "^4.3.6"
   },
   "devDependencies": {

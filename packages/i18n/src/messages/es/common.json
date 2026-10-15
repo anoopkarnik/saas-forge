@@ -1,0 +1,10 @@
+{
+  "language": "Idioma",
+  "locales": { "en": "English", "es": "Español" },
+  "languageSaveFailed": "No se pudo guardar tu idioma. Inténtalo de nuevo.",
+  "loading": { "title": "Cargando", "description": "¡Espera mientras cargamos la página!" },
+  "retrieving": { "title": "Obteniendo datos", "description": "Espera mientras obtenemos los datos." },
+  "retrieveError": { "title": "Error al obtener los datos", "description": "Se produjo un error al obtener los datos." },
+  "somethingWentWrong": "¡Algo salió mal!",
+  "guestBanner": "Estás en una demo de solo lectura. Los cambios están desactivados."
+}

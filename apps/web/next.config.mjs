@@ -111,6 +111,7 @@ const nextConfig = {
     "@workspace/database",
     "@workspace/ai",
     "@workspace/email",
+    "@workspace/i18n",
     "@workspace/observability",
   ],
   output: "standalone",

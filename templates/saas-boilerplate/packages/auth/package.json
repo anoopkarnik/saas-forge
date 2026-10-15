@@ -22,6 +22,7 @@
     "@hookform/resolvers": "^5.2.2",
     "@workspace/database": "workspace:*",
     "@workspace/email": "workspace:*",
+    "@workspace/i18n": "workspace:^",
     "better-auth": "^1.5.5",
     "react": "^19.1.1",
     "react-hook-form": "^7.67.0",

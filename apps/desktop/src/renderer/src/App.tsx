@@ -2,6 +2,10 @@ import React from "react";
 import { HashRouter, Routes, Route, useNavigate } from "react-router-dom";
 import { Toaster } from "sonner";
 import { ThemeProvider } from "@workspace/ui/providers/theme-provider";
+import { IntlProvider } from "use-intl";
+import { DEFAULT_LOCALE } from "@workspace/i18n/config";
+import { getMessages } from "@workspace/i18n/messages";
+import { onIntlError } from "@workspace/i18n/errors";
 import LoginRoute from "./components/auth/LoginRoute";
 import RegisterRoute from "./components/auth/RegisterRoute";
 import ForgotPasswordRoute from "./components/auth/ForgotPasswordRoute";
@@ -41,6 +45,8 @@ function App() {
   const themeType = (import.meta.env.VITE_THEME_TYPE || "system") as "light" | "dark" | "system";
 
   return (
+    // English only for now; choosing a language on desktop is a follow-up.
+    <IntlProvider locale={DEFAULT_LOCALE} messages={getMessages(DEFAULT_LOCALE)} onError={onIntlError}>
     <ThemeProvider defaultTheme={themeType}>
       <HashRouter>
         <Toaster position="top-center" richColors />
@@ -63,6 +69,7 @@ function App() {
         </div>
       </HashRouter>
     </ThemeProvider>
+    </IntlProvider>
   );
 }
 

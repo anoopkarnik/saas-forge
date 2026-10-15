@@ -6,8 +6,8 @@ import type {
   LaunchpadAIView,
   LaunchpadOperationKind,
   OperationView,
-} from "@/lib/scaffold/launchpad/ai-types";
-import type { StageId } from "@/lib/scaffold/launchpad/types";
+  StageId,
+} from "@/lib/scaffold/launchpad/types";
 
 export type StartOperation = {
   kind: LaunchpadOperationKind;

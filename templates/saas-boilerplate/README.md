@@ -174,6 +174,17 @@ Also see:
 - [`apps/mobile/.env.example`](apps/mobile/.env.example)
 - [`packages/database/.env.example`](packages/database/.env.example)
 
+## 🌍 Languages
+
+The web app, its emails and the shared UI are translated through `packages/i18n` (English and Spanish today). There is no language prefix in URLs: a signed-in user's choice is saved on their account, visitors get a cookie, and everyone else gets their browser language or the default set in `/admin/settings` (`NEXT_PUBLIC_DEFAULT_LOCALE`).
+
+To add a language:
+
+1. Add its code to `LOCALES` in `packages/i18n/src/config.ts`.
+2. Copy `packages/i18n/src/messages/en` to `packages/i18n/src/messages/<code>` and translate the JSON files.
+3. Add the language's own name to `common.locales` in every locale.
+4. Run `pnpm i18n:check`: it fails on missing keys, broken ICU syntax or placeholders that differ from English.
+
 ## 🚢 CI, Deployment, and Self-Hosting
 
 GitHub Actions validates changes before merge. Vercel remains the default hosted deployment path: Vercel Git integration owns preview deployments, production deployments from `main`, rollback, runtime logs, and deployment protection. GitHub Actions does not need `VERCEL_TOKEN`, `VERCEL_ORG_ID`, or `VERCEL_PROJECT_ID` unless you later move to prebuilt/manual Vercel deploys.

@@ -10,7 +10,7 @@ import { useTRPC } from "../../lib/trpc";
 
 /**
  * The desktop bell (notifications module): the same inbox as the web app,
- * polled every 30 s and on focus. Links are web paths, so selecting only marks read.
+ * polled every 5 min, on focus and when the bell opens. Links are web paths, so selecting only marks read.
  */
 export default function NotificationsBell() {
     // The desktop tRPC client is untyped (see lib/trpc).
@@ -19,7 +19,12 @@ export default function NotificationsBell() {
     const { data: session } = useSession();
     const [open, setOpen] = useState(false);
 
-    const unread = useQuery({ ...api.unreadCount.queryOptions(), refetchInterval: 30_000, refetchOnWindowFocus: true });
+    const unread = useQuery({
+        ...api.unreadCount.queryOptions(),
+        refetchInterval: 300_000,
+        refetchOnWindowFocus: true,
+        staleTime: 60_000,
+    });
     const list = useQuery({ ...api.list.queryOptions({ limit: 20 }), enabled: open });
     const preferences = useQuery({ ...api.preferences.get.queryOptions(), enabled: open });
 
@@ -44,7 +49,10 @@ export default function NotificationsBell() {
             loading={list.isLoading}
             readOnly={readOnly}
             preferences={preferences.data as NotificationBellPreference[] | undefined}
-            onOpenChange={setOpen}
+            onOpenChange={(next) => {
+                setOpen(next);
+                if (next) void unread.refetch();
+            }}
             onSelect={(item) => {
                 if (!item.readAt && !readOnly) markRead.mutate({ id: item.id });
             }}

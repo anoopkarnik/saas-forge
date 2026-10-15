@@ -4,6 +4,7 @@ model User {
     email     String   @unique
     emailVerified Boolean  @default(false)
     image     String?
+    locale    String?
     role      USER_ROLE  @default(user)
     banned    Boolean  @default(false)
     bannedReason String?

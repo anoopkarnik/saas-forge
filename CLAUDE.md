@@ -202,7 +202,7 @@ Background jobs (`packages/jobs`):
 Notifications (`apps/web/lib/notifications`):
 
 - Add a type to `catalog.ts` (label, default channels, `render`) inside its module's markers, then call `notify(definition, userId, data, { dedupeKey, organizationId })` after the work commits. It writes the in-app row (duplicates of a `dedupeKey` are skipped, never thrown) and emails through the `notification.deliver` job on the channels the user keeps on. Wrap emit sites in other modules' files in `notifications` markers.
-- The bell (`packages/ui/src/components/notifications/NotificationBell.tsx`) is presentational; web, desktop and mobile wrap it with their own clients and poll `notification.unreadCount` every 30 s. Guests can read the inbox but not mark it read.
+- The bell (`packages/ui/src/components/notifications/NotificationBell.tsx`) is presentational; web and desktop wrap it with their own clients and poll `notification.unreadCount` every 5 min, on window focus and when the bell opens. Guests can read the inbox but not mark it read.
 
 Audit log (`apps/web/lib/audit`):
 
@@ -230,6 +230,17 @@ Onboarding (`apps/web/lib/onboarding`):
 
 - Checklist tasks live in `tasks.ts`, each module's inside its markers. Give a task a `done(userId)` check on real data (avatar set, key created); a task without one is completed by `onboarding.complete`. The wizard and checklist render on the home page, never block anything, and can be turned off in Settings (`onboarding.wizard`, `onboarding.checklist`) or by the `onboarding.checklist` flag. The demo guest sees neither.
 - After installing it in an app that already has users, run `pnpm --dir packages/database backfill:onboarding` so existing users are not shown the wizard.
+
+Internationalization (`packages/i18n`):
+
+- Locales live in `src/config.ts` (`en`, `es`). The active one comes from `User.locale`, then the `NEXT_LOCALE` cookie, then `Accept-Language`, then the `i18n.defaultLocale` site setting. There is no URL prefix.
+- Messages are `src/messages/<locale>/<namespace>.json`, imported by each locale's `index.ts`. English is the source and the `Messages` type, so a missing English key fails typecheck; `pnpm i18n:check` fails on missing or extra keys, bad ICU or placeholder drift in other locales.
+- A string that only appears inside a module's markers goes in `<module id>.json`, imported inside the same markers in both barrels and listed in the module's `unselected.remove`.
+- Web uses `next-intl` (`useTranslations`, `getTranslations`). `packages/ui`, desktop and emails import from `use-intl` only. Format dates and money with `@workspace/i18n/format` and `useLocale()`.
+- Emails take the recipient's locale (`sendEmail({ …, locale })`; optional, so queued jobs stay valid). A signed-in user's choice is saved with `authClient.updateUser({ locale })`, which also refreshes the cached session cookie.
+- `react/jsx-no-literals` guards the translated surfaces (listed in `apps/web/eslint.config.js` and `packages/ui/eslint.config.js`); add a directory there when you translate it.
+- ICU treats `'` before `{` as an escape: quote placeholders with “ ” or « ».
+- Adding a language: add it to `LOCALES`, copy `messages/en` to `messages/<locale>`, translate, and add its endonym to `common.locales` in every locale.
 
 Webhook idempotency is important for payments:
 

@@ -8,7 +8,7 @@ import {
   completeTask,
   defaultLaunchpadState,
 } from "../launchpad/state";
-import type { GuidedTask, LaunchpadAIState } from "../launchpad/ai-types";
+import type { GuidedTask, LaunchpadAIState } from "../launchpad/types";
 import {
   acceptStageTasks,
   initialAIState,

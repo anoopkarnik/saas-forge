@@ -83,4 +83,22 @@ export default [
       ],
     },
   },
+  {
+    // Translated surfaces: copy goes through next-intl (messages in packages/i18n).
+    files: [
+      "app/(auth)/**/*.tsx",
+      "app/(home)/layout.tsx",
+      "app/landing/page.tsx",
+      "components/home/**/*.tsx",
+      "components/i18n/**/*.tsx",
+      "blocks/Support.tsx",
+      "blocks/home/**/*.tsx",
+      "components/landing/{NavbarSection,FooterSection,HeroSection,FeatureSection,PricingItem,TestimonialSection}.tsx",
+      "blocks/landing/{DocSidebar,DocPostPage}.tsx",
+    ],
+    ignores: ["**/*.test.tsx"],
+    rules: {
+      "react/jsx-no-literals": ["error", { noStrings: false, ignoreProps: true, allowedStrings: ["/", "•", "*", "·", "|", "-", "\"", "🚀", "✨"] }],
+    },
+  },
 ]

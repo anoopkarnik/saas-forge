@@ -3,8 +3,14 @@ import { validateAgentResult } from "./ai-schema";
 import { buildSourcePack, SOURCE_PACK_VERSION } from "./source-pack";
 import { coversRequirement } from "./coverage";
 import { buildCuratedTasks } from "./curated";
-import type { LaunchpadAIState, GuidedTask, SourcePack } from "./ai-types";
-import type { LaunchpadProject, LaunchpadState, StageId } from "./types";
+import type {
+  GuidedTask,
+  LaunchpadAIState,
+  LaunchpadProject,
+  LaunchpadState,
+  SourcePack,
+  StageId,
+} from "./types";
 
 export function initialAIState(): LaunchpadAIState {
   return {

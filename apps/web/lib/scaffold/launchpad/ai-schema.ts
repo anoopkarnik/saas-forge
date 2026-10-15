@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { validateSetupCoverage } from "./coverage";
-import { BRIEF_FIELDS, type SourcePack } from "./ai-types";
+import { BRIEF_FIELDS, type SourcePack } from "./types";
 
 const text = z.string().trim().min(1).max(3000);
 const short = z.string().trim().min(1).max(200);

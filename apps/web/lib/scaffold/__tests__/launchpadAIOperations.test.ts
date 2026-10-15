@@ -5,8 +5,11 @@ import { buildSourcePack } from "../launchpad/source-pack";
 import { initialAIState } from "../launchpad/ai-state";
 import { defaultLaunchpadState } from "../launchpad/state";
 import { currentAIFingerprint } from "../launchpad/ai-runtime";
-import type { LaunchpadState, LaunchpadProject } from "../launchpad/types";
-import type { SourcePack } from "../launchpad/ai-types";
+import type {
+  LaunchpadState,
+  LaunchpadProject,
+  SourcePack,
+} from "../launchpad/types";
 import type { TRPCContext } from "@/trpc/init";
 
 type Job = {

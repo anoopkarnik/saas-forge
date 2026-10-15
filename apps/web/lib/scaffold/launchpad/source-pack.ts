@@ -1,8 +1,13 @@
 import { buildLaunchpadTasks, projectEnvKeys } from "./catalog";
 import { settingHint } from "./env-guidance";
 import { buildCuratedTasks } from "./curated";
-import type { DeploymentPath, LaunchpadProject, StageId } from "./types";
-import type { CoverageRequirement, SourcePack } from "./ai-types";
+import type {
+  CoverageRequirement,
+  DeploymentPath,
+  LaunchpadProject,
+  SourcePack,
+  StageId,
+} from "./types";
 
 export const SOURCE_PACK_VERSION = "launchpad-6";
 const COMMAND_LABELS: Record<string, string> = {

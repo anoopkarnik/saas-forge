@@ -16,7 +16,7 @@ import { LaunchpadView } from "./Launchpad";
 import type {
   LaunchpadAIView,
   OperationView,
-} from "@/lib/scaffold/launchpad/ai-types";
+} from "@/lib/scaffold/launchpad/types";
 
 const project = {
   name: "Demo",

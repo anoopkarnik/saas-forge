@@ -1,4 +1,4 @@
-import type { GeneratedTask, SourcePack } from "../launchpad/ai-types";
+import type { GeneratedTask, SourcePack } from "../launchpad/types";
 
 export function completeDraft(pack: SourcePack): {
   kind: "generate";

@@ -4,9 +4,10 @@ import type {
   LaunchpadAgentResult,
   OperationReference,
   OperationView,
+  LaunchpadProject,
+  LaunchpadState,
   SourcePack,
-} from "./ai-types";
-import type { LaunchpadProject, LaunchpadState } from "./types";
+} from "./types";
 import { initialAIState, stageNeedsRefresh } from "./ai-state";
 import { validateAgentResult } from "./ai-schema";
 import { projectFingerprint } from "./state";

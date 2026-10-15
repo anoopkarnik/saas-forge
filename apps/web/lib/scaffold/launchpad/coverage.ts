@@ -1,8 +1,4 @@
-import type {
-  CoverageRequirement,
-  GeneratedTask,
-  SourcePack,
-} from "./ai-types";
+import type { CoverageRequirement, GeneratedTask, SourcePack } from "./types";
 
 type CoverageTask = Pick<GeneratedTask, "anchorId" | "title" | "instructions">;
 export function coversRequirement(

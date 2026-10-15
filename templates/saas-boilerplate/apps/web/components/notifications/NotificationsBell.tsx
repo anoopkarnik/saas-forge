@@ -7,7 +7,7 @@ import { useSession } from "@workspace/auth/better-auth/auth-client";
 import { NotificationBell } from "@workspace/ui/components/notifications/NotificationBell";
 import { useTRPC } from "@/trpc/client";
 
-/** The web bell: polls the unread count every 30 s and when the window regains focus. */
+/** The web bell: polls the unread count every 5 min, on window focus and when the bell opens. */
 export function NotificationsBell() {
   const trpc = useTRPC();
   const qc = useQueryClient();
@@ -17,7 +17,7 @@ export function NotificationsBell() {
 
   const unread = useQuery({
     ...trpc.notification.unreadCount.queryOptions(),
-    refetchInterval: 30_000,
+    refetchInterval: 300_000,
     refetchOnWindowFocus: true,
   });
   const list = useQuery({ ...trpc.notification.list.queryOptions({ limit: 20 }), enabled: open });
@@ -46,7 +46,10 @@ export function NotificationsBell() {
       loading={list.isLoading}
       readOnly={readOnly}
       preferences={preferences.data}
-      onOpenChange={setOpen}
+      onOpenChange={(next) => {
+        setOpen(next);
+        if (next) void unread.refetch();
+      }}
       onSelect={(item) => {
         if (!item.readAt && !readOnly) markRead.mutate({ id: item.id });
         if (item.link) router.push(item.link);

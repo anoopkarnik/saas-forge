@@ -60,4 +60,25 @@ export default [
       "@typescript-eslint/no-empty-object-type": "off",
     },
   },
+  {
+    // Translated surfaces: copy goes through use-intl (messages in packages/i18n).
+    files: [
+      "src/components/auth/**/*.tsx",
+      "src/components/home/{SettingsDialog,SidebarUser,MyAccountSettings,SessionSettings,LanguageSettings}.tsx",
+      "src/components/misc/{GuestBanner,LocaleSwitcher}.tsx",
+      "src/components/sidebar/AppSidebar.tsx",
+    ],
+    ignores: ["**/*.test.tsx"],
+    rules: {
+      "react/jsx-no-literals": ["error", { noStrings: false, ignoreProps: true, allowedStrings: ["/", "•", "*", "·", "|", "-", "\"", "🚀", "✨"] }],
+    },
+  },
+  // scaffold:begin billing
+  {
+    files: ["src/components/home/{PlansBilling,ProgressWithCredits}.tsx"],
+    rules: {
+      "react/jsx-no-literals": ["error", { noStrings: false, ignoreProps: true, allowedStrings: ["/", "•", "*", "·", "|", "-", "\"", "🚀", "✨"] }],
+    },
+  },
+  // scaffold:end billing
 ]

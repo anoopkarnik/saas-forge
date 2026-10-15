@@ -9,7 +9,7 @@ import {
 } from "@/lib/ai-jobs/service";
 import { consumeAgentStream } from "@/lib/ai-jobs/stream";
 import { validateAgentResult } from "./ai-schema";
-import type { SourcePack } from "./ai-types";
+import type { SourcePack } from "./types";
 import { LAUNCHPAD_AGENT } from "./ai-runtime";
 
 const errorMessage =

@@ -21,8 +21,8 @@ import type {
   BriefAnswers,
   LaunchpadOperationKind,
   SourcePack,
-} from "./ai-types";
-import type { StageId } from "./types";
+  StageId,
+} from "./types";
 
 const json = (value: unknown) => value as Prisma.InputJsonValue;
 function bad(message: string): never {

@@ -1,5 +1,5 @@
 "use client"
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import { authClient, useSession } from '@workspace/auth/better-auth/auth-client'
 import SettingsHeader from '@workspace/ui/components/home/SettingsHeader'
 import { useLocale, useTranslations } from 'use-intl';
@@ -19,7 +19,7 @@ const SessionSettings = ({ onNavigate }: SessionSettingsProps) => {
     const title = t('title')
     const description = t('description')
 
-    const fetchSessions = async () => {
+    const fetchSessions = useCallback(async () => {
         const { error, data: sessions } = await authClient.listSessions()
         const modifiedSessions = sessions
             ?.slice()
@@ -34,11 +34,11 @@ const SessionSettings = ({ onNavigate }: SessionSettingsProps) => {
                 }
             })
         setSessions(modifiedSessions || []);
-    }
+    }, [locale])
 
     useEffect(() => {
         fetchSessions();
-    }, [locale])
+    }, [fetchSessions])
 
     const handleSignoutAll = async () => {
         await authClient.revokeOtherSessions();

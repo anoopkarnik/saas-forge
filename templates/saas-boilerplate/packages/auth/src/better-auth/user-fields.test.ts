@@ -15,3 +15,14 @@ describe("userAdditionalFields", () => {
     expect(parseUserInput(options, { creditsUsed: 0 }, "update")).not.toHaveProperty("creditsUsed");
   });
 });
+
+describe("locale", () => {
+  it("accepts a supported locale from update-user and sign-up", () => {
+    expect(parseUserInput(options, { locale: "es" }, "update")).toEqual({ locale: "es" });
+    expect(parseUserInput(options, { locale: "en" }, "create")).toMatchObject({ locale: "en" });
+  });
+
+  it("rejects an unsupported locale", () => {
+    expect(() => parseUserInput(options, { locale: "xx" }, "update")).toThrow();
+  });
+});

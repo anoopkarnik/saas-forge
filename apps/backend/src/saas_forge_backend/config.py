@@ -33,6 +33,10 @@ class Settings(BaseSettings):
     nvidia_api_key: str | None = None
     nvidia_launchpad_model: str = "nvidia:nvidia/nemotron-3-ultra-550b-a55b"
 
+    # MCP servers the mcp_tools agent may call: a JSON array of
+    # {"name", "url", "headers"?}, the same AI_MCP_SERVERS the web chat reads.
+    ai_mcp_servers: str | None = None
+
     # Qdrant (optional)
     qdrant_url: str | None = None
     qdrant_api_key: str | None = None

@@ -2,7 +2,8 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { POST } from "../../app/api/ai/chat/route.js";
 import { auth } from "@workspace/auth/better-auth/auth";
 import db from "@workspace/database/client";
-import { getAIConfigStatus, resolveAIModel } from "@workspace/ai";
+import { calculateAIUsageCredits, getAIConfigStatus, resolveAIModel } from "@workspace/ai";
+import { connectMcpTools, parseMcpServers } from "@workspace/ai/mcp";
 import { streamText } from "ai";
 import { AI_CHAT_MAX_MESSAGES, AI_CHAT_MAX_TEXT_CHARS } from "@/lib/zod/aiChat";
 import { logAIEvent } from "@workspace/observability/ai-logger";
@@ -51,6 +52,11 @@ vi.mock("@workspace/ai", () => ({
   starterAssistantTools: {},
 }));
 
+vi.mock("@workspace/ai/mcp", () => ({
+  parseMcpServers: vi.fn(() => []),
+  connectMcpTools: vi.fn(),
+}));
+
 vi.mock("ai", async (importOriginal) => ({
   safeValidateUIMessages: (await importOriginal<typeof import("ai")>()).safeValidateUIMessages,
   createUIMessageStream: vi.fn((options: any) => {
@@ -63,6 +69,7 @@ vi.mock("ai", async (importOriginal) => ({
   }),
   createUIMessageStreamResponse: vi.fn(() => new Response("webhook stream", { status: 200 })),
   convertToModelMessages: vi.fn(async (messages) => messages),
+  stepCountIs: vi.fn((count: number) => ({ stepCount: count })),
   streamText: vi.fn(),
 }));
 
@@ -272,6 +279,56 @@ describe("AI chat route", () => {
       expect.anything(),
       expect.objectContaining({ userId: "user_1", meter: "ai.tokens", quantity: 1001, credits: 2, idempotencyKey: "ai:usage_1" }),
     );
+  });
+
+  it("adds tools from the configured MCP servers and closes them when the reply finishes", async () => {
+    const close = vi.fn(async () => {});
+    vi.mocked(parseMcpServers).mockReturnValueOnce([{ name: "docs", url: "https://mcp.example.com/mcp" }]);
+    vi.mocked(connectMcpTools).mockResolvedValueOnce({
+      tools: { docs_search: { description: "Search docs" } } as any,
+      servers: ["docs"],
+      close,
+    });
+
+    const response = await POST(request({ messages: [userMessage("Find the MCP docs")] }));
+    await finishPromise;
+
+    expect(response.status).toBe(200);
+    const options = vi.mocked(streamText).mock.calls[0]![0] as any;
+    expect(Object.keys(options.tools)).toContain("docs_search");
+    expect(options.stopWhen).toEqual({ stepCount: 5 });
+    expect(close).toHaveBeenCalled();
+  });
+
+  it("answers without MCP tools when AI_MCP_SERVERS is invalid", async () => {
+    vi.mocked(parseMcpServers).mockImplementationOnce(() => {
+      throw new Error("AI_MCP_SERVERS is invalid");
+    });
+
+    const response = await POST(request({ messages: [userMessage("Hello")] }));
+    await finishPromise;
+
+    expect(response.status).toBe(200);
+    expect(connectMcpTools).not.toHaveBeenCalled();
+    const options = vi.mocked(streamText).mock.calls[0]![0] as any;
+    expect(options.stopWhen).toBeUndefined();
+  });
+
+  it("charges for every step when tools ran", async () => {
+    vi.mocked(streamText).mockImplementationOnce((options: any) => {
+      finishPromise = options.onFinish({
+        usage: { inputTokens: 10, outputTokens: 10, totalTokens: 20 },
+        totalUsage: { inputTokens: 900, outputTokens: 100, totalTokens: 1000 },
+        text: "Done",
+        response: { messages: [] },
+      });
+      return { toUIMessageStreamResponse: () => new Response("stream", { status: 200 }) } as any;
+    });
+
+    await POST(request({ messages: [userMessage("Hello")] }));
+    await finishPromise;
+
+    expect(calculateAIUsageCredits).toHaveBeenCalledWith({ inputTokens: 900, outputTokens: 100, totalTokens: 1000 });
   });
 
   it("calls webhook provider with bearer auth and skips streamText", async () => {

@@ -47,6 +47,18 @@ describe("findServerEnvIssues", () => {
   );
 
   // scaffold:begin ai_agents
+  // scaffold:begin ai
+  it("checks AI_MCP_SERVERS when it is set", () => {
+    const issue = (value: string) =>
+      findServerEnvIssues({ ...baseEnv, AI_MCP_SERVERS: value }).find((entry) => entry.key === "AI_MCP_SERVERS")?.message;
+    expect(issue('[{"name":"docs","url":"https://mcp.example.com/mcp"}]')).toBeUndefined();
+    expect(issue("not json")).toContain("JSON array");
+    expect(issue('[{"name":"Docs","url":"https://mcp.example.com"}]')).toContain("lowercase");
+    expect(issue('[{"name":"docs","url":"mcp.example.com"}]')).toContain("http(s) url");
+    expect(issue('[{"name":"a","url":"https://a.co"},{"name":"a","url":"https://b.co"}]')).toContain("duplicate");
+  });
+  // scaffold:end ai
+
   it("rejects the dev-only backend HMAC secret", () => {
     const issues = findServerEnvIssues({
       ...baseEnv,

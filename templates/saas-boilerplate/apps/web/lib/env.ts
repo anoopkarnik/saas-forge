@@ -75,6 +75,30 @@ function secretIssue(key: string, value: string | undefined): ServerEnvIssue | n
   return null;
 }
 
+// scaffold:begin ai
+function mcpServersIssue(raw: string): string | null {
+  let servers: unknown;
+  try {
+    servers = JSON.parse(raw);
+  } catch {
+    return "must be a JSON array of { name, url, headers? }";
+  }
+  if (!Array.isArray(servers)) return "must be a JSON array of { name, url, headers? }";
+  const names = new Set<string>();
+  for (const server of servers as Array<{ name?: unknown; url?: unknown }>) {
+    if (typeof server?.name !== "string" || !/^[a-z0-9_]{1,32}$/.test(server.name)) {
+      return "each server needs a name of 1-32 lowercase letters, digits or _";
+    }
+    if (names.has(server.name)) return `has duplicate server name ${server.name}`;
+    names.add(server.name);
+    if (typeof server.url !== "string" || !/^https?:\/\//.test(server.url)) {
+      return `server ${server.name} needs an http(s) url`;
+    }
+  }
+  return null;
+}
+// scaffold:end ai
+
 export function findServerEnvIssues(env: Env): ServerEnvIssue[] {
   const issues: ServerEnvIssue[] = [];
 
@@ -92,6 +116,14 @@ export function findServerEnvIssues(env: Env): ServerEnvIssue[] {
 
   const authSecretIssue = secretIssue("BETTER_AUTH_SECRET", env.BETTER_AUTH_SECRET);
   if (authSecretIssue) issues.push(authSecretIssue);
+
+  // scaffold:begin ai
+  // Same rules as parseMcpServers in @workspace/ai/mcp (this file stays import-free for doctor).
+  if (!isBlank(env.AI_MCP_SERVERS)) {
+    const mcpIssue = mcpServersIssue(env.AI_MCP_SERVERS!);
+    if (mcpIssue) issues.push({ key: "AI_MCP_SERVERS", message: mcpIssue });
+  }
+  // scaffold:end ai
 
   // scaffold:begin ai_agents
   // The FastAPI backend is optional; once BACKEND_URL points at one, every

@@ -9,6 +9,8 @@ import {
   resolveAIModel,
   starterAssistantTools,
 } from "@workspace/ai";
+import { connectMcpTools, parseMcpServers, type McpToolsConnection } from "@workspace/ai/mcp";
+import { logger } from "@workspace/observability/winston-logger";
 import {
   AI_WEBHOOK_MODEL,
   AI_WEBHOOK_PROVIDER,
@@ -33,6 +35,7 @@ import { notifyIfCreditsLow } from "@/lib/notifications/notify";
 import {
   convertToModelMessages,
   safeValidateUIMessages,
+  stepCountIs,
   streamText,
   type InferUITools,
   type UIDataTypes,
@@ -45,8 +48,35 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 export const maxDuration = 60;
 
+// With MCP tools the model may call tools and then answer; this caps the rounds per message.
+const MCP_MAX_STEPS = 5;
+
 function jsonError(message: string, status: number) {
   return Response.json({ error: message }, { status });
+}
+
+/**
+ * Tools from the MCP servers in AI_MCP_SERVERS, or null when none are set or
+ * none connect. A bad config or an unreachable server never fails the chat.
+ * MCP tools are dynamic, so their parts in earlier messages pass validation.
+ */
+async function connectConfiguredMcpTools(): Promise<McpToolsConnection | null> {
+  let servers;
+  try {
+    servers = parseMcpServers();
+  } catch (error) {
+    logger.error(`ai.mcp_config_invalid ${JSON.stringify({ error: String(error) })}`);
+    return null;
+  }
+  if (servers.length === 0) return null;
+
+  const connection = await connectMcpTools(servers, {
+    onServerError: (server, error) =>
+      logger.warn(`ai.mcp_server_unavailable ${JSON.stringify({ server, error: String(error) })}`),
+  });
+  if (connection.servers.length > 0) return connection;
+  await connection.close();
+  return null;
 }
 
 function sanitizeError(error: unknown) {
@@ -351,12 +381,17 @@ export async function POST(req: Request) {
     status: "started",
   });
 
+  const mcp = await connectConfiguredMcpTools();
+
   try {
     const result = streamText({
       model: resolvedModel.model,
       system: prompt.activeVersion.content,
       messages: await convertToModelMessages(uiMessages.data),
-      tools: starterAssistantTools,
+      tools: mcp ? { ...starterAssistantTools, ...mcp.tools } : starterAssistantTools,
+      stopWhen: mcp ? stepCountIs(MCP_MAX_STEPS) : undefined,
+      onError: () => mcp?.close(),
+      onAbort: () => mcp?.close(),
       providerOptions:
         resolvedModel.provider === "gateway"
           ? {
@@ -367,8 +402,10 @@ export async function POST(req: Request) {
             }
           : undefined,
       onFinish: async (finish) => {
+        await mcp?.close();
         const finishData = finish as any;
-        const usage = calculateAIUsageCredits(finishData.usage);
+        // totalUsage spans every step; usage is only the last one when tools ran.
+        const usage = calculateAIUsageCredits(finishData.totalUsage ?? finishData.usage);
         const latencyMs = Date.now() - startedAt;
         const text = typeof finishData.text === "string" ? finishData.text : "";
 
@@ -437,6 +474,7 @@ export async function POST(req: Request) {
       onError: () => "The assistant could not finish this response.",
     });
   } catch (error) {
+    await mcp?.close();
     await recordFailure({
       userId,
       conversationId: conversation.id,

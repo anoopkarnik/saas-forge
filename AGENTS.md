@@ -235,6 +235,11 @@ MCP server (`apps/web/lib/mcp`, route `/api/mcp`, mcp module):
 - The route authenticates with `authenticateApiKey(req, { scopes: [] })` (revocation, expiry, per-key rate limit) and serves stateless Streamable HTTP through `@modelcontextprotocol/server`. Settings → API keys shows the connect commands.
 - SaaS Forge's own tools (catalog, saved projects, download and upgrade quotes, release notes) live in `apps/web/lib/scaffold/mcp-tools.ts` and reach the server through `lib/mcp/platform.ts`, which the starter replaces with an empty slot. Quotes return the `create-saas-forge` command and never spend credits; `update_project` refuses module or tier edits on a downloaded project, so upgrade kits still ship the new code.
 
+MCP client (ai module, `packages/ai/src/mcp.ts`):
+
+- `AI_MCP_SERVERS` (server-only JSON array of `{ name, url, headers? }`) lists remote MCP servers for the AI chat. `/api/ai/chat` connects per request (`connectMcpTools`, 5s timeout, redirects refused), adds their tools as `<server>_<tool>`, allows up to 5 steps and charges `totalUsage` across them. A bad config or an unreachable server is logged and skipped; `env.ts` checks the shape at boot. Every user reaches the same servers with the same headers, so configure only servers whose data every signed-in user may see.
+- The Python backend reads the same variable for the `mcp_tools` agent (`apps/backend/src/saas_forge_backend/agents/mcp_tools.py`, via `langchain-mcp-adapters`): a bounded tool loop that streams `tool_call` and `tool_result` events. Tool results are untrusted data, never instructions.
+
 Internationalization (`packages/i18n`):
 
 - Locales live in `src/config.ts` (`en`, `es`). The active one comes from `User.locale`, then the `NEXT_LOCALE` cookie, then `Accept-Language`, then the `i18n.defaultLocale` site setting. There is no URL prefix.

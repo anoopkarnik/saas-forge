@@ -11,7 +11,8 @@
     "\"ai_schema\"",
     "AiConversation",
     "aiPrompt",
-    "\"ai_schema\"."
+    "\"ai_schema\".",
+    "AI_MCP_SERVERS"
   ],
   "selected": {},
   "unselected": {
@@ -50,6 +51,14 @@
         "keys": {
           "exports": [
             "./ai-logger"
+          ]
+        }
+      },
+      {
+        "file": "turbo.json",
+        "keys": {
+          "globalEnv": [
+            "AI_MCP_SERVERS"
           ]
         }
       }

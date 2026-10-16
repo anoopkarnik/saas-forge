@@ -125,8 +125,10 @@ export const routePolicies = [
   { path: "/api/v1/projects/[slug]", match: "exact", auth: "api-key", rateLimit: "api-key", maxBodyBytes: 256 * KB, input: "zod" },
   { path: "/api/v1/projects/[slug]/download", match: "exact", auth: "api-key", rateLimit: "api-key", maxBodyBytes: 64 * KB, input: "manual" },
   { path: "/api/v1/projects/[slug]/upgrade", match: "exact", auth: "api-key", rateLimit: "api-key", maxBodyBytes: 64 * KB, input: "zod" },
-  // MCP server for coding agents; the MCP SDK validates each tool's input against its Zod schema.
+  // scaffold:begin mcp
+  // MCP server for AI agents; the MCP SDK validates each tool's input against its Zod schema.
   { path: "/api/mcp", match: "exact", auth: "api-key", rateLimit: "api-key", maxBodyBytes: 256 * KB, input: "provider" },
+  // scaffold:end mcp
 ] as const satisfies readonly RoutePolicy[];
 
 export type SessionRoutePath = Extract<

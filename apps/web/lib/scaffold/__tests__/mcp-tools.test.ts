@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-// Real module and provider registries; only the database is mocked.
+// Real module and provider registries; only the database and site config are mocked.
 const { mockUser, mockFindFirst, mockUpdate } = vi.hoisted(() => ({
   mockUser: vi.fn(),
   mockFindFirst: vi.fn(),
@@ -14,14 +14,16 @@ vi.mock("@workspace/database/client", () => ({
   },
 }));
 vi.mock("@/lib/scaffold/template-version", () => ({ getTemplateVersion: () => "2.1.0" }));
+vi.mock("@/lib/site-config/service", () => ({ getSiteConfig: async () => ({ "branding.saasName": "SaaS Forge" }) }));
 
+import type { McpTool } from "@/lib/mcp/define";
 import { callMcpTool } from "@/lib/mcp/server";
-import { mcpTools, type McpTool } from "@/lib/mcp/tools";
+import { platformMcpTools } from "@/lib/scaffold/mcp-tools";
 import { computeBuildHash } from "@/lib/scaffold/service";
 
 const ALL_SCOPES = ["read:me", "read:credits", "read:projects", "write:projects"];
 const caller = { userId: "u1", scopes: ALL_SCOPES };
-const toolNamed = (name: string) => mcpTools.find((tool) => tool.name === name) as McpTool;
+const toolNamed = (name: string) => platformMcpTools.find((tool) => tool.name === name) as McpTool;
 
 async function call(name: string, input: unknown = {}, who = caller) {
   const result = await callMcpTool(toolNamed(name), input, who);
@@ -61,10 +63,10 @@ describe("scopes and errors", () => {
   });
 
   it("hides unexpected server errors from the model", async () => {
-    mockUser.mockRejectedValueOnce(new Error("connect ECONNREFUSED 10.0.0.5:5432"));
-    const result = await call("get_credits");
+    mockFindFirst.mockRejectedValueOnce(new Error("connect ECONNREFUSED 10.0.0.5:5432"));
+    const result = await call("get_project", { slug: "acme" });
     expect(result.isError).toBe(true);
-    expect(result.text).toBe("get_credits failed on the server. Try again later.");
+    expect(result.text).toBe("get_project failed on the server. Try again later.");
   });
 
   it("names a missing project and how to find one", async () => {

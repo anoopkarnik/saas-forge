@@ -10,7 +10,8 @@ export type ScaffoldModuleId =
   | "webhooks"
   | "feature_flags"
   | "onboarding"
-  | "analytics";
+  | "analytics"
+  | "mcp";
 
 // Prices and availability come only from the server's `scaffold.catalog`
 // (scaffold-modules/registry.json). Never hardcode credit amounts in clients.

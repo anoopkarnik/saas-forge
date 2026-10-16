@@ -27,6 +27,7 @@ const moduleLabels: Record<ScaffoldModuleId, string> = {
   feature_flags: "Feature flags",
   onboarding: "Onboarding",
   analytics: "Product analytics",
+  mcp: "MCP server",
 };
 
 describe("DashboardPage preset availability", () => {
@@ -57,7 +58,7 @@ describe("DashboardPage manual features", () => {
   it("offers every available paid module and includes required modules in the price", () => {
     const ids: ScaffoldModuleId[] = [
       "billing", "multi_tenancy", "ai", "ai_agents", "api_keys", "jobs",
-      "notifications", "audit_log", "webhooks", "feature_flags", "onboarding", "analytics",
+      "notifications", "audit_log", "webhooks", "feature_flags", "onboarding", "analytics", "mcp",
     ];
     const fullCatalog: ScaffoldCatalog = {
       ...catalog,

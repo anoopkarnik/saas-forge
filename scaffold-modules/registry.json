@@ -67,6 +67,19 @@
       "implemented": true
     },
     {
+      "id": "mcp",
+      "label": "MCP server",
+      "description": "An MCP endpoint at /api/mcp so your users can connect Claude, ChatGPT, Cursor and other AI agents to their account with an API key. Tools come from the modules you pick: profile and credits, plus usage, workspaces and notifications. Requires API Keys.",
+      "default": false,
+      "creditsCost": 10,
+      "requires": [
+        "api_keys"
+      ],
+      "incompatibleWith": [],
+      "downloadEnabled": true,
+      "implemented": true
+    },
+    {
       "id": "jobs",
       "label": "Background jobs & cron",
       "description": "Typed background jobs on Inngest with retries, a dead-letter queue and replay, cron schedules, and email sent through the queue. Without it, jobs run inline.",

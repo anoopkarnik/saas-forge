@@ -185,6 +185,14 @@ Product analytics (`packages/analytics`, guide and event registry in its `README
 - Adapters: PostHog when `NEXT_PUBLIC_POSTHOG_KEY` is set, console logging in development, otherwise nothing loads. No autocapture or session recording. `AnalyticsProvider` (root layout) identifies users by id and, when the `analytics.consentRequired` setting is on, shows a consent banner before PostHog loads. Google Analytics and `/admin/seo` are separate.
 <!-- scaffold:end analytics -->
 
+<!-- scaffold:begin mcp -->
+MCP server (`apps/web/lib/mcp`, route `/api/mcp`, mcp module):
+
+- Add a tool to `catalog.ts` with `defineMcpTool({ name, title, description, scope, readOnly, input, run })` inside its module's markers, and its scope to `API_KEY_SCOPES` (`packages/auth/src/api-keys/scopes.ts`) inside nested `mcp` and module markers. `run(input, { userId, scopes })` gets the API key's user and calls an `apps/web/lib` service; never take a user id as input.
+- `callMcpTool` checks the scope, parses the input again and runs the tool. Throw `McpToolError` for messages the agent can act on; other errors are logged and returned as a generic failure, so database details never reach the model. Tools stay read-only: anything that spends credits or deletes data needs a confirmation step outside the model.
+- The route authenticates with `authenticateApiKey(req, { scopes: [] })` (revocation, expiry, per-key rate limit) and serves stateless Streamable HTTP through `@modelcontextprotocol/server`. Settings → API keys shows the connect commands.
+<!-- scaffold:end mcp -->
+
 Internationalization (`packages/i18n`):
 
 - Locales live in `src/config.ts` (`en`, `es`). The active one comes from `User.locale`, then the `NEXT_LOCALE` cookie, then `Accept-Language`, then the `i18n.defaultLocale` site setting. There is no URL prefix.

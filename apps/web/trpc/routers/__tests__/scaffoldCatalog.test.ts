@@ -14,7 +14,7 @@ import { scaffoldCatalogRouter } from "../scaffoldCatalogProcedures";
 
 const caller = scaffoldCatalogRouter.createCaller({} as never);
 
-const moduleIdSchema = z.enum(["billing", "multi_tenancy", "ai", "ai_agents", "api_keys", "jobs", "notifications", "audit_log", "webhooks", "feature_flags", "onboarding", "analytics"]);
+const moduleIdSchema = z.enum(["billing", "multi_tenancy", "ai", "ai_agents", "api_keys", "jobs", "notifications", "audit_log", "webhooks", "feature_flags", "onboarding", "analytics", "mcp"]);
 const registrySchema = z
   .object({
     baseCreditsCost: z.number().int().nonnegative(),

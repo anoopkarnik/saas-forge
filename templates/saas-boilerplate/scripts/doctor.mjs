@@ -62,6 +62,9 @@ const MODULES = [
   // scaffold:begin analytics
   "analytics",
   // scaffold:end analytics
+  // scaffold:begin mcp
+  "mcp",
+  // scaffold:end mcp
 ];
 
 // Next.js reads apps/web/.env, then .env.local over it; shell variables win.

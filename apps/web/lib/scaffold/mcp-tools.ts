@@ -1,6 +1,5 @@
 import { z } from "zod";
-import type { ApiKeyScope } from "@workspace/auth/api-keys";
-import db from "@workspace/database/client";
+import { McpToolError, defineMcpTool, type McpTool } from "@/lib/mcp/define";
 import {
   InvalidScaffoldModuleError,
   calculateScaffoldCredits,
@@ -25,28 +24,20 @@ import {
 import { getTemplateVersion } from "@/lib/scaffold/template-version";
 
 /**
- * SaaS Forge's MCP tools (served at /api/mcp). Each wraps the same service the
- * matching /api/v1 route uses and needs that route's API-key scope. Nothing
- * here spends credits: purchases go through `create-saas-forge`, whose exact
- * command the quote tools return. Platform-only.
+ * SaaS Forge's own MCP tools, served at /api/mcp next to the app tools
+ * (lib/mcp/catalog.ts) through the lib/mcp/platform.ts slot. Each wraps the
+ * service the matching /api/v1 route uses and needs that route's scope.
+ * Nothing here spends credits: purchases go through `create-saas-forge`, whose
+ * exact command the quote tools return. Platform-only.
  */
 
-export type McpCaller = { userId: string; scopes: readonly string[] };
+export const platformMcpInstructions = `SaaS Forge sells a SaaS starter as modules (billing, teams, AI, jobs, webhooks, ...). The project tools plan saved projects and price downloads and upgrades. They never spend credits.
 
-/** A failure the agent can act on; its message is shown to the model as-is. */
-export class McpToolError extends Error {}
+- To start a project: get_catalog, create_project with every required module, quote_download, then run the returned command after the user approves the price.
+- To add modules to a project the user already downloaded: work inside that project's repository (its .saas-forge.json names the project slug), call quote_upgrade with addModules, show the price, and after approval run its command, then follow its nextSteps. Never use update_project to add modules to a downloaded project.
+- Always show the credit price and get the user's explicit approval before running any create-saas-forge command. Leave database migrations (pnpm migrate) to the user.`;
 
-export type McpTool<S extends z.ZodObject = z.ZodObject> = {
-  name: string;
-  title: string;
-  description: string;
-  scope: ApiKeyScope;
-  readOnly: boolean;
-  input: S;
-  run: (input: z.infer<S>, caller: McpCaller) => Promise<unknown>;
-};
-
-const tool = <S extends z.ZodObject>(definition: McpTool<S>) => definition;
+const tool = defineMcpTool;
 
 const CLI = "npx create-saas-forge";
 const slugInput = z.object({ slug: z.string().trim().min(1).describe("The project's slug.") });
@@ -74,47 +65,7 @@ export function withRequirements(modules: readonly string[]): string[] {
 const sameSet = (a: readonly string[], b: readonly string[]) =>
   a.length === b.length && a.every((value) => b.includes(value));
 
-export const mcpTools = [
-  tool({
-    name: "get_account",
-    title: "Get account",
-    description: "Return the signed-in SaaS Forge user's id, email and name.",
-    scope: "read:me",
-    readOnly: true,
-    input: z.object({}),
-    run: async (_input, { userId }) => {
-      const user = await db.user.findUnique({
-        where: { id: userId },
-        select: { id: true, email: true, name: true },
-      });
-      if (!user) throw new McpToolError("User no longer exists.");
-      return { user };
-    },
-  }),
-
-  tool({
-    name: "get_credits",
-    title: "Get credit balance",
-    description: "Return the user's SaaS Forge credits: total, used and remaining.",
-    scope: "read:credits",
-    readOnly: true,
-    input: z.object({}),
-    run: async (_input, { userId }) => {
-      const user = await db.user.findUnique({
-        where: { id: userId },
-        select: { creditsTotal: true, creditsUsed: true },
-      });
-      if (!user) throw new McpToolError("User no longer exists.");
-      return {
-        credits: {
-          total: user.creditsTotal,
-          used: user.creditsUsed,
-          remaining: user.creditsTotal - user.creditsUsed,
-        },
-      };
-    },
-  }),
-
+const tools = [
   tool({
     name: "get_catalog",
     title: "Get module catalog",
@@ -314,8 +265,15 @@ export const mcpTools = [
   }),
 ];
 
-/** Turns errors the agent can fix into messages; anything else is rethrown. */
-export function toolErrorMessage(err: unknown): string | null {
-  if (err instanceof McpToolError || err instanceof InvalidScaffoldModuleError) return err.message;
-  return null;
-}
+/** Registry errors (unknown module, missing requirement) are messages the agent can act on. */
+export const platformMcpTools: McpTool[] = tools.map((definition) => ({
+  ...definition,
+  run: async (input, caller) => {
+    try {
+      return await definition.run(input, caller);
+    } catch (err) {
+      if (err instanceof InvalidScaffoldModuleError) throw new McpToolError(err.message);
+      throw err;
+    }
+  },
+}));

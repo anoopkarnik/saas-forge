@@ -1,0 +1,22 @@
+{
+  "id": "mcp",
+  "ownedIdentifiers": [
+    "@modelcontextprotocol/server",
+    "createAppMcpServer",
+    "McpConnectCard",
+    "appMcpTools",
+    "read:usage",
+    "read:workspaces",
+    "read:notifications"
+  ],
+  "unselected": {
+    "remove": [
+      "apps/web/app/api/mcp",
+      "apps/web/lib/mcp",
+      "apps/web/components/mcp"
+    ],
+    "jsonRemove": [
+      { "file": "apps/web/package.json", "keys": { "dependencies": ["@modelcontextprotocol/server"] } }
+    ]
+  }
+}

@@ -1,14 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest, NextResponse } from "next/server";
 
-const { mockAuth, mockListProjects } = vi.hoisted(() => ({
+const { mockAuth, mockUser } = vi.hoisted(() => ({
   mockAuth: vi.fn(),
-  mockListProjects: vi.fn(),
+  mockUser: vi.fn(),
 }));
 
 vi.mock("@/server/authenticateApiKey", () => ({ authenticateApiKey: mockAuth }));
 vi.mock("@workspace/database/client", () => ({
-  default: { projectConfig: { findMany: mockListProjects } },
+  default: { user: { findUnique: mockUser } },
+}));
+vi.mock("@/lib/site-config/service", () => ({
+  getSiteConfig: async () => ({ "branding.saasName": "Acme" }),
 }));
 
 import { POST } from "../route";
@@ -41,7 +44,7 @@ const initialize = {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mockAuth.mockResolvedValue({ ok: true, userId: "u1", keyId: "k1", scopes: ["read:projects"] });
+  mockAuth.mockResolvedValue({ ok: true, userId: "u1", keyId: "k1", scopes: ["read:me"] });
 });
 
 describe("/api/mcp", () => {
@@ -55,25 +58,24 @@ describe("/api/mcp", () => {
     expect(mockAuth).toHaveBeenCalledWith(expect.anything(), { scopes: [] });
   });
 
-  it("initializes as the saas-forge server with instructions", async () => {
+  it("initializes under the app's name with instructions", async () => {
     const message = await readRpc(await POST(rpc("initialize", initialize)));
-    expect(message.result.serverInfo.name).toBe("saas-forge");
-    expect(message.result.instructions).toContain("quote_upgrade");
+    expect(message.result.serverInfo.name).toBe("Acme");
+    expect(message.result.instructions).toContain("API key");
   });
 
   it("lists the tools with read-only hints", async () => {
     const message = await readRpc(await POST(rpc("tools/list")));
     const tools = message.result.tools as Array<{ name: string; annotations: { readOnlyHint: boolean } }>;
-    expect(tools.map((tool) => tool.name)).toContain("quote_upgrade");
-    expect(tools.find((tool) => tool.name === "list_projects")!.annotations.readOnlyHint).toBe(true);
-    expect(tools.find((tool) => tool.name === "create_project")!.annotations.readOnlyHint).toBe(false);
+    expect(tools.map((tool) => tool.name)).toEqual(expect.arrayContaining(["get_account", "get_credits"]));
+    expect(tools.find((tool) => tool.name === "get_account")!.annotations.readOnlyHint).toBe(true);
   });
 
   it("runs a tool as the key's user", async () => {
-    mockListProjects.mockResolvedValueOnce([{ slug: "acme" }]);
-    const message = await readRpc(await POST(rpc("tools/call", { name: "list_projects", arguments: {} })));
-    expect(JSON.parse(message.result.content[0].text)).toEqual({ projects: [{ slug: "acme" }] });
-    expect(mockListProjects).toHaveBeenCalledWith(expect.objectContaining({ where: { userId: "u1" } }));
+    mockUser.mockResolvedValueOnce({ id: "u1", email: "a@b.co", name: "Ada" });
+    const message = await readRpc(await POST(rpc("tools/call", { name: "get_account", arguments: {} })));
+    expect(JSON.parse(message.result.content[0].text)).toEqual({ user: { id: "u1", email: "a@b.co", name: "Ada" } });
+    expect(mockUser).toHaveBeenCalledWith(expect.objectContaining({ where: { id: "u1" } }));
   });
 
   it("answers a missing scope as a tool error", async () => {

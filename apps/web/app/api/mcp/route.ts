@@ -1,14 +1,14 @@
 import { NextRequest } from "next/server";
 import { createMcpHandler } from "@modelcontextprotocol/server";
 import { authenticateApiKey } from "@/server/authenticateApiKey";
-import { createSaasForgeMcpServer } from "@/lib/mcp/server";
+import { createAppMcpServer } from "@/lib/mcp/server";
 
 export const runtime = "nodejs";
 
 // Stateless Streamable HTTP: each request gets a fresh server built for the
 // caller the API key resolved to (passed through as authInfo).
 const mcp = createMcpHandler(({ authInfo }) =>
-  createSaasForgeMcpServer({
+  createAppMcpServer({
     userId: String(authInfo?.extra?.userId),
     scopes: authInfo?.scopes ?? [],
   }),

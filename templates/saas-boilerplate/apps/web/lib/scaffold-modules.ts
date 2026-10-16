@@ -16,7 +16,8 @@ export type ScaffoldModuleId =
   | "webhooks"
   | "feature_flags"
   | "onboarding"
-  | "analytics";
+  | "analytics"
+  | "mcp";
 
 type RegistryModuleEntry = {
   id: ScaffoldModuleId;

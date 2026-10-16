@@ -67,6 +67,8 @@
     "apps/web/app/api/v1/projects",
     "apps/web/app/api/v1/credits",
     "apps/web/app/api/v1/scaffold",
+    "apps/web/app/api/mcp",
+    "apps/web/lib/mcp",
     "apps/web/app/(home)/projects",
     "apps/web/components/projects",
     "apps/web/trpc/scaffold-client.ts",

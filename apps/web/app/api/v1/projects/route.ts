@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
 import { authenticateApiKey } from "@/server/authenticateApiKey";
 import { InvalidScaffoldModuleError } from "@/lib/scaffold-modules";
 import { createProject, listProjects } from "@/lib/scaffold/project-service";
+import { createProjectInput } from "@/lib/scaffold/project-inputs";
 
 export const runtime = "nodejs";
 
@@ -14,16 +14,6 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.json({ projects });
 }
-
-const createInput = z.object({
-  name: z.string().trim().min(1).max(80),
-  productTypeId: z.string().trim().min(1).optional(),
-  tierId: z.string().trim().min(1).default("tier-1"),
-  versionId: z.string().trim().min(1).default("balanced"),
-  platforms: z.array(z.string()).min(1).default(["web"]),
-  modules: z.array(z.string()).default([]),
-  config: z.record(z.string(), z.any()).default({}),
-});
 
 export async function POST(req: NextRequest) {
   const auth = await authenticateApiKey(req, { scopes: ["write:projects"] });
@@ -39,7 +29,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const parsed = createInput.safeParse(body);
+  const parsed = createProjectInput.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
       { error: { code: "invalid_body", message: parsed.error.message } },

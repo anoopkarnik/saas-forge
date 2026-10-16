@@ -234,6 +234,7 @@ MCP server (`apps/web/lib/mcp`, route `/api/mcp`, mcp module):
 - `callMcpTool` checks the scope, parses the input again and runs the tool. Throw `McpToolError` for messages the agent can act on; other errors are logged and returned as a generic failure, so database details never reach the model. Tools stay read-only: anything that spends credits or deletes data needs a confirmation step outside the model.
 - The route authenticates with `authenticateApiKey(req, { scopes: [] })` (revocation, expiry, per-key rate limit) and serves stateless Streamable HTTP through `@modelcontextprotocol/server`. Settings → API keys shows the connect commands.
 - SaaS Forge's own tools (catalog, saved projects, download and upgrade quotes, release notes) live in `apps/web/lib/scaffold/mcp-tools.ts` and reach the server through `lib/mcp/platform.ts`, which the starter replaces with an empty slot. Quotes return the `create-saas-forge` command and never spend credits; `update_project` refuses module or tier edits on a downloaded project, so upgrade kits still ship the new code.
+- `.mcp.json` (root only) connects Claude Code in this repo to the local server: run `pnpm dev`, create a key in Settings → API keys and export it as `SAAS_FORGE_LOCAL_API_KEY`.
 
 MCP client (ai module, `packages/ai/src/mcp.ts`):
 

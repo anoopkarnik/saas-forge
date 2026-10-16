@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "saas-forge-local": {
+      "type": "http",
+      "url": "http://localhost:3000/api/mcp",
+      "headers": {
+        "Authorization": "Bearer ${SAAS_FORGE_LOCAL_API_KEY:-}"
+      }
+    }
+  }
+}

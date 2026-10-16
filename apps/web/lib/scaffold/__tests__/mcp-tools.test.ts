@@ -1,10 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // Real module and provider registries; only the database and site config are mocked.
-const { mockUser, mockFindFirst, mockUpdate } = vi.hoisted(() => ({
+const { mockUser, mockFindFirst, mockUpdate, mockTrack } = vi.hoisted(() => ({
   mockUser: vi.fn(),
   mockFindFirst: vi.fn(),
   mockUpdate: vi.fn(),
+  mockTrack: vi.fn(async () => {}),
 }));
 
 vi.mock("@workspace/database/client", () => ({
@@ -13,6 +14,7 @@ vi.mock("@workspace/database/client", () => ({
     projectConfig: { findFirst: mockFindFirst, update: mockUpdate },
   },
 }));
+vi.mock("@workspace/analytics/server", () => ({ track: mockTrack }));
 vi.mock("@/lib/scaffold/template-version", () => ({ getTemplateVersion: () => "2.1.0" }));
 vi.mock("@/lib/site-config/service", () => ({ getSiteConfig: async () => ({ "branding.saasName": "SaaS Forge" }) }));
 
@@ -112,6 +114,11 @@ describe("quote_upgrade", () => {
     expect(data.command).toMatch(/^npx create-saas-forge upgrade --project acme --add (jobs,webhooks|webhooks,jobs) --yes$/);
     expect(data.previewCommand).toMatch(/--dry-run$/);
     expect(data.releases).toMatchObject({ currentVersion: "2.1.0", behind: 0 });
+    expect(mockTrack).toHaveBeenCalledWith(
+      "mcp.quote_viewed",
+      { kind: "upgrade", credits: 25, modules: expect.arrayContaining(["jobs", "webhooks"]) },
+      { distinctId: "u1" },
+    );
   });
 
   it("says when the project already has everything asked for", async () => {

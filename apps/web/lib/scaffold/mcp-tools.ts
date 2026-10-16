@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { track } from "@workspace/analytics/server";
 import { McpToolError, defineMcpTool, type McpTool } from "@/lib/mcp/define";
 import {
   InvalidScaffoldModuleError,
@@ -161,6 +162,11 @@ const tools = [
       const modules = validateSelectedModules(project.modules);
       const fullPrice = calculateScaffoldCredits(modules).totalCredits;
       const alreadyOwned = !!project.lastBuiltHash && project.lastBuiltHash === computeBuildHash(project);
+      await track(
+        "mcp.quote_viewed",
+        { kind: "download", credits: alreadyOwned ? 0 : fullPrice, modules },
+        { distinctId: userId },
+      );
       return {
         slug,
         modules,
@@ -219,6 +225,12 @@ const tools = [
           message: "The project already has these modules, tier and providers.",
         };
       }
+
+      await track(
+        "mcp.quote_viewed",
+        { kind: "upgrade", credits: delta.deltaCredits, modules: delta.addedModules },
+        { distinctId: userId },
+      );
 
       const args = [`upgrade --project ${slug}`];
       if (delta.addedModules.length > 0) args.push(`--add ${delta.addedModules.join(",")}`);

@@ -2,9 +2,22 @@
 
 import { useEffect, useState } from "react";
 import { Button } from "@workspace/ui/components/shadcn/button";
+import { useSiteConfig } from "@/components/site-config/SiteConfigProvider";
+
+/** The name clients list the server under, e.g. "SaaS Forge" -> "saas-forge". */
+export function mcpServerAlias(appName: string): string {
+  return (
+    appName
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 40) || "app"
+  );
+}
 
 /** How to connect an AI agent to /api/mcp with one of the user's API keys (mcp module). */
 export function McpConnectCard() {
+  const alias = mcpServerAlias(useSiteConfig()["branding.saasName"]);
   const [origin, setOrigin] = useState("https://your-app.example.com");
   const [copied, setCopied] = useState<string | null>(null);
 
@@ -15,13 +28,13 @@ export function McpConnectCard() {
     {
       id: "claude",
       label: "Claude Code",
-      code: `claude mcp add --transport http app ${endpoint} --header "Authorization: Bearer sk_..."`,
+      code: `claude mcp add --transport http ${alias} ${endpoint} --header "Authorization: Bearer sk_..."`,
     },
     {
       id: "json",
       label: "Cursor, VS Code and other clients",
       code: JSON.stringify(
-        { mcpServers: { app: { url: endpoint, headers: { Authorization: "Bearer sk_..." } } } },
+        { mcpServers: { [alias]: { url: endpoint, headers: { Authorization: "Bearer sk_..." } } } },
         null,
         2,
       ),

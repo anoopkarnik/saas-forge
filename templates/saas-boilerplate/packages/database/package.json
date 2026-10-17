@@ -9,6 +9,7 @@
     "generate": "npx prisma generate --schema prisma",
     "migrate": "npx prisma migrate dev --schema prisma && npx prisma generate --schema prisma",
     "migrate:deploy": "npx prisma migrate deploy --schema prisma",
+    "migrate:deploy:prod": "DOTENV_CONFIG_PATH=.env.production npx prisma migrate deploy --schema prisma",
     "reset": "npx prisma migrate reset --force --schema prisma && npx prisma db seed",
     "seed": "npx prisma db seed",
     "backfill:orgs": "tsx scripts/backfill-organizations.ts",

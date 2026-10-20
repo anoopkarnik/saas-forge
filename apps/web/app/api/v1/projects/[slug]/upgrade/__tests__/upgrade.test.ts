@@ -15,6 +15,7 @@ const {
   mockHash,
   mockPreview,
   mockProviders,
+  mockResolveBase,
 } = vi.hoisted(() => {
   class InvalidScaffoldModuleError extends Error {}
   class InsufficientCreditsError extends Error {}
@@ -46,6 +47,7 @@ const {
       switched: [] as string[],
       config,
     })),
+    mockResolveBase: vi.fn(async (): Promise<any> => ({ status: "current" })),
     mockPreview: vi.fn(() => ({
       delta: { addedModules: ["ai"], removedModules: [], tierSteps: 0, deltaCredits: 20 },
       files: { added: 40, modified: 3, removed: 0 },
@@ -85,6 +87,7 @@ vi.mock("@/lib/scaffold/service", () => ({
   computeBuildHash: mockHash,
   previewUpgrade: mockPreview,
   upgradeProviders: mockProviders,
+  resolveUpgradeBase: mockResolveBase,
 }));
 vi.mock("@/lib/scaffold/releases", () => ({
   loadReleases: () => [],
@@ -198,6 +201,81 @@ describe("POST /api/v1/projects/[slug]/upgrade", () => {
   });
 });
 
+describe("POST /api/v1/projects/[slug]/upgrade release kit", () => {
+  const BASE = { version: "1.4.0", starterRoot: "/tmp/s", rulesRoot: "/tmp/r" };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockAuth.mockResolvedValue({ ok: true, userId: "u1" });
+    mockFindFirst.mockResolvedValue(PROJECT);
+    mockValidate.mockImplementation((m: any) => m);
+    mockDelta.mockReturnValue({ addedModules: [], removedModules: [], tierSteps: 0, deltaCredits: 0 });
+    mockCharge.mockResolvedValue({ charged: 0, alreadyProcessed: false, jobId: "j3" });
+    mockBuildKit.mockReturnValue({ stream: new ReadableStream({ start: (c) => c.close() }), delta: {}, cleanup: () => {} });
+  });
+
+  it("streams a free kit of the releases since the project's version", async () => {
+    mockResolveBase.mockResolvedValueOnce({ status: "snapshot", base: BASE });
+    const res = await POST(makeReq({ fromVersion: "1.4.0" }), ctx);
+
+    expect(res.status).toBe(200);
+    expect(res.headers.get("X-Upgrade-Kind")).toBe("release");
+    expect(mockResolveBase).toHaveBeenCalledWith("1.4.0");
+    expect(mockCharge).toHaveBeenCalledWith(expect.objectContaining({ amount: 0 }));
+    expect(mockBuildKit).toHaveBeenCalledWith(expect.objectContaining({ fromBase: BASE }));
+    expect(mockUpdate).toHaveBeenCalledWith({ where: { id: "p1" }, data: { templateVersion: "1.4.1" } });
+  });
+
+  it("starts from the stored version when the client sends none", async () => {
+    mockFindFirst.mockResolvedValue({ ...PROJECT, templateVersion: "1.3.0" });
+    mockResolveBase.mockResolvedValueOnce({ status: "snapshot", base: { ...BASE, version: "1.3.0" } });
+    expect((await POST(makeReq({}), ctx)).status).toBe(200);
+    expect(mockResolveBase).toHaveBeenCalledWith("1.3.0");
+  });
+
+  it("422s when no snapshot of that release was published", async () => {
+    mockResolveBase.mockResolvedValueOnce({ status: "missing", version: "1.4.0" });
+    const res = await POST(makeReq({ fromVersion: "1.4.0" }), ctx);
+    expect(res.status).toBe(422);
+    const body = await res.json();
+    expect(body.error.code).toBe("release_kit_unavailable");
+    expect(body.error.message).toContain("--mark-current");
+    expect(mockCharge).not.toHaveBeenCalled();
+  });
+
+  it("400s when the project is already on the latest release", async () => {
+    mockResolveBase.mockResolvedValueOnce({ status: "current" });
+    const res = await POST(makeReq({ fromVersion: "1.4.1" }), ctx);
+    expect(res.status).toBe(400);
+    expect((await res.json()).error.code).toBe("nothing_to_upgrade");
+    expect(mockCharge).not.toHaveBeenCalled();
+  });
+
+  it("400s on a version that is not x.y.z", async () => {
+    mockResolveBase.mockResolvedValueOnce({ status: "invalid" });
+    const res = await POST(makeReq({ fromVersion: "latest" }), ctx);
+    expect(res.status).toBe(400);
+    expect((await res.json()).error.code).toBe("invalid_version");
+  });
+
+  it("carries the release changes into a paid module upgrade", async () => {
+    mockDelta.mockReturnValue({ addedModules: ["ai"], removedModules: [], tierSteps: 0, deltaCredits: 20 });
+    mockResolveBase.mockResolvedValueOnce({ status: "snapshot", base: BASE });
+    const res = await POST(makeReq({ modules: ["billing", "ai"], fromVersion: "1.4.0" }), ctx);
+    expect(res.status).toBe(200);
+    expect(res.headers.get("X-Upgrade-Kind")).toBe("upgrade");
+    expect(mockCharge).toHaveBeenCalledWith(expect.objectContaining({ amount: 20 }));
+    expect(mockBuildKit).toHaveBeenCalledWith(expect.objectContaining({ fromBase: BASE }));
+  });
+
+  it("keeps a module upgrade working when the old release has no snapshot", async () => {
+    mockDelta.mockReturnValue({ addedModules: ["ai"], removedModules: [], tierSteps: 0, deltaCredits: 20 });
+    mockResolveBase.mockResolvedValueOnce({ status: "missing", version: "1.4.0" });
+    expect((await POST(makeReq({ modules: ["billing", "ai"], fromVersion: "1.4.0" }), ctx)).status).toBe(200);
+    expect(mockBuildKit).toHaveBeenCalledWith(expect.objectContaining({ fromBase: undefined }));
+  });
+});
+
 describe("POST /api/v1/projects/[slug]/upgrade provider switch", () => {
   beforeEach(() => vi.clearAllMocks());
 
@@ -247,6 +325,26 @@ describe("GET /api/v1/projects/[slug]/upgrade", () => {
     );
     expect((await res.json()).preview.files).toEqual({ added: 40, modified: 3, removed: 0 });
     expect(mockCharge).not.toHaveBeenCalled();
+  });
+
+  it("says whether a free release kit is available for the client's version", async () => {
+    mockAuth.mockResolvedValue({ ok: true, userId: "u1" });
+    mockFindFirst.mockResolvedValue(PROJECT);
+    const base = { version: "1.4.0", starterRoot: "/tmp/s", rulesRoot: "/tmp/r" };
+    mockResolveBase.mockResolvedValueOnce({ status: "snapshot", base });
+
+    const body = await (await GET(getReq("?fromVersion=1.4.0"), ctx)).json();
+
+    expect(mockPreview).toHaveBeenCalledWith(expect.objectContaining({ fromBase: base }));
+    expect(body.releaseKit).toEqual({ available: true, fromVersion: "1.4.0", latestVersion: "1.4.1" });
+  });
+
+  it("reports a missing snapshot as unavailable", async () => {
+    mockAuth.mockResolvedValue({ ok: true, userId: "u1" });
+    mockFindFirst.mockResolvedValue(PROJECT);
+    mockResolveBase.mockResolvedValueOnce({ status: "missing", version: "1.4.0" });
+    const body = await (await GET(getReq("?fromVersion=1.4.0"), ctx)).json();
+    expect(body.releaseKit).toEqual({ available: false, fromVersion: "1.4.0", latestVersion: "1.4.1", reason: "missing_snapshot" });
   });
 
   it("400s on an unknown module", async () => {

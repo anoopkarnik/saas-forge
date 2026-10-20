@@ -26,7 +26,7 @@ const {
     InsufficientCreditsError,
     ScaffoldRootNotFoundError,
     mockDownload: vi.fn(),
-    mockHash: vi.fn(() => "hash-A"),
+    mockHash: vi.fn((_project?: any) => "hash-A"),
   };
 });
 

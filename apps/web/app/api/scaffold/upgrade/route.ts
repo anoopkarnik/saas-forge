@@ -2,7 +2,7 @@ import { getLaunchpadPreferences } from "@/lib/scaffold/launchpad/service";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { guardRoute } from "@/server/routeGuard";
-import { getProject, markProjectUpgraded } from "@/lib/scaffold/project-service";
+import { getProject, markProjectUpgraded, recordProjectVersion } from "@/lib/scaffold/project-service";
 import {
   InvalidScaffoldModuleError,
   isPriceChanged,
@@ -11,6 +11,7 @@ import {
 } from "@/lib/scaffold-modules";
 import { getTemplateVersion } from "@/lib/scaffold/template-version";
 import { track } from "@workspace/analytics/server";
+import { getProjectReleases, loadReleases } from "@/lib/scaffold/releases";
 import {
   InsufficientCreditsError,
   ScaffoldRootNotFoundError,
@@ -18,6 +19,7 @@ import {
   chargeScaffoldCredits,
   computeBuildHash,
   computeUpgradeDelta,
+  resolveUpgradeBase,
   upgradeProviders,
 } from "@/lib/scaffold/service";
 
@@ -36,6 +38,10 @@ const input = z.object({
   /** Provider switches, e.g. { payment_gateway: "dodo" }: the kit swaps the code. */
   providers: z.record(z.string(), z.string()).optional(),
 });
+
+const RELEASE_KIT_UNAVAILABLE =
+  "No snapshot of this project's release was published, so there is no update kit. " +
+  "Apply the release notes by hand, then run `create-saas-forge upgrade --mark-current`.";
 
 export async function POST(req: NextRequest) {
   const guard = await guardRoute(req, "/api/scaffold/upgrade");
@@ -83,7 +89,15 @@ export async function POST(req: NextRequest) {
     fromTierId: project.tierId,
     toTierId,
   });
-  if (delta.addedModules.length === 0 && delta.tierSteps === 0 && providers.switched.length === 0) {
+  // No module, tier or provider change: a free kit of the releases since the
+  // saved version, when that release's snapshot exists.
+  const base = await resolveUpgradeBase(project.templateVersion);
+  const fromBase = base.status === "snapshot" ? base.base : undefined;
+  const releaseOnly = delta.addedModules.length === 0 && delta.tierSteps === 0 && providers.switched.length === 0;
+  if (releaseOnly && base.status === "missing") {
+    return NextResponse.json({ error: RELEASE_KIT_UNAVAILABLE }, { status: 422 });
+  }
+  if (releaseOnly && base.status !== "snapshot") {
     return NextResponse.json({ error: "Nothing to upgrade" }, { status: 400 });
   }
   if (isPriceChanged(parsed.data.expectedTotalCredits, delta.deltaCredits)) {
@@ -116,6 +130,7 @@ export async function POST(req: NextRequest) {
     throw err;
   }
 
+  const nextTemplateVersion = getTemplateVersion();
   let kit;
   try {
     kit = buildUpgradeKit({
@@ -132,6 +147,8 @@ export async function POST(req: NextRequest) {
       productTypeId: project.productTypeId,
       fromProviders: providers.fromProviders,
       toProviders: providers.toProviders,
+      fromBase,
+      releases: getProjectReleases(project, loadReleases(), nextTemplateVersion).releases,
     });
   } catch (err) {
     if (err instanceof ScaffoldRootNotFoundError) {
@@ -143,7 +160,17 @@ export async function POST(req: NextRequest) {
     throw err;
   }
 
-  const nextTemplateVersion = getTemplateVersion();
+  const headers = {
+    "Content-Type": "application/zip",
+    "Content-Disposition": `attachment; filename="${project.slug}-upgrade.zip"`,
+    "Cache-Control": "no-store",
+    "X-Upgrade-Kind": releaseOnly ? "release" : "upgrade",
+  };
+  if (releaseOnly) {
+    void recordProjectVersion(project, nextTemplateVersion).catch(() => {});
+    return new NextResponse(kit.stream as any, { headers });
+  }
+
   markProjectUpgraded(project.id, {
     modules: toModules,
     tierId: toTierId,
@@ -165,11 +192,5 @@ export async function POST(req: NextRequest) {
     { distinctId: session.user.id, headers: req.headers },
   );
 
-  return new NextResponse(kit.stream as any, {
-    headers: {
-      "Content-Type": "application/zip",
-      "Content-Disposition": `attachment; filename="${project.slug}-upgrade.zip"`,
-      "Cache-Control": "no-store",
-    },
-  });
+  return new NextResponse(kit.stream as any, { headers });
 }

@@ -2,7 +2,7 @@ import { getLaunchpadPreferences } from "@/lib/scaffold/launchpad/service";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { authenticateApiKey } from "@/server/authenticateApiKey";
-import { getProject, markProjectUpgraded } from "@/lib/scaffold/project-service";
+import { getProject, markProjectUpgraded, recordProjectVersion } from "@/lib/scaffold/project-service";
 import {
   InvalidScaffoldModuleError,
   isPriceChanged,
@@ -21,6 +21,7 @@ import {
   computeUpgradeDelta,
   upgradeProviders,
   previewUpgrade,
+  resolveUpgradeBase,
 } from "@/lib/scaffold/service";
 
 export const runtime = "nodejs";
@@ -35,7 +36,13 @@ const upgradeInput = z.object({
   expectedTotalCredits: z.number().int().nonnegative().optional(),
   /** Provider switches, e.g. { payment_gateway: "dodo" }: the kit swaps the code. */
   providers: z.record(z.string(), z.string()).optional(),
+  /** The release the project's files are on (.saas-forge.json); defaults to the saved one. */
+  fromVersion: z.string().trim().min(1).max(32).optional(),
 });
+
+const RELEASE_KIT_UNAVAILABLE =
+  "No snapshot of this project's release was published, so there is no release kit. " +
+  "Apply the release notes by hand, then run `create-saas-forge upgrade --mark-current`.";
 
 function jsonError(code: string, message: string, status: number) {
   return NextResponse.json({ error: { code, message } }, { status });
@@ -43,8 +50,9 @@ function jsonError(code: string, message: string, status: number) {
 
 /**
  * The upgrade without buying it (`create-saas-forge upgrade --dry-run`): the
- * kit's file counts and price, plus the release notes since the project's
- * version. `?modules=a,b&tierId=tier-3` set the target.
+ * kit's file counts and price, the release notes since the project's version,
+ * and whether a free release kit exists. `?modules=a,b&tierId=tier-3` set the
+ * target; `?fromVersion=x.y.z` the release the project's files are on.
  */
 export async function GET(req: NextRequest, ctx: RouteContext) {
   const auth = await authenticateApiKey(req, { scopes: ["read:projects"] });
@@ -60,6 +68,10 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
   const switches = Object.fromEntries(
     (params.get("providers") ?? "").split(",").filter(Boolean).map((pair) => pair.split(":").map((part) => part.trim())),
   ) as Record<string, string>;
+  const fromVersion = params.get("fromVersion")?.trim() || project.templateVersion;
+  const base = await resolveUpgradeBase(fromVersion);
+  if (base.status === "invalid") return jsonError("invalid_version", `"${fromVersion}" is not a release version.`, 400);
+  const latestVersion = getTemplateVersion();
   try {
     const toModules = modules ?? project.modules;
     const providers = upgradeProviders((project.config ?? {}) as Record<string, unknown>, project.modules, toModules, switches);
@@ -71,9 +83,16 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
       platforms: project.platforms,
       fromProviders: providers.fromProviders,
       toProviders: providers.toProviders,
+      fromBase: base.status === "snapshot" ? base.base : undefined,
     });
-    const releases = getProjectReleases(project, loadReleases(), getTemplateVersion());
-    return NextResponse.json({ preview, releases });
+    const releases = getProjectReleases({ ...project, templateVersion: fromVersion }, loadReleases(), latestVersion);
+    const releaseKit = {
+      available: base.status === "snapshot",
+      fromVersion,
+      latestVersion,
+      ...(base.status === "current" ? { reason: "current" } : base.status === "missing" ? { reason: "missing_snapshot" } : {}),
+    };
+    return NextResponse.json({ preview, releases, releaseKit });
   } catch (err) {
     if (err instanceof InvalidScaffoldModuleError) {
       return jsonError("invalid_modules", err.message, 400);
@@ -133,12 +152,23 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
     toTierId,
   });
 
-  if (delta.addedModules.length === 0 && delta.tierSteps === 0 && providers.switched.length === 0) {
+  const fromVersion = parsed.data.fromVersion ?? project.templateVersion;
+  const base = await resolveUpgradeBase(fromVersion);
+  if (base.status === "invalid") return jsonError("invalid_version", `"${fromVersion}" is not a release version.`, 400);
+  const fromBase = base.status === "snapshot" ? base.base : undefined;
+
+  // No module, tier or provider change: a free kit of the releases since
+  // the project's version, when that release's snapshot exists.
+  const releaseOnly = delta.addedModules.length === 0 && delta.tierSteps === 0 && providers.switched.length === 0;
+  if (releaseOnly && base.status === "current") {
     return jsonError(
       "nothing_to_upgrade",
       "Target matches the current configuration.",
       400,
     );
+  }
+  if (releaseOnly && base.status === "missing") {
+    return jsonError("release_kit_unavailable", RELEASE_KIT_UNAVAILABLE, 422);
   }
   if (isPriceChanged(parsed.data.expectedTotalCredits, delta.deltaCredits)) {
     return jsonError(
@@ -175,6 +205,7 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
     throw err;
   }
 
+  const nextTemplateVersion = getTemplateVersion();
   let kit;
   try {
     kit = buildUpgradeKit({
@@ -191,6 +222,9 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
       productTypeId: project.productTypeId,
       fromProviders: providers.fromProviders,
       toProviders: providers.toProviders,
+      fromBase,
+      releases: getProjectReleases({ ...project, templateVersion: fromVersion }, loadReleases(), nextTemplateVersion)
+        .releases,
     });
   } catch (err) {
     if (err instanceof ScaffoldRootNotFoundError) {
@@ -202,8 +236,21 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
     throw err;
   }
 
+  const headers = {
+    "Content-Type": "application/zip",
+    "Content-Disposition": `attachment; filename="${project.slug}-upgrade.zip"`,
+    "Cache-Control": "no-store",
+    "X-Credits-Charged": String(charge.charged),
+    "X-Upgrade-Added-Modules": delta.addedModules.join(",") || "-",
+    "X-Upgrade-Kind": releaseOnly ? "release" : "upgrade",
+    "X-Idempotent-Replay": charge.alreadyProcessed ? "true" : "false",
+  };
+  if (releaseOnly) {
+    void recordProjectVersion(project, nextTemplateVersion).catch(() => {});
+    return new NextResponse(kit.stream as any, { headers });
+  }
+
   // Apply the upgrade to the saved config so it now reflects the new state.
-  const nextTemplateVersion = getTemplateVersion();
   const nextProject = {
     modules: toModules,
     tierId: toTierId,
@@ -226,14 +273,5 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
     { distinctId: auth.userId, headers: req.headers },
   );
 
-  return new NextResponse(kit.stream as any, {
-    headers: {
-      "Content-Type": "application/zip",
-      "Content-Disposition": `attachment; filename="${project.slug}-upgrade.zip"`,
-      "Cache-Control": "no-store",
-      "X-Credits-Charged": String(charge.charged),
-      "X-Upgrade-Added-Modules": delta.addedModules.join(",") || "-",
-      "X-Idempotent-Replay": charge.alreadyProcessed ? "true" : "false",
-    },
-  });
+  return new NextResponse(kit.stream as any, { headers });
 }

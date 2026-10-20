@@ -91,6 +91,6 @@ describe("release snapshots", () => {
   });
 
   it("has no store without R2 credentials", () => {
-    expect(getReleaseSnapshotStore({})).toBeNull();
+    expect(getReleaseSnapshotStore({} as NodeJS.ProcessEnv)).toBeNull();
   });
 });

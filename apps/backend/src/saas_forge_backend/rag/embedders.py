@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from langchain_core.embeddings import Embeddings
+from pydantic import SecretStr
 
 from saas_forge_backend.config import get_settings
 
@@ -44,7 +45,7 @@ def resolve_embedder(value: str) -> Embeddings:
         if not settings.openai_api_key:
             raise UnsupportedEmbedder("OPENAI_API_KEY not set")
         from langchain_openai import OpenAIEmbeddings
-        return OpenAIEmbeddings(model=model, api_key=settings.openai_api_key)
+        return OpenAIEmbeddings(model=model, api_key=SecretStr(settings.openai_api_key))
 
     if provider == "ollama":
         if not settings.ollama_base_url:

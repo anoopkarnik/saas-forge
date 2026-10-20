@@ -47,17 +47,27 @@ const t = initTRPC.context<TRPCContext>().create({
 export const createTRPCRouter = t.router;
 export const createCallerFactory = t.createCallerFactory;
 export const baseProcedure = t.procedure;
-export const protectedProcedure = baseProcedure.use(async ({ctx,next})=>{
-  if(!ctx.session){
-    throw new TRPCError({code:'UNAUTHORIZED',message:'You must be logged in to access this resource.'})
-  }
-  return next({
-    ctx:{
-      ...ctx,
-      session: ctx.session
+export const protectedProcedure = baseProcedure
+  .use(async ({ctx,next})=>{
+    if(!ctx.session){
+      throw new TRPCError({code:'UNAUTHORIZED',message:'You must be logged in to access this resource.'})
     }
+    return next({
+      ctx:{
+        ...ctx,
+        session: ctx.session
+      }
+    })
   })
-})
+  .use(({ ctx, type, next }) => {
+    if (type === 'mutation' && ctx.session.user.role === 'guest') {
+      throw new TRPCError({
+        code: 'FORBIDDEN',
+        message: 'This is a read-only demo account.',
+      })
+    }
+    return next()
+  })
 export const adminProcedure = protectedProcedure.use(async ({ ctx, next }) => {
   if (ctx.session.user.role !== 'admin') {
     throw new TRPCError({
@@ -68,3 +78,24 @@ export const adminProcedure = protectedProcedure.use(async ({ ctx, next }) => {
 
   return next();
 })
+
+// Admin surface that the read-only demo (guest) role may also *read*.
+// Admins get full access; guests may run queries only (the guest mutation
+// block from protectedProcedure still applies); everyone else needs admin.
+// Use this only for non-sensitive admin reads — keep PII/secret/IP queries on
+// adminProcedure so they stay admin-only.
+export const guestReadableAdminProcedure = protectedProcedure.use(
+  async ({ ctx, type, next }) => {
+    const role = ctx.session.user.role;
+    const isAdmin = role === 'admin';
+    const isGuestRead = role === 'guest' && type === 'query';
+    if (!isAdmin && !isGuestRead) {
+      throw new TRPCError({
+        code: 'FORBIDDEN',
+        message: 'Admin access is required to access this resource.',
+      });
+    }
+
+    return next();
+  },
+)

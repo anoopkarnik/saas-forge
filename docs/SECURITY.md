@@ -74,12 +74,6 @@ When using SaaS Forge, we recommend:
 
 ## Known Security Considerations
 
-### Notion API Keys
-
-- Notion API keys have workspace-level access
-- Store them securely and rotate regularly
-- Use workspace-specific integrations
-
 ### Redis/Upstash
 
 - Always use TLS connections

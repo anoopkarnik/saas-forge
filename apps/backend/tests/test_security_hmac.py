@@ -1,4 +1,3 @@
-import json
 import time
 
 import pytest
@@ -37,8 +36,8 @@ def test_verify_rejects_stale_timestamp():
     payload = {"user_id": "u1"}
     ts = str(int(time.time()) - 120)
     body = canonical_body(payload)
-    import hmac as _h
     import hashlib
+    import hmac as _h
     sig = _h.new(secret.encode(), f"{ts}\n{body}".encode(), hashlib.sha256).hexdigest()
     with pytest.raises(InvalidSignature):
         verify_request(secret, ts, sig, payload, accepted_secrets=None, max_skew_seconds=60)

@@ -9,11 +9,13 @@
     "test:coverage": "vitest run --coverage --passWithNoTests"
   },
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./mcp": "./src/mcp.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^2.0.0",
     "@ai-sdk/google": "^3.0.63",
+    "@ai-sdk/mcp": "1.0.36",
     "@ai-sdk/openai": "^3.0.52",
     "@ai-sdk/openai-compatible": "^2.0.0",
     "ai": "^6.0.0",
@@ -21,7 +23,7 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@types/node": "^20.19.25",
+    "@types/node": "^24.19.1",
     "@workspace/typescript-config": "workspace:*",
     "typescript": "^5.9.2",
     "vitest": "^4.0.18"

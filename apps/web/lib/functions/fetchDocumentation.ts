@@ -1,10 +1,10 @@
 import { DocumentationProps } from "@/lib/ts-types/doc";
-import { fetchDocumentation as fetchDocumentationFromNotion } from "./fetchDocumentationFromNotion";
 import { fetchDocumentationFromPostgres } from "./fetchDocumentationFromPostgres";
 import { fetchDocumentationFromLocal } from "./fetchDocumentationFromLocal";
+import { getCmsProvider } from "@/lib/cms-provider";
 
 export async function fetchDocumentation(): Promise<DocumentationProps> {
-    const cmsType = process.env.NEXT_PUBLIC_CMS;
+    const cmsType = getCmsProvider();
 
     if (cmsType === "constant") {
         return fetchDocumentationFromLocal();
@@ -13,6 +13,7 @@ export async function fetchDocumentation(): Promise<DocumentationProps> {
     if (cmsType === "postgres") {
         return await fetchDocumentationFromPostgres();
     }
-    
-    return await fetchDocumentationFromNotion();
+
+
+    throw new Error(`CMS "${cmsType}" is not supported`);
 }

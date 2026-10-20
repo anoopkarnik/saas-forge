@@ -1,0 +1,70 @@
+`apps/mobile` is an Expo 55 app (React Native 0.83, expo-router, NativeWind) for iOS, Android and the web. Like the desktop app, it signs in with Better Auth and calls your web app's API.
+
+## What it includes
+
+Sign-in, sign-up, password reset and email verification; a home screen; the documentation browser by category; support; settings; admin; and the workspace switcher with the Organizations module. Routes live in `apps/mobile/app`, split into `(auth)` and `(home)` groups.
+
+## Run it
+
+```bash
+pnpm --dir apps/mobile dev        # Expo web at http://localhost:8081
+pnpm --dir apps/mobile ios        # iOS simulator
+pnpm --dir apps/mobile android    # Android emulator
+```
+
+```env
+# apps/mobile/.env
+EXPO_PUBLIC_API_URL=http://localhost:3000
+EXPO_PUBLIC_APP_URL=http://localhost:8081
+EXPO_PUBLIC_AUTH_EMAIL=true
+EXPO_PUBLIC_AUTH_GOOGLE=false
+EXPO_PUBLIC_AUTH_GITHUB=false
+EXPO_PUBLIC_AUTH_LINKEDIN=false
+EXPO_PUBLIC_SUPPORT_MAIL=true
+EXPO_PUBLIC_THEME=green
+EXPO_PUBLIC_THEME_TYPE=dark
+EXPO_PUBLIC_CALENDLY_BOOKING_URL=""
+```
+
+`EXPO_PUBLIC_*` values are bundled into the app, so never put secrets in them. On a physical device, `localhost` is the phone itself: set `EXPO_PUBLIC_API_URL` to your computer's LAN address (for example `http://192.168.1.20:3000`) or a tunnel URL.
+
+## Authentication
+
+The app uses Better Auth's Expo client with `expo-secure-store` for the session and the `saas-forge://` deep-link scheme for OAuth returns. The server trusts `saas-forge://` and `exp://` origins. If you change the scheme in `app.json`, update `scheme` in `apps/mobile/lib/auth-client.ts` and the trusted origins in `packages/auth/src/better-auth/auth.ts`.
+
+The web app's CORS list (`allowedOrigins` in `apps/web/middleware.ts`) includes `http://localhost:8081` for Expo web. Add your production Expo web domain there if you deploy the web build.
+
+## Build with EAS
+
+```bash
+npm install -g eas-cli
+eas login
+eas build:configure                  # links the project to your Expo account
+```
+
+`eas.json` defines three profiles on Node 24.19.0 and pnpm 10.4.1:
+
+| Profile | Use |
+| --- | --- |
+| `development` | Development client, internal distribution |
+| `preview` | Internal test builds (APK / ad hoc) |
+| `production` | Store builds with auto-incremented build numbers |
+
+```bash
+pnpm mobile:publish:android:preview      # from the repository root
+pnpm mobile:publish:android:production
+eas build --platform ios --profile production
+eas submit --platform ios
+```
+
+Set production values (`EXPO_PUBLIC_API_URL=https://your-domain.com`) as EAS environment variables or in the build profile.
+
+## Before publishing
+
+- Change `name`, `slug`, `scheme`, `ios.bundleIdentifier` and `android.package` in `app.json`.
+- Replace the icons and splash screen in `apps/mobile/assets/`.
+- Add privacy policy and support URLs in the store listings (your `/landing/legal` pages work).
+
+## Remove it
+
+Delete `apps/mobile` and the `mobile:*` scripts in the root `package.json`. Downloads without the mobile platform leave it out already.

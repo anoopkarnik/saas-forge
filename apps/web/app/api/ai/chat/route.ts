@@ -1,4 +1,4 @@
-import { auth } from "@workspace/auth/better-auth/auth";
+import { guardRoute } from "@/server/routeGuard";
 import db from "@workspace/database/client";
 import { logAIEvent } from "@workspace/observability/ai-logger";
 import {
@@ -9,6 +9,8 @@ import {
   resolveAIModel,
   starterAssistantTools,
 } from "@workspace/ai";
+import { connectMcpTools, parseMcpServers, type McpToolsConnection } from "@workspace/ai/mcp";
+import { logger } from "@workspace/observability/winston-logger";
 import {
   AI_WEBHOOK_MODEL,
   AI_WEBHOOK_PROVIDER,
@@ -22,20 +24,55 @@ import {
   getN8nWebhookEnvConfig,
   isN8nWebhookProvider,
 } from "@/lib/helper/aiWebhook";
-import { convertToModelMessages, streamText, type UIMessage } from "ai";
-import { z } from "zod";
+import { aiChatRequestSchema, type AiChatMessage } from "@/lib/zod/aiChat";
+import { announceUsageAlerts, recordUsage } from "@/lib/usage/record";
+import { track } from "@workspace/analytics/server";
+import { notifyIfCreditsLow } from "@/lib/notifications/notify";
+import {
+  convertToModelMessages,
+  safeValidateUIMessages,
+  stepCountIs,
+  streamText,
+  type InferUITools,
+  type UIDataTypes,
+  type UIMessage,
+} from "ai";
+
+type StarterChatUIMessage = UIMessage<unknown, UIDataTypes, InferUITools<typeof starterAssistantTools>>;
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 export const maxDuration = 60;
 
-const chatRequestSchema = z.object({
-  messages: z.array(z.any()).min(1),
-  promptKey: z.string().min(1).default("chat.assistant"),
-});
+// With MCP tools the model may call tools and then answer; this caps the rounds per message.
+const MCP_MAX_STEPS = 5;
 
 function jsonError(message: string, status: number) {
   return Response.json({ error: message }, { status });
+}
+
+/**
+ * Tools from the MCP servers in AI_MCP_SERVERS, or null when none are set or
+ * none connect. A bad config or an unreachable server never fails the chat.
+ * MCP tools are dynamic, so their parts in earlier messages pass validation.
+ */
+async function connectConfiguredMcpTools(): Promise<McpToolsConnection | null> {
+  let servers;
+  try {
+    servers = parseMcpServers();
+  } catch (error) {
+    logger.error(`ai.mcp_config_invalid ${JSON.stringify({ error: String(error) })}`);
+    return null;
+  }
+  if (servers.length === 0) return null;
+
+  const connection = await connectMcpTools(servers, {
+    onServerError: (server, error) =>
+      logger.warn(`ai.mcp_server_unavailable ${JSON.stringify({ server, error: String(error) })}`),
+  });
+  if (connection.servers.length > 0) return connection;
+  await connection.close();
+  return null;
 }
 
 function sanitizeError(error: unknown) {
@@ -52,10 +89,10 @@ function sanitizeError(error: unknown) {
   };
 }
 
-function toWebhookMessages(messages: unknown[]) {
+function toWebhookMessages(messages: AiChatMessage[]) {
   return messages
-    .map((message: any) => ({
-      role: typeof message?.role === "string" ? message.role : "user",
+    .map((message) => ({
+      role: message.role,
       content: getMessageText(message),
     }))
     .filter((message) => message.content);
@@ -113,19 +150,43 @@ async function recordFailure({
 
 export async function POST(req: Request) {
   const startedAt = Date.now();
-  const session = await auth.api.getSession({ headers: req.headers });
-
-  if (!session?.user?.id) {
-    return jsonError("You must be logged in to use AI chat.", 401);
+  const guard = await guardRoute(req, "/api/ai/chat");
+  if (!guard.ok) {
+    return jsonError(guard.error, guard.status);
   }
+  const { session } = guard;
 
-  const parsed = chatRequestSchema.safeParse(await req.json().catch(() => null));
+  const userId = session.user.id;
+  const parsed = aiChatRequestSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) {
+    logAIEvent({
+      userId,
+      status: "failed",
+      errorCode: "INVALID_REQUEST",
+      errorMessage: parsed.error.issues
+        .slice(0, 5)
+        .map((issue) => `${issue.path.join(".") || "body"}: ${issue.code}`)
+        .join("; "),
+    });
     return jsonError("Invalid AI chat request.", 400);
   }
 
   const { messages, promptKey } = parsed.data;
-  const userId = session.user.id;
+  // Structural check of SDK parts (tool inputs/outputs against their schemas).
+  const uiMessages = await safeValidateUIMessages<StarterChatUIMessage>({
+    messages,
+    tools: starterAssistantTools,
+  });
+  if (!uiMessages.success) {
+    logAIEvent({
+      userId,
+      promptKey,
+      status: "failed",
+      errorCode: "INVALID_REQUEST",
+      errorMessage: uiMessages.error.message.slice(0, 500),
+    });
+    return jsonError("Invalid AI chat request.", 400);
+  }
 
   const [user, prompt] = await Promise.all([
     db.user.findUnique({
@@ -180,15 +241,20 @@ export async function POST(req: Request) {
     .map((message) => ({
       conversationId: conversation.id,
       userId,
-      role: message.role ?? "user",
+      role: message.role,
       content: getMessageText(message),
-      parts: message.parts ?? null,
+      parts: message.parts,
     }))
     .filter((message) => message.content || message.parts);
 
   if (persistedMessages.length) {
     await (db as any).aiMessage.createMany({ data: persistedMessages });
   }
+  await track(
+    "ai.chat_sent",
+    { provider: resolvedModel?.provider ?? AI_WEBHOOK_PROVIDER, model: resolvedModel?.modelId ?? AI_WEBHOOK_MODEL },
+    { distinctId: userId, headers: req.headers },
+  );
 
   if (isN8nWebhookProvider(activeProvider)) {
     logAIEvent({
@@ -220,7 +286,7 @@ export async function POST(req: Request) {
       const usage = calculateAIUsageCredits(null);
       const latencyMs = Date.now() - startedAt;
 
-      await db.$transaction(async (tx) => {
+      const usageAlerts = await db.$transaction(async (tx) => {
         await (tx as any).aiMessage.create({
           data: {
             conversationId: conversation.id,
@@ -231,12 +297,7 @@ export async function POST(req: Request) {
           },
         });
 
-        await tx.user.update({
-          where: { id: userId },
-          data: { creditsUsed: { increment: usage.creditsCharged } },
-        });
-
-        await (tx as any).aiUsageEvent.create({
+        const aiUsageEvent = await (tx as any).aiUsageEvent.create({
           data: {
             userId,
             conversationId: conversation.id,
@@ -252,7 +313,21 @@ export async function POST(req: Request) {
             status: "success",
           },
         });
+
+        // Credits move through the usage ledger; each completion is charged once, by its usage row.
+        const { alerts } = await recordUsage(tx, {
+          userId,
+          meter: "ai.tokens",
+          quantity: usage.totalTokens,
+          credits: usage.creditsCharged,
+          sourceType: "ai_usage_event",
+          sourceId: aiUsageEvent.id,
+          idempotencyKey: `ai:${aiUsageEvent.id}`,
+        });
+        return alerts;
       });
+      await announceUsageAlerts(userId, usageAlerts);
+      await notifyIfCreditsLow(userId, usage.creditsCharged);
 
       logAIEvent({
         userId,
@@ -268,7 +343,7 @@ export async function POST(req: Request) {
         status: "success",
       });
 
-      return createTextUIMessageStreamResponse(text, messages as UIMessage[]);
+      return createTextUIMessageStreamResponse(text, uiMessages.data);
     } catch (error) {
       await recordFailure({
         userId,
@@ -298,12 +373,17 @@ export async function POST(req: Request) {
     status: "started",
   });
 
+  const mcp = await connectConfiguredMcpTools();
+
   try {
     const result = streamText({
       model: resolvedModel.model,
       system: prompt.activeVersion.content,
-      messages: await convertToModelMessages(messages as UIMessage[]),
-      tools: starterAssistantTools,
+      messages: await convertToModelMessages(uiMessages.data),
+      tools: mcp ? { ...starterAssistantTools, ...mcp.tools } : starterAssistantTools,
+      stopWhen: mcp ? stepCountIs(MCP_MAX_STEPS) : undefined,
+      onError: () => mcp?.close(),
+      onAbort: () => mcp?.close(),
       providerOptions:
         resolvedModel.provider === "gateway"
           ? {
@@ -314,12 +394,14 @@ export async function POST(req: Request) {
             }
           : undefined,
       onFinish: async (finish) => {
+        await mcp?.close();
         const finishData = finish as any;
-        const usage = calculateAIUsageCredits(finishData.usage);
+        // totalUsage spans every step; usage is only the last one when tools ran.
+        const usage = calculateAIUsageCredits(finishData.totalUsage ?? finishData.usage);
         const latencyMs = Date.now() - startedAt;
         const text = typeof finishData.text === "string" ? finishData.text : "";
 
-        await db.$transaction(async (tx) => {
+        const usageAlerts = await db.$transaction(async (tx) => {
           await (tx as any).aiMessage.create({
             data: {
               conversationId: conversation.id,
@@ -330,12 +412,7 @@ export async function POST(req: Request) {
             },
           });
 
-          await tx.user.update({
-            where: { id: userId },
-            data: { creditsUsed: { increment: usage.creditsCharged } },
-          });
-
-          await (tx as any).aiUsageEvent.create({
+          const aiUsageEvent = await (tx as any).aiUsageEvent.create({
             data: {
               userId,
               conversationId: conversation.id,
@@ -351,7 +428,21 @@ export async function POST(req: Request) {
               status: "success",
             },
           });
+
+          // Credits move through the usage ledger; each completion is charged once, by its usage row.
+          const { alerts } = await recordUsage(tx, {
+            userId,
+            meter: "ai.tokens",
+            quantity: usage.totalTokens,
+            credits: usage.creditsCharged,
+            sourceType: "ai_usage_event",
+            sourceId: aiUsageEvent.id,
+            idempotencyKey: `ai:${aiUsageEvent.id}`,
+          });
+          return alerts;
         });
+        await announceUsageAlerts(userId, usageAlerts);
+        await notifyIfCreditsLow(userId, usage.creditsCharged);
 
         logAIEvent({
           userId,
@@ -373,6 +464,7 @@ export async function POST(req: Request) {
       onError: () => "The assistant could not finish this response.",
     });
   } catch (error) {
+    await mcp?.close();
     await recordFailure({
       userId,
       conversationId: conversation.id,

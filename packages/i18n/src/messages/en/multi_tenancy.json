@@ -1,0 +1,12 @@
+{
+  "email": {
+    "invitation": {
+      "subject": "{inviter} invited you to {organization}",
+      "heading": "Join {organization} on {company}",
+      "body": "{inviter} invited you to join the {organization} workspace as {role}.",
+      "button": "View Invitation",
+      "help": "Sign in (or create an account) with this email address to accept. You can also accept it later from the workspace menu in the app.",
+      "expires": "This invitation will expire in 7 days."
+    }
+  }
+}

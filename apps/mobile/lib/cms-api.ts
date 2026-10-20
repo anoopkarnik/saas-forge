@@ -83,7 +83,7 @@ export type LandingData = {
 
 export async function fetchLandingData(): Promise<LandingData> {
     const res = await fetch(
-        `${baseURL}/api/trpc/landing.getLandingInfoFromNotion`,
+        `${baseURL}/api/trpc/landing.getLandingInfo`,
         { method: "GET", headers: { "Content-Type": "application/json" } }
     );
 

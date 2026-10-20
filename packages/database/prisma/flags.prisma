@@ -1,0 +1,29 @@
+/// A feature flag's runtime state (feature_flags module). Keys come from the
+/// code registry (apps/web/lib/flags/definitions.ts); a key without a row
+/// uses its code default.
+model FeatureFlag {
+    key         String   @id
+    description String   @default("")
+    /// The value when no rule matches.
+    enabled     Boolean
+    /// Ordered rules, first match wins (see apps/web/lib/flags/rules.ts).
+    rules       Json     @default("[]")
+    updatedById String?
+    updatedAt   DateTime @updatedAt
+    createdAt   DateTime @default(now())
+
+    @@schema("user_schema")
+}
+
+/// One change to a flag, for its history.
+model FeatureFlagChange {
+    id      String   @id @default(cuid())
+    flagKey String
+    before  Json?
+    after   Json
+    actorId String?
+    at      DateTime @default(now())
+
+    @@index([flagKey, at])
+    @@schema("user_schema")
+}

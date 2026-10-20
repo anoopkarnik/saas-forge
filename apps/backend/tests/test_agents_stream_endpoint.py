@@ -22,8 +22,8 @@ def _parse_sse(body: str) -> list[tuple[str, dict]]:
         if not chunk.strip():
             continue
         lines = chunk.splitlines()
-        event_type = next(l.removeprefix("event: ") for l in lines if l.startswith("event: "))
-        data = next(l.removeprefix("data: ") for l in lines if l.startswith("data: "))
+        event_type = next(ln.removeprefix("event: ") for ln in lines if ln.startswith("event: "))
+        data = next(ln.removeprefix("data: ") for ln in lines if ln.startswith("data: "))
         events.append((event_type, json.loads(data)))
     return events
 
@@ -54,3 +54,27 @@ def test_agents_stream_unknown_agent_returns_404():
         headers={"X-Saas-Forge-Ts": ts, "X-Saas-Forge-Sig": sig, "X-Saas-Forge-Req-Id": "r2"},
     )
     assert resp.status_code == 404
+
+
+def test_agents_stream_stops_after_cancellation(monkeypatch):
+    from saas_forge_backend.api.routes import agents
+
+    checks = 0
+
+    async def cancelled(_job_id):
+        nonlocal checks
+        checks += 1
+        return checks >= 2
+
+    monkeypatch.setattr(agents, "is_job_cancelled", cancelled)
+    client = TestClient(create_app())
+    payload = {
+        "user_id": "u1", "org_id": None, "agent_id": "noop",
+        "job_id": "j1", "input": {"hello": "world"},
+    }
+    ts, sig = sign_payload("x" * 32, payload)
+    resp = client.post(
+        "/agents/stream", json=payload,
+        headers={"X-Saas-Forge-Ts": ts, "X-Saas-Forge-Sig": sig},
+    )
+    assert [kind for kind, _ in _parse_sse(resp.text)] == ["step", "end"]

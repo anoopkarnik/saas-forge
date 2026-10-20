@@ -44,7 +44,7 @@ export default function Admin() {
         },
         {
             title: "Content Management",
-            description: "Update landing page content via Notion CMS",
+            description: "Update landing page content in the CMS",
             icon: "🗄️",
             iconBg: "bg-red-500/15",
             onPress: () => setActiveSection("cms"),

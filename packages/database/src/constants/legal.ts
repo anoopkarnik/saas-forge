@@ -3,7 +3,7 @@ export const cancellationRefundPoliciesData = {
   "supportEmailAddress": "support@bayesian-labs.com\n",
   "siteName": "SaaS Forge",
   "companyLegalName": "Bayesian Labs (OPC) Private Limited\n",
-  "websiteUrl": "https://boilerplate.bayesian-labs.com\n",
+  "websiteUrl": "https://saasforge.cc\n",
   "lastUpdated": "2025-12-01\n"
 };
 export const privacyPolicyData = {
@@ -11,7 +11,7 @@ export const privacyPolicyData = {
   "siteName": "SaaS Forge",
   "companyLegalName": "Bayesian Labs (OPC) Private Limited\n",
   "country": "India\n",
-  "websiteUrl": "https://boilerplate.bayesian-labs.com\n",
+  "websiteUrl": "https://saasforge.cc\n",
   "lastUpdated": "2025-12-01\n"
 };
 export const contactUsData = {
@@ -26,7 +26,7 @@ export const termsOfServiceData = {
   "siteName": "SaaS Forge",
   "companyLegalName": "Bayesian Labs (OPC) Private Limited\n",
   "country": "India\n",
-  "websiteUrl": "https://boilerplate.bayesian-labs.com\n",
+  "websiteUrl": "https://saasforge.cc\n",
   "lastUpdated": "2025-12-01\n",
   "version": "v1\n",
   "address": "B2, 2nd Floor, Maruthi Enclave, Domalguda, Hyderabad, Telangana, Hyderabad\n"

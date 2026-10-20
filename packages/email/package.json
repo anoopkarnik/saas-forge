@@ -18,11 +18,15 @@
   "dependencies": {
     "@react-email/components": "^1.0.2",
     "@react-email/render": "^2.0.0",
+    "@workspace/i18n": "workspace:^",
+    "@workspace/jobs": "workspace:*",
     "react": "^19.1.1",
-    "resend": "^6.6.0"
+    "resend": "^6.6.0",
+    "use-intl": "^4.14.9",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@types/node": "^20.19.25",
+    "@types/node": "^24.19.1",
     "@types/react": "^19.1.9",
     "@vitejs/plugin-react": "^5.1.4",
     "vitest": "^4.0.18"

@@ -1,8 +1,10 @@
 "use client"
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import { authClient, useSession } from '@workspace/auth/better-auth/auth-client'
 import SettingsHeader from '@workspace/ui/components/home/SettingsHeader'
-import dayjs from 'dayjs';
+import { useLocale, useTranslations } from 'use-intl';
+import type { Locale } from '@workspace/i18n/config';
+import { formatDateTime } from '@workspace/i18n/format';
 import { Button } from '@workspace/ui/components/shadcn/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@workspace/ui/components/shadcn/table';
 
@@ -12,17 +14,19 @@ export interface SessionSettingsProps {
 
 const SessionSettings = ({ onNavigate }: SessionSettingsProps) => {
     const [sessions, setSessions] = useState<any[]>([])
-    const title = 'Sessions'
-    const description = 'Manage your active sessions'
+    const t = useTranslations('settings.sessions')
+    const locale = useLocale() as Locale
+    const title = t('title')
+    const description = t('description')
 
-    const fetchSessions = async () => {
+    const fetchSessions = useCallback(async () => {
         const { error, data: sessions } = await authClient.listSessions()
         const modifiedSessions = sessions
             ?.slice()
             .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
             .map((session: any) => {
-                const formattedCreatedDate = dayjs(session.createdAt).format('DD MMM YYYY, hh:mm A');
-                const formattedUpdatedDate = dayjs(session.updatedAt).format('DD MMM YYYY, hh:mm A');
+                const formattedCreatedDate = formatDateTime(session.createdAt, locale);
+                const formattedUpdatedDate = formatDateTime(session.updatedAt, locale);
                 return {
                     ...session,
                     createdAt: formattedCreatedDate,
@@ -30,11 +34,11 @@ const SessionSettings = ({ onNavigate }: SessionSettingsProps) => {
                 }
             })
         setSessions(modifiedSessions || []);
-    }
+    }, [locale])
 
     useEffect(() => {
         fetchSessions();
-    }, [])
+    }, [fetchSessions])
 
     const handleSignoutAll = async () => {
         await authClient.revokeOtherSessions();
@@ -43,15 +47,15 @@ const SessionSettings = ({ onNavigate }: SessionSettingsProps) => {
 
     return (
         <SettingsHeader title={title} description={description}>
-            <Button variant="destructive" className="mb-4" onClick={handleSignoutAll}>Sign out from all other devices</Button>
+            <Button variant="destructive" className="mb-4" onClick={handleSignoutAll}>{t('signOutOthers')}</Button>
             <div className="bg-card border border-border/50 rounded-xl overflow-hidden shadow-sm">
                 <Table>
                     <TableHeader>
                         <TableRow className="hover:bg-transparent bg-muted/40">
-                            <TableHead className="w-[300px] pl-6 font-medium">Device Info</TableHead>
-                            <TableHead className="font-medium">Date Joined</TableHead>
-                            <TableHead className="font-medium">Last Active</TableHead>
-                            <TableHead className="text-right pr-6 font-medium">Action</TableHead>
+                            <TableHead className="w-[300px] pl-6 font-medium">{t('device')}</TableHead>
+                            <TableHead className="font-medium">{t('joined')}</TableHead>
+                            <TableHead className="font-medium">{t('lastActive')}</TableHead>
+                            <TableHead className="text-right pr-6 font-medium">{t('action')}</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -62,13 +66,13 @@ const SessionSettings = ({ onNavigate }: SessionSettingsProps) => {
                                         <div className={`h-2.5 w-2.5 rounded-full ${session.isCurrent ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]' : 'bg-muted-foreground/30'}`} />
                                         <div className="flex flex-col">
                                             <div className="flex items-center gap-2">
-                                                <span className="font-semibold text-sm">{session.userAgent?.split(' ')[0] || 'Unknown'}</span>
-                                                {session.isCurrent && <span className="text-[10px] bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400 px-1.5 py-0.5 rounded border border-green-200 dark:border-green-800 font-medium">Current</span>}
+                                                <span className="font-semibold text-sm">{session.userAgent?.split(' ')[0] || t('unknown')}</span>
+                                                {session.isCurrent && <span className="text-[10px] bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400 px-1.5 py-0.5 rounded border border-green-200 dark:border-green-800 font-medium">{t('current')}</span>}
                                             </div>
                                             <div className="flex gap-1 text-xs text-muted-foreground">
-                                                <span>{session.userAgent?.split(' ')[2] || 'Browser'}</span>
+                                                <span>{session.userAgent?.split(' ')[2] || t('browser')}</span>
                                                 <span>•</span>
-                                                <span>{session.ipAddress || 'IP Hidden'}</span>
+                                                <span>{session.ipAddress || t('ipHidden')}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -77,7 +81,7 @@ const SessionSettings = ({ onNavigate }: SessionSettingsProps) => {
                                 <TableCell className="text-sm text-muted-foreground">{session.updatedAt}</TableCell>
                                 <TableCell className="text-right pr-6">
                                     {session.isCurrent ? (
-                                        <span className="text-xs text-muted-foreground italic">Active Now</span>
+                                        <span className="text-xs text-muted-foreground italic">{t('activeNow')}</span>
                                     ) : (
                                         <Button
                                             variant="outline"
@@ -88,7 +92,7 @@ const SessionSettings = ({ onNavigate }: SessionSettingsProps) => {
                                                 setSessions((prev) => prev.filter((s) => s.id !== session.id));
                                             }}
                                         >
-                                            Revoke
+                                            {t('revoke')}
                                         </Button>
                                     )}
                                 </TableCell>

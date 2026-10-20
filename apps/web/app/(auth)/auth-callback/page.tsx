@@ -2,10 +2,12 @@
 import React, { useEffect, useState } from "react"
 import { authClient } from "@workspace/auth/better-auth/auth-client"
 import { useRouter } from "next/navigation"
+import { useTranslations } from "next-intl"
 import LoadingCard from "@workspace/ui/components/auth/LoadingCard"
 
 export default function AuthCallbackPage() {
     const router = useRouter()
+    const t = useTranslations("auth")
     const [error, setError] = useState<string | null>(null)
 
     useEffect(() => {
@@ -21,12 +23,12 @@ export default function AuthCallbackPage() {
                     // Let's assume session creation is impending.
                 }
             } catch (err) {
-                setError("Failed to verify session")
+                setError(t("callbackFailed"))
             }
         }
 
         checkSession()
-    }, [router])
+    }, [router, t])
 
     if (error) {
         return <div className="flex h-screen w-full items-center justify-center text-red-500">{error}</div>

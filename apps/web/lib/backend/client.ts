@@ -7,33 +7,36 @@ if (!BACKEND_HMAC_SECRET) {
   console.warn("[backend/client] BACKEND_HMAC_SECRET is not set");
 }
 
-export type JobKind = "agent" | "ingest";
-
-export type EnqueueJobInput = {
+export type BackendIngestionInput = {
   jobId: string;
   userId: string;
   orgId: string | null;
-  agentId: string;
   input: Record<string, unknown>;
-  kind?: JobKind;
+  signal?: AbortSignal;
 };
 
-export async function enqueueJob(input: EnqueueJobInput): Promise<void> {
-  const path = input.kind === "ingest" ? "/jobs/ingest" : "/jobs";
+export class BackendHttpError extends Error {
+  constructor(readonly status: number, message: string) {
+    super(message);
+  }
+}
+
+export async function runBackendIngestion(input: BackendIngestionInput): Promise<Record<string, unknown>> {
   const resp = await signedFetch({
-    url: `${BACKEND_URL}${path}`,
+    url: `${BACKEND_URL}/rag/ingest`,
     secret: BACKEND_HMAC_SECRET,
     payload: {
       job_id: input.jobId,
       user_id: input.userId,
       org_id: input.orgId,
-      agent_id: input.agentId,
       input: input.input,
     },
+    signal: input.signal,
   });
   if (!resp.ok) {
-    throw new Error(`enqueue failed: ${resp.status} ${await resp.text()}`);
+    throw new BackendHttpError(resp.status, `AI ingestion failed: ${resp.status} ${await resp.text()}`);
   }
+  return resp.json();
 }
 
 export type AgentStreamInput = {
@@ -41,6 +44,7 @@ export type AgentStreamInput = {
   orgId: string | null;
   agentId: string;
   input: Record<string, unknown>;
+  jobId?: string;
   signal?: AbortSignal;
 };
 
@@ -53,6 +57,7 @@ export async function openAgentStream(input: AgentStreamInput): Promise<Response
       org_id: input.orgId,
       agent_id: input.agentId,
       input: input.input,
+      ...(input.jobId ? { job_id: input.jobId } : {}),
     },
     signal: input.signal,
   });

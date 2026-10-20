@@ -1,6 +1,6 @@
 {
   "name": "saas-forge",
-  "version": "1.2.13",
+  "version": "2.1.1",
   "scripts": {
     "build": "turbo build",
     "dev": "turbo dev",
@@ -9,10 +9,12 @@
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "test": "turbo test",
     "test:coverage": "turbo test:coverage",
+    "i18n:check": "pnpm --dir packages/i18n exec vitest run src/catalogue.test.ts",
     "generate": "cd packages/database && pnpm run generate",
     "migrate": "cd packages/database && pnpm run migrate",
     "seed": "cd packages/database && pnpm run seed",
     "reset": "cd packages/database && pnpm run reset",
+    "doctor": "node scripts/doctor.mjs",
     "docker:build:web": "docker build -f Dockerfile.web -t saas-forge-web .",
     "docker:up": "docker compose up --build --detach",
     "desktop:publish:linux:edge": "pnpm --dir apps/desktop build:prod && pnpm --dir apps/desktop package:snap && pnpm --dir apps/desktop publish:snapstore:edge",
@@ -22,7 +24,7 @@
   "devDependencies": {
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
-    "@types/node": "^20.19.25",
+    "@types/node": "^24.19.1",
     "@vitejs/plugin-react": "^5.1.4",
     "@vitest/coverage-v8": "^4.0.18",
     "@workspace/eslint-config": "workspace:*",
@@ -51,7 +53,7 @@
   "license": "MIT",
   "packageManager": "pnpm@10.4.1",
   "engines": {
-    "node": ">=20"
+    "node": ">=24"
   },
   "dependencies": {
     "archiver": "^7.0.1",
@@ -59,7 +61,7 @@
   },
   "pnpm": {
     "overrides": {
-      "@types/node": "^20.19.25",
+      "@types/node": "^24.19.1",
       "lightningcss": "^1.31.1",
       "react": "19.2.4",
       "react-dom": "19.2.4",

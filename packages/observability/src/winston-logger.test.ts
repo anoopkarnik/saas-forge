@@ -68,3 +68,23 @@ describe('winston-logger', () => {
     logger.info('Test message');
   });
 });
+
+describe('redactFormat', () => {
+  it('redacts secret-looking metadata and envVars payloads but keeps counts', async () => {
+    const { redactFormat } = await import('./winston-logger.js');
+    const info = redactFormat().transform({
+      level: 'info',
+      message: 'scaffold download',
+      envVars: { DATABASE_URL: 'postgresql://canary' },
+      body: { STRIPE_SECRET_KEY: 'sk_canary', name: 'demo', nested: { accessToken: 't_canary' } },
+      promptTokens: 120,
+      apiKey: 'canary',
+    } as any) as any;
+
+    expect(JSON.stringify(info)).not.toContain('canary');
+    expect(info.envVars).toBe('[redacted]');
+    expect(info.body.name).toBe('demo');
+    expect(info.promptTokens).toBe(120);
+    expect(info.message).toBe('scaffold download');
+  });
+});

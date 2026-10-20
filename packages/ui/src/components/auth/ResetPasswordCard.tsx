@@ -16,11 +16,14 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Input } from '@workspace/ui/components/shadcn/input';
 import { useState } from 'react';
 import LoadingButton from '@workspace/ui/components/misc/LoadingButton';
-import { ResetPasswordSchema } from '@workspace/auth/utils/zod';
+import { useTranslations } from 'use-intl';
+import { useAuthSchemas } from '@workspace/ui/hooks/useAuthSchemas';
 import { ResetPasswordCardProps } from '@workspace/auth/utils/typescript';
 import { toast } from 'sonner'
 
 const ResetPasswordCard = ({ errorMessage, successMessage, token, resetFunction, onBackToLoginClick }: ResetPasswordCardProps) => {
+  const t = useTranslations('auth')
+  const { ResetPasswordSchema } = useAuthSchemas()
   const [pending, setPending] = useState(false)
   const form = useForm<z.infer<typeof ResetPasswordSchema>>({
     resolver: zodResolver(ResetPasswordSchema),
@@ -34,7 +37,7 @@ const ResetPasswordCard = ({ errorMessage, successMessage, token, resetFunction,
   async function handleSubmit(data: z.infer<typeof ResetPasswordSchema>) {
     setPending(true)
     await resetFunction(token, data.password)
-    toast.success("Password reset successfully")
+    toast.success(t('reset.success'))
     if (onBackToLoginClick) {
       onBackToLoginClick();
     }
@@ -44,8 +47,8 @@ const ResetPasswordCard = ({ errorMessage, successMessage, token, resetFunction,
   return (
     <Card className='w-full max-w-md border-border/50 shadow-xl bg-card/50 backdrop-blur-sm'>
       <CardHeader className="space-y-1 pb-6">
-        <h2 className='text-3xl font-bold tracking-tight text-center'>Reset Password</h2>
-        <p className='text-sm text-muted-foreground text-center'>Enter your new password below</p>
+        <h2 className='text-3xl font-bold tracking-tight text-center'>{t('reset.title')}</h2>
+        <p className='text-sm text-muted-foreground text-center'>{t('reset.subtitle')}</p>
       </CardHeader>
       <CardContent>
         <Form {...form}>
@@ -53,7 +56,7 @@ const ResetPasswordCard = ({ errorMessage, successMessage, token, resetFunction,
             <div className='space-y-4 mb-4'>
               <FormField control={form.control} name="password" render={({ field }) => (
                 <FormItem>
-                  <FormLabel>New Password</FormLabel>
+                  <FormLabel>{t('reset.newPassword')}</FormLabel>
                   <FormControl>
                     <Input type="password" placeholder='******' className="h-10" {...field} />
                   </FormControl>
@@ -62,7 +65,7 @@ const ResetPasswordCard = ({ errorMessage, successMessage, token, resetFunction,
               )} />
               <FormField control={form.control} name="confirmPassword" render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Confirm Password</FormLabel>
+                  <FormLabel>{t('confirmPassword')}</FormLabel>
                   <FormControl>
                     <Input type="password" placeholder='******' className="h-10" {...field} />
                   </FormControl>
@@ -73,14 +76,14 @@ const ResetPasswordCard = ({ errorMessage, successMessage, token, resetFunction,
             <FormResult type="error" message={errorMessage} />
             <FormResult type="success" message={successMessage} />
             <LoadingButton variant="default" className="w-full h-10 font-medium" pending={pending}>
-              Reset Password
+              {t('reset.submit')}
             </LoadingButton>
           </form>
         </Form>
       </CardContent>
       <CardFooter className='flex justify-center pt-2'>
         <button onClick={onBackToLoginClick} className='text-sm text-center font-medium text-primary hover:underline'>
-          Back to Login
+          {t('backToLogin')}
         </button>
       </CardFooter>
     </Card>

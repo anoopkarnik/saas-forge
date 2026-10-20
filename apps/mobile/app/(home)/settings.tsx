@@ -7,7 +7,9 @@ import PasswordSection from "@/components/settings/PasswordSection";
 import SessionsSection from "@/components/settings/SessionsSection";
 import ThemeSection from "@/components/settings/ThemeSection";
 import DangerZoneSection from "@/components/settings/DangerZoneSection";
+import OrgSelector from "@/components/organizations/OrgSelector";
 import BillingSection from "@/components/settings/BillingSection";
+import NotificationsSection from "@/components/settings/NotificationsSection";
 
 export default function Settings() {
     const router = useRouter();
@@ -52,11 +54,16 @@ export default function Settings() {
             {/* Profile: Avatar, Name, Email */}
             <ProfileSection />
 
+            {/* Workspace (Organizations) */}
+            <OrgSelector />
+
             {/* Theme Switcher */}
             <ThemeSection />
 
             {/* Password Management */}
             <PasswordSection />
+
+            <NotificationsSection />
 
             {/* Active Sessions */}
             <SessionsSection />

@@ -95,7 +95,7 @@ model PricingPlan {
   popular       Boolean     @default(false)
   description   String?
   priceType     String?
-  benefitList   String?     // Comma separated string natively returned by Postgres to mimic the Notion join map
+  benefitList   String?     // Comma separated list of benefits
 
   @@schema("cms_schema")
 }

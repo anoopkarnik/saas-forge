@@ -3,6 +3,8 @@ import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import sharp from "sharp";
 import { randomUUID } from "crypto";
 
+// Used when NEXT_PUBLIC_IMAGE_STORAGE is unset. A download keeps only the
+// storage the buyer chose, and pins this default to it.
 const DEFAULT_STORAGE_PROVIDER = "vercel_blob";
 const SAFE_IMAGE_FORMATS = new Set(["jpeg", "png", "webp"]);
 
@@ -148,6 +150,8 @@ export const uploadNormalizedImage = async (
   if (storageProvider === "cloudflare_r2") {
     return uploadToR2(options);
   }
-
-  return uploadToBlob(options);
+  if (storageProvider !== "cloudflare_r2") {
+    return uploadToBlob(options);
+  }
+  throw new Error(`Image storage "${storageProvider}" is not part of this project.`);
 };

@@ -1,0 +1,27 @@
+/// A user's first-run state (onboarding module). Checklist completion is
+/// mostly derived from real data (apps/web/lib/onboarding/tasks.ts).
+model OnboardingState {
+    userId               String    @id
+    user                 User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+    /// The welcome wizard step reached; answers are kept for personalisation.
+    step                 Int       @default(0)
+    answers              Json      @default("{}")
+    /// Set when the wizard is finished or skipped; cleared to show it again.
+    wizardDoneAt         DateTime?
+    checklistDismissedAt DateTime?
+    createdAt            DateTime  @default(now())
+    updatedAt            DateTime  @updatedAt
+
+    @@schema("user_schema")
+}
+
+/// A checklist task done by an action with no other trace (e.g. reading the docs).
+model OnboardingTask {
+    userId      String
+    user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+    taskKey     String
+    completedAt DateTime @default(now())
+
+    @@id([userId, taskKey])
+    @@schema("user_schema")
+}

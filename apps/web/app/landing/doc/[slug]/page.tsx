@@ -1,6 +1,6 @@
 import DocPostPage from "@/blocks/landing/DocPostPage";
 import { fetchDocumentation } from "@/lib/functions/fetchDocumentation";
-import { createSeoMetadata } from "@/lib/seo";
+import { siteMetadata } from "@/lib/site-config/metadata";
 import { getQueryClient, trpc } from "@/trpc/server";
 import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
 import ErrorState from "@workspace/ui/components/misc/ErrorState";
@@ -23,7 +23,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const doc = documentation.docs.find((item) => item.slug === slug);
 
     if (doc) {
-      return createSeoMetadata({
+      return siteMetadata({
         title: doc.Name,
         description: `${doc.Name} documentation for this SaaS application.`,
         pathname: `/landing/doc/${slug}`,
@@ -33,7 +33,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     console.error("[SEO] documentation metadata error:", error);
   }
 
-  return createSeoMetadata({
+  return siteMetadata({
     title: "Documentation",
     description: "Read the documentation for this SaaS application.",
     pathname: `/landing/doc/${slug}`,

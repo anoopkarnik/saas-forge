@@ -1,6 +1,8 @@
+import createNextIntlPlugin from "next-intl/plugin";
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  transpilePackages: ["@workspace/ui", "@workspace/auth", "@workspace/database"],
+  transpilePackages: ["@workspace/ui", "@workspace/auth", "@workspace/database", "@workspace/i18n"],
   output: "standalone",
   images: {
     remotePatterns: [
@@ -23,4 +25,6 @@ const nextConfig = {
   }
 };
 
-export default nextConfig;
+const withNextIntl = createNextIntlPlugin("./i18n/request.ts");
+
+export default withNextIntl(nextConfig);

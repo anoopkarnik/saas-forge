@@ -1,9 +1,10 @@
 import { fetchDocumentation } from "@/lib/functions/fetchDocumentation";
 import { DocumentationProps } from "@/lib/ts-types/doc";
 import { redis } from "@/server/redis";
-import { createTRPCRouter, baseProcedure, adminProcedure } from "@/trpc/init";
-import { retrieveBlocksTree } from "@workspace/cms/notion/block/retrieveBlockChildren";
+import { createTRPCRouter, baseProcedure, adminProcedure, guestReadableAdminProcedure } from "@/trpc/init";
+import { getCmsProvider } from "@/lib/cms-provider";
 import prisma from "@workspace/database/client";
+import { audit, userActor } from "@/lib/audit/audit";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
@@ -18,8 +19,6 @@ const documentationEditorSchema = z.object({
   order: z.number().int().min(0, "Order must be 0 or greater"),
   content: z.string().min(1, "Content is required"),
 });
-
-const getCmsProvider = () => process.env.NEXT_PUBLIC_CMS || "notion";
 
 const ensurePostgresDocumentationEditing = () => {
   if (getCmsProvider() !== "postgres") {
@@ -53,9 +52,9 @@ const clearDocumentationCache = async () => {
 };
 
 export const documentationRouter = createTRPCRouter({
-    getDocumentationInfoFromNotion: baseProcedure
+    getDocumentationInfo: baseProcedure
     .query(async () => {
-      const cmsProvider = process.env.NEXT_PUBLIC_CMS || "notion";
+      const cmsProvider = getCmsProvider();
 
       if (
         !process.env.UPSTASH_REDIS_REST_URL || 
@@ -82,7 +81,7 @@ export const documentationRouter = createTRPCRouter({
     .query(async ({ input }) => {
       // We need to fetch the documentation list to find the ID corresponding to the slug
       
-      const cmsProvider = process.env.NEXT_PUBLIC_CMS || "notion";
+      const cmsProvider = getCmsProvider();
       
       let documentation: DocumentationProps | null = null;
       if (
@@ -110,7 +109,7 @@ export const documentationRouter = createTRPCRouter({
         throw new Error("Documentation not found");
       }
 
-      if (process.env.NEXT_PUBLIC_CMS === "constant") {
+      if (cmsProvider === "constant") {
         const { documentationData } = await import("@workspace/database/constants");
         const fs = await import("fs/promises");
         const path = await import("path");
@@ -122,21 +121,17 @@ export const documentationRouter = createTRPCRouter({
         return await fs.readFile(targetPath, "utf-8");
       }
 
-      if (process.env.NEXT_PUBLIC_CMS === "postgres") {
+      if (cmsProvider === "postgres") {
         const prisma = (await import("@workspace/database/client")).default;
         const page = await prisma.documentation.findUnique({ where: { slug: input.slug } });
         if (!page) throw new Error("Documentation not found in database");
         return page.content;
       }
 
-      const blocks = await retrieveBlocksTree({
-        apiToken: process.env.NOTION_API_TOKEN!,
-        block_id: doc.id
-      });
 
-      return blocks;
+      throw new Error(`CMS "${cmsProvider}" is not supported`);
     }),
-    listAdminDocs: adminProcedure
+    listAdminDocs: guestReadableAdminProcedure
     .query(async () => {
       ensurePostgresDocumentationEditing();
 
@@ -159,7 +154,7 @@ export const documentationRouter = createTRPCRouter({
         lastUpdated: doc.lastUpdated.toISOString(),
       }));
     }),
-    getAdminDocById: adminProcedure
+    getAdminDocById: guestReadableAdminProcedure
     .input(z.object({ id: z.string().min(1, "Document id is required") }))
     .query(async ({ input }) => {
       ensurePostgresDocumentationEditing();
@@ -191,7 +186,7 @@ export const documentationRouter = createTRPCRouter({
     }),
     createDoc: adminProcedure
     .input(documentationEditorSchema)
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       ensurePostgresDocumentationEditing();
 
       const landingPage = await getLandingPageOrThrow();
@@ -219,6 +214,12 @@ export const documentationRouter = createTRPCRouter({
       });
 
       await clearDocumentationCache();
+      await audit(prisma, "doc.created", {
+        actor: userActor(ctx.session.user.id),
+        targetId: doc.id,
+        metadata: { title: doc.title },
+        headers: ctx.headers,
+      });
 
       return {
         id: doc.id,
@@ -239,7 +240,7 @@ export const documentationRouter = createTRPCRouter({
       order: documentationEditorSchema.shape.order,
       content: documentationEditorSchema.shape.content,
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       ensurePostgresDocumentationEditing();
 
       const landingPage = await getLandingPageOrThrow();
@@ -281,6 +282,12 @@ export const documentationRouter = createTRPCRouter({
       });
 
       await clearDocumentationCache();
+      await audit(prisma, "doc.updated", {
+        actor: userActor(ctx.session.user.id),
+        targetId: doc.id,
+        metadata: { title: doc.title },
+        headers: ctx.headers,
+      });
 
       return {
         id: doc.id,
@@ -294,7 +301,7 @@ export const documentationRouter = createTRPCRouter({
     }),
     deleteDoc: adminProcedure
     .input(z.object({ id: z.string().min(1, "Document id is required") }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       ensurePostgresDocumentationEditing();
 
       const landingPage = await getLandingPageOrThrow();
@@ -313,6 +320,7 @@ export const documentationRouter = createTRPCRouter({
       }
 
       await clearDocumentationCache();
+      await audit(prisma, "doc.deleted", { actor: userActor(ctx.session.user.id), targetId: input.id, metadata: {}, headers: ctx.headers });
 
       return { success: true };
     }),

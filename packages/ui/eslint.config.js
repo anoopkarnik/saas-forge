@@ -9,13 +9,12 @@ export default [
       "src/components/admin/**/*.tsx",
       "src/components/home/**/*.tsx",
       "src/components/mdx/**/*.tsx",
-      "src/components/notion/**/*.tsx",
       "src/components/payments/**/*.tsx",
       "src/lib/zod/**/*.ts",
       "src/lib/utils/scaffold.ts",
     ],
     rules: {
-      // These surfaces adapt loosely typed CMS, scaffold, Notion, and billing payloads.
+      // These surfaces adapt loosely typed CMS, scaffold, and billing payloads.
       "@typescript-eslint/no-explicit-any": "off",
     },
   },
@@ -59,6 +58,25 @@ export default [
     files: ["src/components/misc/floating-label-input.tsx"],
     rules: {
       "@typescript-eslint/no-empty-object-type": "off",
+    },
+  },
+  {
+    // Translated surfaces: copy goes through use-intl (messages in packages/i18n).
+    files: [
+      "src/components/auth/**/*.tsx",
+      "src/components/home/{SettingsDialog,SidebarUser,MyAccountSettings,SessionSettings,LanguageSettings}.tsx",
+      "src/components/misc/{GuestBanner,LocaleSwitcher}.tsx",
+      "src/components/sidebar/AppSidebar.tsx",
+    ],
+    ignores: ["**/*.test.tsx"],
+    rules: {
+      "react/jsx-no-literals": ["error", { noStrings: false, ignoreProps: true, allowedStrings: ["/", "•", "*", "·", "|", "-", "\"", "🚀", "✨"] }],
+    },
+  },
+  {
+    files: ["src/components/home/{PlansBilling,ProgressWithCredits}.tsx"],
+    rules: {
+      "react/jsx-no-literals": ["error", { noStrings: false, ignoreProps: true, allowedStrings: ["/", "•", "*", "·", "|", "-", "\"", "🚀", "✨"] }],
     },
   },
 ]

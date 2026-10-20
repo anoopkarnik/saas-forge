@@ -1,84 +1,90 @@
+The Billing module takes payments through [Stripe](https://stripe.com/) or [Dodo Payments](https://dodopayments.com/). Pick one with `NEXT_PUBLIC_PAYMENT_GATEWAY`:
 
-We use **Stripe** and **Dodo Payments** to handle credit top-ups. Dodo Payments also acts as a Merchant of Record (MoR) to handle global tax compliance for you if needed.
+| Value | Use when |
+| --- | --- |
+| `stripe` | You handle tax and compliance yourself, or through Stripe Tax |
+| `dodo` | You want a Merchant of Record that handles global sales tax and VAT for you |
+| `none` | Billing UI without a gateway, for example while you decide |
 
+A download keeps only the gateway you chose. Switching later is a free upgrade.
 
-## Configuration
+## Stripe
 
+1. Get your secret key at [dashboard.stripe.com/apikeys](https://dashboard.stripe.com/apikeys) (`sk_test_…` while testing).
+2. Create a webhook endpoint at [dashboard.stripe.com/webhooks](https://dashboard.stripe.com/webhooks):
+   - URL: `https://your-domain.com/api/payments/stripe/webhook`
+   - Event: `checkout.session.completed`
+3. Copy the endpoint's signing secret (`whsec_…`).
 
-**Stripe:**
-
-1. Create an account at [Stripe](https://stripe.com/).
-2. Get your **Pub** **Secret key**, and **Webhook signing secret** from the developer dashboard.
-3. Add variables to `.env`:
-
-```plain text
-STRIPE_SECRET_KEY=your_secret_key
-STRIPE_WEBHOOK_SECRET=your_webhook_secret
+```env
+NEXT_PUBLIC_PAYMENT_GATEWAY="stripe"
+STRIPE_SECRET_KEY="sk_test_..."
+STRIPE_WEBHOOK_SECRET="whsec_..."
 ```
 
+Checkout uses Stripe-hosted pages with `price_data`, so you do not need to create products. `pnpm doctor` verifies the key and checks that an enabled webhook endpoint exists for your `NEXT_PUBLIC_URL`.
 
-**Dodo Payments:**
-
-1. Create an account at [Dodo Payments](https://dodopayments.com/).
-2. Get your **API Key** and **Webhook Key** from the developer settings.
-3. Set the environment to `test_mode` for development.
-4. Add variables to `.env`:
-
-```plain text
-DODO_PAYMENTS_API_KEY=your_api_key
-DODO_PAYMENTS_WEBHOOK_KEY=your_webhook_key
-DODO_PAYMENTS_RETURN_URL=http://localhost:3000
-DODO_PAYMENTS_ENVIRONMENT=test_mode
-NEXT_PUBLIC_DODO_PAYMENTS_URL=https://test.dodopayments.com
-```
-
-
-## Creating Products (only for Dodo)
-
-1. Create a product in your dashboard  for one-time credit top-ups (e.g., "100 Credits").
-2. Copy the **Product ID**.
-3. Add it to your `.env` (e.g., `DODO_CREDITS_PRODUCT_ID`).
-
-## Webhooks
-
-
-The boilerplate includes webhook handlers to process payment events automatically.
-
-
-**Stripe Webhook:**
-
-- Located at `/api/payments/stripe/webhook`
-- Listens for `checkout.session.completed` events.
-
-**Dodo Webhook:**
-
-- Located at `/api/payments/dodo/webhook`
-- Listens for payment success events.
-
-### Testing Webhooks Locally
-
-
-Use tools like the **Stripe CLI** for Stripe, or **ngrok** for Dodo or you can do cloudflare tunnel for both
-
+### Testing locally
 
 ```bash
-# Stripe CLI
+stripe login
 stripe listen --forward-to localhost:3000/api/payments/stripe/webhook
+```
 
-# ngrok for Dodo
+`stripe listen` prints a `whsec_…` secret for local use; put it in `STRIPE_WEBHOOK_SECRET`. Pay with card `4242 4242 4242 4242`, any future date and any CVC.
+
+## Dodo Payments
+
+1. In the [Dodo dashboard](https://app.dodopayments.com/), create a one-time product that represents **50 credits**. Copy its product ID.
+2. Under **Developer → API Keys**, create a key. Keys work only in the mode they were created in (test or live).
+3. Under **Developer → Webhooks**, add `https://your-domain.com/api/payments/dodo/webhook` and copy its secret.
+
+```env
+NEXT_PUBLIC_PAYMENT_GATEWAY="dodo"
+DODO_PAYMENTS_API_KEY="..."
+DODO_PAYMENTS_WEBHOOK_KEY="whsec_..."
+DODO_PAYMENTS_ENVIRONMENT="test_mode"   # live_mode in production (the default)
+DODO_CREDITS_PRODUCT_ID="pdt_..."
+NEXT_PUBLIC_DODO_PAYMENTS_URL="https://test.dodopayments.com"
+```
+
+The checkout buys `credits / 50` units of that product. `NEXT_PUBLIC_DODO_PAYMENTS_URL` is used to build the invoice link stored on each transaction.
+
+### Testing locally
+
+Dodo needs a public URL. Expose your dev server with a tunnel and register the tunnel URL as the webhook endpoint:
+
+```bash
+cloudflared tunnel --url http://localhost:3000
+# or
 ngrok http 3000
 ```
 
+## How the webhooks work
 
-Then use the provided forwarding URLs in your dashboard webhook settings.
+Both handlers verify the signature first (Stripe with `constructEvent`, Dodo with `@dodopayments/nextjs`), then credit the user exactly once:
 
+1. Read the user ID and credit amount from the checkout metadata, and the unique checkout or payment ID.
+2. Return early if a `Transaction` with that `checkoutSessionId` already exists (gateways retry deliveries).
+3. Inside `db.$transaction`, check again, then create the `Transaction` and increment `creditsTotal`.
+4. If two deliveries race past both checks, the unique constraint on `checkoutSessionId` makes the second insert fail with Prisma `P2002`, which is caught and answered with success.
 
-## Credits System
+| Gateway | Event handled | Route |
+| --- | --- | --- |
+| Stripe | `checkout.session.completed` | `/api/payments/stripe/webhook` |
+| Dodo | `payment.succeeded` (`onPaymentSucceeded`) | `/api/payments/dodo/webhook` |
 
+Webhook routes have no session; their route policy entries use `auth: "webhook"`, a 1 MB body limit and provider-side validation. Follow the same four steps for any new webhook you add.
 
-The boilerplate includes a built-in credits system:
+## Going live
 
-- Each user has `creditsTotal` and `creditsUsed` fields
-- Credits are added automatically when a payment succeeds
-- Track credit usage in your app features
-- Configure `CREDITS_PER_UNIT` in the billing procedures
+1. Switch to live keys (`sk_live_…`, or a live-mode Dodo key with `DODO_PAYMENTS_ENVIRONMENT="live_mode"` and the live product ID).
+2. Create the live webhook endpoint and update the secret.
+3. Make one real purchase and refund it from the gateway dashboard.
+4. Check that the transaction and credits appear in **Settings → Plans & Billing**.
+
+## Troubleshooting
+
+- **Paid but no credits**: check the gateway's webhook delivery log. A `400` means a bad signature (wrong secret or a proxy changing the body); a timeout means the URL is not reachable.
+- **Duplicate deliveries**: expected. The handlers are idempotent and answer 200 with "already processed".
+- **Dodo key rejected**: the key's mode does not match `DODO_PAYMENTS_ENVIRONMENT`.

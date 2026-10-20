@@ -2,8 +2,10 @@ import React from "react"
 import { useNavigate, useLocation } from "react-router-dom"
 import { useSession } from "@workspace/auth/better-auth/auth-client";
 import SidebarUser from "./SidebarUser"
+import WorkspaceSlot from "../organizations/WorkspaceSlot"
 import { SidebarProvider, SidebarTrigger } from "@workspace/ui/components/shadcn/sidebar";
 import { Separator } from "@workspace/ui/components/shadcn/separator";
+import NotificationsBell from "../notifications/NotificationsBell";
 import Support from "../support/Support";
 import { useTRPC } from "../../lib/trpc";
 import { useQuery } from "@tanstack/react-query";
@@ -14,7 +16,7 @@ export default function DashboardRoute() {
     const navigate = useNavigate();
     const location = useLocation();
     const trpc = useTRPC() as any;
-    const { data: landingInfo } = useQuery(trpc.landing.getLandingInfoFromNotion.queryOptions());
+    const { data: landingInfo } = useQuery(trpc.landing.getLandingInfo.queryOptions());
     const { data: session, isPending, isRefetching } = useSession();
     const justLoggedIn = !!(location.state as any)?.justLoggedIn;
 
@@ -40,11 +42,15 @@ export default function DashboardRoute() {
                 onNavigate={(route) => navigate(route)}
                 isAdmin={session?.user?.role === "admin"}
                 slotUser={<SidebarUser />}
+                slotWorkspace={<WorkspaceSlot />}
             />
             <div className="flex flex-col flex-1 max-h-screen">
                 <div className="flex items-center gap-4 py-2 px-4">
                     <SidebarTrigger />
                     <div className="font-semibold tracking-tight">Dashboard</div>
+                    <div className="ml-auto">
+                        <NotificationsBell />
+                    </div>
                 </div>
                 <Separator />
                 <main className="flex-1 overflow-auto p-6" />

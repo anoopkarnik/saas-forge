@@ -39,12 +39,14 @@ export function createSeoMetadata({
   title,
   description = getSiteDescription(),
   pathname = "/",
+  siteName = getSiteName(),
 }: {
   title?: string;
   description?: string;
   pathname?: string;
+  /** Runtime name from site config; see `siteMetadata()`. */
+  siteName?: string;
 } = {}): Metadata {
-  const siteName = getSiteName();
   const pageTitle = title ? `${title} | ${siteName}` : siteName;
   const canonicalUrl = getCanonicalUrl(pathname);
   const ogImage = getDefaultOgImageUrl();

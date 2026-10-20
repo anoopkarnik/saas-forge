@@ -1,0 +1,25 @@
+/// One privileged action (audit_log module). Append-only: the app never updates
+/// or deletes rows; the retention job removes old ones. No foreign keys, so the
+/// trail outlives deleted users, keys and organizations.
+model AuditEvent {
+    id             String   @id @default(cuid())
+    occurredAt     DateTime @default(now())
+    /// user, apiKey or system.
+    actorType      String
+    actorUserId    String?
+    actorApiKeyId  String?
+    organizationId String?
+    /// Dotted name from the action catalogue, e.g. org.member.role_changed.
+    action         String
+    targetType     String
+    targetId       String?
+    /// Redacted per the action catalogue before it is stored.
+    metadata       Json     @default("{}")
+    ip             String?
+    userAgent      String?
+
+    @@index([organizationId, occurredAt])
+    @@index([actorUserId, occurredAt])
+    @@index([occurredAt])
+    @@schema("user_schema")
+}

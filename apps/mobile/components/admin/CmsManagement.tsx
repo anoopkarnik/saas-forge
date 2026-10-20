@@ -74,7 +74,7 @@ export default function CmsManagement({ onBack }: Props) {
         setSaving(true);
         try {
             await updateLandingData(values);
-            showAlert("Success", "CMS updated successfully! Changes synced to Notion.");
+            showAlert("Success", "CMS updated successfully!");
             await loadData();
         } catch (e: any) {
             showAlert("Error", e.message || "Failed to update CMS");
@@ -122,7 +122,7 @@ export default function CmsManagement({ onBack }: Props) {
                 <Heading className="text-left text-2xl">Content Management</Heading>
             </View>
             <Subtitle className="text-left mb-6">
-                Update your landing page content. Changes sync to Notion.
+                Update your landing page content. Changes are saved to your CMS.
             </Subtitle>
 
             <MutedText className="text-xs uppercase tracking-wider mb-3 font-medium">

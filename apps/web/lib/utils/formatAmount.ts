@@ -1,6 +1,6 @@
-export function formatAmount (amount:number, currency:string){
-  return new Intl.NumberFormat('en-US',{
-    style: 'currency',
-    currency
-  }).format(amount/100)
+import { formatCurrency } from "@workspace/i18n/format";
+import type { Locale } from "@workspace/i18n/config";
+
+export function formatAmount(amount: number, currency: string, locale?: Locale) {
+  return formatCurrency(amount, currency, locale);
 }

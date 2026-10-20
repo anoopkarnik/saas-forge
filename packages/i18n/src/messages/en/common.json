@@ -1,0 +1,10 @@
+{
+  "language": "Language",
+  "locales": { "en": "English", "es": "Español" },
+  "languageSaveFailed": "Could not save your language. Please try again.",
+  "loading": { "title": "Loading", "description": "Please wait while we are loading the page!" },
+  "retrieving": { "title": "Retrieving", "description": "Please wait while we retrieve the data." },
+  "retrieveError": { "title": "Error Retrieving Data", "description": "There was an error while retrieving the data." },
+  "somethingWentWrong": "Something went wrong!",
+  "guestBanner": "You're in a read-only demo. Changes are disabled."
+}

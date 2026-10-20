@@ -68,4 +68,38 @@ export default [
       "@next/next/no-img-element": "off",
     },
   },
+  {
+    // These env vars are only defaults now: UI reads the runtime value from
+    // useSiteConfig() (or getSiteConfig() on the server), see lib/site-config.
+    files: ["app/**/*.tsx", "blocks/**/*.tsx", "components/**/*.tsx", "hooks/**/*.ts"],
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector:
+            "MemberExpression[object.object.name='process'][object.property.name='env'][property.name=/^NEXT_PUBLIC_(THEME|THEME_TYPE|SAAS_NAME|SITE_DESCRIPTION|AUTH_EMAIL|AUTH_GOOGLE|AUTH_GITHUB|AUTH_LINKEDIN|CALENDLY_BOOKING_URL|GOOGLE_ANALYTICS_MEASUREMENT_ID)$/]",
+          message: "This setting is runtime site config: use useSiteConfig() or getSiteConfig().",
+        },
+      ],
+    },
+  },
+  {
+    // Translated surfaces: copy goes through next-intl (messages in packages/i18n).
+    files: [
+      "app/(auth)/**/*.tsx",
+      "app/(home)/layout.tsx",
+      "app/landing/page.tsx",
+      "components/home/**/*.tsx",
+      "components/i18n/**/*.tsx",
+      "components/analytics/**/*.tsx",
+      "blocks/Support.tsx",
+      "blocks/home/**/*.tsx",
+      "components/landing/{NavbarSection,FooterSection,HeroSection,FeatureSection,PricingItem,TestimonialSection}.tsx",
+      "blocks/landing/{DocSidebar,DocPostPage}.tsx",
+    ],
+    ignores: ["**/*.test.tsx"],
+    rules: {
+      "react/jsx-no-literals": ["error", { noStrings: false, ignoreProps: true, allowedStrings: ["/", "•", "*", "·", "|", "-", "\"", "🚀", "✨"] }],
+    },
+  },
 ]

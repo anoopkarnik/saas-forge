@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import db  from "@workspace/database/client";
+import { paymentFailed, paymentSucceeded } from "@/lib/notifications/catalog";
+import { notify } from "@/lib/notifications/notify";
+import { emitWebhook } from "@/lib/webhooks/service";
+import { track } from "@workspace/analytics/server";
 
 export async function POST(req: NextRequest) {
 
@@ -15,6 +19,24 @@ export async function POST(req: NextRequest) {
       onSubscriptionActive: async (payload: any) => {
         console.log("Received onSubscriptionActive webhook:", payload);
         // Add your business logic here
+      },
+      onPaymentFailed: async (payload: any) => {
+        console.log("[Dodo Webhook] Payment failed:", payload?.data?.payment_id);
+        if (payload?.data?.metadata?.userId && payload?.data?.payment_id) {
+          await notify(
+            paymentFailed,
+            payload.data.metadata.userId,
+            { reason: payload.data.error_message ?? undefined },
+            { dedupeKey: `payment-failed:${payload.data.payment_id}` },
+          );
+        }
+        if (payload?.data?.metadata?.userId) {
+          await emitWebhook(
+            "payment.failed",
+            { userId: payload.data.metadata.userId, reason: payload.data.error_message ?? null },
+            { userId: payload.data.metadata.userId },
+          );
+        }
       },
       onPaymentSucceeded: async (payload: any) => {
         const credits = payload?.data?.metadata?.credits;
@@ -84,6 +106,20 @@ export async function POST(req: NextRequest) {
           console.error("[Dodo Webhook] Error processing webhook:", error);
           throw error;
         }
+
+        await notify(paymentSucceeded, userId, { credits: Number(credits) }, { dedupeKey: `payment:${eventId}` });
+        await emitWebhook(
+          "payment.succeeded",
+          {
+            userId,
+            credits: Number(credits),
+            amount: amount == null ? null : Number(amount),
+            currency: currency ?? null,
+            checkoutId: eventId,
+          },
+          { userId },
+        );
+        await track("billing.checkout_completed", { credits: Number(credits), gateway: "dodo" }, { distinctId: userId });
 
         // Revalidate the entire layout cache so updated credits show immediately everywhere
         revalidatePath("/", "layout");

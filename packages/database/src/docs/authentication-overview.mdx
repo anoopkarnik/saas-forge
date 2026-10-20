@@ -1,30 +1,90 @@
+SaaS Forge uses [Better Auth](https://www.better-auth.com/) with the Prisma adapter. Users, accounts, sessions and verification tokens live in Postgres (`user_schema`). The web app, the desktop app and the mobile app all sign in against the same server.
 
-# Authentication
+## Sign-in methods
 
+| Method | Turn on with | Setup |
+| --- | --- | --- |
+| Email and password | `NEXT_PUBLIC_AUTH_EMAIL=true` | Needs an email client for verification: [Email](/landing/doc/email) |
+| Google | `NEXT_PUBLIC_AUTH_GOOGLE=true` | [Google OAuth](/landing/doc/google-oauth-credentials) |
+| GitHub | `NEXT_PUBLIC_AUTH_GITHUB=true` | [GitHub OAuth](/landing/doc/github-oauth-credentials) |
+| LinkedIn | `NEXT_PUBLIC_AUTH_LINKEDIN=true` | [LinkedIn OAuth](/landing/doc/linkedin-oauth-credentials) |
 
-The SaaS Boilerplate uses **Better Auth** for handling authentication. Better Auth interacts directly with your PostgreSQL database to store user sessions and account information.
+The toggles show or hide the buttons, and production refuses to boot when a toggle is on without its credentials. `BETTER_AUTH_SECRET` (at least 32 characters) is always required.
 
+## How the flows work
 
-## How it works
+- **Sign-up with email** sends a verification email. Sign-in is refused until the address is verified, and verifying signs the user in and lands on `/email-verified`. With no email client configured, the link is printed in the server log outside production.
+- **OAuth** redirects to the provider and back to `/api/auth/callback/<provider>`. Social accounts skip email verification. Google, GitHub and LinkedIn are trusted for account linking, so signing in with a provider that uses the same email attaches it to the existing user.
+- **Password reset**: `/forgot-password` emails a link to `/reset-password`.
+- **Account settings**: from **Settings → My Account** users update their name and avatar, change their password (or set one after signing up with OAuth), and delete their account. **Settings → Sessions** lists active sessions and revokes them. Changing email is enabled on the server (confirmed by email) but has no screen yet.
+- **Rate limits**: Better Auth allows 100 requests per minute per client, and 3 email sign-in attempts per minute.
 
-1. **Client**: The frontend uses `better-auth/client` to initiate sign-in requests (e.g., "Sign in with Google").
-2. **Server**: The backend verifies the request and communicates with the provider (Google, GitHub, LinkedIn).
-3. **Database**: Upon successful authentication, a user record is created (if new) and a session is stored in the database.
-4. **Session**: A secure, HTTP-only cookie is set on the user's browser to maintain the session.
+## Sessions
 
-## Configuration
+- Sessions last 7 days and are refreshed once a day while in use.
+- Session data is cached in a signed cookie for 5 minutes, so role changes can take up to 5 minutes to reach an existing session.
+- The cookie is named after your product: `<name>.session_token`, where `<name>` is `NEXT_PUBLIC_SAAS_NAME` in lowercase with dashes (`better-auth` if unset). In production over HTTPS it gets the `__Secure-` prefix.
+- Cookies are `SameSite=None; Secure` so the desktop app can use them, and cross-subdomain cookies are enabled in production.
 
+## Who becomes admin
 
-All authentication logic is located in `packages/auth`.
+The **first user** created in a database is promoted to `admin` automatically. Make sure that is you: sign up right after deploying. Admins can change other users' roles in **Admin → Users**. See [Roles & Access Control](/landing/doc/roles-and-access).
 
-- **Providers**: Configured in `packages/auth/src/auth.ts`.
-- **Environment Variables**: You must provide Client IDs and Secrets in your `.env` file for each provider you wish to enable.
+## Reading the session
 
-## Adding a New Provider
+On the server (route handlers, server components, server actions):
 
+```ts
+import { headers } from "next/headers";
+import { auth } from "@workspace/auth/better-auth/auth";
 
-To add a new provider (e.g., Discord):
+const session = await auth.api.getSession({ headers: await headers() });
+if (!session) {
+  // not signed in
+}
+session.user.role; // "user" | "admin" | "guest"
+```
 
-1. Install the provider package/plugin if required.
-2. Update `packages/auth/src/auth.ts` to include the new provider in the `providers` array.
-3. Add the necessary environment variables.
+In tRPC, use `protectedProcedure` and read `ctx.session`. In API routes, call `guardRoute(req, "/api/your/route")`.
+
+In client components:
+
+```tsx
+"use client";
+import { authClient, useSession } from "@workspace/auth/better-auth/auth-client";
+
+const { data: session, isPending } = useSession();
+
+await authClient.signIn.social({ provider: "github", callbackURL: "/" });
+await authClient.signOut();
+```
+
+## Desktop and mobile
+
+- **Desktop:** the packaged renderer runs on the `app://saas-forge` origin, which Better Auth and CORS trust explicitly. For OAuth, the provider redirects to `/api/auth/desktop-callback`, which the Electron main process detects before reloading the app signed in.
+- **Mobile:** the Expo plugin (`@better-auth/expo`) stores the session in secure storage and handles the `saas-forge://` deep-link scheme.
+
+Provider consoles only need the web callback URL. See [Desktop App](/landing/doc/desktop-app) and [Mobile App](/landing/doc/mobile-app).
+
+## Where things live
+
+| File | Purpose |
+| --- | --- |
+| `packages/auth/src/better-auth/auth.ts` | Server config: providers, plugins, hooks, sessions, cookies |
+| `packages/auth/src/better-auth/auth-client.ts` | React client with the admin plugin |
+| `packages/auth/src/better-auth/cookies.ts` | Cookie names derived from `NEXT_PUBLIC_SAAS_NAME` |
+| `packages/auth/src/better-auth/registration.ts` | Invite-only registration rule |
+| `packages/auth/src/better-auth/guestGuard.ts` | Account mutations the guest role may not call |
+| `apps/web/app/api/auth/[...all]/route.ts` | Better Auth HTTP handler |
+| `apps/web/app/(auth)/` | Sign-in, sign-up, password reset and verification pages |
+
+## Adding a provider
+
+Better Auth supports [many social providers](https://www.better-auth.com/docs/concepts/oauth). To add one, for example Discord:
+
+1. Add it to `socialProviders` in `auth.ts`, and to `accountLinking.trustedProviders` if accounts should link by email.
+2. Add `AUTH_DISCORD_CLIENT_ID` and `AUTH_DISCORD_CLIENT_SECRET` to `.env.example`, and a `NEXT_PUBLIC_AUTH_DISCORD` toggle.
+3. Add the toggle to `INTEGRATION_REQUIREMENTS` in `apps/web/lib/env.ts` and a doctor hint.
+4. Add the button to the sign-in and sign-up pages (and the native apps if you use them), calling `authClient.signIn.social({ provider: "discord" })`.
+5. Register `<NEXT_PUBLIC_URL>/api/auth/callback/discord` in the provider's console.
+6. Add the provider id to the social check in `emailVerification.sendVerificationEmail` so its users skip email verification.

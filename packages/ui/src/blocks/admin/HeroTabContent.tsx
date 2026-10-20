@@ -8,7 +8,7 @@ import { Input } from "@workspace/ui/components/shadcn/input";
 import { Textarea } from "@workspace/ui/components/shadcn/textarea";
 import { Button } from "@workspace/ui/components/shadcn/button";
 import { AIFillPromptDialog } from "@workspace/ui/components/admin/AIFillPromptDialog";
-import { Home, Save, Loader2, WandSparkles } from "lucide-react";
+import { Home, Save, Loader2 } from "lucide-react";
 import { SectionHeader } from "@workspace/ui/components/admin/SectionHeader";
 import { ImageUploadField } from "@workspace/ui/components/admin/ImageUploadField";
 import { ArrayEditor } from "@workspace/ui/components/admin/ArrayEditor";
@@ -98,7 +98,7 @@ export function HeroTabContent({ initialData, onSave, isSaving, uploadUrl, aiDra
                         {form.formState.isDirty ? "You have unsaved changes." : "All changes are saved."}
                     </p>
                     <div className="flex items-center gap-2">
-                        <AIFillPromptDialog isPending={Boolean(isAiFilling)} disabled={!onAIFill} onFill={(instruction) => onAIFill?.("hero", form.getValues(), instruction)} buttonSize="sm" />
+                        {onAIFill && <AIFillPromptDialog isPending={Boolean(isAiFilling)} onFill={(instruction) => onAIFill("hero", form.getValues(), instruction)} buttonSize="sm" />}
                         <Button type="submit" disabled={isSaving || !form.formState.isDirty} size="sm">
                             {isSaving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</> : <><Save className="mr-2 h-4 w-4" />Save Hero</>}
                         </Button>

@@ -1,5 +1,5 @@
 import { createTRPCRouter, baseProcedure } from "@/trpc/init";
-import { sendSupportEmail } from "@workspace/email/resend/index";
+import { sendEmail } from "@workspace/email/jobs";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { auth } from "@workspace/auth/better-auth/auth";
@@ -39,12 +39,7 @@ export const supportRouter = createTRPCRouter({
 
       const { subject, email, message } = input;
       const newSubject = subject + " from " + email + " for " + process.env.NEXT_PUBLIC_SAAS_NAME ; 
-      const res = await sendSupportEmail(newSubject,message)
-
-
-      if (!res) {
-        throw new Error("Failed to send support message");
-      }
+      await sendEmail({ template: "support", subject: newSubject, body: message });
 
       return { success: true };
     }),

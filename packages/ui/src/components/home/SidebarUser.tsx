@@ -11,6 +11,7 @@ import {
 } from "lucide-react"
 import { useTheme } from "next-themes"
 import React, { useEffect, useState } from "react"
+import { useTranslations } from "use-intl"
 
 import {
   Avatar,
@@ -44,6 +45,7 @@ export interface SidebarUserProps extends Omit<SettingsDialogProps, "children" |
   session?: any;
   status?: string;
   isSigningOut?: boolean;
+  onOpenSettings?: () => void;
 }
 
 const SidebarUser = ({
@@ -63,7 +65,12 @@ const SidebarUser = ({
   status,
   isSigningOut: externalIsSigningOut,
   apiKeysContent,
+  webhooksContent,
+  onOpenSettings,
+  onLocaleChange,
 }: SidebarUserProps) => {
+
+  const t = useTranslations("settings.menu")
 
   const { isMobile } = useSidebar()
   const { setTheme, theme } = useTheme()
@@ -72,15 +79,6 @@ const SidebarUser = ({
   const [internalIsSigningOut, setIsSigningOut] = useState(false)
 
   const isSigningOut = externalIsSigningOut || internalIsSigningOut;
-
-  const handleSettingsClick = (e: React.MouseEvent) => {
-    // Prevent the dropdown from closing
-    e.preventDefault()
-    e.stopPropagation()
-
-    // Open the settings dialog
-    setIsSettingsOpen(true)
-  }
 
   const handleSignout = async () => {
     setIsSigningOut(true)
@@ -108,9 +106,10 @@ const SidebarUser = ({
   }
 
   return (
+    <>
     <SidebarMenu>
       <SidebarMenuItem>
-        <DropdownMenu>
+        <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
               size="lg"
@@ -147,14 +146,53 @@ const SidebarUser = ({
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <SettingsDialog
+              <DropdownMenuItem className="flex gap-2 cursor-pointer" onSelect={() => {
+                setIsDropdownOpen(false);
+                if (onOpenSettings) onOpenSettings();
+                else setIsSettingsOpen(true);
+              }}>
+                <Settings size={20} aria-hidden="true" />
+                {t("settings")}
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
+            <DropdownMenuSeparator />
+            <DropdownMenuGroup>
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger className="flex gap-2 cursor-pointer">
+                  <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+                  <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+                  <span>{t("theme")}</span>
+                </DropdownMenuSubTrigger>
+                <DropdownMenuSubContent>
+                  <DropdownMenuItem onClick={() => setTheme("light")} className="cursor-pointer gap-2">
+                    <Sun className="h-4 w-4" />
+                    <span>{t("light")}</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setTheme("dark")} className="cursor-pointer gap-2">
+                    <Moon className="h-4 w-4" />
+                    <span>{t("dark")}</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setTheme("system")} className="cursor-pointer gap-2">
+                    <Laptop className="h-4 w-4" />
+                    <span>{t("system")}</span>
+                  </DropdownMenuItem>
+                </DropdownMenuSubContent>
+              </DropdownMenuSub>
+            </DropdownMenuGroup>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem className="flex gap-2 cursor-pointer" onClick={handleSignout}>
+              <LogOut size={20} />
+              {t("logout")}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </SidebarMenuItem>
+    </SidebarMenu>
+    {!onOpenSettings && (              <SettingsDialog
                 open={isSettingsOpen}
                 onOpenChange={(open) => {
                   setIsSettingsOpen(open)
-                  // Ensure dropdown remains open when dialog is closed
-                  if (!open) {
-                    setIsDropdownOpen(true)
-                  }
+
                 }}
                 onNavigate={onNavigate}
                 onSetPassword={onSetPassword}
@@ -168,49 +206,11 @@ const SidebarUser = ({
                 onCreateCheckoutSession={onCreateCheckoutSession}
                 openedTab={openedTab}
                 apiKeysContent={apiKeysContent}
+                webhooksContent={webhooksContent}
+                onLocaleChange={onLocaleChange}
               >
-                <DropdownMenuItem
-                  className="flex gap-2 cursor-pointer"
-                  onClick={handleSettingsClick}
-                >
-                  <Settings size={20} />
-                  Settings
-                </DropdownMenuItem>
-              </SettingsDialog>
-            </DropdownMenuGroup>
-            <DropdownMenuSeparator />
-            <DropdownMenuGroup>
-              <DropdownMenuSub>
-                <DropdownMenuSubTrigger className="flex gap-2 cursor-pointer">
-                  <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-                  <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-                  <span>Theme</span>
-                </DropdownMenuSubTrigger>
-                <DropdownMenuSubContent>
-                  <DropdownMenuItem onClick={() => setTheme("light")} className="cursor-pointer gap-2">
-                    <Sun className="h-4 w-4" />
-                    <span>Light</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setTheme("dark")} className="cursor-pointer gap-2">
-                    <Moon className="h-4 w-4" />
-                    <span>Dark</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setTheme("system")} className="cursor-pointer gap-2">
-                    <Laptop className="h-4 w-4" />
-                    <span>System</span>
-                  </DropdownMenuItem>
-                </DropdownMenuSubContent>
-              </DropdownMenuSub>
-            </DropdownMenuGroup>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem className="flex gap-2 cursor-pointer" onClick={handleSignout}>
-              <LogOut size={20} />
-              Log out
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </SidebarMenuItem>
-    </SidebarMenu>
+              </SettingsDialog>)}
+    </>
   )
 }
 

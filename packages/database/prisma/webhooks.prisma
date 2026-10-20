@@ -1,0 +1,51 @@
+/// A customer's endpoint for outgoing webhooks (webhooks module). Owned by a
+/// user, or by an organization (organizationId) when multi_tenancy is present.
+model WebhookEndpoint {
+    id                      String            @id @default(cuid())
+    ownerUserId             String?
+    owner                   User?             @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
+    organizationId          String?
+    url                     String
+    description             String            @default("")
+    /// AES-256-GCM with WEBHOOK_SECRET_KEY: signing needs the raw secret, so it cannot be hashed.
+    secretEncrypted         String
+    /// Shown in the UI to tell secrets apart; the secret itself is shown once.
+    secretPrefix            String
+    /// After a rotation the old secret also signs for 24 hours.
+    previousSecretEncrypted String?
+    previousSecretExpiresAt DateTime?
+    events                  String[]
+    enabled                 Boolean           @default(true)
+    disabledReason          String?
+    consecutiveFailures     Int               @default(0)
+    createdAt               DateTime          @default(now())
+    updatedAt               DateTime          @updatedAt
+    deliveries              WebhookDelivery[]
+
+    @@index([ownerUserId])
+    @@index([organizationId])
+    @@schema("user_schema")
+}
+
+/// One event sent to one endpoint, with its latest attempt.
+model WebhookDelivery {
+    id            String          @id @default(cuid())
+    endpointId    String
+    endpoint      WebhookEndpoint @relation(fields: [endpointId], references: [id], onDelete: Cascade)
+    eventId       String
+    eventType     String
+    /// The signed envelope, kept for retries and replays.
+    payload       Json
+    attempt       Int             @default(0)
+    /// pending, retrying, succeeded or failed.
+    status        String          @default("pending")
+    responseCode  Int?
+    durationMs    Int?
+    error         String?
+    nextAttemptAt DateTime?
+    createdAt     DateTime        @default(now())
+    updatedAt     DateTime        @updatedAt
+
+    @@index([endpointId, createdAt])
+    @@schema("user_schema")
+}

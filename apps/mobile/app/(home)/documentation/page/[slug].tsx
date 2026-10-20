@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import { View, ScrollView, ActivityIndicator, Alert, Text } from "react-native";
 import { Stack, useLocalSearchParams } from "expo-router";
 import { Heading, MutedText } from "@/components/common";
-import { NativeBlocks } from "@/components/documentation/NativeBlocks";
 
 const baseURL = process.env.EXPO_PUBLIC_API_URL;
 
@@ -69,7 +68,7 @@ function NativeMarkdown({ content }: { content: string }) {
 
 export default function DocumentationPage() {
     const { slug } = useLocalSearchParams<{ slug: string }>();
-    const [blocks, setBlocks] = useState<any[] | string>([]);
+    const [content, setContent] = useState("");
     const [docItem, setDocItem] = useState<DocItem | null>(null);
     const [loading, setLoading] = useState(true);
 
@@ -77,7 +76,7 @@ export default function DocumentationPage() {
         async function fetchContent() {
             try {
                 // Fetch info to get the metadata
-                const infoRes = await fetch(`${baseURL}/api/trpc/documentation.getDocumentationInfoFromNotion`);
+                const infoRes = await fetch(`${baseURL}/api/trpc/documentation.getDocumentationInfo`);
                 if (infoRes.ok) {
                     const infoJson = await infoRes.json();
                     let allDocs = [];
@@ -93,17 +92,13 @@ export default function DocumentationPage() {
                     }
                 }
 
-                // Fetch the blocks
+                // Fetch the markdown content
                 const input = encodeURIComponent(JSON.stringify({ slug }));
-                const blockRes = await fetch(`${baseURL}/api/trpc/documentation.queryDocumentationBySlug?input=${input}`);
-                if (!blockRes.ok) throw new Error("Failed to fetch page blocks");
-                const blockJson = await blockRes.json();
+                const contentRes = await fetch(`${baseURL}/api/trpc/documentation.queryDocumentationBySlug?input=${input}`);
+                if (!contentRes.ok) throw new Error("Failed to fetch page content");
+                const contentJson = await contentRes.json();
 
-                if (blockJson?.result?.data?.json) {
-                    setBlocks(blockJson.result.data.json);
-                } else {
-                    setBlocks(blockJson?.result?.data || []);
-                }
+                setContent(contentJson?.result?.data?.json ?? contentJson?.result?.data ?? "");
             } catch (err) {
                 Alert.alert("Error", "Could not load this page.");
             } finally {
@@ -119,7 +114,7 @@ export default function DocumentationPage() {
 
             {loading ? (
                 <ActivityIndicator size="large" className="mt-10" />
-            ) : ((typeof blocks === "string" && !blocks.trim()) || (Array.isArray(blocks) && !blocks.length)) ? (
+            ) : !content.trim() ? (
                 <View className="flex-1 items-center justify-center mt-10">
                     <MutedText>No documentation content found.</MutedText>
                 </View>
@@ -137,7 +132,7 @@ export default function DocumentationPage() {
                         </MutedText>
                     </View>
 
-                    {typeof blocks === "string" ? <NativeMarkdown content={blocks} /> : <NativeBlocks blocks={blocks} />}
+                    <NativeMarkdown content={content} />
                 </View>
             )}
         </ScrollView>

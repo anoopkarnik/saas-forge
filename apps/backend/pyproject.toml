@@ -1,7 +1,7 @@
 [project]
 name = "saas-forge-backend"
 version = "0.1.0"
-description = "FastAPI backend for long-running AI workloads (LangGraph + RAG)."
+description = "FastAPI execution service for AI agents and RAG."
 requires-python = ">=3.12"
 dependencies = [
   "fastapi>=0.115",
@@ -11,8 +11,6 @@ dependencies = [
   "sqlalchemy[asyncio]>=2.0",
   "asyncpg>=0.30",
   "pgvector>=0.3",
-  "arq>=0.26",
-  "redis>=5.2",
   "langgraph>=0.2",
   "langchain-core>=0.3",
   "langchain-openai>=0.2",
@@ -33,6 +31,7 @@ dependencies = [
   "opentelemetry-instrumentation-fastapi>=0.48b0",
   "opentelemetry-instrumentation-httpx>=0.48b0",
   "opentelemetry-instrumentation-sqlalchemy>=0.48b0",
+  "langchain-mcp-adapters>=0.3.2,<0.4",
 ]
 
 [dependency-groups]
@@ -56,6 +55,10 @@ packages = ["src/saas_forge_backend"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+# One loop for the whole run: the db engine is a process-wide singleton and its
+# asyncpg connections are bound to the loop that created them.
+asyncio_default_fixture_loop_scope = "session"
+asyncio_default_test_loop_scope = "session"
 pythonpath = ["src"]
 testpaths = ["tests"]
 

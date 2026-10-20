@@ -8,9 +8,11 @@ import { z } from 'zod'
 import { LoginSchema } from '@workspace/auth/utils/zod'
 import LoginPage from '@workspace/ui/blocks/auth/LoginPage'
 import LoadingCard from '@workspace/ui/components/auth/LoadingCard'
+import { useSiteConfig } from '@/components/site-config/SiteConfigProvider'
 
 const LoginContent = () => {
   const router = useRouter()
+  const config = useSiteConfig()
   const [error, setError] = useState<string | undefined>(undefined)
 
 
@@ -32,10 +34,10 @@ const LoginContent = () => {
 
   return (
     <LoginPage
-      showEmail={process.env.NEXT_PUBLIC_AUTH_EMAIL === 'true'}
-      showGoogleProvider={process.env.NEXT_PUBLIC_AUTH_GOOGLE === 'true'}
-      showGithubProvider={process.env.NEXT_PUBLIC_AUTH_GITHUB === 'true'}
-      showLinkedinProvider={process.env.NEXT_PUBLIC_AUTH_LINKEDIN === 'true'}
+      showEmail={config['auth.email.visible']}
+      showGoogleProvider={config['auth.google.visible']}
+      showGithubProvider={config['auth.github.visible']}
+      showLinkedinProvider={config['auth.linkedin.visible']}
       onEmailSubmit={loginWithEmail}
       onGoogleProviderSubmit={() => loginWithSocials('google')}
       onGithubProviderSubmit={() => loginWithSocials('github')}

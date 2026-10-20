@@ -6,7 +6,7 @@ import LegalPageLayout from '@/components/landing/LegalPageLayout';
 
 const PrivacyPolicy = () => {
     const trpc = useTRPC();
-    const { data } = useSuspenseQuery(trpc.landing.getLandingInfoFromNotion.queryOptions());
+    const { data } = useSuspenseQuery(trpc.landing.getLandingInfo.queryOptions());
 
     const tableOfContents = [
         { id: "interpretation-definitions", label: "Interpretation and Definitions" },

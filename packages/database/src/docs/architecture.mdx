@@ -1,0 +1,74 @@
+How the pieces fit, and the rules that keep them apart.
+
+## Request flow
+
+```text
+Browser / Desktop / Mobile
+   │
+   ├─ pages ──► middleware.ts (session cookie check, body-size limit, CORS)
+   │               └─► app/(home), app/landing, app/(auth)
+   │
+   ├─ /api/trpc ─► tRPC router ─► procedure builder (base / protected / admin / org)
+   │                                  └─► lib services, Prisma, packages
+   │
+   ├─ /api/... ──► route handler ─► guardRoute (session routes) / authenticateApiKey / webhook signature
+   │
+   └─ /api/auth ─► Better Auth
+```
+
+`apps/web/lib/route-policy.ts` is the single table that declares, for every page group and API route, its auth mode, roles, guest access, rate limit, maximum body size and input validation. The middleware, `guardRoute` and an integration test all read it.
+
+## Layers
+
+| Layer | Location | May import |
+| --- | --- | --- |
+| Pages and layouts | `apps/web/app/**/page.tsx`, `layout.tsx` | tRPC (server proxy or hooks), components, `lib` services |
+| Components and hooks | `apps/web/components`, `apps/web/blocks`, `apps/web/hooks`, `packages/ui` | tRPC hooks, other components |
+| tRPC routers and route handlers | `apps/web/trpc/routers`, `apps/web/app/api` | `lib` services, `server` helpers, packages, Prisma |
+| Services | `apps/web/lib` | Packages, Prisma |
+| Server helpers | `apps/web/server` | Packages, Prisma |
+| Shared packages | `packages/*` | Other packages, never apps |
+
+## Enforced rules
+
+`pnpm arch:check` runs [dependency-cruiser](https://github.com/sverweij/dependency-cruiser) with `.dependency-cruiser.cjs`, in CI on every pull request:
+
+| Rule | Why |
+| --- | --- |
+| `no-circular` | No import cycles, including type-only ones |
+| `packages-not-to-apps` | Shared packages never depend on an app |
+| `ui-not-to-database` | Components, hooks, `packages/ui`, the desktop renderer and mobile never import `@workspace/database`; they go through tRPC or a `lib` service |
+| `pages-not-to-database` | Pages and layouts load data through tRPC hydration or a `lib` service |
+| `services-not-to-controllers` | `apps/web/lib` never imports route handlers or tRPC routers |
+| `ui-components-not-to-blocks` | In `packages/ui`, blocks compose components, never the reverse |
+
+Fix a violation by moving the code to the right layer, for example a Prisma query from a page into a procedure or a `lib` service.
+
+## Data loading pattern
+
+Server components prefetch and hydrate; client components read from the cache:
+
+```tsx
+// page.tsx (server component)
+const queryClient = getQueryClient();
+await queryClient.ensureQueryData(trpc.reports.list.queryOptions());
+return (
+  <HydrationBoundary state={dehydrate(queryClient)}>
+    <ReportsList />
+  </HydrationBoundary>
+);
+
+// ReportsList.tsx (client component)
+const trpc = useTRPC();
+const { data } = useSuspenseQuery(trpc.reports.list.queryOptions());
+```
+
+## Shared code across platforms
+
+- UI that web and desktop share lives in `packages/ui` (`components/` for pieces, `blocks/` for whole screens). Blocks receive data and callbacks as props, so each app wires them to its own tRPC client.
+- The desktop app calls `/api/trpc` with a tRPC client, and the mobile app calls the same procedures over HTTP through small wrappers in `apps/mobile/lib/*-api.ts`. Neither imports server code, so when you change a procedure's input or output, update those clients too.
+- Rules shared by the server and the clients (for example which env vars are secrets) live in a package.
+
+## Configuration
+
+Feature toggles are environment variables, read where they are used. There is no central config service. Boot validation (`apps/web/lib/env.ts`) makes sure the toggles you turn on have their credentials.

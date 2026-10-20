@@ -1,42 +1,58 @@
+## Logging
 
-We integrate with **BetterStack** for logs/uptime and **Google Analytics** for traffic.
+`packages/observability` exports a [Winston](https://github.com/winstonjs/winston) logger:
 
+```ts
+import { logger } from "@workspace/observability/winston-logger";
 
-## BetterStack (Logs & Uptime)
-
-1. Create an account at [BetterStack](https://betterstack.com/).
-2. Create a new source (e.g., Next.js / Node.js).
-3. Get the **Source Token**.
-4. Add to `.env`:
-
-```plain text
-BETTERSTACK_TELEMETRY_SOURCE_TOKEN=your_token
-BETTERSTACK_TELEMETRY_INGESTING_HOST=https://in.logs.betterstack.com
+logger.info("Report generated", { reportId, userId });
+logger.error("Export failed", { error });
 ```
 
+Logs always go to the console. When both BetterStack variables are set they are also shipped to [BetterStack](https://betterstack.com/) (Logtail):
 
-## Google Analytics 4 (GA4)
-
-1. Create a Property in Google Analytics.
-2. Get the **Measurement ID** (starts with `G-`).
-3. Add the public Measurement ID to `.env` for browser tracking:
-
-```plain text
-NEXT_PUBLIC_GOOGLE_ANALYTICS_MEASUREMENT_ID=G-XXXXXXXXXX
+```env
+BETTERSTACK_TELEMETRY_SOURCE_TOKEN="..."
+BETTERSTACK_TELEMETRY_INGESTING_HOST="https://s1234567.eu-nbg-2.betterstackdata.com"
 ```
 
-To show GA4 reports inside the admin SEO screen, also create a Google Cloud service account, enable the Google Analytics Data API, grant the service account access to the GA4 property, and add:
+Create a **Source** of type JavaScript/Node.js in BetterStack Telemetry and copy its token and ingesting host.
 
-```plain text
-GA4_PROPERTY_ID=123456789
-GA4_CREDENTIALS_JSON={"client_email":"...","private_key":"..."}
+**Secrets are redacted before any transport.** Metadata keys that look like credentials (secret, password, API key, database URL, credential, private key, webhook key, JWT, authorization, cookie, and names ending in `token`) are replaced with `[redacted]`, and download payloads (`envVars`) are redacted wholesale. Token counts such as `promptTokens` are kept.
+
+With the AI Platform module, `logAIEvent` from `@workspace/observability/ai-logger` records each AI request (provider, model, tokens, credits, latency, errors) through the same logger.
+
+## Analytics
+
+| Tool | Setup | What you get |
+| --- | --- | --- |
+| Google Analytics 4 | `NEXT_PUBLIC_GOOGLE_ANALYTICS_MEASUREMENT_ID="G-XXXXXXX"` | Page views via `@next/third-parties` |
+| Vercel Analytics | Enable in the Vercel dashboard | Visitors and page views (the component is already mounted) |
+| Vercel Speed Insights | Enable in the Vercel dashboard | Real-user Core Web Vitals (already mounted) |
+
+### GA4 reports in the admin panel
+
+**Admin → SEO → Analytics** reads GA4 through the Analytics Data API:
+
+1. In Google Cloud, enable the **Google Analytics Data API** and create a service account with a JSON key.
+2. In GA4, open **Admin → Property access management** and add the service account's email as a **Viewer**.
+3. Set:
+
+```env
+GA4_PROPERTY_ID="123456789"
+GA4_CREDENTIALS_JSON='{"type":"service_account","client_email":"...","private_key":"..."}'
 ```
+
+`GA4_CREDENTIALS_JSON` can also be a path to the JSON file, relative to `apps/web`.
 
 ## PageSpeed Insights
 
-1. Create a Google API key with access to the PageSpeed Insights API.
-2. Add it to `.env`:
+Set `GOOGLE_PAGESPEED_API_KEY` to add performance scores to the admin SEO audit.
 
-```plain text
-GOOGLE_PAGESPEED_API_KEY=your_api_key
-```
+## Health check
+
+`GET /api/healthcheck` answers 200 without touching the database. Use it for uptime monitors and container health checks.
+
+## Errors
+
+Uncaught errors appear in your host's logs (Vercel runtime logs, Docker output). For error tracking with stack traces and alerts, add a provider such as Sentry with its Next.js SDK.

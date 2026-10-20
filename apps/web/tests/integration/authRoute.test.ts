@@ -28,7 +28,7 @@ describe("Auth Route Integration Tests", () => {
     mockAuthGet.mockResolvedValue(new Response(null, { status: 200 }));
   });
 
-  it("normalizes null-origin desktop requests without echoing unsafe CORS", async () => {
+  it("passes null-origin requests through unrewritten so Better Auth rejects them", async () => {
     const { POST } = await import("../../app/api/auth/[...all]/route.js");
 
     const request = createAuthRequest(
@@ -46,6 +46,7 @@ describe("Auth Route Integration Tests", () => {
     const response = await POST(request as any);
 
     expect(mockAuthPost).toHaveBeenCalledTimes(1);
+    expect(mockAuthPost.mock.calls[0]?.[0]?.headers.get("origin")).toBe("null");
     expect(response.headers.get("Access-Control-Allow-Origin")).toBeNull();
     expect(response.headers.get("Access-Control-Allow-Credentials")).toBeNull();
   });
@@ -71,6 +72,27 @@ describe("Auth Route Integration Tests", () => {
     );
     expect(response.headers.get("Access-Control-Allow-Origin")).toBeNull();
     expect(response.headers.get("Access-Control-Allow-Credentials")).toBeNull();
+  });
+
+  it("allows the packaged desktop app's origin for credentialed CORS", async () => {
+    const { GET } = await import("../../app/api/auth/[...all]/route.js");
+
+    const request = createAuthRequest(
+      "http://localhost:3000/api/auth/session",
+      { method: "GET", headers: { origin: "app://saas-forge" } },
+    );
+
+    const response = await GET(request as any);
+
+    expect(mockAuthGet.mock.calls[0]?.[0]?.headers.get("origin")).toBe(
+      "app://saas-forge",
+    );
+    expect(response.headers.get("Access-Control-Allow-Origin")).toBe(
+      "app://saas-forge",
+    );
+    expect(response.headers.get("Access-Control-Allow-Credentials")).toBe(
+      "true",
+    );
   });
 
   it("keeps explicit desktop and web origins allowed for CORS", async () => {

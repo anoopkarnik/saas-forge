@@ -1,19 +1,11 @@
-import { PrismaClient } from "@prisma/client"
-import { withAccelerate } from "@prisma/extension-accelerate"
+import { PrismaPg } from "@prisma/adapter-pg"
+import { PrismaClient } from "./generated/prisma/client"
 
 const prismaClientSingleton = () => {
-  const useAccelerate = process.env.PRISMA_ACCELERATE_ENABLED === "true";
-  const databaseUrl = process.env.DATABASE_URL;
-  const directUrl = process.env.DIRECT_URL || databaseUrl;
-  const databaseUrlUsesAccelerate = /^prisma(\+|:)/.test(databaseUrl ?? "");
   const queryLoggingEnabled = process.env.PRISMA_QUERY_LOGGING === "true";
 
-  if (!useAccelerate && databaseUrlUsesAccelerate && !process.env.DIRECT_URL) {
-    throw new Error("DIRECT_URL is required when PRISMA_ACCELERATE_ENABLED is not true and DATABASE_URL uses Prisma Accelerate.");
-  }
-
   const client = new PrismaClient({
-    datasources: useAccelerate || !directUrl ? undefined : { db: { url: directUrl } },
+    adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }),
     log: queryLoggingEnabled ? [{ emit: "event", level: "query" }] : undefined,
   });
 
@@ -23,7 +15,7 @@ const prismaClientSingleton = () => {
     });
   }
 
-  return useAccelerate ? client.$extends(withAccelerate()) : client;
+  return client;
 }
 
 declare global {

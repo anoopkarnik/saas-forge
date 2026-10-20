@@ -1,0 +1,77 @@
+Run SaaS Forge on any server with Docker: a VPS, Coolify, Dokploy, Railway, Fly.io, ECS or Kubernetes.
+
+## The web image
+
+`Dockerfile.web` builds a small production image:
+
+1. `turbo prune web --docker` keeps only the workspaces the web app needs.
+2. `pnpm install --frozen-lockfile`, `prisma generate`, then `turbo build --filter=web...`.
+3. The runner stage copies Next.js's standalone output and runs `node apps/web/server.js` as a non-root user on port 3000.
+
+```bash
+pnpm docker:build:web   # docker build -f Dockerfile.web -t saas-forge-web .
+```
+
+### Build-time and runtime values
+
+- **`NEXT_PUBLIC_*` values are inlined into the browser bundle at build time.** Provide them when the image is built, for example in an `apps/web/.env.production` that contains **only public values**.
+- **Secrets are read at runtime.** Pass them with `-e`, `--env-file` or your platform's secret store.
+- Do not build from a working copy whose `apps/web/.env` holds real secrets: Next.js copies `.env` files into the standalone output, so they would end up in the image. Build in CI from a clean checkout.
+
+```bash
+docker run -p 3000:3000 \
+  -e DATABASE_URL="postgresql://…" \
+  -e BETTER_AUTH_SECRET="…" \
+  -e NEXT_PUBLIC_URL="https://your-domain.com" \
+  --env-file ./production.env \
+  saas-forge-web
+```
+
+The container validates its environment on start and exits with a list of problems if anything required is missing.
+
+## Docker Compose
+
+`docker-compose.yml` runs the web app with Postgres (pgvector) and Redis, plus the AI service with the AI Agents module:
+
+```bash
+# Secrets are required; Compose reads them from .env next to docker-compose.yml
+printf 'BETTER_AUTH_SECRET=%s\n' "$(openssl rand -base64 32)" > .env
+printf 'BACKEND_HMAC_SECRET=%s\n' "$(openssl rand -hex 32)" >> .env   # AI Agents module
+
+pnpm docker:up   # docker compose up --build --detach
+```
+
+| Service | Port | Notes |
+| --- | --- | --- |
+| `web` | 3000 | Production mode, so weak secrets stop it |
+| `postgres` | 5433 on the host | `postgres/postgres`, database `saas_forge` |
+| `redis` | 6379 | TCP Redis for the AI job queue |
+| `backend-api`, `backend-worker` | internal only | AI Agents module |
+
+Compose has no default secrets on purpose. Add your other variables to the `web` service's `environment`, or with an `env_file`.
+
+## Migrations
+
+Run migrations as a release step before the new containers take traffic:
+
+```bash
+DATABASE_URL="postgresql://postgres:postgres@localhost:5433/saas_forge" \
+  pnpm --dir packages/database migrate:deploy
+```
+
+The image does not include the Prisma CLI's migration step. Run it from CI, a one-off job, or your machine.
+
+## Behind a reverse proxy
+
+- Terminate TLS at the proxy (Caddy, Traefik, nginx) and forward to port 3000.
+- Set `NEXT_PUBLIC_URL` to the public `https://` URL. Secure cookies need HTTPS.
+- Allow request bodies up to 11 MB for CMS image uploads (25 MB for speech uploads with the AI Platform module).
+- Use `GET /api/healthcheck` for health checks.
+
+## The AI service
+
+`Dockerfile.backend` has two targets, `api` and `worker`. `docker-compose.backend.yml` is a production Compose file for them, pulling images from a registry. Keep them on a private network with the web app and point `BACKEND_URL` at the API. See [AI Agents & RAG](/landing/doc/ai-agents).
+
+## Without Upstash
+
+Compose's Redis speaks TCP, while the web app's rate limiting and caching use Upstash's REST API. In production, keep using an Upstash database, or run a REST-compatible proxy such as [Serverless Redis HTTP](https://github.com/hiett/serverless-redis-http) in front of your Redis.

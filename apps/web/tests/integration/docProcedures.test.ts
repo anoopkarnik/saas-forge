@@ -2,9 +2,10 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { documentationRouter } from "../../trpc/routers/docProcedures.js";
 
 const mockFetchDocumentation = vi.fn();
-vi.mock("@/lib/functions/fetchDocumentationFromNotion", () => ({
+vi.mock("@/lib/functions/fetchDocumentation", () => ({
   fetchDocumentation: (...args: any[]) => mockFetchDocumentation(...args),
 }));
+
 
 const mockRedisGet = vi.fn();
 const mockRedisSet = vi.fn();
@@ -17,10 +18,6 @@ vi.mock("@/server/redis", () => ({
   },
 }));
 
-const mockRetrieveBlocksTree = vi.fn();
-vi.mock("@workspace/cms/notion/block/retrieveBlockChildren", () => ({
-  retrieveBlocksTree: (...args: any[]) => mockRetrieveBlocksTree(...args),
-}));
 
 const mockLandingPageFindUnique = vi.fn();
 const mockDocumentationFindMany = vi.fn();
@@ -52,6 +49,7 @@ vi.mock("next/headers", () => ({
   })),
 }));
 
+vi.mock("@/lib/audit/audit", () => ({ audit: vi.fn(async () => undefined), userActor: (userId: string) => ({ type: "user", userId }) }));
 vi.mock("@workspace/auth/better-auth/auth", () => ({
   auth: {
     api: {
@@ -89,11 +87,6 @@ const mockDocumentation = {
   ],
 };
 
-const mockBlocks = [
-  { id: "block_1", type: "paragraph", paragraph: { text: "Hello world" } },
-  { id: "block_2", type: "heading_1", heading_1: { text: "Introduction" } },
-];
-
 const mockLandingPage = {
   id: "landing_1",
   title: "Acme Docs",
@@ -112,7 +105,6 @@ const mockDocRow = {
 describe("Documentation Router Integration Tests", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.stubEnv("NOTION_API_TOKEN", "test_notion_token");
     vi.stubEnv("NEXT_PUBLIC_SAAS_NAME", "Acme Docs");
   });
 
@@ -120,7 +112,9 @@ describe("Documentation Router Integration Tests", () => {
     vi.unstubAllEnvs();
   });
 
-  describe("getDocumentationInfoFromNotion", () => {
+  describe("getDocumentationInfo", () => {
+    beforeEach(() => vi.stubEnv("NEXT_PUBLIC_CMS", "postgres"));
+
     it("should fetch data directly when Redis is not configured", async () => {
       delete process.env.UPSTASH_REDIS_REST_URL;
       delete process.env.UPSTASH_REDIS_REST_TOKEN;
@@ -128,7 +122,7 @@ describe("Documentation Router Integration Tests", () => {
       mockFetchDocumentation.mockResolvedValue(mockDocumentation);
 
       const caller = documentationRouter.createCaller(createCallerContext());
-      const result = await caller.getDocumentationInfoFromNotion();
+      const result = await caller.getDocumentationInfo();
 
       expect(result).toEqual(mockDocumentation);
       expect(mockFetchDocumentation).toHaveBeenCalledTimes(1);
@@ -142,7 +136,7 @@ describe("Documentation Router Integration Tests", () => {
       mockRedisGet.mockResolvedValue(mockDocumentation);
 
       const caller = documentationRouter.createCaller(createCallerContext());
-      const result = await caller.getDocumentationInfoFromNotion();
+      const result = await caller.getDocumentationInfo();
 
       expect(result).toEqual(mockDocumentation);
       expect(mockRedisGet).toHaveBeenCalledWith("acme docs-documentation:v1");
@@ -158,7 +152,7 @@ describe("Documentation Router Integration Tests", () => {
       mockRedisSet.mockResolvedValue("OK");
 
       const caller = documentationRouter.createCaller(createCallerContext());
-      const result = await caller.getDocumentationInfoFromNotion();
+      const result = await caller.getDocumentationInfo();
 
       expect(result).toEqual(mockDocumentation);
       expect(mockRedisSet).toHaveBeenCalledWith(
@@ -170,21 +164,20 @@ describe("Documentation Router Integration Tests", () => {
   });
 
   describe("queryDocumentationBySlug", () => {
-    it("should return blocks for a valid slug", async () => {
+    beforeEach(() => vi.stubEnv("NEXT_PUBLIC_CMS", "postgres"));
+
+    it("should return the markdown content for a valid slug", async () => {
       delete process.env.UPSTASH_REDIS_REST_URL;
       delete process.env.UPSTASH_REDIS_REST_TOKEN;
 
       mockFetchDocumentation.mockResolvedValue(mockDocumentation);
-      mockRetrieveBlocksTree.mockResolvedValue(mockBlocks);
+      mockDocumentationFindUnique.mockResolvedValue(mockDocRow);
 
       const caller = documentationRouter.createCaller(createCallerContext());
       const result = await caller.queryDocumentationBySlug({ slug: "getting-started" });
 
-      expect(result).toEqual(mockBlocks);
-      expect(mockRetrieveBlocksTree).toHaveBeenCalledWith({
-        apiToken: "test_notion_token",
-        block_id: "doc_1",
-      });
+      expect(result).toBe("# Hello world");
+      expect(mockDocumentationFindUnique).toHaveBeenCalledWith({ where: { slug: "getting-started" } });
     });
 
     it("should use cached documentation for slug resolution", async () => {
@@ -192,17 +185,12 @@ describe("Documentation Router Integration Tests", () => {
       vi.stubEnv("UPSTASH_REDIS_REST_TOKEN", "test_token");
 
       mockRedisGet.mockResolvedValue(mockDocumentation);
-      mockRetrieveBlocksTree.mockResolvedValue(mockBlocks);
+      mockDocumentationFindUnique.mockResolvedValue(mockDocRow);
 
       const caller = documentationRouter.createCaller(createCallerContext());
-      const result = await caller.queryDocumentationBySlug({ slug: "api-reference" });
+      await caller.queryDocumentationBySlug({ slug: "getting-started" });
 
-      expect(result).toEqual(mockBlocks);
       expect(mockFetchDocumentation).not.toHaveBeenCalled();
-      expect(mockRetrieveBlocksTree).toHaveBeenCalledWith({
-        apiToken: "test_notion_token",
-        block_id: "doc_2",
-      });
     });
 
     it("should throw when slug is not found", async () => {
@@ -340,7 +328,7 @@ describe("Documentation Router Integration Tests", () => {
     });
 
     it("rejects unsupported cms providers", async () => {
-      vi.stubEnv("NEXT_PUBLIC_CMS", "notion");
+      vi.stubEnv("NEXT_PUBLIC_CMS", "constant");
 
       const caller = documentationRouter.createCaller(createCallerContext(adminSession));
 

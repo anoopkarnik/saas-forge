@@ -1,0 +1,8 @@
+{
+  "consent": {
+    "label": "Analytics consent",
+    "message": "We would like to measure how this product is used. We send ids only, never your name or email, and analytics loads only if you accept.",
+    "accept": "Accept",
+    "decline": "Decline"
+  }
+}

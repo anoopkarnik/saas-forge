@@ -39,8 +39,9 @@ Create a `.env` file based on `.env.example`:
 | `EXPO_PUBLIC_SUPPORT_MAIL` | Enable support email feature |
 | `EXPO_PUBLIC_THEME` | Theme color (e.g., `green`) |
 | `EXPO_PUBLIC_THEME_TYPE` | Theme mode (`dark` or `light`) |
-| `EXPO_PUBLIC_PAYMENT_GATEWAY` | Payment provider (`stripe` or `dodo`) |
 | `EXPO_PUBLIC_CALENDLY_BOOKING_URL` | Calendly booking link (optional) |
+
+With the billing module, `EXPO_PUBLIC_PAYMENT_GATEWAY` selects the payment provider (`stripe` or `dodo`).
 
 ---
 
@@ -419,7 +420,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
@@ -470,7 +471,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile

@@ -1,71 +1,35 @@
+A floating support button sits in the bottom-right corner of every page. It opens a panel of tiles; each tile appears only when its configuration is present.
 
-The application comes with a comprehensive, floating support widget located in the bottom-right corner of the screen. This widget serves as a central hub for user assistance.
-
-
-## Features
-
-
-### 1. Contact Support (Email)
-
-
-Users can send a support message directly from the widget.
-
-- **Backend**: Uses `trpc.support.sendSupportMessage`.
-- **Delivery**: Emails are sent via **Resend** to the address defined in `NEXT_PUBLIC_SUPPORT_MAIL`.
-- **Subject Line**: Automatically formatted as `Subject from user@email.com for AppName`.
-
-### 2. Book a Meeting
-
-
-Direct integration with Calendly for scheduling calls.
-
-- **Link**: Opens the URL defined in `NEXT_PUBLIC_CALENDLY_BOOKING_URL` in a new tab.
-
-### 3. Documentation
-
-
-Quick link to the documentation landing page (`/landing/doc`).
-
-
-### 4. Newsletter (Optional)
-
-
-Allows users to subscribe to product updates.
-
-- **Integration**: Sends a POST request to an n8n webhook.
-- **Env Variable**: `N8N_SUBSCRIBE_NEWSLETTER_WEBHOOK_URL`.
-- **Status**: Disabled by default in the UI. Uncomment the block in `apps/web/blocks/Support.tsx` to enable.
-
-### 5. AI Assistant (Optional)
-
-
-A chatbot interface for automated support.
-
-- **Integration**: Connects to an n8n AI agent via webhook.
-- **Env Variable**: `N8N_SAAS_ASSISTANT_WEBHOOK_URL`.
-- **Status**: Disabled by default in the UI. Uncomment the block in `apps/web/blocks/Support.tsx` to enable.
+| Tile | Shown when | What it does |
+| --- | --- | --- |
+| Send Message | `NEXT_PUBLIC_SUPPORT_MAIL` is set | A form (email, subject, message) that emails your support inbox |
+| Documentation | Always | Opens `/landing/doc` |
+| Book Meeting | `NEXT_PUBLIC_CALENDLY_BOOKING_URL` is set | Opens your Calendly (or any booking) link in a new tab |
+| Newsletter | Commented out by default | Posts the email to an n8n webhook |
+| SaaS Assistant | Commented out by default | A chatbot backed by an n8n workflow |
 
 ## Configuration
 
+```env
+NEXT_PUBLIC_SUPPORT_MAIL="support@your-domain.com"
+NEXT_PUBLIC_CALENDLY_BOOKING_URL="https://calendly.com/your-name/30min"
 
-To configure the support module, set the following environment variables in your `.env` file:
-
-
-```plain text
-# Required for Email Support
-NEXT_PUBLIC_SUPPORT_MAIL=support@yourdomain.com
-
-# Required for Booking
-NEXT_PUBLIC_CALENDLY_BOOKING_URL=https://calendly.com/your-link
-
-# Optional: For Newsletter & AI Assistant
-N8N_SUBSCRIBE_NEWSLETTER_WEBHOOK_URL=https://your-n8n-instance.com/webhook/...
-N8N_SAAS_ASSISTANT_WEBHOOK_URL=https://your-n8n-instance.com/webhook/...
+# Optional, for the hidden tiles
+N8N_SUBSCRIBE_NEWSLETTER_WEBHOOK_URL="https://n8n.example.com/webhook/newsletter"
+N8N_SAAS_ASSISTANT_WEBHOOK_URL="https://n8n.example.com/webhook/assistant"
 ```
 
+Support messages are sent with Resend from and to `NEXT_PUBLIC_SUPPORT_MAIL`, with the subject `<subject> from <visitor email> for <product name>`. They need a configured [email client](/landing/doc/email).
 
-## Customization
+## How it works
 
+- The widget is `apps/web/blocks/Support.tsx`, mounted in the root layout so it appears on public and signed-in pages.
+- Messages go through the public `support.sendSupportMessage` tRPC mutation. Newsletter and assistant tiles use `support.subscribeToNewsletter` and `support.chatWithSaaSAssistant`, which forward to the n8n URLs.
+- The desktop and mobile apps have their own support screens driven by `VITE_SUPPORT_MAIL` / `VITE_CALENDLY_BOOKING_URL` and `EXPO_PUBLIC_SUPPORT_MAIL` / `EXPO_PUBLIC_CALENDLY_BOOKING_URL`.
 
-The widget is implemented in `apps/web/blocks/Support.tsx`. You can easily add or remove tiles from the grid menu to fit your needs.
+## Customizing
 
+- **Enable the hidden tiles**: uncomment the Newsletter or SaaS Assistant blocks in `apps/web/blocks/Support.tsx` and set the n8n URLs.
+- **Add a tile**: add an entry to the grid in the same file, for example a link to your status page or community.
+- **Hide the widget on some pages**: render `<Support />` conditionally in `apps/web/app/layout.tsx`, for example based on the path.
+- **Use a help desk instead**: replace the message form with your provider's widget (Intercom, Crisp, Plain) and keep the docs and booking tiles.

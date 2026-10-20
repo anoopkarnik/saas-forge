@@ -1,6 +1,6 @@
 "use client";
 import React from "react";
-import { motion } from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
 
 type SpotlightProps = {
   gradientFirst?: string;
@@ -25,6 +25,8 @@ export const Spotlight = ({
   duration = 7,
   xOffset = 100,
 }: SpotlightProps = {}) => {
+  const reducedMotion = useReducedMotion();
+  if (reducedMotion) return null;
   return (
     <motion.div
       initial={{

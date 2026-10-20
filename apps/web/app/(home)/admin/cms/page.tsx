@@ -28,15 +28,15 @@ export default function CMSAdminPage() {
         nonce: number;
     } | null>(null);
 
-    const { data: landingInfo, isLoading: isLoadingCMS } = useQuery(trpc.landing.getLandingInfoFromNotion.queryOptions());
+    const { data: landingInfo, isLoading: isLoadingCMS } = useQuery(trpc.landing.getLandingInfo.queryOptions());
 
     const updateLandingInfoMutation = useMutation(
         trpc.landing.updateLandingInfo.mutationOptions({
             onSuccess: () => {
                 toast.success("CMS updated successfully!", {
-                    description: "Your landing page Notion database has been updated."
+                    description: "Your landing page content has been updated."
                 });
-                queryClient.invalidateQueries(trpc.landing.getLandingInfoFromNotion.queryFilter());
+                queryClient.invalidateQueries(trpc.landing.getLandingInfo.queryFilter());
             },
             onError: (error) => {
                 console.error("Failed to update CMS:", error);
@@ -106,9 +106,9 @@ export default function CMSAdminPage() {
                     <Settings2 className="h-6 w-6 text-primary" />
                 </div>
                 <div>
-                    <h1 className="text-2xl font-bold tracking-tight">Content Management</h1>
+                    <h1 className="page-title">Content Management</h1>
                     <p className="text-muted-foreground mt-1 text-sm">
-                        Update your landing page content. Changes sync directly to Notion.
+                        Update your landing page content. Changes are saved to your CMS.
                     </p>
                 </div>
             </div>

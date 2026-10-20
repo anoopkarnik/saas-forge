@@ -55,7 +55,7 @@ export function CreateKeyDialog({ open, onOpenChange, onCreated }: Props) {
         <DialogHeader>
           <DialogTitle>Create API key</DialogTitle>
           <DialogDescription>
-            Pick a label and the scopes this key needs. You'll see the key once.
+            Pick a label and the scopes this key needs. You&apos;ll see the key once.
           </DialogDescription>
         </DialogHeader>
 

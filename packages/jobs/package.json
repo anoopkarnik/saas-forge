@@ -1,0 +1,23 @@
+{
+  "name": "@workspace/jobs",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests",
+    "test:coverage": "vitest run --coverage --passWithNoTests"
+  },
+  "exports": {
+    "./*": "./src/*.ts"
+  },
+  "dependencies": {
+    "inngest": "^4.22.0",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.1",
+    "@workspace/typescript-config": "workspace:*",
+    "vitest": "^4.0.18"
+  }
+}

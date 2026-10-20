@@ -20,8 +20,10 @@
   "dependencies": {
     "@better-auth/expo": "^1.5.5",
     "@hookform/resolvers": "^5.2.2",
+    "@workspace/analytics": "workspace:*",
     "@workspace/database": "workspace:*",
     "@workspace/email": "workspace:*",
+    "@workspace/i18n": "workspace:^",
     "better-auth": "^1.5.5",
     "react": "^19.1.1",
     "react-hook-form": "^7.67.0",
@@ -29,6 +31,6 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@types/node": "^20.19.25"
+    "@types/node": "^24.19.1"
   }
 }

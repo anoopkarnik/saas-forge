@@ -1,0 +1,75 @@
+A download is a starter compiled for your choices: only the modules, platforms and providers you select. This page walks through the web wizard on [saasforge.cc](https://saasforge.cc). The [CLI](/landing/doc/using-cli) does the same from a terminal.
+
+## 1. Sign in and check your credits
+
+Create an account on [saasforge.cc](https://saasforge.cc). New accounts start with 20 credits, which covers a download with no extra modules. Buy more from **Settings → Plans & Billing** (open Settings from the user menu at the bottom of the sidebar).
+
+| Item | Credits |
+| --- | --- |
+| Base project (core features, web) | 20 |
+| Billing & Payments | +10 |
+| Organizations / Teams | +50 |
+| AI Platform | +20 |
+| AI Agents & RAG (needs AI Platform) | +30 |
+| API Keys | +5 |
+
+Desktop and mobile platforms do not change the price.
+
+## 2. Configure the project
+
+The wizard on the dashboard has five steps:
+
+1. **Start**: import an existing `.env` file, start from a preset, or set up manually. Presets combine a product type (CRM, marketplace, AI content generation, learning platform and others) with a stage (MVP, Beta Testing, Launch, Growth) and show the architecture and cost estimate for that stage.
+2. **Basics**: project name, color theme, light or dark mode, and platforms (web, desktop, mobile).
+3. **Features**: marketing content (which CMS), sign-in methods, support options, uploaded files (which storage), monitoring and protection, payments (which gateway), AI capabilities, and teams.
+4. **Accounts & Keys**: only the services your choices need. Every field links to where the value comes from. You can leave secrets empty and fill them later with `pnpm doctor`.
+5. **Review**: a summary, the total price, and a preview of the file tree your selection produces.
+
+Choosing a provider (payment gateway, image storage, CMS) keeps only that provider's code in the download. Leave a provider unset to keep all of its choices.
+
+## 3. Download
+
+Click **Download Boilerplate**. The server checks the price you saw against the current catalog; if it changed, you are asked to review the new total before anything is charged. Credits are charged once per build, and downloading a build you already own is free. If a build fails, the charge is refunded automatically.
+
+### Your secrets never reach the server
+
+The server receives only non-secret choices: modules, platforms, theme and toggles. If you entered secrets in the wizard, your browser adds them to the ZIP after it arrives:
+
+- `apps/web/.env.local` with the secret values (Next.js reads it over `.env`).
+- `packages/database/.env` with `DATABASE_URL`, for the Prisma CLI.
+
+Mobile secrets are never collected. Add them after downloading.
+
+## 4. What the ZIP contains
+
+| File | Purpose |
+| --- | --- |
+| The project | Compiled for your selection, without `node_modules` or build output |
+| `apps/web/.env`, `apps/desktop/.env`, `apps/mobile/.env` | Filled with your public choices; `.env.example` templates sit next to them |
+| `SETUP.md` | Accounts to create, every env var to fill with where to find it, and the steps for your blueprint |
+| `pnpm-lock.yaml` | Pruned to your selection, so `pnpm install --frozen-lockfile` works |
+| `.boilerplate-version` | The starter version you received; upgrades start from it |
+
+## 5. Run it
+
+```bash
+unzip my-saas.zip && cd my-saas
+git init && git add -A && git commit -m "Initial commit from SaaS Forge"
+pnpm install
+pnpm doctor     # fills missing values, checks services, offers generate/migrate/seed
+pnpm dev
+```
+
+Sign up at [http://localhost:3000](http://localhost:3000). The first account becomes the admin. Your product starts in `apps/web/app/(home)/page.tsx`, which is intentionally empty.
+
+## Saved projects
+
+Use **Save configuration** in the wizard to keep a project under **My Projects** (`/projects`). Secret values are stripped before saving. From there you can:
+
+- download the project again (free when you already own that build),
+- read its setup guide,
+- duplicate it as a starting point for another product,
+- see your downloads, including refunded ones,
+- open the [Upgrade Center](/landing/doc/upgrading) for release notes, security advisories and upgrades.
+
+Saved projects are also what the CLI and the REST API work with.

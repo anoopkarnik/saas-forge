@@ -44,6 +44,7 @@ export interface RegisterCardProps {
     showGoogleProvider?: boolean;
     showGithubProvider?: boolean;
     showLinkedinProvider?: boolean;
+    prefillEmail?: string;
     onEmailSubmit?: any;
     onGoogleProviderSubmit?: any;
     onGithubProviderSubmit?: any;

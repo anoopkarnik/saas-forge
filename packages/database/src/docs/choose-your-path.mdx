@@ -1,0 +1,53 @@
+There are two ways to start a product with SaaS Forge. Both give you the same code quality and the same architecture. They differ in how much code you carry and how you receive updates.
+
+## Option 1: Use the open-source repository
+
+Clone [github.com/anoopkarnik/saas-forge](https://github.com/anoopkarnik/saas-forge) and build on it directly.
+
+**You get**
+- Every module (Billing, Organizations, AI Platform, AI Agents, API Keys) and every provider.
+- All three platforms: web, desktop and mobile.
+- The SaaS Forge download platform itself: the wizard, `/api/scaffold`, the module manifests, the CLI and the release tooling.
+
+**Choose this when**
+- You want to read or learn from the whole codebase.
+- You want to contribute back.
+- You want to run your own boilerplate store or internal starter service.
+- You are happy to delete what you do not need yourself.
+
+**Keep in mind**
+- Root-only tooling (`templates/`, `scaffold-modules/`, `packages/create-saas-forge`, `/api/scaffold`, the projects dashboard) is SaaS Forge's own product. In your product you will usually remove it.
+- `apps/web/app/(home)/page.tsx` is the download wizard in this repository, not an empty page.
+
+**Start here:** [Install from Source](/landing/doc/installation)
+
+## Option 2: Download a boilerplate
+
+Configure a project on [saasforge.cc](https://saasforge.cc) and download a starter compiled for your choices.
+
+**You get**
+- Only the modules, platforms and providers you selected. Everything else is removed at build time, including module env vars, Prisma models and migrations.
+- A `SETUP.md` that lists the accounts to create and every env var to fill.
+- A lockfile pruned to your selection, so `pnpm install --frozen-lockfile` works on CI and Vercel.
+- An upgrade path: add modules or switch providers later, review release notes, and pull fixes.
+
+**Choose this when**
+- You are starting a real product and want the smallest codebase that does the job.
+- You want release notes, security advisories and upgrade kits for your project.
+
+**Cost:** 20 base credits plus each module's price. Re-downloading a build you already own is free.
+
+**Start here:** [Download a Boilerplate](/landing/doc/download-a-boilerplate), or the [CLI](/landing/doc/using-cli) if you prefer the terminal.
+
+## Side by side
+
+| | Open source | Download |
+| --- | --- | --- |
+| Price | Free | Credits |
+| Modules | All | Your selection |
+| Root-only tooling | Included | Removed |
+| Setup | `pnpm doctor` | `pnpm doctor`, plus `SETUP.md` |
+| Updates | `git pull` | Upgrade Center, upgrade kits, template branch merges |
+| License | MIT | MIT |
+
+Both paths end at the same place: run [`pnpm doctor`](/landing/doc/setup-doctor), then `pnpm dev`.

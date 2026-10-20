@@ -6,7 +6,7 @@ import {
   Cloud, Zap, CreditCard, Ban, CircleDot, Activity, ShieldAlert, BarChart3, MessageCircle, Calendar,
   Smartphone
 } from "lucide-react";
-import { SiNotion, SiStrapi, SiUpstash, SiVercel, SiCloudflare, SiResend, SiGmail } from "react-icons/si";
+import { SiStrapi, SiUpstash, SiVercel, SiCloudflare, SiResend, SiGmail } from "react-icons/si";
 
 // ─── Theme color map for color swatches ────────────────────────────────
 export const themeColors: Record<string, string> = {
@@ -51,7 +51,6 @@ export const selectOptions: Record<string, SelectOption[]> = {
   NEXT_PUBLIC_CMS: [
     { value: "constant", label: "Constant (No external dependencies)", icon: <Database className="h-4 w-4 text-gray-500" /> },
     { value: "postgres", label: "Postgres", icon: <Database className="h-4 w-4 text-blue-500" /> },
-    { value: "notion", label: "Notion", icon: <SiNotion className="h-4 w-4" /> },
     { value: "strapi", label: "Strapi (Coming Soon)", icon: <SiStrapi className="h-4 w-4 text-muted-foreground" /> },
   ],
   NEXT_PUBLIC_PAYMENT_GATEWAY: [

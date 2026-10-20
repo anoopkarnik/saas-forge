@@ -30,6 +30,17 @@ vi.mock('dodopayments', () => {
   };
 });
 
+// Mock Stripe
+const mockStripeCreateCustomer = vi.fn();
+const mockStripeCreateSession = vi.fn();
+
+vi.mock('stripe', () => ({
+  default: class MockStripe {
+    customers = { create: mockStripeCreateCustomer };
+    checkout = { sessions: { create: mockStripeCreateSession } };
+  },
+}));
+
 // Mock Auth
 vi.mock('@workspace/auth/better-auth/auth', () => ({
   auth: {
@@ -110,6 +121,35 @@ describe('Billing Router Integration Tests', () => {
         email: 'test@test.com',
         name: 'Test User',
       });
+    });
+  });
+
+
+  describe('with Stripe', () => {
+    beforeEach(() => {
+      vi.stubEnv('NEXT_PUBLIC_PAYMENT_GATEWAY', 'stripe');
+      vi.stubEnv('STRIPE_SECRET_KEY', 'sk_test_123');
+    });
+
+    const caller = () =>
+      billingRouter.createCaller(
+        createCallerContext({ user: { id: 'user_1', email: 'test@test.com', name: 'Test User' } } as any),
+      );
+
+    it('creates the customer in Stripe', async () => {
+      mockStripeCreateCustomer.mockResolvedValue({ id: 'cus_123' });
+      expect(await caller().createNewCustomer({ email: 'test@test.com', name: 'Test User' })).toEqual({ id: 'cus_123' });
+      expect(mockStripeCreateCustomer).toHaveBeenCalledWith({ email: 'test@test.com', name: 'Test User' });
+    });
+
+    it('opens a Stripe checkout for the credits', async () => {
+      mockStripeCreateSession.mockResolvedValue({ url: 'https://checkout.stripe.com/c/pay_123' });
+      expect(await caller().createCheckoutSession({ credits: 100 })).toEqual({
+        checkoutUrl: 'https://checkout.stripe.com/c/pay_123',
+      });
+      expect(mockStripeCreateSession).toHaveBeenCalledWith(
+        expect.objectContaining({ client_reference_id: 'user_1', metadata: { userId: 'user_1', credits: '100' } }),
+      );
     });
   });
 

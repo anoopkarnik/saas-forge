@@ -1,0 +1,122 @@
+import { toLocale } from "@workspace/i18n/config";
+import { randomBytes } from "crypto";
+import { z } from "zod";
+import { TRPCError } from "@trpc/server";
+import db from "@workspace/database/client";
+import { sendEmail } from "@workspace/email/jobs";
+import { invitationSent } from "@/lib/notifications/catalog";
+import { notify } from "@/lib/notifications/notify";
+import { audit, userActor } from "@/lib/audit/audit";
+import { createTRPCRouter, baseProcedure, adminProcedure } from "../init";
+
+const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+const appUrl = process.env.NEXT_PUBLIC_URL || "http://localhost:3000";
+const company = process.env.NEXT_PUBLIC_COMPANY_NAME || "Company";
+
+const buildInviteUrl = (token: string, email: string) =>
+  `${appUrl}/sign-up?invite=${token}&email=${encodeURIComponent(email)}`;
+
+const invitesRouter = createTRPCRouter({
+  list: adminProcedure.query(async () => {
+    return db.invitation.findMany({
+      orderBy: { createdAt: "desc" },
+      include: { invitedBy: { select: { name: true, email: true } } },
+    });
+  }),
+
+  create: adminProcedure
+    .input(z.object({ email: z.string().email() }))
+    .mutation(async ({ ctx, input }) => {
+      const email = input.email.toLowerCase().trim();
+
+      const existingUser = await db.user.findUnique({ where: { email } });
+      if (existingUser) {
+        throw new TRPCError({ code: "CONFLICT", message: "A user with that email already exists." });
+      }
+
+      const activeInvite = await db.invitation.findFirst({
+        where: { email, status: "PENDING", expiresAt: { gt: new Date() } },
+      });
+      if (activeInvite) {
+        throw new TRPCError({ code: "CONFLICT", message: "An active invitation already exists for that email." });
+      }
+
+      const token = randomBytes(32).toString("hex");
+      const invitation = await db.$transaction(async (tx) => {
+        const created = await tx.invitation.create({
+          data: {
+            email,
+            token,
+            status: "PENDING",
+            expiresAt: new Date(Date.now() + INVITE_TTL_MS),
+            invitedById: ctx.session.user.id,
+          },
+        });
+        await audit(tx, "invitation.created", {
+          actor: userActor(ctx.session.user.id),
+          targetId: created.id,
+          metadata: { email },
+          headers: ctx.headers,
+        });
+        return created;
+      });
+
+      await sendEmail({ template: "invitation", email, url: buildInviteUrl(token, email), company, locale: toLocale(ctx.session.user.locale) });
+      await notify(invitationSent, ctx.session.user.id, { email });
+      return invitation;
+    }),
+
+  revoke: adminProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      await db.$transaction(async (tx) => {
+        await tx.invitation.update({ where: { id: input.id }, data: { status: "REVOKED" } });
+        await audit(tx, "invitation.revoked", {
+          actor: userActor(ctx.session.user.id),
+          targetId: input.id,
+          metadata: {},
+          headers: ctx.headers,
+        });
+      });
+      return { id: input.id };
+    }),
+
+  resend: adminProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const existing = await db.invitation.findUnique({ where: { id: input.id } });
+      if (!existing || existing.status !== "PENDING") {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Only pending invitations can be resent." });
+      }
+      const token = randomBytes(32).toString("hex");
+      const updated = await db.$transaction(async (tx) => {
+        const row = await tx.invitation.update({
+          where: { id: input.id },
+          data: { token, expiresAt: new Date(Date.now() + INVITE_TTL_MS) },
+        });
+        await audit(tx, "invitation.resent", {
+          actor: userActor(ctx.session.user.id),
+          targetId: input.id,
+          metadata: { email: existing.email },
+          headers: ctx.headers,
+        });
+        return row;
+      });
+      await sendEmail({ template: "invitation", email: existing.email, url: buildInviteUrl(token, existing.email), company, locale: toLocale(ctx.session.user.locale) });
+      return updated;
+    }),
+
+  validate: baseProcedure
+    .input(z.object({ token: z.string() }))
+    .query(async ({ input }) => {
+      const invite = await db.invitation.findUnique({ where: { token: input.token } });
+      if (!invite) return { email: null, valid: false, expired: false };
+      const expired = invite.expiresAt.getTime() <= Date.now();
+      const valid = invite.status === "PENDING" && !expired;
+      return { email: invite.email, valid, expired };
+    }),
+});
+
+export const adminRouter = createTRPCRouter({
+  invites: invitesRouter,
+});

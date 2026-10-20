@@ -54,7 +54,7 @@ export default function EnvField({
   const isThemeField = name === "NEXT_PUBLIC_THEME";
 
   const labelContent = (
-    <span className="flex items-center gap-1">
+    <span className="flex min-w-0 flex-wrap items-center gap-1 [overflow-wrap:anywhere]">
       {label || name}
       {required && <span className="text-destructive text-sm leading-none">*</span>}
     </span>
@@ -65,10 +65,10 @@ export default function EnvField({
       control={control}
       name={name}
       render={({ field }) => (
-        <FormItem>
+        <FormItem className="min-w-0">
           {/* Label row for select & multiselect fields */}
           {(isSelectField || isMultiselectField) && (
-            <div className="flex items-center gap-2 mb-1.5">
+            <div className="flex min-w-0 items-center gap-2 mb-1.5">
               <FormLabel className="text-xs font-medium text-muted-foreground">
                 {labelContent}
               </FormLabel>
@@ -76,7 +76,7 @@ export default function EnvField({
                 <TooltipProvider>
                   <Tooltip delayDuration={300}>
                     <TooltipTrigger asChild>
-                      <Info className="h-3.5 w-3.5 text-muted-foreground/70 cursor-help hover:text-foreground transition-colors" />
+                      <button type="button" aria-label={`Help for ${label || name}`} className="flex size-11 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:text-foreground"><Info aria-hidden="true" className="size-4" /></button>
                     </TooltipTrigger>
                     <TooltipContent side="right" className="max-w-[300px] text-xs">
                       <p>{description}</p>

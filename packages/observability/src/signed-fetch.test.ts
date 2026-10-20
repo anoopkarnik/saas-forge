@@ -14,7 +14,7 @@ describe("signedFetch", () => {
   });
 
   it("attaches X-Saas-Forge-Ts and X-Saas-Forge-Sig headers", async () => {
-    const fetchMock = vi.fn(async () =>
+    const fetchMock = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) =>
       new Response(JSON.stringify({ ok: true }), { status: 200 }),
     );
     vi.stubGlobal("fetch", fetchMock);
@@ -27,7 +27,7 @@ describe("signedFetch", () => {
 
     expect(fetchMock).toHaveBeenCalledOnce();
     const call = fetchMock.mock.calls[0]!;
-    const init = call[1] as RequestInit;
+    const init = call[1]!;
     const headers = new Headers(init.headers);
     expect(headers.get("X-Saas-Forge-Ts")).toMatch(/^\d+$/);
     expect(headers.get("X-Saas-Forge-Sig")).toMatch(/^[0-9a-f]{64}$/);

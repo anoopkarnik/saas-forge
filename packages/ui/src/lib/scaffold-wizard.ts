@@ -10,6 +10,8 @@ export type WizardStepId =
 
 export type WizardFieldName = keyof FormValues;
 
+export type EntryChoice = "manual" | "preset" | "import";
+
 export type WizardStep = {
   id: WizardStepId;
   title: string;
@@ -53,7 +55,7 @@ export const WIZARD_STEPS: WizardStep[] = [
   {
     id: "review",
     title: "Review",
-    description: "Check your setup and download the scaffold.",
+    description: "Check your scaffold configuration.",
   },
 ];
 
@@ -164,43 +166,6 @@ export const WIZARD_FIELD_META: Partial<Record<WizardFieldName, WizardFieldMeta>
     label: "Postgres Database URL",
     helper: "The main database connection string for your app.",
     reviewLabel: "Database",
-  },
-  LANDING_DATABASE_ID: {
-    label: "Landing Page Database ID",
-    helper: "Used when your marketing site content comes from Notion.",
-  },
-  HERO_DATABASE_ID: {
-    label: "Hero Section Database ID",
-    helper: "Used when your marketing site content comes from Notion.",
-  },
-  FEATURE_DATABASE_ID: {
-    label: "Features Database ID",
-    helper: "Used when your marketing site content comes from Notion.",
-  },
-  TESTIMONIAL_DATABASE_ID: {
-    label: "Testimonials Database ID",
-    helper: "Used when your marketing site content comes from Notion.",
-  },
-  PRICING_DATABASE_ID: {
-    label: "Pricing Database ID",
-    helper: "Used when your marketing site content comes from Notion.",
-  },
-  FAQ_DATABASE_ID: {
-    label: "FAQ Database ID",
-    helper: "Used when your marketing site content comes from Notion.",
-  },
-  FOOTER_DATABASE_ID: {
-    label: "Footer Database ID",
-    helper: "Used when your marketing site content comes from Notion.",
-  },
-  DOCUMENTATION_DATABASE_ID: {
-    label: "Documentation Database ID",
-    helper: "Used when your docs content comes from Notion.",
-  },
-  NOTION_API_TOKEN: {
-    label: "Notion Integration Token",
-    helper: "Lets the starter read your Notion content.",
-    reviewLabel: "Notion connected",
   },
   UPSTASH_REDIS_REST_URL: {
     label: "Upstash REST URL",
@@ -366,7 +331,6 @@ const needsEmailProvider = (values: FormValues) =>
   (values.NEXT_PUBLIC_AUTH_PROVIDERS || []).includes("email_verification") ||
   (values.NEXT_PUBLIC_SUPPORT_FEATURES || []).includes("support_mail");
 
-const usesNotion = (values: FormValues) => values.NEXT_PUBLIC_CMS === "notion";
 const usesPostgresCms = (values: FormValues) => values.NEXT_PUBLIC_CMS === "postgres";
 const usesUpstashForRateLimit = (values: FormValues) =>
   (values.NEXT_PUBLIC_OBSERVABILITY_FEATURES || []).includes("rate_limiting");
@@ -433,7 +397,54 @@ export function getWizardStepFields(
   }
 }
 
-export function getAccountsProviderGroups(values: FormValues): ProviderGroup[] {
+/**
+ * Secret / value-to-fill fields. These are NOT collected in the download wizard
+ * (which keeps only option choices) — they are surfaced per saved project in the
+ * Projects tab, so users fill them where the project is managed, not up front.
+ */
+export const SECRET_WIZARD_FIELDS = new Set<WizardFieldName>([
+  "DATABASE_URL",
+  "UPSTASH_REDIS_REST_URL",
+  "UPSTASH_REDIS_REST_TOKEN",
+  "BETTER_AUTH_SECRET",
+  "AUTH_GITHUB_CLIENT_ID",
+  "AUTH_GITHUB_CLIENT_SECRET",
+  "AUTH_GOOGLE_CLIENT_ID",
+  "AUTH_GOOGLE_CLIENT_SECRET",
+  "AUTH_LINKEDIN_CLIENT_ID",
+  "AUTH_LINKEDIN_CLIENT_SECRET",
+  "RESEND_API_KEY",
+  "R2_ACCOUNT_ID",
+  "R2_ACCESS_KEY_ID",
+  "R2_SECRET_ACCESS_KEY",
+  "R2_BUCKET_NAME",
+  "NEXT_PUBLIC_R2_PUBLIC_URL",
+  "BLOB_READ_WRITE_TOKEN",
+  "BETTERSTACK_TELEMETRY_SOURCE_TOKEN",
+  "BETTERSTACK_TELEMETRY_INGESTING_HOST",
+  "NEXT_PUBLIC_GOOGLE_ANALYTICS_MEASUREMENT_ID",
+  "GA4_PROPERTY_ID",
+  "GA4_CREDENTIALS_JSON",
+  "GOOGLE_PAGESPEED_API_KEY",
+  "STRIPE_SECRET_KEY",
+  "STRIPE_WEBHOOK_SECRET",
+  "DODO_PAYMENTS_API_KEY",
+  "DODO_PAYMENTS_WEBHOOK_KEY",
+  "DODO_PAYMENTS_RETURN_URL",
+  "DODO_CREDITS_PRODUCT_ID",
+  "NEXT_PUBLIC_DODO_PAYMENTS_URL",
+  "OPENAI_API_KEY",
+  "ANTHROPIC_API_KEY",
+  "GOOGLE_GENERATIVE_AI_API_KEY",
+  "OPENROUTER_API_KEY",
+  "AI_GATEWAY_API_KEY",
+  "OLLAMA_BASE_URL",
+  "OPENAI_COMPATIBLE_BASE_URL",
+  "N8N_WEBHOOK_URL",
+  "N8N_WEBHOOK_JWT_KEY",
+]);
+
+function buildProviderGroups(values: FormValues): ProviderGroup[] {
   const groups: ProviderGroup[] = [
     {
       id: "database",
@@ -442,31 +453,11 @@ export function getAccountsProviderGroups(values: FormValues): ProviderGroup[] {
       fields: ["DATABASE_URL"],
     },
     {
-      id: "notion",
-      title: "Notion",
-      description:
-        "Needed only if you want marketing content and docs to come from Notion.",
-      fields: usesNotion(values)
-        ? [
-            "LANDING_DATABASE_ID",
-            "HERO_DATABASE_ID",
-            "FEATURE_DATABASE_ID",
-            "TESTIMONIAL_DATABASE_ID",
-            "PRICING_DATABASE_ID",
-            "FAQ_DATABASE_ID",
-            "FOOTER_DATABASE_ID",
-            "DOCUMENTATION_DATABASE_ID",
-            "NOTION_API_TOKEN",
-          ]
-        : [],
-    },
-    {
       id: "upstash",
       title: "Upstash",
       description:
-        "Needed when you use Notion or Postgres CMS caching, or when you enable rate limiting.",
+        "Needed when you use Postgres CMS caching, or when you enable rate limiting.",
       fields:
-        usesNotion(values) ||
         usesPostgresCms(values) ||
         (usesUpstashForRateLimit(values) &&
           values.NEXT_PUBLIC_ALLOW_RATE_LIMIT === "upstash")
@@ -595,6 +586,21 @@ export function getAccountsProviderGroups(values: FormValues): ProviderGroup[] {
   return groups.filter((group) => group.fields.length > 0);
 }
 
+/** Full grouped list of env vars a config needs — shown per project in the Projects tab. */
+export function getProjectEnvGroups(values: FormValues): ProviderGroup[] {
+  return buildProviderGroups(values);
+}
+
+/** Wizard view of Accounts & Keys: option choices only; secret/value fields are removed. */
+export function getAccountsProviderGroups(values: FormValues): ProviderGroup[] {
+  return buildProviderGroups(values)
+    .map((group) => ({
+      ...group,
+      fields: group.fields.filter((field) => !SECRET_WIZARD_FIELDS.has(field)),
+    }))
+    .filter((group) => group.fields.length > 0);
+}
+
 export function getReviewSummaryItems(values: FormValues) {
   return [
     {
@@ -604,9 +610,7 @@ export function getReviewSummaryItems(values: FormValues) {
           ? "Static content in the repo"
           : values.NEXT_PUBLIC_CMS === "postgres"
             ? "Postgres-backed CMS"
-            : values.NEXT_PUBLIC_CMS === "notion"
-              ? "Notion-backed CMS"
-              : "Custom CMS",
+            : "Custom CMS",
     },
     {
       label: "Sign-In",
@@ -658,6 +662,8 @@ export function isWizardFieldRequired(
   name: WizardFieldName,
   values: FormValues,
 ) {
+  // Secrets/values are no longer collected in the wizard — never required here.
+  if (SECRET_WIZARD_FIELDS.has(name)) return false;
   switch (name) {
     case "name":
     case "NEXT_PUBLIC_SAAS_NAME":
@@ -685,20 +691,9 @@ export function isWizardFieldRequired(
     case "AUTH_LINKEDIN_CLIENT_ID":
     case "AUTH_LINKEDIN_CLIENT_SECRET":
       return (values.NEXT_PUBLIC_AUTH_PROVIDERS || []).includes("linkedin");
-    case "LANDING_DATABASE_ID":
-    case "HERO_DATABASE_ID":
-    case "FEATURE_DATABASE_ID":
-    case "TESTIMONIAL_DATABASE_ID":
-    case "PRICING_DATABASE_ID":
-    case "FAQ_DATABASE_ID":
-    case "FOOTER_DATABASE_ID":
-    case "DOCUMENTATION_DATABASE_ID":
-    case "NOTION_API_TOKEN":
-      return usesNotion(values);
     case "UPSTASH_REDIS_REST_URL":
     case "UPSTASH_REDIS_REST_TOKEN":
       return (
-        usesNotion(values) ||
         usesPostgresCms(values) ||
         (usesUpstashForRateLimit(values) &&
           values.NEXT_PUBLIC_ALLOW_RATE_LIMIT === "upstash")

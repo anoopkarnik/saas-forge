@@ -1,151 +1,81 @@
+Uploaded images (profile avatars and CMS images) are stored in Vercel Blob or Cloudflare R2, chosen with `NEXT_PUBLIC_IMAGE_STORAGE`. A download keeps only the provider you chose.
 
-We support two storage providers:
+## How uploads work
 
-- **Vercel Blob** (default, easiest for Vercel deploy)
-- **Cloudflare R2** (scalable and cost‑efficient for production SaaS)
+| Route | Who | Limit | Stored under |
+| --- | --- | --- | --- |
+| `POST /api/settings/modifyAvatar` | Any signed-in user (not guests) | 5 MB | `profile-images/` |
+| `POST /api/cms/upload` | Admins | 10 MB | `cms-images/` |
 
----
+Both routes are rate-limited and size-limited by the route policy. `apps/web/server/uploads/image-upload.ts` then:
 
+1. checks the size,
+2. reads the image with `sharp` and accepts only PNG, JPEG and WebP (the real format, not the file extension),
+3. re-encodes it, which also strips metadata and applies the EXIF rotation,
+4. uploads it under a random key (`<prefix>/<timestamp>-<uuid>.<ext>`) and returns the public URL.
 
-# Option 1 --- Vercel Blob
+## Option 1: Vercel Blob (default)
 
+1. In the Vercel dashboard, open **Storage → Create → Blob** and connect the store to your project.
+2. Copy the token from the store's `.env.local` tab:
 
-## Configuration
-
-1. Go to your project in the Vercel Dashboard
-2. Navigate to **Storage** tab
-3. Click **Create Database → Blob**
-4. Connect it to your project
-5. Add environment variables:
-
-```plain text
-BLOB_READ_WRITE_TOKEN=vercel_blob_rw_...
-STORAGE_PROVIDER=vercel_blob
+```env
+NEXT_PUBLIC_IMAGE_STORAGE="vercel_blob"
+BLOB_READ_WRITE_TOKEN="vercel_blob_rw_..."
 ```
 
+## Option 2: Cloudflare R2
 
----
+1. In the Cloudflare dashboard, open **R2** and create a bucket.
+2. Make it readable: connect a custom domain to the bucket, or enable the `r2.dev` public URL.
+3. Under **Manage R2 API Tokens**, create a token with **Object Read & Write** on the bucket. Copy the access key ID and secret.
 
-
-## Usage
-
-
-```typescript
-import { put } from "@vercel/blob";
-
-const blob = await put("profiles/avatar.png", file, {
-  access: "public",
-});
-
-console.log(blob.url);
+```env
+NEXT_PUBLIC_IMAGE_STORAGE="cloudflare_r2"
+R2_ACCOUNT_ID="..."
+R2_ACCESS_KEY_ID="..."
+R2_SECRET_ACCESS_KEY="..."
+R2_BUCKET_NAME="acme-uploads"
+NEXT_PUBLIC_R2_PUBLIC_URL="https://files.acme.com"
 ```
 
+Without `NEXT_PUBLIC_R2_PUBLIC_URL` the returned URL points at the bucket's S3 endpoint, which is not public. Set it.
 
----
+`pnpm doctor` writes and deletes a probe file to prove the credentials work, for either provider.
 
+## Allow your image host in Next.js
 
-# Option 2 --- Cloudflare R2
+Logos, hero and feature images are rendered with `next/image`, which only loads remote hosts listed in `images.remotePatterns` in `apps/web/next.config.mjs`. Add your storage host before uploading CMS images:
 
-
-## Configuration
-
-1. Go to Cloudflare Dashboard
-2. Navigate to **R2**
-3. Create a bucket
-4. Go to **Manage R2 API Tokens**
-5. Create a custom token with:
-    - Account → R2 → Edit
-6. Copy:
-    - Access Key ID
-    - Secret Access Key
-
----
-
-
-## Environment Variables
-
-
-```plain text
-STORAGE_PROVIDER=cloudflare_r2
-
-R2_ACCESS_KEY_ID=
-R2_SECRET_ACCESS_KEY=
-R2_BUCKET_NAME=
-R2_ACCOUNT_ID=
+```js
+images: {
+  remotePatterns: [
+    // ...existing entries
+    { protocol: "https", hostname: "*.public.blob.vercel-storage.com" }, // Vercel Blob
+    { protocol: "https", hostname: "files.acme.com" },                   // R2 custom domain
+  ],
+},
 ```
 
+## Uploading from your own feature
 
----
+Reuse the helpers in a session route:
 
+```ts
+import { guardRoute } from "@/server/routeGuard";
+import { normalizeImageUpload, uploadNormalizedImage } from "@/server/uploads/image-upload";
 
-# Unified Storage Layer (Recommended)
+export async function POST(req: Request) {
+  const guard = await guardRoute(req, "/api/reports/cover");
+  if (!guard.ok) return Response.json({ error: guard.error }, { status: guard.status });
 
+  const file = (await req.formData()).get("file") as File | null;
+  if (!file) return Response.json({ error: "No file provided" }, { status: 400 });
 
----
-
-
-## Implementation
-
-
-```typescript
-import { put as putBlob } from "@vercel/blob";
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
-
-const provider = process.env.STORAGE_PROVIDER;
-
-export async function uploadFile(key: string, file: Buffer | Blob) {
-  if (provider === "cloudflare_r2") {
-    const s3 = new S3Client({
-      region: "auto",
-      endpoint: process.env.R2_ENDPOINT,
-      credentials: {
-        accessKeyId: process.env.R2_ACCESS_KEY_ID!,
-        secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
-      },
-    });
-
-    await s3.send(
-      new PutObjectCommand({
-        Bucket: process.env.R2_BUCKET_NAME!,
-        Key: key,
-        Body: file,
-      })
-    );
-
-    return {
-      url: `${process.env.R2_ENDPOINT}/${process.env.R2_BUCKET_NAME}/${key}`,
-    };
-  }
-
-  // Default: Vercel Blob
-  const blob = await putBlob(key, file, { access: "public" });
-  return { url: blob.url };
+  const image = await normalizeImageUpload({ file, maxSizeBytes: 5 * 1024 * 1024 });
+  const url = await uploadNormalizedImage({ ...image, keyPrefix: "report-covers" });
+  return Response.json({ url });
 }
 ```
 
-
----
-
-
-# Usage in App
-
-
-```typescript
-import { uploadFile } from "@workspace/storage";
-
-const { url } = await uploadFile("profiles/avatar.png", file);
-```
-
-
----
-
-
-# Production Recommendation
-
-- Start with **Vercel Blob** for speed.
-- Switch to **Cloudflare R2** when scaling storage.
-- Prefer signed URLs for large production systems.
-- Keep storage logic isolated in `packages/storage` in Turborepo.
-
----
-
+Add the route to `apps/web/lib/route-policy.ts` with `input: "image-upload"` and a `maxBodyBytes` limit. For other file types (PDFs, video), write a separate helper; the image helper rejects anything that is not an image.

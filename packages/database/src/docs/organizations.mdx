@@ -1,0 +1,73 @@
+The Organizations module (`multi_tenancy`) adds workspaces: users belong to one or more organizations, invite teammates, and switch between them. It is built on Better Auth's organization plugin.
+
+## What users get
+
+- A **personal workspace** created automatically at sign-up (`<Name>'s Workspace`).
+- A **workspace switcher** in the sidebar to switch, or create a new workspace.
+- An **Organization** page (`/organization`) to rename the workspace, invite members by email with a role, change roles, remove members, cancel invitations, leave, or delete the workspace (owner only).
+- **Invitation emails** linking to `/accept-invitation/<id>`, valid for 7 days. Pending invitations are also shown to the invitee in the app.
+
+With invite-only registration, a pending workspace invitation also lets the invitee sign up.
+
+## Roles
+
+| Role | Can |
+| --- | --- |
+| `owner` | Everything, including deleting the workspace. The creator is the owner |
+| `admin` | Manage members, invitations and settings |
+| `member` | Use the product |
+| `viewer` | Read only. Enforced in your procedures with `orgRoleProcedure` |
+
+Roles are ranked `viewer < member < admin < owner`. These are workspace roles, separate from the app-wide `user`/`admin`/`guest` role.
+
+## Scoping your data to a workspace
+
+The active workspace is stored on the session (`Session.activeOrganizationId`). Use the organization procedures in `apps/web/trpc/org.ts`:
+
+| Builder | Checks | Adds to `ctx` |
+| --- | --- | --- |
+| `orgProcedure` | Signed in, has an active workspace, and is still a member | `ctx.org = { id, role }` |
+| `orgRoleProcedure("member")` | The same, plus a minimum role | `ctx.org` |
+
+```ts
+import { orgProcedure, orgRoleProcedure } from "@/trpc/org";
+
+export const projectsRouter = createTRPCRouter({
+  list: orgProcedure.query(({ ctx }) =>
+    db.project.findMany({ where: { organizationId: ctx.org.id } }),
+  ),
+  create: orgRoleProcedure("member")
+    .input(z.object({ name: z.string().min(1) }))
+    .mutation(({ ctx, input }) =>
+      db.project.create({ data: { name: input.name, organizationId: ctx.org.id } }),
+    ),
+});
+```
+
+Membership is re-read from the database on every call, so a removed member loses access immediately even though session data is cached for 5 minutes. Give your tables an `organizationId` column and always filter by `ctx.org.id`.
+
+## Procedures
+
+`organization.current`, `create`, `setActive`, `members`, `update`, `invite`, `cancelInvitation`, `updateMemberRole`, `removeMember`, `leave`, `delete`, `getInvitation`, `acceptInvitation` and `rejectInvitation`. Management calls require the workspace `admin` role; `delete` requires `owner`. Guests cannot create, change or join workspaces.
+
+## Files
+
+| Path | Purpose |
+| --- | --- |
+| `packages/database/prisma/org.prisma` | `Organization`, `Member`, `OrganizationInvitation` |
+| `packages/auth/src/better-auth/organization.ts` | Plugin setup, roles, invitation email, personal workspace |
+| `packages/auth/src/better-auth/organization-helpers.ts` | Role ranking and slug helpers |
+| `apps/web/trpc/org.ts` | `orgProcedure` and `orgRoleProcedure` |
+| `apps/web/trpc/routers/organizationProcedures.ts` | The `organization` router |
+| `apps/web/components/organizations/` | Workspace switcher slot and team settings |
+| `packages/email/src/templates/OrganizationInvitation.tsx` | Invitation email |
+
+Desktop and mobile have their own workspace switcher and team screens.
+
+## Adding the module to an existing project
+
+After the upgrade's migration, existing users have no workspace. Create one for each:
+
+```bash
+pnpm --dir packages/database backfill:orgs
+```

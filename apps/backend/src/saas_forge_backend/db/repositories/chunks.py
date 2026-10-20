@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from typing import Iterable, Sequence
+from collections.abc import Iterable, Sequence
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from saas_forge_backend.db.models import AiDocumentChunk
@@ -15,12 +15,12 @@ async def bulk_insert(
     collection_id: str,
     rows: Iterable[tuple[int, str, dict]],  # (seq, text, metadata)
 ) -> list[AiDocumentChunk]:
-    import cuid2
+    from saas_forge_backend.ids import new_id
     instances = []
     for seq, txt, meta in rows:
         instances.append(
             AiDocumentChunk(
-                id=cuid2.cuid(),
+                id=new_id(),
                 documentId=document_id,
                 collectionId=collection_id,
                 seq=seq,
@@ -60,3 +60,7 @@ async def list_for_document(session: AsyncSession, document_id: str) -> list[AiD
         .order_by(AiDocumentChunk.seq.asc())
     )
     return list((await session.execute(stmt)).scalars().all())
+
+
+async def delete_for_document(session: AsyncSession, document_id: str) -> None:
+    await session.execute(delete(AiDocumentChunk).where(AiDocumentChunk.documentId == document_id))

@@ -1,82 +1,66 @@
+What SaaS Forge does for you, and what is left to you.
 
-Essential security measures for your SaaS Forge application.
+## Built in
 
+**Configuration**
+- Production refuses to start with missing core variables, short or placeholder secrets, an enabled integration without credentials, or a secret-looking `NEXT_PUBLIC_` variable (`apps/web/lib/env.ts`).
+- `pnpm doctor` never prints secret values and writes env files with `0600` permissions.
+- Downloads never send your secrets to the SaaS Forge server; the browser adds them to the archive locally.
 
-## Environment Variables
+**Authentication**
+- Better Auth stores sessions in Postgres; cookies are HTTP-only, `Secure` and `__Secure-`-prefixed in production.
+- Email verification is required for password accounts; sign-in attempts are rate limited.
+- The first user becomes admin; afterwards only admins change roles.
+- The read-only guest role is enforced on the server for tRPC mutations, session routes and Better Auth account endpoints.
 
-- Never commit `.env` files
-- Use different values for dev/prod
-- Rotate secrets regularly
-- Use strong random values: `openssl rand -base64 32`
+**Authorization**
+- Every API route is declared in `apps/web/lib/route-policy.ts` with its auth mode, roles, guest access, rate limit and body-size limit. A test fails if a route is missing or skips its guard.
+- Unlisted pages require a session; admin data is served only by admin procedures.
+- With Organizations, membership is re-checked on every workspace-scoped call.
 
-## Authentication
+**Input and requests**
+- tRPC and REST inputs are validated with Zod.
+- The middleware rejects bodies over each route's limit with `413` before the handler runs.
+- CORS allows only your own origin, the local dev origins and the desktop app's `app://` origin.
+- Uploaded images are decoded and re-encoded with `sharp`; only real PNG, JPEG and WebP pass, and metadata is stripped.
 
-- Use HTTPS in production
-- Set secure cookies (HttpOnly, Secure, SameSite)
-- Implement rate limiting on auth endpoints
-- Validate all inputs with Zod
-- Hash passwords with bcrypt (Better Auth does this)
+**Payments and integrations**
+- Webhooks verify the provider's signature and are idempotent (unique checkout ID, transaction re-check, `P2002` fallback).
+- API keys are random, shown once and stored as SHA-256 hashes, with scopes, expiry, revocation and per-key rate limits.
+- Requests to the Python AI service are HMAC-signed with a timestamp; the service is not exposed publicly.
 
-## API Security
+**Logging**
+- Logger metadata with secret-looking keys is redacted before reaching any transport.
 
-- Authenticate all protected routes
-- Validate user ownership of resources
-- Use CSRF tokens for forms
-- Rate limit API endpoints
-- Sanitize all inputs
+## Your responsibility
 
-## Database
+- **Security headers.** None are configured beyond CORS. Add them in `apps/web/next.config.mjs`:
 
-- Use parameterized queries (Prisma does this)
-- Principle of least privilege for DB users
-- Enable SSL for database connections
-- Regular backups
-
-## Headers
-
-
-Add security headers in `next.config.mjs`:
-
-
-```javascript
-const securityHeaders = [
-  {
-    key: "X-Frame-Options",
-    value: "DENY",
-  },
-  {
-    key: "X-Content-Type-Options",
-    value: "nosniff",
-  },
-  {
-    key: "Referrer-Policy",
-    value: "strict-origin-when-cross-origin",
-  },
-];
-
-export default {
+  ```js
   async headers() {
     return [
       {
         source: "/:path*",
-        headers: securityHeaders,
+        headers: [
+          { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          { key: "X-Frame-Options", value: "DENY" },
+        ],
       },
+      // keep the existing /_next/:path* CORS entry for the desktop dev server
     ];
   },
-};
-```
+  ```
 
+  Add a Content-Security-Policy once you know which third parties (analytics, payments, fonts) your pages load.
+- **Ownership checks.** Roles say who may call a procedure, not which rows they may touch. Always filter by `ctx.session.user.id` or `ctx.org.id`.
+- **New routes.** Add the route-policy row, call `guardRoute` or `authenticateApiKey`, validate input.
+- **Secrets.** Rotate them if they leak, use different values per environment, and keep them out of client-prefixed variables and Docker images.
+- **Dependencies.** Run `pnpm audit` and merge updates regularly; upgrade to new SaaS Forge releases for fixes, especially those marked Security.
+- **Data.** Enable backups, restrict database network access, and use TLS (`sslmode=require`).
+- **Monitoring.** Alert on repeated `401`/`403`/`429` responses and failed webhooks.
 
-## Dependencies
+## Reporting a vulnerability in SaaS Forge
 
-- Keep dependencies updated
-- Run `pnpm audit` regularly
-- Review dependency licenses
-- Use Dependabot for automated updates
-
-## Monitoring
-
-- Log authentication failures
-- Monitor for suspicious activity
-- Set up error tracking (Sentry)
-- Regular security audits
+Email the security contact in `docs/SECURITY.md` with the details. Do not open a public issue. Fixes are released with a Security label, which puts a banner on affected projects in the Upgrade Center.

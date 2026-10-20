@@ -1,0 +1,72 @@
+`apps/desktop` is an Electron 44 app with a React 19 renderer (React Router 7, built with electron-vite). It is a client of your web app: it signs in with Better Auth and calls the same tRPC API.
+
+## What it includes
+
+Sign-in, sign-up, password reset and email verification; a dashboard; the documentation viewer; the support screen; settings; admin users and CMS screens; and the workspace switcher with the Organizations module. Shared screens come from `packages/ui`, so they match the web app.
+
+## Run it
+
+```bash
+pnpm --dir apps/desktop dev
+```
+
+The web app must be running at `VITE_API_URL` (default `http://localhost:3000`). `pnpm dev` from the root starts both.
+
+```env
+# apps/desktop/.env
+VITE_API_URL="http://localhost:3000"
+VITE_THEME=green
+VITE_THEME_TYPE=dark
+VITE_AUTH_EMAIL=true
+VITE_AUTH_GOOGLE=false
+VITE_AUTH_GITHUB=false
+VITE_AUTH_LINKEDIN=false
+VITE_SUPPORT_MAIL=""
+VITE_CALENDLY_BOOKING_URL=""
+```
+
+`pnpm doctor` derives these from the web values. Never put secrets in them: `VITE_` values are bundled into the app.
+
+On Linux, if Electron reports it failed to install, run `node node_modules/electron/install.js` from the repository root.
+
+## How it talks to the server
+
+- In development the renderer runs on `http://localhost:5173`. Packaged, it is served from the custom `app://saas-forge` scheme (`src/main/rendererProtocol.ts`) instead of `file://`.
+- The web app's middleware and Better Auth trust exactly these origins, and session cookies are `SameSite=None; Secure` so they work across origins.
+- OAuth opens the provider and returns through `/api/auth/desktop-callback`; the main process notices that navigation and reloads the app signed in.
+
+If you change the origin (`DESKTOP_APP_ORIGIN` in `packages/auth/src/better-auth/desktop-origin.ts`), change `RENDERER_ORIGIN` in the desktop app too. A test checks they match.
+
+## Build and package
+
+```bash
+pnpm --dir apps/desktop build:prod   # compile with .env.production
+pnpm --dir apps/desktop package      # installers for the current OS
+```
+
+`electron-builder.yml` targets:
+
+| OS | Formats | Output |
+| --- | --- | --- |
+| Linux | AppImage, deb, snap | `apps/desktop/dist/` |
+| macOS | dmg | Build on a Mac; sign and notarize with an Apple Developer ID |
+| Windows | nsis installer | Build on Windows or with Wine |
+
+Put your production API URL and flags in `apps/desktop/.env.production` before building.
+
+## Publish to the Snap Store
+
+```bash
+sudo snap install snapcraft --classic
+snapcraft login
+
+pnpm desktop:install:linux          # build, package and install locally to test
+pnpm desktop:publish:linux:edge     # build, package and upload to the edge channel
+pnpm desktop:publish:linux:stable   # same, to stable
+```
+
+Register the snap name in the Snap Store first, and change `appId` and `productName` in `electron-builder.yml` to yours.
+
+## Remove it
+
+Don't need desktop? Delete `apps/desktop` and the `desktop:*` scripts in the root `package.json`. Downloads without the desktop platform leave it out already.

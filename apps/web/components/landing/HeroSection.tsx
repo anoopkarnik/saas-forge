@@ -1,4 +1,5 @@
 "use client"
+import { useTranslations } from "next-intl";
 import { ArrowRight, BookIcon } from "lucide-react";
 import { Button } from "@workspace/ui/components/shadcn/button";
 import { useEffect, useState } from "react";
@@ -9,12 +10,8 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 import Image from "next/image";
 import { ContainerScroll } from "@workspace/ui/components/aceternity/container-scroll-animation";
 import { HeroCodeBlock } from "@workspace/ui/components/misc/HeroCodeBlock";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { ReactElement } from "react";
-
-const TypewriterComponent = dynamic(() => import("typewriter-effect"), {
-  ssr: false,
-});
 
 const BackgroundBeams = dynamic(
   () =>
@@ -25,16 +22,34 @@ const BackgroundBeams = dynamic(
 );
 
 const HeroSection = ({ heroSection }: { heroSection: HeroSectionProps }): ReactElement => {
+  const t = useTranslations("landing");
   const [isClientReady, setIsClientReady] = useState(false);
   const router = useRouter()
+  const reducedMotion = useReducedMotion();
+  const [demoPending, setDemoPending] = useState(false);
+  const [demoError, setDemoError] = useState<string | null>(null);
+
+  const openDemo = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setDemoPending(true);
+    setDemoError(null);
+    try {
+      const response = await fetch("/api/demo-login", { method: "POST" });
+      if (!response.ok) throw new Error("Demo unavailable");
+      window.location.assign(response.url);
+    } catch {
+      setDemoError("The demo is temporarily unavailable. Please try again later or browse the documentation.");
+      setDemoPending(false);
+    }
+  };
 
   useEffect(() => {
     const frameId = window.requestAnimationFrame(() => setIsClientReady(true));
     return () => window.cancelAnimationFrame(frameId);
   }, [])
 
-  const tagline = heroSection.tagline?.trim() || "Build and launch your SaaS faster";
-  const description = heroSection.description?.trim() || "Ship your product with a production-ready SaaS foundation.";
+  const tagline = heroSection.tagline?.trim() || t("hero.titleFallback");
+  const description = heroSection.description?.trim() || t("hero.descriptionFallback");
   const taglineArray = tagline.split(/\s+/);
 
   // Simple string replacer for basic youtube links to convert them to embed format
@@ -58,17 +73,17 @@ const HeroSection = ({ heroSection }: { heroSection: HeroSectionProps }): ReactE
   const embedUrl = getYoutubeEmbedUrl(heroSection.videoLink);
 
   return (
-    <section className="container flex flex-col justify-center items-center py-20 md:py-32  gap-10 relative ">
+    <section className="container mx-auto px-4 sm:px-6 lg:px-8 flex flex-col justify-center items-center py-12 md:py-20  gap-10 relative ">
 
-      <div className="text-center space-y-6 lg:mt-28 justify-center flex flex-col items-center">
-        <motion.main
-          initial={{ opacity: 0, y: 20 }}
+      <div className="w-full max-w-5xl text-center space-y-6 justify-center flex flex-col items-center">
+        <motion.div
+          initial={reducedMotion ? false : { opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="text-5xl md:text-6xl text-center leading-tight"
+          className="text-4xl sm:text-5xl md:text-6xl text-center leading-tight"
         >
-          <h1 className="inline-block">
-            <span className="bg-gradient-to-r from-[#F596D3] to-[#D247BF] text-transparent bg-clip-text">
+          <h1 className="inline-block font-bold text-balance">
+            <span className="bg-gradient-to-r from-fuchsia-700 to-pink-700 dark:from-[#F596D3] dark:to-[#D247BF] text-transparent bg-clip-text">
               {taglineArray.slice(0, Math.ceil(taglineArray.length / 3)).join(" ")}
             </span>{" "}
             <span>
@@ -76,70 +91,73 @@ const HeroSection = ({ heroSection }: { heroSection: HeroSectionProps }): ReactE
                 .slice(Math.ceil(taglineArray.length / 3), Math.ceil((2 * taglineArray.length) / 3))
                 .join(" ")}
             </span>{" "}
-            <span className="bg-gradient-to-r from-[#61DAFB] via-[#1fc0f1] to-[#03a3d7] text-transparent bg-clip-text">
+            <span className="bg-gradient-to-r from-sky-700 to-cyan-700 dark:from-[#61DAFB] dark:via-[#1fc0f1] dark:to-[#03a3d7] text-transparent bg-clip-text">
               {taglineArray.slice(Math.ceil((2 * taglineArray.length) / 3)).join(" ")}
             </span>
           </h1>
-        </motion.main>
+        </motion.div>
 
 
         <motion.div
-          initial={{ opacity: 0 }}
+          initial={reducedMotion ? false : { opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.3, duration: 0.5 }}
-          className="text-xl text-zinc-300 md:w-10/12 mx-auto lg:mx-0"
+          className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto lg:mx-0"
         >
-          {isClientReady ? (
-            <TypewriterComponent
-              options={{
-                strings: description,
-                autoStart: true,
-                loop: true,
-              }} />
-          ) : (
-            <p>{description}</p>
-          )}
+          <p>{description}</p>
         </motion.div>
         <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
+          initial={reducedMotion ? false : { opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.5, duration: 0.5 }}
+          className="w-full max-w-[400px]"
         >
           <HeroCodeBlock
 
             language="bash"
-            code={heroSection.codeSnippet || "Coming Soon"}
+            code={heroSection.codeSnippet || t("hero.comingSoon")}
           />
         </motion.div>
         <motion.div
-          initial={{ opacity: 0, y: 10 }}
+          initial={reducedMotion ? false : { opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.7, duration: 0.5 }}
-          className="flex items-center justify-center space-y-4 md:space-y-0 md:space-x-4"
+          className="flex flex-wrap items-center justify-center gap-3"
         >
 
           <Button
             className="flex items-center gap-1"
             variant="secondary"
-            size="sm"
+            size="default"
             onClick={() => router.push("/landing/doc")}
           >
             <BookIcon size={15} />
-            <p className="text-sm">Documentation</p>
+            <p className="text-sm">{t("hero.documentation")}</p>
           </Button>
+          <form method="post" action="/api/demo-login" onSubmit={openDemo}>
+            <Button
+              type="submit" disabled={demoPending}
+              className="flex items-center gap-1"
+              variant="outline"
+              size="default"
+            >
+              <p className="text-sm">{demoPending ? "Opening demo…" : "Try demo"}</p>
+            </Button>
+          </form>
           <Button
             className="flex items-center gap-1"
             variant="default"
-            size="sm"
+            size="default"
             onClick={() => router.push("/sign-up")}
           >
-            <p className="text-sm">Getting Started</p>
+            <p className="text-sm">{t("hero.gettingStarted")}</p>
             <ArrowRight size={15} />
           </Button>
         </motion.div>
+        {demoError && <p role="alert" className="max-w-lg text-sm text-destructive">{demoError}</p>}
       </div>
       {/* Hero cards sections */}
-      <div className=" flex justify-center  w-full px-4 group ">
+      <div className="flex justify-center w-full group">
         {/* <div className="absolute inset-0  scale-[0.80] transform rounded-full  bg-gradient-to-r from-[#F596D3] 
       to-[#03a3d7] blur-3xl max-w-5xl top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 " /> */}
 
@@ -150,7 +168,7 @@ const HeroSection = ({ heroSection }: { heroSection: HeroSectionProps }): ReactE
                 <CarouselItem className="flex items-center justify-center relative w-full aspect-video">
                   <iframe
                     src={embedUrl}
-                    title="Product Video"
+                    title={t("hero.productVideo")}
                     width="100%"
                     height="100%"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -165,7 +183,7 @@ const HeroSection = ({ heroSection }: { heroSection: HeroSectionProps }): ReactE
                   {image.imageUrl ? (
                     <Image
                       src={image.imageUrl}
-                      alt={image.title || "Hero Slide"}
+                      alt={image.title || t("hero.slideAlt")}
                       width={1920}
                       height={1080}
                       className="rounded-lg mx-auto object-cover h-full aspect-video"
@@ -177,7 +195,7 @@ const HeroSection = ({ heroSection }: { heroSection: HeroSectionProps }): ReactE
                       <div className="p-4 rounded-full bg-white/5 group-hover/placeholder:scale-110 transition-transform duration-500">
                         <span className="text-4xl">✨</span>
                       </div>
-                      <p className="text-zinc-400 font-light">Add your product screenshots in Notion</p>
+                      <p className="text-zinc-400 font-light">{t("hero.addScreenshots")}</p>
                     </div>
                   )}
                   <div className="absolute top-8 left-1/2 -translate-x-1/2 -translate-y-1/2 
@@ -188,14 +206,14 @@ const HeroSection = ({ heroSection }: { heroSection: HeroSectionProps }): ReactE
                 </CarouselItem>
               ))}
             </CarouselContent>
-            <CarouselPrevious />
-            <CarouselNext />
+            <CarouselPrevious className="left-2" />
+            <CarouselNext className="right-2" />
           </ContainerScroll>
         </Carousel>
 
       </div>
 
-      {isClientReady ? <BackgroundBeams /> : null}
+      {isClientReady && !reducedMotion ? <BackgroundBeams /> : null}
     </section>
   );
 };

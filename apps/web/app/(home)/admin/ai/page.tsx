@@ -142,7 +142,7 @@ function SpeechConfigPanel({
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Label htmlFor={`${form.capability}-enabled`} className="text-xs">
             Enabled
           </Label>
@@ -449,7 +449,7 @@ export default function AIAdminPage() {
           <Bot className="h-6 w-6 text-primary" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">AI Management</h1>
+          <h1 className="page-title">AI Management</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Manage prompts, model configuration, and metered AI usage.
           </p>
@@ -459,7 +459,7 @@ export default function AIAdminPage() {
       <Card className="min-h-[500px]">
         <CardContent>
           <Tabs defaultValue="prompts" className="w-full">
-            <TabsList className="mb-8 flex h-auto w-full justify-start gap-1 rounded-lg bg-muted/50 p-1.5">
+            <TabsList className="mb-8 flex flex-wrap h-auto w-full justify-start gap-1 rounded-lg bg-muted/50 p-1.5">
               <TabsTrigger value="prompts" className="flex items-center gap-1.5 text-xs">
                 <Bot className="h-3.5 w-3.5" /> Prompts
               </TabsTrigger>
@@ -499,7 +499,7 @@ export default function AIAdminPage() {
                 )}
               </div>
 
-              <div className="grid gap-6 lg:grid-cols-[240px_1fr]">
+              <div className="grid min-w-0 gap-6 lg:grid-cols-[240px_1fr]">
                 <div className="space-y-2">
                   {prompts.map((item: any) => (
                     <button
@@ -589,7 +589,7 @@ export default function AIAdminPage() {
                         }
                       />
                     ) : (
-                      <div className="flex gap-2">
+                      <div className="flex min-w-0 flex-wrap gap-2">
                         <Select
                           value={formState.model}
                           onValueChange={(value) =>

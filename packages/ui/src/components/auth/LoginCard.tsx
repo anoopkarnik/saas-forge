@@ -19,7 +19,8 @@ import {
 import { Input } from '@workspace/ui/components/shadcn/input';
 import { FormResult } from './FormResult';
 import LoadingButton from '@workspace/ui/components/misc/LoadingButton';
-import { LoginSchema } from '@workspace/auth/utils/zod';
+import { useTranslations } from 'use-intl';
+import { useAuthSchemas } from '@workspace/ui/hooks/useAuthSchemas';
 import { LoginCardProps } from '@workspace/auth/utils/typescript';
 import { Separator } from '@workspace/ui/components/shadcn/separator';
 
@@ -28,6 +29,8 @@ const LoginCard = ({ showEmail, showGoogleProvider, showGithubProvider, showLink
   onSignUpClick, onForgotPasswordClick }
   : LoginCardProps
 ) => {
+  const t = useTranslations('auth')
+  const { LoginSchema } = useAuthSchemas()
   const [pending, setPending] = useState(false)
   const form = useForm<z.infer<typeof LoginSchema>>({
     resolver: zodResolver(LoginSchema),
@@ -48,9 +51,9 @@ const LoginCard = ({ showEmail, showGoogleProvider, showGithubProvider, showLink
   return (
     <Card className='w-full max-w-md border-border/50 shadow-xl bg-card/50 backdrop-blur-sm'>
       <CardHeader className="space-y-1">
-        <h1 className='text-3xl font-bold tracking-tight text-center'>Login</h1>
+        <h1 className='text-3xl font-bold tracking-tight text-center'>{t('login.title')}</h1>
         <p className='text-sm text-muted-foreground text-center'>
-          Welcome back! Please enter your details.
+          {t('login.subtitle')}
         </p>
       </CardHeader>
       {showEmail &&
@@ -60,9 +63,9 @@ const LoginCard = ({ showEmail, showGoogleProvider, showGithubProvider, showLink
               <div className='space-y-4'>
                 <FormField control={form.control} name="email" render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email</FormLabel>
+                    <FormLabel>{t('email')}</FormLabel>
                     <FormControl>
-                      <Input disabled={pending} type="email" placeholder='name@example.com' className="h-10" {...field} />
+                      <Input disabled={pending} autoComplete="email" type="email" placeholder='name@example.com' className="h-10" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -70,13 +73,13 @@ const LoginCard = ({ showEmail, showGoogleProvider, showGithubProvider, showLink
                 <FormField control={form.control} name="password" render={({ field }) => (
                   <FormItem>
                     <div className="flex items-center justify-between">
-                      <FormLabel>Password</FormLabel>
+                      <FormLabel>{t('password')}</FormLabel>
                       <button type="button" onClick={onForgotPasswordClick} className='text-xs font-medium text-primary hover:underline cursor-pointer'>
-                        Forgot password?
+                        {t('login.forgotPassword')}
                       </button>
                     </div>
                     <FormControl>
-                      <Input disabled={pending} placeholder='******' type="password" className="h-10" {...field} />
+                      <Input disabled={pending} placeholder='******' type="password" autoComplete="current-password" className="h-10" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -85,7 +88,7 @@ const LoginCard = ({ showEmail, showGoogleProvider, showGithubProvider, showLink
 
               <FormResult type="error" message={errorMessage} />
               <LoadingButton variant="default" className="w-full h-10 font-medium" pending={pending}>
-                Sign in
+                {t('login.submit')}
               </LoadingButton>
             </form>
           </Form>
@@ -97,31 +100,31 @@ const LoginCard = ({ showEmail, showGoogleProvider, showGithubProvider, showLink
             <span className="w-full border-t border-border/60" />
           </div>
           <div className="relative flex justify-center text-xs uppercase">
-            <span className="px-2 text-muted-foreground">Or continue with</span>
+            <span className="px-2 text-muted-foreground">{t('orContinueWith')}</span>
           </div>
         </div>
       )}
 
       <CardFooter className='flex flex-col gap-3 pt-6'>
         {showGoogleProvider && (
-          <Button variant='outline' onClick={onGoogleProviderSubmit} className="w-full h-10 hover:bg-muted/50 transition-colors" title="Sign in with Google">
+          <Button variant='outline' onClick={onGoogleProviderSubmit} className="w-full h-10 hover:bg-muted/50 transition-colors" title={t('login.withProvider', { provider: 'Google' })}>
             <FcGoogle className="h-5 w-5" />
           </Button>
         )}
         {showGithubProvider && (
-          <Button variant='outline' onClick={onGithubProviderSubmit} className="w-full h-10 hover:bg-muted/50 transition-colors" title="Sign in with GitHub">
+          <Button variant='outline' onClick={onGithubProviderSubmit} className="w-full h-10 hover:bg-muted/50 transition-colors" title={t('login.withProvider', { provider: 'GitHub' })}>
             <FaGithub className="h-5 w-5" />
           </Button>
         )}
         {showLinkedinProvider && (
-          <Button variant='outline' onClick={onLinkedinProviderSubmit} className="w-full h-10 hover:bg-muted/50 transition-colors" title="Sign in with LinkedIn">
+          <Button variant='outline' onClick={onLinkedinProviderSubmit} className="w-full h-10 hover:bg-muted/50 transition-colors" title={t('login.withProvider', { provider: 'LinkedIn' })}>
             <FaLinkedin className="h-5 w-5 text-[#0a66c2]" />
           </Button>
         )}
         <div className="mt-4 text-center text-sm text-muted-foreground">
-          Don&apos;t have an account?{" "}
+          {t('login.noAccount')}{" "}
           <button onClick={onSignUpClick} className='font-medium text-primary hover:underline transition-all cursor-pointer'>
-            Sign up
+            {t('login.signUp')}
           </button>
         </div>
       </CardFooter>

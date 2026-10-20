@@ -13,7 +13,7 @@ const DocSidebar = (): ReactElement => {
     const { theme } = useTheme();
     const trpc = useTRPC() as any;
     const [docCategories, setDocCategories] = useState<string[]>([]);
-    const { data: documentation } = useSuspenseQuery(trpc.documentation.getDocumentationInfoFromNotion.queryOptions())
+    const { data: documentation } = useSuspenseQuery(trpc.documentation.getDocumentationInfo.queryOptions())
 
     useEffect(() => {
         const categories = Array.from(new Set((documentation as any).docs.map((doc: any) => doc.Type)));

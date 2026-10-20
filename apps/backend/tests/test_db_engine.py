@@ -5,7 +5,8 @@ from saas_forge_backend.db.engine import get_engine, get_sessionmaker
 def test_models_import():
     # Smoke: tables registered on metadata.
     table_names = {t.name for t in models.Base.metadata.tables.values()}
-    assert {"AiJobRun", "AiJobEvent", "AiCollection", "AiDocument", "AiDocumentChunk"} <= table_names
+    expected = {"AiJobRun", "AiJobEvent", "AiCollection", "AiDocument", "AiDocumentChunk"}
+    assert expected <= table_names
 
 
 def test_engine_is_singleton(monkeypatch):

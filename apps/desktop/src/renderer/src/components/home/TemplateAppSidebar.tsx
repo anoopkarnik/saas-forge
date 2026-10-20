@@ -24,6 +24,7 @@ type TemplateAppSidebarProps = {
   onNavigate: (path: string) => void;
   pathname: string;
   slotUser?: React.ReactNode;
+  slotWorkspace?: React.ReactNode;
 };
 
 export type TemplateNavbarConfig = TemplateAppSidebarProps["navbarConfig"];
@@ -34,6 +35,7 @@ export default function TemplateAppSidebar({
   onNavigate,
   pathname,
   slotUser,
+  slotWorkspace,
 }: TemplateAppSidebarProps) {
   const { theme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
@@ -67,6 +69,7 @@ export default function TemplateAppSidebar({
             </a>
           </SidebarMenuItem>
         </SidebarMenu>
+        {slotWorkspace && <div className="pt-3">{slotWorkspace}</div>}
       </SidebarHeader>
       <SidebarContent className="p-3">
         <SidebarGroup>

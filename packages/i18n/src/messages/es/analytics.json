@@ -1,0 +1,8 @@
+{
+  "consent": {
+    "label": "Consentimiento de analítica",
+    "message": "Nos gustaría medir cómo se usa este producto. Solo enviamos identificadores, nunca tu nombre ni tu correo, y la analítica se carga únicamente si aceptas.",
+    "accept": "Aceptar",
+    "decline": "Rechazar"
+  }
+}

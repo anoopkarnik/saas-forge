@@ -9,9 +9,18 @@ from fastapi.responses import StreamingResponse
 from saas_forge_backend.agents.registry import REGISTRY, register_default_agents
 from saas_forge_backend.api.schemas.agents import StreamAgentRequest
 from saas_forge_backend.api.sse import sse_event
+from saas_forge_backend.db.engine import get_sessionmaker
+from saas_forge_backend.db.models import AiJobStatus
+from saas_forge_backend.db.repositories import jobs as jobs_repo
 
 log = logging.getLogger(__name__)
 router = APIRouter()
+
+
+async def is_job_cancelled(job_id: str) -> bool:
+    async with get_sessionmaker()() as session:
+        job = await jobs_repo.get(session, job_id)
+    return job is None or job.status != AiJobStatus.RUNNING
 
 
 @router.post("/agents/stream")
@@ -28,6 +37,9 @@ async def agents_stream(request: Request) -> StreamingResponse:
         try:
             agent_iter = agent_fn(body.input, {"user_id": body.user_id, "org_id": body.org_id})
             async for event in agent_iter:
+                if body.job_id and await is_job_cancelled(body.job_id):
+                    log.info("AI job cancelled; stopping stream")
+                    break
                 if await request.is_disconnected():
                     log.info("Client disconnected mid-stream; cancelling agent")
                     break

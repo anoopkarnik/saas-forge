@@ -42,7 +42,7 @@ export const featureSectionData = {
     {
       "id": "2fb1d3fa-a0a0-80a8-aa6f-f888385ef8f0",
       "title": "CMS Module",
-      "description": "The CMS Module use notion databases  through api and upstash redis for cache to get all data in landing pages\n",
+      "description": "The CMS Module serves landing page and docs content from Postgres (editable in the admin panel) or from the repo, with Upstash Redis as a cache\n",
       "imageUrl": "/cms/feature_6.png"
     },
     {

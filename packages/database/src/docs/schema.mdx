@@ -1,142 +1,75 @@
+Prisma models by file. Module-owned files are removed from downloads that do not include the module.
 
-The database schema is defined in `packages/database/prisma/schema.prisma`.
+## schema.prisma
 
+The generator (`prisma-client`, output `../src/generated/prisma`) and the datasource, which lists the Postgres schemas. Models live in the other files.
 
-## Schema Location
+## user.prisma (core)
 
+| Model | Purpose |
+| --- | --- |
+| `User` | Name, email, image, `role` (`user`, `admin`, `guest`), ban fields, `access` tier, `creditsTotal` (default 20) and `creditsUsed` |
+| `Account` | Credentials and OAuth accounts linked to a user (`providerId`, tokens, hashed password) |
+| `Session` | Session token, expiry, IP, user agent, `impersonatedBy`, and `activeOrganizationId` with Organizations |
+| `Verification` | Email verification and password reset tokens |
+| `jwks` | Key storage used by Better Auth |
+| `Invitation` | Admin invitations for invite-only sign-up (`PENDING`, `ACCEPTED`, `REVOKED`) |
+| `AppSetting` | Key-value settings such as `registration_mode` |
 
-```plain text
-packages/database/
-├── prisma/
-│   └── schema.prisma    # Main schema file
-│   └── user.prisma    # User schema file
-│   └── billing.prisma    # Billing schema file
-```
+## billing.prisma (core)
 
+| Model | Purpose |
+| --- | --- |
+| `Transaction` | One row per successful payment: user, gateway event ID, unique `checkoutSessionId` (the idempotency key), receipt URL, description, amount and currency |
 
-## User Schema
+## cms.prisma (core)
 
+| Model | Purpose |
+| --- | --- |
+| `LandingPage` | One row per product, keyed by `title` = `NEXT_PUBLIC_SAAS_NAME`: logos, hero text, section headings, footer and legal fields |
+| `HeroImage`, `Feature`, `Testimonial`, `PricingPlan`, `FAQ`, `FooterLink` | Section items, each linked to a landing page |
+| `Documentation` | Docs pages: unique `slug`, `title`, `type` (category), `order`, Markdown `content`, `lastUpdated` |
 
-```plain text
-model User {
-    id        String   @id @default(cuid()) 
-    name      String
-    email     String   @unique
-    emailVerified Boolean  @default(false)
-    image     String?
-    role      USER_ROLE  @default(user)
-    banned    Boolean  @default(false)
-    bannedReason String?
-    banExpires   Int?
+## org.prisma (Organizations module)
 
-    access    ACCCOUNT_ACCESS @default(TRIAL)
-    creditsUsed  Int      @default(0)
-    creditsTotal Int      @default(20)
+| Model | Purpose |
+| --- | --- |
+| `Organization` | Workspace name, unique slug, logo, metadata |
+| `Member` | User membership with a role: `owner`, `admin`, `member` or `viewer` |
+| `OrganizationInvitation` | Pending workspace invitations with role, inviter and expiry |
 
-    password   String?
+## ai.prisma (AI Platform module)
 
-    accounts      Account[]
-    sessions      Session[]
+| Model | Purpose |
+| --- | --- |
+| `AiPrompt`, `AiPromptVersion` | Named prompts (for example `chat.assistant`) with versioned content, provider and model, and one active version |
+| `AiConversation`, `AiMessage` | Chat history per user |
+| `AiUsageEvent` | Tokens and credits charged per request |
+| `AiSpeechConfig` | Text-to-speech and speech-to-text provider settings |
+| `AiWebhookConfig` | n8n webhook settings for routing chat to a workflow |
 
-    createdAt  DateTime @default(now())
-    updatedAt  DateTime @updatedAt
+## ai-agents.prisma (AI Agents module)
 
-    @@schema("user_schema")
-}
+| Model | Purpose |
+| --- | --- |
+| `AiJobRun`, `AiJobEvent` | Background agent runs and their event stream |
+| `AiCollection`, `AiDocument`, `AiDocumentChunk` | RAG collections, ingested documents and their embedded chunks (pgvector) |
 
-enum USER_ROLE {
-    user
-    admin
+## api-keys.prisma (API Keys module)
 
-    @@schema("user_schema")
-}
+| Model | Purpose |
+| --- | --- |
+| `ApiKey` | Label, unique `keyPrefix`, SHA-256 `keyHash`, `scopes`, status, last use, expiry and revocation |
 
-enum ACCCOUNT_ACCESS {
-    TRIAL
-    PRO
-    ENTERPRISE
-    UNLIMITED
-    @@schema("user_schema")
-}
+## scaffold.prisma (open-source repository only)
 
-model Account {
-  id                     String   @id @default(cuid())
-  userId                 String  
-  providerId             String  
-  accountId              String    
-  refreshToken           String?   
-  accessToken            String?   
-  accessTokenExpiresAt   DateTime?       
-  refreshTokenExpiresAt  DateTime?      
-  scope                  String?
-  idToken                String?   
-  password               String?  
- 
-  createdAt              DateTime @default(now())
-  updatedAt              DateTime @updatedAt
- 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+`ProjectConfig` (saved projects), `ScaffoldJob` (the download and upgrade ledger with charge, build key, refund), `ReleaseEmailSubscription` and `ReleaseEmail`. These power the SaaS Forge download platform and never ship in a download.
 
-  @@schema("user_schema")
+## Changing the schema
 
-}
+1. Edit the relevant `.prisma` file. Put a new feature's models in a new file.
+2. If the model needs a new Postgres schema, add it to `schemas` in `schema.prisma` and use `@@schema("…")` on each model.
+3. Run `pnpm migrate`, give the migration a name, and read the generated SQL before committing.
+4. Commit the `.prisma` changes and the new folder under `prisma/migrations` together.
 
-model Session {
-  id             String   @id @default(cuid())  @map("_id")
-  token          String   @unique
-  userId         String  
-  expiresAt      DateTime 
-
-  userAgent    String?
-  ipAddress      String?
-  impersonatedBy String?
-
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@schema("user_schema")
-}
-
-model Verification {
-  id        String   @id @default(cuid()) @map("_id")
-  identifier String
-  value     String
-  expiresAt DateTime
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
- 
-  @@schema("user_schema")
-}
-
-model jwks {
-  id        String   @id @default(cuid()) @map("_id")
-  publicKey String
-  privateKey String
-
-  createdAt DateTime @default(now())
-
-  @@schema("user_schema")
-}
-```
-
-
-```plain text
-model Transaction {
-    id            String          @id @default(cuid())
-    userId        String
-    eventId       String
-    description   String
-    amount        Int
-    currency      String
-    date          DateTime @default(now())
-
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
-
-  @@schema("billing_schema")
-}
-```
-
+See [Migrations & Seeding](/landing/doc/migration).

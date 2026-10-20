@@ -2,12 +2,25 @@ import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import db from "@workspace/database/client"
+import { paymentFailed, paymentSucceeded } from "@/lib/notifications/catalog";
+import { notify } from "@/lib/notifications/notify";
+import { emitWebhook } from "@/lib/webhooks/service";
+import { track } from "@workspace/analytics/server";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-    apiVersion: '2026-02-25.clover'
-});
+// Created lazily: `next build` evaluates this module while collecting page data,
+// and the Stripe constructor throws when STRIPE_SECRET_KEY is absent at build time.
+let _stripe: Stripe | null = null;
+function getStripe(): Stripe {
+    if (!_stripe) {
+        _stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+            apiVersion: '2026-02-25.clover'
+        });
+    }
+    return _stripe;
+}
 
 export async function POST(request: NextRequest) {
+    const stripe = getStripe();
     const body = await request.text();
     const signature = (await headers()).get("Stripe-Signature") as string;
     let event: Stripe.Event;
@@ -96,6 +109,19 @@ export async function POST(request: NextRequest) {
             });
 
             console.log(`[Stripe Webhook] Credits +${credits} for user ${userId} (session: ${session.id})`);
+            await notify(paymentSucceeded, userId, { credits }, { dedupeKey: `payment:${session.id}` });
+            await emitWebhook(
+                "payment.succeeded",
+                {
+                    userId,
+                    credits,
+                    amount: session.amount_total ?? null,
+                    currency: session.currency ?? null,
+                    checkoutId: session.id,
+                },
+                { userId },
+            );
+            await track("billing.checkout_completed", { credits, gateway: "stripe" }, { distinctId: userId });
             return NextResponse.json({
                 message: "Checkout session completed and credits updated",
             }, { status: 200 });
@@ -113,6 +139,17 @@ export async function POST(request: NextRequest) {
                 error: "Failed to process payment",
             }, { status: 500 });
         }
+    }
+
+    if (event.type === "checkout.session.async_payment_failed" && session.client_reference_id) {
+        console.log(`[Stripe Webhook] Payment failed for user ${session.client_reference_id} (session: ${session.id})`);
+        await notify(paymentFailed, session.client_reference_id, {}, { dedupeKey: `payment-failed:${session.id}` });
+        await emitWebhook(
+            "payment.failed",
+            { userId: session.client_reference_id, reason: null },
+            { userId: session.client_reference_id },
+        );
+        return NextResponse.json({ message: "Payment failure recorded" });
     }
 
     return NextResponse.json({

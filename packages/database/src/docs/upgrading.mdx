@@ -1,0 +1,92 @@
+SaaS Forge keeps improving after you download it. This page covers how a downloaded project receives fixes and new modules. (If you cloned the open-source repository, `git pull` is your upgrade.)
+
+## Know your version
+
+Every download contains `.boilerplate-version`. Projects created by the CLI also have `.saas-forge.json` with the saved project's slug.
+
+```bash
+cat .boilerplate-version
+```
+
+## The Upgrade Center
+
+Open **My Projects** (`/projects`) on [saasforge.cc](https://saasforge.cc) and expand a project.
+
+- **Release notes**: every release since your version, filtered to the modules your project contains, labeled New, Fix, Security or Breaking, with a note when a release adds a migration.
+- **Security banner**: shown on a project whenever a release since its version contains a security fix, whether or not you get emails.
+- **Upgrade preview**: pick modules to add, a later stage (tier), or a different provider, and see the files the upgrade adds, changes and removes, plus the price, before you pay.
+- **Release emails**: opt in to one email per release that changes one of your projects.
+
+## Three ways to apply an upgrade
+
+### 1. Merge the template branch (free fixes)
+
+Every release is published to the `template/saas-boilerplate` branch with a `template/v<version>` tag. Merging it brings in fixes and improvements for the code you have. Full steps are in `UPGRADING.md` at the root of your project; the short version:
+
+```bash
+# once
+git remote add boilerplate https://github.com/anoopkarnik/saas-forge.git
+git fetch boilerplate --tags
+git merge template/v<YOUR_VERSION> --allow-unrelated-histories   # first merge only
+
+# every release
+git fetch boilerplate template/saas-boilerplate
+git checkout -b upgrade/boilerplate-v<NEW_VERSION>
+git merge boilerplate/template/saas-boilerplate
+git checkout --theirs pnpm-lock.yaml && pnpm install
+pnpm generate && pnpm migrate     # when Prisma files changed
+pnpm test
+```
+
+The template branch contains the full starter with every module. If your project left modules out, delete the files they bring back, or prefer an upgrade kit.
+
+### 2. Buy an upgrade kit (new modules, stages, providers)
+
+From the Upgrade Center or the CLI:
+
+```bash
+npx create-saas-forge upgrade --add api_keys --dry-run
+npx create-saas-forge upgrade --add api_keys --yes
+```
+
+| Change | Price |
+| --- | --- |
+| Add a module | That module's credits |
+| Move to a later stage (tier) | 3 credits per step |
+| Switch a provider (for example Stripe to Dodo) | Free |
+
+The kit is a ZIP with:
+
+- `UPGRADE.md`: what changes and how to apply it;
+- `UPGRADE_SPEC.json`: added and removed modules, new env vars, and the added, modified and removed files;
+- `.upgrade/`: the staged new and changed files.
+
+### 3. Apply a kit with Claude Code
+
+Every project ships a `/upgrade-boilerplate` command for Claude Code. Unpack the kit into your project, then:
+
+```text
+claude
+> /upgrade-boilerplate
+```
+
+It reads `UPGRADE_SPEC.json` and `.upgrade/`, merges the changes into your customized files instead of overwriting them, wires new modules into `apps/web/trpc/routers/_app.ts`, the Prisma schema and `.env.example`, and removes the staging files.
+
+## After any upgrade
+
+1. `pnpm install`
+2. `pnpm generate` if Prisma files changed.
+3. Review new migrations, then `pnpm migrate` locally and `pnpm --dir packages/database migrate:deploy` in production.
+4. `pnpm doctor` to fill new env vars.
+5. `pnpm typecheck && pnpm test`, then try the app.
+
+## Resolving merge conflicts
+
+| Files | Usual strategy |
+| --- | --- |
+| `pnpm-lock.yaml` | Take theirs, then `pnpm install` |
+| `packages/auth`, `packages/ui`, `packages/email` | Usually take the boilerplate's version |
+| `packages/database/prisma/*.prisma` | Merge by hand, then create a migration |
+| `apps/web/middleware.ts`, `apps/web/trpc/`, `apps/web/lib/route-policy.ts` | Merge both sides carefully |
+| Your product code under `apps/web/app/(home)/` | Keep yours |
+| `*.env.example` | Merge, then add new variables to your `.env` |

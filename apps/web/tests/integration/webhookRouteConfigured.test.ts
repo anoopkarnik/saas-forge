@@ -8,6 +8,7 @@ process.env.DODO_PAYMENTS_WEBHOOK_KEY = 'test_webhook_key';
 const mockUserUpdate = vi.fn();
 const mockTransactionCreate = vi.fn();
 const mockTransactionFindFirst = vi.fn();
+vi.mock("@/lib/notifications/notify", () => ({ notify: vi.fn(async () => true), notifyIfCreditsLow: vi.fn() }));
 vi.mock('@workspace/database/client', () => ({
   default: {
     user: {

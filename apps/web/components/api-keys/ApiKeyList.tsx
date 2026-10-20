@@ -50,7 +50,7 @@ export function ApiKeyList({ onCreateClick }: { onCreateClick: () => void }) {
 
       {rows.length === 0 ? (
         <p className="rounded-md border border-dashed p-6 text-sm text-muted-foreground">
-          You don't have any API keys yet.
+          You don&apos;t have any API keys yet.
         </p>
       ) : (
         <ul className="flex flex-col gap-2">

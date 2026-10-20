@@ -10,12 +10,12 @@ import {
     DropdownMenuTrigger,
 } from "@workspace/ui/components/shadcn/dropdown-menu";
 import { Button } from "@workspace/ui/components/shadcn/button";
-import { MoreHorizontal, ShieldAlert, ShieldCheck, Trash2, Ban } from "lucide-react";
+import { MoreHorizontal, ShieldAlert, ShieldCheck, Trash2, Ban, Eye } from "lucide-react";
 
 interface UserActionsDropdownProps {
     user: any;
     currentUserId: string;
-    onSetRole: (userId: string, newRole: "admin" | "user") => void;
+    onSetRole: (userId: string, newRole: "admin" | "user" | "guest") => void;
     onBanToggle: (userId: string, isBanned: boolean) => void;
     onRemove: (userId: string) => void;
 }
@@ -42,6 +42,19 @@ export function UserActionsDropdown({ user, currentUserId, onSetRole, onBanToggl
                     <DropdownMenuItem onClick={() => onSetRole(user.id, "admin")}>
                         <ShieldCheck className="mr-2 h-4 w-4 text-emerald-500" />
                         Promote to Admin
+                    </DropdownMenuItem>
+                )}
+
+                {user.role !== "guest" && (
+                    <DropdownMenuItem onClick={() => onSetRole(user.id, "guest")}>
+                        <Eye className="mr-2 h-4 w-4 text-sky-500" />
+                        Set as Guest
+                    </DropdownMenuItem>
+                )}
+                {user.role === "guest" && (
+                    <DropdownMenuItem onClick={() => onSetRole(user.id, "user")}>
+                        <ShieldAlert className="mr-2 h-4 w-4" />
+                        Restore to User
                     </DropdownMenuItem>
                 )}
 

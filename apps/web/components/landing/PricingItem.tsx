@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import { Badge } from "@workspace/ui/components/shadcn/badge";
 import {
   Card,
@@ -19,6 +20,7 @@ enum PopularPlanType {
 
 
 const PricingItem = ({ pricingPlan }: { pricingPlan: PricingPlanProps }): ReactElement => {
+  const t = useTranslations("landing");
 
   return (
     <Card
@@ -37,7 +39,7 @@ const PricingItem = ({ pricingPlan }: { pricingPlan: PricingPlanProps }): ReactE
               variant="secondary"
               className="text-sm text-primary"
             >
-              Most popular
+              {t("pricing.mostPopular")}
             </Badge>
           ) : null}
         </CardTitle>

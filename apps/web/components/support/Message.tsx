@@ -38,7 +38,10 @@ const Message = ({ setActivePanel }: { setActivePanel: any }) => {
                 </p>
             </div>
             <div className="space-y-3">
+                <label htmlFor="support-email" className="text-sm font-medium">Email</label>
                 <Input
+                    id="support-email"
+                    type="email" autoComplete="email"
                     placeholder="Email address"
                     className="h-10 bg-muted/50 border-border/50 focus-visible:bg-background transition-all duration-200"
                     value={email}
@@ -46,7 +49,9 @@ const Message = ({ setActivePanel }: { setActivePanel: any }) => {
                     onKeyDown={(e) => e.stopPropagation()}
                     disabled={isLoading}
                 />
+                <label htmlFor="support-subject" className="text-sm font-medium">Subject</label>
                 <Input
+                    id="support-subject"
                     placeholder="Subject"
                     className="h-10 bg-muted/50 border-border/50 focus-visible:bg-background transition-all duration-200"
                     value={subject}
@@ -54,7 +59,9 @@ const Message = ({ setActivePanel }: { setActivePanel: any }) => {
                     onKeyDown={(e) => e.stopPropagation()}
                     disabled={isLoading}
                 />
+                <label htmlFor="support-message" className="text-sm font-medium">Message</label>
                 <Textarea
+                    id="support-message"
                     placeholder="How can we help?"
                     className="min-h-[120px] bg-muted/50 border-border/50 focus-visible:bg-background transition-all duration-200 resize-none"
                     value={message}

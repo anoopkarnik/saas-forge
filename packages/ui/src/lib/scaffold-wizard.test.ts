@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import type { FormValues } from "./zod/download";
 import {
   getAccountsProviderGroups,
+  getProjectEnvGroups,
   getReviewSummaryItems,
   getWizardStepFields,
 } from "./scaffold-wizard";
@@ -20,15 +21,6 @@ function createValues(
     NEXT_PUBLIC_URL: "https://starter.example",
     NEXT_PUBLIC_PLATFORM: ["web"],
     NEXT_PUBLIC_CMS: "constant",
-    LANDING_DATABASE_ID: "",
-    HERO_DATABASE_ID: "",
-    FEATURE_DATABASE_ID: "",
-    TESTIMONIAL_DATABASE_ID: "",
-    PRICING_DATABASE_ID: "",
-    FAQ_DATABASE_ID: "",
-    FOOTER_DATABASE_ID: "",
-    DOCUMENTATION_DATABASE_ID: "",
-    NOTION_API_TOKEN: "",
     UPSTASH_REDIS_REST_URL: "",
     UPSTASH_REDIS_REST_TOKEN: "",
     NEXT_PUBLIC_AUTH_FRAMEWORK: "better-auth",
@@ -99,7 +91,7 @@ describe("scaffold wizard helpers", () => {
   });
 
   it("shows only relevant provider groups for a simple starter", () => {
-    const groups = getAccountsProviderGroups(
+    const groups = getProjectEnvGroups(
       createValues({ NEXT_PUBLIC_CMS: "constant" }),
     );
     expect(groups.map((group) => group.id)).toEqual([
@@ -109,10 +101,40 @@ describe("scaffold wizard helpers", () => {
     ]);
   });
 
-  it("adds notion, upstash, resend, and payments groups when those capabilities are enabled", () => {
-    const groups = getAccountsProviderGroups(
+  it("hides secret/value fields from the wizard but keeps option choices", () => {
+    const overrides: Partial<FormValues> = {
+      NEXT_PUBLIC_CMS: "postgres",
+      SELECTED_MODULES: ["billing", "ai"],
+      NEXT_PUBLIC_AI_ENABLED: "true",
+      NEXT_PUBLIC_PAYMENT_GATEWAY: "stripe",
+    };
+    const wizardFields = getAccountsProviderGroups(
+      createValues(overrides),
+    ).flatMap((group) => group.fields);
+
+    // Secrets/values are gone from the wizard...
+    expect(wizardFields).not.toContain("DATABASE_URL");
+    expect(wizardFields).not.toContain("STRIPE_SECRET_KEY");
+    expect(wizardFields).not.toContain("OPENAI_API_KEY");
+    expect(wizardFields).not.toContain("UPSTASH_REDIS_REST_TOKEN");
+    // ...but option choices remain.
+    expect(wizardFields).toContain("NEXT_PUBLIC_PAYMENT_GATEWAY");
+    expect(wizardFields).toContain("NEXT_PUBLIC_AI_ENABLED");
+
+    // The full Projects-tab list still surfaces them.
+    const fullFields = getProjectEnvGroups(createValues(overrides)).flatMap(
+      (group) => group.fields,
+    );
+    expect(fullFields).toContain("DATABASE_URL");
+    expect(fullFields).toContain("STRIPE_SECRET_KEY");
+    expect(fullFields).toContain("OPENAI_API_KEY");
+    expect(fullFields).toContain("UPSTASH_REDIS_REST_TOKEN");
+  });
+
+  it("adds upstash, resend, and payments groups when those capabilities are enabled", () => {
+    const groups = getProjectEnvGroups(
       createValues({
-        NEXT_PUBLIC_CMS: "notion",
+        NEXT_PUBLIC_CMS: "postgres",
         NEXT_PUBLIC_AUTH_PROVIDERS: ["email_verification", "google"],
         NEXT_PUBLIC_EMAIL_CLIENT: "resend",
         NEXT_PUBLIC_OBSERVABILITY_FEATURES: ["rate_limiting"],
@@ -123,7 +145,6 @@ describe("scaffold wizard helpers", () => {
 
     expect(groups.map((group) => group.id)).toEqual([
       "database",
-      "notion",
       "upstash",
       "auth",
       "resend",
@@ -134,7 +155,7 @@ describe("scaffold wizard helpers", () => {
   });
 
   it("adds GA4 report and PageSpeed fields when those monitoring features are enabled", () => {
-    const groups = getAccountsProviderGroups(
+    const groups = getProjectEnvGroups(
       createValues({
         NEXT_PUBLIC_OBSERVABILITY_FEATURES: [
           "google_analytics",
@@ -160,7 +181,7 @@ describe("scaffold wizard helpers", () => {
   });
 
   it("shows AI provider group when AI module is selected and enabled", () => {
-    const groups = getAccountsProviderGroups(
+    const groups = getProjectEnvGroups(
       createValues({
         SELECTED_MODULES: ["ai"],
         NEXT_PUBLIC_AI_ENABLED: "true",

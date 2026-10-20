@@ -4,6 +4,8 @@ import tsconfigPaths from 'vite-tsconfig-paths'
 
 export default defineConfig({
   plugins: [tsconfigPaths()],
+  // Next compiles JSX with the automatic runtime; match it so components need no React import.
+  esbuild: { jsx: 'automatic' },
   test: {
     environment: 'happy-dom',
     globals: true,

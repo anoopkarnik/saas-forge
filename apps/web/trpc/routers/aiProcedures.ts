@@ -1,4 +1,4 @@
-import { adminProcedure, createTRPCRouter, protectedProcedure } from "@/trpc/init";
+import { adminProcedure, createTRPCRouter, protectedProcedure, guestReadableAdminProcedure } from "@/trpc/init";
 import {
   faqFormSchema,
   featuresFormSchema,
@@ -21,6 +21,7 @@ import {
   toPublicN8nWebhookConfig,
 } from "@/lib/helper/aiWebhook";
 import { callAIWebhook } from "@/lib/functions/aiWebhook";
+import { audit, userActor } from "@/lib/audit/audit";
 import {
   AI_N8N_WEBHOOK_PROVIDER,
   AI_WEBHOOK_PROVIDER,
@@ -248,6 +249,12 @@ export const aiRouter = createTRPCRouter({
             data: { activeVersionId: version.id },
           });
         }
+        await audit(tx, "ai.prompt.created", {
+          actor: userActor(ctx.session.user.id),
+          targetId: version.id,
+          metadata: { version: version.version },
+          headers: ctx.headers,
+        });
 
         return version;
       });
@@ -255,7 +262,7 @@ export const aiRouter = createTRPCRouter({
 
   updatePromptVersion: adminProcedure
     .input(updatePromptVersionInputSchema)
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       const prompt = await (db as any).aiPrompt.findUnique({
         where: { key: input.promptKey },
       });
@@ -272,7 +279,7 @@ export const aiRouter = createTRPCRouter({
         throw new TRPCError({ code: "NOT_FOUND", message: "Prompt version not found" });
       }
 
-      return (db as any).aiPromptVersion.update({
+      const updated = await (db as any).aiPromptVersion.update({
         where: { id: version.id },
         data: {
           content: input.content?.trim() || null,
@@ -280,6 +287,8 @@ export const aiRouter = createTRPCRouter({
           model: input.model?.trim(),
         },
       });
+      await audit(db, "ai.prompt.updated", { actor: userActor(ctx.session.user.id), targetId: version.id, metadata: {}, headers: ctx.headers });
+      return updated;
     }),
 
   deletePromptVersion: adminProcedure
@@ -289,7 +298,7 @@ export const aiRouter = createTRPCRouter({
         versionId: z.string().min(1),
       }),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       const prompt = await (db as any).aiPrompt.findUnique({
         where: { key: input.promptKey },
       });
@@ -313,9 +322,11 @@ export const aiRouter = createTRPCRouter({
         throw new TRPCError({ code: "NOT_FOUND", message: "Prompt version not found" });
       }
 
-      return (db as any).aiPromptVersion.delete({
+      const deleted = await (db as any).aiPromptVersion.delete({
         where: { id: version.id },
       });
+      await audit(db, "ai.prompt.deleted", { actor: userActor(ctx.session.user.id), targetId: version.id, metadata: {}, headers: ctx.headers });
+      return deleted;
     }),
 
   generateAdminDraft: adminProcedure
@@ -406,18 +417,18 @@ export const aiRouter = createTRPCRouter({
       return { kind: input.kind, section, values };
     }),
 
-  getAvailableModels: adminProcedure
+  getAvailableModels: guestReadableAdminProcedure
     .input(z.object({ provider: z.string() }))
     .query(async ({ input }) => {
       const { listModels } = await import("@workspace/ai");
       return listModels(input.provider as any);
     }),
 
-  getWebhookConfig: adminProcedure.query(async () => {
+  getWebhookConfig: guestReadableAdminProcedure.query(async () => {
     return toPublicN8nWebhookConfig(getN8nWebhookEnvConfig());
   }),
 
-  getSpeechConfigs: adminProcedure.query(async () => {
+  getSpeechConfigs: guestReadableAdminProcedure.query(async () => {
     const records = await (db as any).aiSpeechConfig.findMany({
       where: { capability: { in: speechCapabilities } },
     });
@@ -481,7 +492,7 @@ export const aiRouter = createTRPCRouter({
         versionId: z.string().min(1),
       }),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       const prompt = await (db as any).aiPrompt.findUnique({
         where: { key: input.promptKey },
       });
@@ -498,11 +509,13 @@ export const aiRouter = createTRPCRouter({
         throw new Error("Prompt version not found");
       }
 
-      return (db as any).aiPrompt.update({
+      const activated = await (db as any).aiPrompt.update({
         where: { id: prompt.id },
         data: { activeVersionId: version.id },
         include: { activeVersion: true },
       });
+      await audit(db, "ai.prompt.activated", { actor: userActor(ctx.session.user.id), targetId: version.id, metadata: {}, headers: ctx.headers });
+      return activated;
     }),
 
   getUsageEvents: adminProcedure

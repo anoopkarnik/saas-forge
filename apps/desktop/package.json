@@ -1,6 +1,6 @@
 {
   "name": "saas-forge",
-  "version": "1.2.13",
+  "version": "2.1.1",
   "description": "SaaS Forge desktop application for managing your SaaS projects",
   "main": "out/main/index.js",
   "scripts": {
@@ -22,6 +22,7 @@
     "@trpc/tanstack-react-query": "^11.11.0",
     "@workspace/auth": "workspace:*",
     "@workspace/database": "workspace:*",
+    "@workspace/i18n": "workspace:^",
     "@workspace/ui": "workspace:*",
     "date-fns": "^4.1.0",
     "electron-store": "^10.x",
@@ -32,8 +33,11 @@
     "react": "^19.x",
     "react-dom": "^19.x",
     "react-icons": "^5.5.0",
+    "react-markdown": "^10.1.0",
     "react-router-dom": "^7.x",
+    "remark-gfm": "^4.0.1",
     "sonner": "^2.0.7",
+    "use-intl": "^4.14.9",
     "zod": "^4.3.6"
   },
   "devDependencies": {
@@ -44,7 +48,7 @@
     "@vitejs/plugin-react": "^5.x",
     "@workspace/typescript-config": "workspace:*",
     "cross-env": "^10.1.0",
-    "electron": "^36.x",
+    "electron": "44.5.1",
     "electron-builder": "^25.x",
     "electron-vite": "^5.0.0",
     "tailwindcss": "^4.1.11",

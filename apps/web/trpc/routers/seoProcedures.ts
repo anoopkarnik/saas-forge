@@ -1,4 +1,4 @@
-import { createTRPCRouter, adminProcedure } from "@/trpc/init";
+import { createTRPCRouter, adminProcedure, guestReadableAdminProcedure } from "@/trpc/init";
 import { TRPCError } from "@trpc/server";
 import { runAuditInputSchema, analyticsDateRangeSchema } from "@/lib/zod/seo";
 import { runSeoAudit } from "@/lib/functions/seoAudit";
@@ -21,7 +21,7 @@ export const seoRouter = createTRPCRouter({
       return runSeoAudit(baseUrl);
     }),
 
-  getTrafficOverview: adminProcedure
+  getTrafficOverview: guestReadableAdminProcedure
     .input(analyticsDateRangeSchema)
     .query(async ({ input }) => {
       if (!isGa4Configured()) {
@@ -39,7 +39,7 @@ export const seoRouter = createTRPCRouter({
       }
     }),
 
-  getTopPages: adminProcedure
+  getTopPages: guestReadableAdminProcedure
     .input(analyticsDateRangeSchema)
     .query(async ({ input }) => {
       if (!isGa4Configured()) {
@@ -57,7 +57,7 @@ export const seoRouter = createTRPCRouter({
       }
     }),
 
-  getTrafficSources: adminProcedure
+  getTrafficSources: guestReadableAdminProcedure
     .input(analyticsDateRangeSchema)
     .query(async ({ input }) => {
       if (!isGa4Configured()) {
@@ -75,7 +75,7 @@ export const seoRouter = createTRPCRouter({
       }
     }),
 
-  getDeviceBreakdown: adminProcedure
+  getDeviceBreakdown: guestReadableAdminProcedure
     .input(analyticsDateRangeSchema)
     .query(async ({ input }) => {
       if (!isGa4Configured()) {
@@ -93,7 +93,7 @@ export const seoRouter = createTRPCRouter({
       }
     }),
 
-  getBrowserBreakdown: adminProcedure
+  getBrowserBreakdown: guestReadableAdminProcedure
     .input(analyticsDateRangeSchema)
     .query(async ({ input }) => {
       if (!isGa4Configured()) {
@@ -111,7 +111,7 @@ export const seoRouter = createTRPCRouter({
       }
     }),
 
-  getTopCountries: adminProcedure
+  getTopCountries: guestReadableAdminProcedure
     .input(analyticsDateRangeSchema)
     .query(async ({ input }) => {
       if (!isGa4Configured()) {
@@ -129,7 +129,7 @@ export const seoRouter = createTRPCRouter({
       }
     }),
 
-  getRealtimeUsers: adminProcedure
+  getRealtimeUsers: guestReadableAdminProcedure
     .query(async () => {
       if (!isGa4Configured()) {
         throw new TRPCError({

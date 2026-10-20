@@ -207,6 +207,7 @@ describe("CMS Upload Route Integration Tests", () => {
       );
     });
 
+
     it("should upload validated images to Cloudflare R2 when configured", async () => {
       vi.stubEnv("NEXT_PUBLIC_IMAGE_STORAGE", "cloudflare_r2");
       vi.stubEnv("R2_ACCOUNT_ID", "test_account");

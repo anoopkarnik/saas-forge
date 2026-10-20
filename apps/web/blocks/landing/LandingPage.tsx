@@ -16,16 +16,18 @@ import React from 'react'
 
 const LandingPage = () => {
   const trpc = useTRPC()
-  const { data } = useSuspenseQuery(trpc.landing.getLandingInfoFromNotion.queryOptions())
+  const { data } = useSuspenseQuery(trpc.landing.getLandingInfo.queryOptions())
   return (
     <div className='flex flex-col items-center justify-center relative overflow-x-hidden'>
       <NavbarSection navbarSection={data.navbarSection} />
+      <main id="main-content" tabIndex={-1} className="w-full flex flex-col items-center">
       <Spotlight />
       <HeroSection heroSection={data.heroSection} />
       <FeatureSection featureSection={data.featureSection} />
       <TestimonialSection testimonialSection={data.testimonialSection} />
       {data.pricingSection.plans.length > 0 && <PricingSection pricingSection={data.pricingSection} />}
       <FAQSection FAQSection={data.faqSection} />
+      </main>
       <FooterSection footerSection={data.footerSection} />
     </div>
   )

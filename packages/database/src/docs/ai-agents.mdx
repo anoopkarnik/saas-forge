@@ -1,0 +1,101 @@
+The AI Agents & RAG module (`ai_agents`, requires AI Platform) adds a Python service in `apps/backend` for work that does not fit a request: multi-step LangGraph agents, background jobs, and retrieval-augmented generation over your documents.
+
+## Architecture
+
+```text
+browser ──► Next.js (auth, credits, validation) ──HMAC-signed──► FastAPI API ──► Postgres (pgvector)
+                                                                     │
+                                                                     └──► Redis queue ──► ARQ worker
+```
+
+- The **web app is the only trust boundary**. It authenticates the user, then calls the backend with an HMAC-SHA256 signature over the timestamp and body (`signedFetch` in `packages/observability/src/signed-fetch.ts`).
+- The **backend is internal**. Do not expose it to the internet; Docker Compose gives it no public port.
+- The **worker** runs queued jobs (agent runs and document ingestion) from Redis with [ARQ](https://arq-docs.helpmanual.io/).
+
+## Local setup
+
+```bash
+# Postgres with pgvector and a TCP Redis
+docker compose up -d postgres redis
+
+# Python dependencies (needs Python 3.12+ and uv)
+pnpm --filter @workspace/backend build      # uv sync --frozen
+
+# Backend env
+cp apps/backend/.env.example apps/backend/.env
+```
+
+Then:
+
+- set the same `BACKEND_HMAC_SECRET` in `apps/web/.env` and `apps/backend/.env` (`pnpm doctor` generates it and writes both);
+- set `BACKEND_URL=http://localhost:8400` in `apps/web/.env`;
+- set `BACKEND_DATABASE_URL` (a `postgresql+asyncpg://` URL to the same database) and `REDIS_URL` in `apps/backend/.env`;
+- add a provider key such as `OPENAI_API_KEY` to `apps/backend/.env` for LLM calls and embeddings.
+
+Run it:
+
+```bash
+pnpm dev                                         # starts the API on :8400 with the other apps
+pnpm --filter @workspace/backend dev:worker      # in another terminal
+curl http://localhost:8400/healthz
+```
+
+## Agents
+
+Built-in agents, registered in `apps/backend/src/saas_forge_backend/agents/registry.py`:
+
+| Agent ID | What it does |
+| --- | --- |
+| `noop` | Emits events without calling a model; for testing the pipeline |
+| `echo_llm` | Sends the input to an LLM and streams the answer |
+| `rag_chat` | Answers from a document collection and cites sources |
+
+Run an agent two ways:
+
+| Mode | Call | Use for |
+| --- | --- | --- |
+| Streaming | `POST /api/ai/agents/<agentId>/stream` (session route) → backend `/agents/stream` | Interactive answers, as Server-Sent Events: `step`, `token`, `tool_call`, `tool_result`, `citation`, `final`, `error` |
+| Background job | `trpc.aiJobs.create({ agentId, input })`, then `aiJobs.status`, `aiJobs.events`, `aiJobs.cancel` | Long runs; progress is stored in `AiJobRun` and `AiJobEvent` |
+
+Ingest documents into a RAG collection with `aiJobs.create({ agentId: "rag_ingest", input })`, which queues an ingestion job. Documents are split, embedded (`RAG_EMBEDDER`, default `openai:text-embedding-3-small`) and stored in `AiDocumentChunk` with pgvector, or in Qdrant with `RAG_VECTOR_STORE=qdrant`.
+
+The module ships the API and the pipeline, not a user interface. Build screens for your use case on these calls.
+
+## Adding an agent
+
+1. Create `apps/backend/src/saas_forge_backend/agents/my_agent.py` with `async def run(input_payload, ctx)` that yields `AgentEvent`s.
+2. Register it in `register_default_agents()` in `agents/registry.py`.
+3. Add a test in `apps/backend/tests/`.
+4. Call it from the web app with its ID.
+
+To add an LLM provider, extend `llm/factory.py`, add its credential to `config.py` and `.env.example`, and list the variable in `turbo.json` `globalEnv`.
+
+## Backend environment
+
+| Variable | Description |
+| --- | --- |
+| `APP_ENV` | `production` makes the service refuse placeholder or short secrets and implicit service URLs |
+| `BACKEND_DATABASE_URL` | `postgresql+asyncpg://…` |
+| `REDIS_URL` | `redis://…` for the job queue |
+| `BACKEND_HMAC_SECRET` | Same value as the web app |
+| `BACKEND_HMAC_SECRET_NEXT` | Optional second secret for zero-downtime rotation |
+| `RAG_VECTOR_STORE` | `pgvector` (default) or `qdrant` (with `QDRANT_URL`, `QDRANT_API_KEY`) |
+| `RAG_EMBEDDER` | `provider:model`, default `openai:text-embedding-3-small` |
+| `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `OPENROUTER_API_KEY`, `OLLAMA_BASE_URL` | LLM providers |
+| `LOG_LEVEL`, `LOG_FORMAT` | `INFO`; `pretty` or `json` |
+| `METRICS_ENABLED`, `OTEL_EXPORTER_OTLP_ENDPOINT` | Prometheus metrics and OpenTelemetry tracing |
+
+## Testing
+
+```bash
+cd apps/backend
+uv run pytest                     # unit tests with mocks
+uv run ruff check src tests       # lint
+uv run pyright                    # types
+```
+
+Integration tests need the Compose services: set `BACKEND_INTEGRATION=1` with real `BACKEND_DATABASE_URL`, `REDIS_URL` and `BACKEND_HMAC_SECRET`, then run `uv run pytest tests/integration`.
+
+## Deployment
+
+`Dockerfile.backend` builds two targets from one image: `api` and `worker`. Deploy both, on a private network the web app can reach (Fly.io, Railway, Render, Kubernetes, or a Docker host with `docker-compose.backend.yml`). Set `BACKEND_URL` in the web app to the API's private address, and use `APP_ENV=production`.

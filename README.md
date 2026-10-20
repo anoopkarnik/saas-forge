@@ -23,10 +23,10 @@ This README documents what is shipped today. It intentionally focuses on the liv
 
 ## ✨ What Ships Today
 
-- **Web app**: Next.js 15 app with auth flows, landing pages, Notion-backed documentation, legal pages, admin CMS, user management, uploads, payment webhooks, and the SaaS scaffold/download API.
+- **Web app**: Next.js 15 app with auth flows, landing pages, Postgres-backed documentation, legal pages, admin CMS, user management, uploads, payment webhooks, and the SaaS scaffold/download API.
 - **Desktop app**: Electron app with auth, documentation viewer, support surfaces, admin user management, and CMS screens.
 - **Mobile app**: Expo app with auth, documentation viewer, settings, support flows, and admin screens.
-- **Shared platform modules**: Better Auth, tRPC, Prisma/Postgres, Notion CMS utilities, React Email/Resend, shared UI components, Blob/R2 storage, BetterStack logging, Google Analytics, and Upstash rate limiting.
+- **Shared platform modules**: Better Auth, tRPC, Prisma/Postgres, React Email/Resend, shared UI components, Blob/R2 storage, BetterStack logging, Google Analytics, and Upstash rate limiting.
 - **Starter template workflow**: `templates/saas-boilerplate`, `template-overrides/saas-boilerplate`, and the clean staged copy at `.generated/saas-boilerplate`.
 
 ## 🧭 Choose Your Path
@@ -47,10 +47,7 @@ Choose this if you want to validate or inspect the clean SaaS starter that the s
 npx saas-forge my-saas-app
 cd my-saas-app
 
-# review and fill in apps/web/.env
-pnpm generate
-pnpm migrate
-pnpm seed
+pnpm doctor   # fills the .env files, checks each service, offers to set up the database
 pnpm dev
 ```
 
@@ -66,12 +63,11 @@ pnpm install
 # Linux only: if Electron fails to start because the binary was skipped
 node node_modules/.pnpm/electron@<version>/node_modules/electron/install.js
 
-cp apps/web/.env.example apps/web/.env
-pnpm generate
-pnpm migrate
-pnpm seed
+pnpm doctor
 pnpm dev
 ```
+
+`pnpm doctor` asks for each missing value, generates secrets, checks every configured service with a live call, and writes `apps/web/.env`, `packages/database/.env` and the native apps' env files. It then offers to run `pnpm generate`, `pnpm migrate` and `pnpm seed`. In CI, `pnpm doctor --check` exits non-zero when something would stop the app, and `--json` prints the same report for tooling. Secret values are never printed.
 
 If you plan to run the native clients too, review `apps/desktop/.env.example` and `apps/mobile/.env.example` after the web env is set up.
 
@@ -97,7 +93,7 @@ Default local URLs:
 
 The canonical config surface for the root repo is [`apps/web/.env.example`](apps/web/.env.example). The scaffold/download flow uses the same model to populate the starter template and the mobile/desktop env files.
 
-Start by copying:
+Run `pnpm doctor` to fill these in, or copy them by hand:
 
 ```bash
 cp apps/web/.env.example apps/web/.env
@@ -119,16 +115,7 @@ NEXT_PUBLIC_URL=
 NEXT_PUBLIC_THEME_TYPE="dark"
 
 ## CMS / DOCUMENTATION
-NEXT_PUBLIC_CMS="notion"
-LANDING_DATABASE_ID=
-HERO_DATABASE_ID=
-FEATURE_DATABASE_ID=
-TESTIMONIAL_DATABASE_ID=
-PRICING_DATABASE_ID=
-FAQ_DATABASE_ID=
-FOOTER_DATABASE_ID=
-DOCUMENTATION_DATABASE_ID=
-NOTION_API_TOKEN=
+NEXT_PUBLIC_CMS="postgres"
 
 ## AUTH
 NEXT_PUBLIC_AUTH_FRAMEWORK="better-auth"
@@ -187,6 +174,17 @@ Also see:
 - [`apps/mobile/.env.example`](apps/mobile/.env.example)
 - [`packages/database/.env.example`](packages/database/.env.example)
 
+## 🌍 Languages
+
+The web app, its emails and the shared UI are translated through `packages/i18n` (English and Spanish today). There is no language prefix in URLs: a signed-in user's choice is saved on their account, visitors get a cookie, and everyone else gets their browser language or the default set in `/admin/settings` (`NEXT_PUBLIC_DEFAULT_LOCALE`).
+
+To add a language:
+
+1. Add its code to `LOCALES` in `packages/i18n/src/config.ts`.
+2. Copy `packages/i18n/src/messages/en` to `packages/i18n/src/messages/<code>` and translate the JSON files.
+3. Add the language's own name to `common.locales` in every locale.
+4. Run `pnpm i18n:check`: it fails on missing keys, broken ICU syntax or placeholders that differ from English.
+
 ## 🚢 CI, Deployment, and Self-Hosting
 
 GitHub Actions validates changes before merge. Vercel remains the default hosted deployment path: Vercel Git integration owns preview deployments, production deployments from `main`, rollback, runtime logs, and deployment protection. GitHub Actions does not need `VERCEL_TOKEN`, `VERCEL_ORG_ID`, or `VERCEL_PROJECT_ID` unless you later move to prebuilt/manual Vercel deploys.
@@ -199,7 +197,7 @@ Recommended required branch protection checks:
 - `Web Build`
 - `Docker Web Build`
 
-For Vercel, configure the project for `apps/web` and set preview and production environment variables separately. Required core values are `NEXT_PUBLIC_URL`, `DATABASE_URL`, and `BETTER_AUTH_SECRET`. Enable optional groups only when the matching integration is used: Notion CMS/database IDs, OAuth client IDs/secrets, `RESEND_API_KEY`, Blob/R2 storage, Upstash rate limiting, Stripe or Dodo payments, BetterStack, Google Analytics, and PageSpeed credentials.
+For Vercel, configure the project for `apps/web` and set preview and production environment variables separately. Required core values are `NEXT_PUBLIC_URL`, `DATABASE_URL`, and `BETTER_AUTH_SECRET`. Enable optional groups only when the matching integration is used: OAuth client IDs/secrets, `RESEND_API_KEY`, Blob/R2 storage, Upstash rate limiting, Stripe or Dodo payments, BetterStack, Google Analytics, and PageSpeed credentials.
 
 ### Docker self-hosting
 
@@ -232,7 +230,6 @@ saas-forge/
 │   └── mobile/               # Expo app
 ├── packages/
 │   ├── auth/                 # Better Auth setup and clients
-│   ├── cms/                  # Notion CMS utilities
 │   ├── database/             # Prisma schema, client, and seed scripts
 │   ├── email/                # Resend + React Email integration
 │   ├── observability/        # Logging utilities
@@ -279,13 +276,13 @@ Only `templates/saas-boilerplate` is part of the released template workflow toda
 | Web typecheck | `pnpm --dir apps/web typecheck` |
 | Mobile dev | `pnpm --dir apps/mobile dev` |
 | Desktop dev | `pnpm --dir apps/desktop dev` |
-| CMS package tests | `pnpm --filter @workspace/cms test` |
 
 ### Database
 
 | Task | Command |
 |---|---|
 | Generate Prisma client | `pnpm generate` |
+| Check env and services | `pnpm doctor --check` |
 | Run local migrations | `pnpm migrate` |
 | Deploy production migrations | `pnpm --dir packages/database migrate:deploy` |
 | Seed database | `pnpm seed` |

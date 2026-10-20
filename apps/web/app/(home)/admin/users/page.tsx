@@ -6,11 +6,46 @@ import { Button } from "@workspace/ui/components/shadcn/button";
 import { toast } from "sonner";
 import { useAdminGuard } from "@/hooks/useAdminGuard";
 import { UsersTable } from "@/components/admin/UsersTable";
+import { useTRPC } from "@/trpc/client";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import Link from "next/link";
+import { InviteUserDialog } from "@workspace/ui/components/admin/InviteUserDialog";
+import { InvitationsTable } from "@workspace/ui/components/admin/InvitationsTable";
+import { CreateGuestDialog } from "@workspace/ui/components/admin/CreateGuestDialog";
 
 export default function UserManagementPage() {
     const { session, isPending, isAdmin } = useAdminGuard();
     const [users, setUsers] = useState<any[]>([]);
     const [isLoadingUsers, setIsLoadingUsers] = useState(true);
+
+    const trpc = useTRPC();
+    const qc = useQueryClient();
+
+    const invitesQuery = useQuery(trpc.admin.invites.list.queryOptions(undefined, { enabled: isAdmin }));
+
+    const createInvite = useMutation(trpc.admin.invites.create.mutationOptions({
+        onSuccess: async () => {
+            await qc.invalidateQueries({ queryKey: trpc.admin.invites.list.queryKey() });
+            toast.success("Invitation sent");
+        },
+        onError: (e: any) => toast.error(e.message || "Failed to send invite"),
+    }));
+
+    const revokeInvite = useMutation(trpc.admin.invites.revoke.mutationOptions({
+        onSuccess: async () => {
+            await qc.invalidateQueries({ queryKey: trpc.admin.invites.list.queryKey() });
+            toast.success("Invitation revoked");
+        },
+        onError: (e: any) => toast.error(e.message || "Failed to revoke"),
+    }));
+
+    const resendInvite = useMutation(trpc.admin.invites.resend.mutationOptions({
+        onSuccess: async () => {
+            await qc.invalidateQueries({ queryKey: trpc.admin.invites.list.queryKey() });
+            toast.success("Invitation resent");
+        },
+        onError: (e: any) => toast.error(e.message || "Failed to resend"),
+    }));
 
     const fetchUsers = async () => {
         setIsLoadingUsers(true);
@@ -35,7 +70,7 @@ export default function UserManagementPage() {
         if (isAdmin) fetchUsers();
     }, [isAdmin]);
 
-    const handleSetRole = async (userId: string, newRole: "admin" | "user") => {
+    const handleSetRole = async (userId: string, newRole: "admin" | "user" | "guest") => {
         try {
             const { error } = await authClient.admin.setRole({ userId, role: newRole });
             if (error) throw error;
@@ -44,6 +79,19 @@ export default function UserManagementPage() {
         } catch (e: any) {
             toast.error(e.message || "Failed to update role");
         }
+    };
+
+    const handleCreateGuest = async (email: string, password: string) => {
+        const { error } = await authClient.admin.createUser({
+            email,
+            password,
+            role: "guest",
+            name: email.split("@")[0],
+            data: { emailVerified: true },
+        });
+        if (error) { toast.error(error.message || "Failed to create guest"); return; }
+        toast.success("Guest account created");
+        fetchUsers();
     };
 
     const handleBanToggle = async (userId: string, isBanned: boolean) => {
@@ -89,7 +137,7 @@ export default function UserManagementPage() {
         <div className="container mx-auto py-10 px-4 md:px-8 max-w-7xl">
             <div className="flex justify-between items-center mb-8">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">User Management</h1>
+                    <h1 className="page-title">User Management</h1>
                     <p className="text-muted-foreground mt-2">
                         View and manage registered users in the system.
                     </p>
@@ -97,6 +145,29 @@ export default function UserManagementPage() {
                 <Button onClick={fetchUsers} variant="outline" disabled={isLoadingUsers}>
                     {isLoadingUsers ? "Refreshing..." : "Refresh"}
                 </Button>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+                <p className="text-sm text-muted-foreground">
+                    Who can sign up is set in{" "}
+                    <Link href="/admin/settings" className="underline underline-offset-4">Settings</Link>.
+                </p>
+                <div className="flex items-center gap-2">
+                    <CreateGuestDialog onCreate={handleCreateGuest} />
+                    <InviteUserDialog
+                        onInvite={(email) => createInvite.mutate({ email })}
+                        isInviting={createInvite.isPending}
+                    />
+                </div>
+            </div>
+
+            <div className="mb-10">
+                <h2 className="text-xl font-semibold mb-3">Invitations</h2>
+                <InvitationsTable
+                    invitations={invitesQuery.data ?? []}
+                    onRevoke={(id) => revokeInvite.mutate({ id })}
+                    onResend={(id) => resendInvite.mutate({ id })}
+                />
             </div>
 
             <UsersTable

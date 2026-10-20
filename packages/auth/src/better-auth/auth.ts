@@ -3,8 +3,21 @@ import { prismaAdapter } from "better-auth/adapters/prisma";
 import db from '@workspace/database/client';
 import { admin,  openAPI, jwt } from "better-auth/plugins";
 import { expo } from "@better-auth/expo";
-import { sendResetEmail, sendVerificationEmail } from "@workspace/email/resend/index"
+import { sendEmail } from "@workspace/email/jobs"
 import { authCookiePrefix } from "./cookies";
+import { DESKTOP_APP_ORIGIN } from "./desktop-origin";
+import { isEmailAllowedToRegister, type RegistrationMode } from "./registration";
+import { createAuthMiddleware, APIError, getSessionFromCtx } from "better-auth/api";
+import { isGuestAccountMutation } from "./guestGuard";
+import { userAdditionalFields } from "./user-fields";
+import { emailLocale } from "./email-locale";
+import { trackSignedIn, trackSignedUp } from "./analytics";
+import {
+    createPersonalOrganization,
+    getInitialActiveOrganizationId,
+    hasPendingOrganizationInvite,
+    organizationPlugins,
+} from "./organization";
 
 type DeleteQueryCallbackArgs = {
     args: any;
@@ -33,19 +46,28 @@ const authDb = db.$extends({
 
 const appUrl = process.env.NEXT_PUBLIC_URL || "http://localhost:3000";
 
+const getRegistrationMode = async (): Promise<RegistrationMode> => {
+    const setting = await db.appSetting.findUnique({
+        where: { key: "registration_mode" },
+    });
+    return setting?.value === "INVITE_ONLY" ? "INVITE_ONLY" : "OPEN";
+};
+
 const options = {
     basePath: "/api/auth",
     baseURL: appUrl,
+    // `expo()` is cast because the installed @better-auth/expo types are skewed
+    // from better-auth core (missing `hasPlugin` on AuthContext) — type-only, no
+    // runtime change. Remove once the better-auth package versions are aligned.
     plugins: [openAPI(), admin({
         impersonationSessionDuration: 3600
-    }), expo()],
+    }), expo() as any, ...organizationPlugins],
     trustedOrigins: [
         "saas-forge://",
         "saas-forge://*",
         "exp://",
         "exp://*",
-        "file://",
-        "null",
+        DESKTOP_APP_ORIGIN,
         "http://localhost:5173",
         "http://localhost:8081",
         appUrl
@@ -72,20 +94,11 @@ const options = {
         }
     },
     user: {
-        additionalFields: {
-            creditsUsed: {
-                type: "number",
-                required: false,
-            },
-            creditsTotal: {
-                type: "number",
-                required: false,
-            },
-        },
+        additionalFields: userAdditionalFields,
         changeEmail: {
             enabled: true,
             sendChangeEmailConfirmation: async ({user, newEmail, url, token}, request) => {
-                await sendVerificationEmail(newEmail,url)
+                await sendEmail({ template: "verification", email: newEmail, url, locale: emailLocale(user, request) })
             }
         },
         deleteUser: {
@@ -117,14 +130,14 @@ const options = {
         enabled: true,
         autoSignIn: false,
         requireEmailVerification: true,
-        sendResetPassword : async ({user, url}) =>{
-            await sendResetEmail(user.email, url)
+        sendResetPassword : async ({user, url}, request) =>{
+            await sendEmail({ template: "reset", email: user.email, url, locale: emailLocale(user, request) })
         }
     },
     emailVerification: {
         sendOnSignUp: true,
         autoSignInAfterVerification: true,
-        sendVerificationEmail: async({user,token})=>{
+        sendVerificationEmail: async({user,token}, request)=>{
             console.log("Sending verification email to:", user.email);
             const fullUser = await db.user.findUnique({
                 where: { id: user.id },
@@ -145,13 +158,33 @@ const options = {
             
             const verificationUrl = `${appUrl}/api/auth/verify-email?token=${token}
             &callbackURL=${appUrl}/email-verified`;
-            await sendVerificationEmail(user.email,verificationUrl)
+            await sendEmail({ template: "verification", email: user.email, url: verificationUrl, locale: emailLocale(user, request) })
         },
     },
     databaseHooks: {
         user: {
             create: {
-                after: async (user) => {
+                before: async (user: { email: string }) => {
+                    const mode = await getRegistrationMode();
+                    if (mode === "OPEN") return;
+                    const email = user.email.toLowerCase();
+                    const invite = await db.invitation.findFirst({
+                        where: { email, status: "PENDING" },
+                        orderBy: { createdAt: "desc" },
+                    });
+                    const allowed =
+                        isEmailAllowedToRegister(
+                            mode,
+                            invite ? { status: invite.status, expiresAt: invite.expiresAt } : null,
+                            new Date(),
+                        ) || (await hasPendingOrganizationInvite(email));
+                    if (!allowed) {
+                        throw new APIError("FORBIDDEN", {
+                            message: "Sign-ups are invite-only. Please use your invitation link.",
+                        });
+                    }
+                },
+                after: async (user, ctx) => {
                     const userCount = await db.user.count();
                     if (userCount === 1) {
                         await db.user.update({
@@ -159,6 +192,25 @@ const options = {
                             data: { role: "admin" },
                         });
                     }
+                    const email = user.email.toLowerCase();
+                    await db.invitation.updateMany({
+                        where: { email, status: "PENDING" },
+                        data: { status: "ACCEPTED", acceptedAt: new Date() },
+                    });
+                    await createPersonalOrganization(user);
+                    await trackSignedUp(user.id, ctx);
+                },
+            },
+        },
+        session: {
+            create: {
+                before: async (session: { userId: string }) => {
+                    const activeOrganizationId = await getInitialActiveOrganizationId(session.userId);
+                    if (!activeOrganizationId) return;
+                    return { data: { ...session, activeOrganizationId } };
+                },
+                after: async (session, ctx) => {
+                    await trackSignedIn(session.userId, ctx);
                 },
             },
         },
@@ -174,7 +226,18 @@ const options = {
             sameSite: "none",
             secure: true,
         }
-    }
+    },
+    hooks: {
+        before: createAuthMiddleware(async (ctx) => {
+            if (!isGuestAccountMutation(ctx.path)) return;
+            const session = await getSessionFromCtx(ctx);
+            if (session?.user?.role === "guest") {
+                throw new APIError("FORBIDDEN", {
+                    message: "This is a read-only demo account.",
+                });
+            }
+        }),
+    },
 } satisfies BetterAuthOptions;
 
 import { toNextJsHandler } from "better-auth/next-js";

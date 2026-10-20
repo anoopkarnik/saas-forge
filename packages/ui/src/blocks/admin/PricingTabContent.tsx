@@ -8,7 +8,6 @@ import { Input } from "@workspace/ui/components/shadcn/input";
 import { Textarea } from "@workspace/ui/components/shadcn/textarea";
 import { Switch } from "@workspace/ui/components/shadcn/switch";
 import { Button } from "@workspace/ui/components/shadcn/button";
-import { AIFillPromptDialog } from "@workspace/ui/components/admin/AIFillPromptDialog";
 import { CreditCard, Save, Loader2, WandSparkles } from "lucide-react";
 import { SectionHeader } from "@workspace/ui/components/admin/SectionHeader";
 import { ArrayEditor } from "@workspace/ui/components/admin/ArrayEditor";
@@ -117,9 +116,11 @@ export function PricingTabContent({ initialData, onSave, isSaving, aiDraft, isAi
                         {form.formState.isDirty ? "You have unsaved changes." : "All changes are saved."}
                     </p>
                     <div className="flex items-center gap-2">
-                        <Button type="button" variant="outline" disabled={!onAIFill || isAiFilling} size="sm" onClick={() => onAIFill?.("pricing", form.getValues() as any)}>
-                            {isAiFilling ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Filling...</> : <><WandSparkles className="mr-2 h-4 w-4" />Fill with AI</>}
-                        </Button>
+                        {onAIFill && (
+                            <Button type="button" variant="outline" disabled={isAiFilling} size="sm" onClick={() => onAIFill("pricing", form.getValues() as any)}>
+                                {isAiFilling ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Filling...</> : <><WandSparkles className="mr-2 h-4 w-4" />Fill with AI</>}
+                            </Button>
+                        )}
                         <Button type="submit" disabled={isSaving || !form.formState.isDirty} size="sm">
                             {isSaving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</> : <><Save className="mr-2 h-4 w-4" />Save Pricing</>}
                         </Button>

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@workspace/auth/better-auth/auth";
+import { guardRoute } from "@/server/routeGuard";
 import { openAgentStream } from "@/lib/backend/client";
 
 export const dynamic = "force-dynamic";
@@ -8,12 +8,14 @@ export const runtime = "nodejs";
 type RouteContext = { params: Promise<{ agentId: string }> };
 
 export async function POST(req: NextRequest, ctx: RouteContext) {
-  const session = await auth.api.getSession({ headers: req.headers });
-  if (!session) {
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  const guard = await guardRoute(req, "/api/ai/agents/[agentId]/stream");
+  if (!guard.ok) {
+    return NextResponse.json({ error: guard.error }, { status: guard.status });
   }
+  const { session } = guard;
 
   const { agentId } = await ctx.params;
+  if (agentId.startsWith("launchpad_")) return NextResponse.json({ error: "Use the project's Launchpad to request guidance." }, { status: 403 });
   let input: Record<string, unknown> = {};
   try {
     input = (await req.json()) as Record<string, unknown>;

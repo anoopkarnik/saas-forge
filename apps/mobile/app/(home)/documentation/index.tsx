@@ -27,7 +27,7 @@ export default function DocumentationTypesList() {
     useEffect(() => {
         async function fetchDocs() {
             try {
-                const res = await fetch(`${baseURL}/api/trpc/documentation.getDocumentationInfoFromNotion`);
+                const res = await fetch(`${baseURL}/api/trpc/documentation.getDocumentationInfo`);
                 if (!res.ok) throw new Error("Failed to fetch docs");
                 const json = await res.json();
                 if (json?.result?.data?.json) {

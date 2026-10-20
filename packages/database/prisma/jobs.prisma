@@ -1,0 +1,38 @@
+/// A background job that failed every attempt (jobs module), kept for replay.
+model JobRun {
+  id          String         @id @default(cuid())
+  name        String
+  version     Int
+  payload     Json
+  payloadHash String
+  status      JOB_RUN_STATUS @default(dead)
+  attempts    Int
+  lastError   String
+  /// Inngest event id of the failed run.
+  eventId     String?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@index([status, createdAt])
+  @@schema("jobs_schema")
+}
+
+enum JOB_RUN_STATUS {
+  dead
+  replayed
+  discarded
+
+  @@schema("jobs_schema")
+}
+
+/// One row per schedule firing window: a duplicate trigger in the same window is skipped.
+model ScheduleRun {
+  id      String   @id @default(cuid())
+  name    String
+  /// Start of the firing window (the trigger time, to the minute).
+  window  DateTime
+  firedAt DateTime @default(now())
+
+  @@unique([name, window])
+  @@schema("jobs_schema")
+}

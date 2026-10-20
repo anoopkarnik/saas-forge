@@ -4,6 +4,7 @@ model User {
     email     String   @unique
     emailVerified Boolean  @default(false)
     image     String?
+    locale    String?
     role      USER_ROLE  @default(user)
     banned    Boolean  @default(false)
     bannedReason String?
@@ -18,6 +19,8 @@ model User {
     accounts      Account[]
     sessions      Session[]
     transactions  Transaction[]
+    usageEvents   UsageEvent[]
+    usageAlerts   UsageAlert[]
     aiPromptVersions AiPromptVersion[] @relation("AiPromptVersionCreatedBy")
     aiConversations  AiConversation[]  @relation("AiConversations")
     aiMessages       AiMessage[]       @relation("AiMessages")
@@ -25,6 +28,14 @@ model User {
     aiJobRuns        AiJobRun[]        @relation("AiJobRuns")
     aiCollections    AiCollection[]    @relation("AiCollections")
     apiKeys          ApiKey[]
+    sentInvitations  Invitation[]     @relation("InvitationInvitedBy")
+    notifications    Notification[]
+    notificationPreferences NotificationPreference[]
+    webhookEndpoints WebhookEndpoint[]
+    onboardingState  OnboardingState?
+    onboardingTasks  OnboardingTask[]
+    members          Member[]
+    organizationInvitations OrganizationInvitation[] @relation("OrganizationInvitationInviter")
 
     createdAt  DateTime @default(now())
     updatedAt  DateTime @updatedAt
@@ -35,6 +46,7 @@ model User {
 enum USER_ROLE {
     user
     admin
+    guest
 
     @@schema("user_schema")
 }
@@ -78,6 +90,7 @@ model Session {
   userAgent    String?
   ipAddress      String?
   impersonatedBy String?
+  activeOrganizationId String?
 
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
@@ -109,30 +122,37 @@ model jwks {
   @@schema("user_schema")
 }
 
-model ApiKey {
-    id          String         @id @default(cuid())
-    userId      String
-    label       String
-    keyPrefix   String         @unique
-    keyHash     String
-    scopes      String[]
-    status      API_KEY_STATUS @default(active)
-    lastUsedAt  DateTime?
-    expiresAt   DateTime?
-    revokedAt   DateTime?
-    createdAt   DateTime       @default(now())
-    updatedAt   DateTime       @updatedAt
+enum INVITATION_STATUS {
+    PENDING
+    ACCEPTED
+    REVOKED
 
-    user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+    @@schema("user_schema")
+}
 
-    @@index([userId])
+model Invitation {
+    id          String            @id @default(cuid())
+    email       String
+    token       String            @unique
+    status      INVITATION_STATUS @default(PENDING)
+    invitedById String
+    expiresAt   DateTime
+    acceptedAt  DateTime?
+
+    createdAt   DateTime          @default(now())
+    updatedAt   DateTime          @updatedAt
+
+    invitedBy   User              @relation("InvitationInvitedBy", fields: [invitedById], references: [id], onDelete: Cascade)
+
+    @@index([email])
     @@index([status])
     @@schema("user_schema")
 }
 
-enum API_KEY_STATUS {
-    active
-    revoked
+model AppSetting {
+    key       String   @id
+    value     String
+    updatedAt DateTime @updatedAt
 
     @@schema("user_schema")
 }

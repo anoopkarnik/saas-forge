@@ -21,6 +21,7 @@ vi.mock("ai", () => ({
   generateText: vi.fn(),
 }));
 
+vi.mock("@/lib/audit/audit", () => ({ audit: vi.fn(async () => undefined), userActor: (userId: string) => ({ type: "user", userId }) }));
 vi.mock("@workspace/auth/better-auth/auth", () => ({
   auth: {
     api: {

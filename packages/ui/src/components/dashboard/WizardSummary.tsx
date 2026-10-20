@@ -10,13 +10,9 @@ import {
 } from "@workspace/ui/components/shadcn/card";
 import { Progress } from "@workspace/ui/components/shadcn/progress";
 import { Separator } from "@workspace/ui/components/shadcn/separator";
-import {
-    calculateScaffoldCredits,
-    BASE_SCAFFOLD_CREDITS_COST,
-} from "@workspace/ui/lib/constants/scaffold-modules";
-import { WIZARD_STEPS, WizardStepId } from "@workspace/ui/lib/scaffold-wizard";
-import { PresetInfo } from "@workspace/ui/lib/constants/presets";
-import { EntryChoice } from "../../blocks/dashboard/DashboardPage";
+import type { ScaffoldQuote } from "@workspace/ui/lib/constants/scaffold-modules";
+import { EntryChoice, WIZARD_STEPS, WizardStepId } from "@workspace/ui/lib/scaffold-wizard";
+import { ResolvedPreset } from "@workspace/ui/lib/constants/presets";
 import { FormValues } from "@workspace/ui/lib/zod/download";
 import { formatList } from "@workspace/ui/lib/utils/formatList";
 
@@ -31,9 +27,9 @@ export function WizardSummary({
 }: {
     currentStepIndex: number;
     completionByStep: Record<WizardStepId, boolean>;
-    selectedPreset: PresetInfo | null;
+    selectedPreset: ResolvedPreset | null;
     entryChoice: EntryChoice;
-    pricing: ReturnType<typeof calculateScaffoldCredits>;
+    pricing: ScaffoldQuote;
     values: FormValues;
     missingLabels: string[];
 }) {
@@ -43,7 +39,7 @@ export function WizardSummary({
         100;
 
     return (
-        <div className="space-y-4 xl:sticky xl:top-6">
+        <div className="min-w-0 space-y-4">
             <Card className="border-border/60 shadow-sm">
                 <CardHeader className="pb-3">
                     <CardTitle className="text-base">Scaffold Summary</CardTitle>
@@ -81,27 +77,29 @@ export function WizardSummary({
                     <Separator />
 
                     <div className="space-y-2 text-sm">
-                        <div className="flex items-center justify-between">
+                        <div className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-3">
                             <span className="text-muted-foreground">Starting point</span>
-                            <span className="font-medium capitalize">
-                                {selectedPreset?.name ?? entryChoice}
+                            <span className="text-right wrap-anywhere font-medium capitalize">
+                                {selectedPreset
+                                    ? `${selectedPreset.productType.name} · ${selectedPreset.name}`
+                                    : entryChoice}
                             </span>
                         </div>
-                        <div className="flex items-center justify-between">
+                        <div className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-3">
                             <span className="text-muted-foreground">Product</span>
-                            <span className="font-medium">
+                            <span className="text-right wrap-anywhere font-medium">
                                 {values.NEXT_PUBLIC_SAAS_NAME || "Not named yet"}
                             </span>
                         </div>
-                        <div className="flex items-center justify-between">
+                        <div className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-3">
                             <span className="text-muted-foreground">Platforms</span>
-                            <span className="font-medium">
+                            <span className="text-right wrap-anywhere font-medium">
                                 {formatList(values.NEXT_PUBLIC_PLATFORM || [])}
                             </span>
                         </div>
-                        <div className="flex items-center justify-between">
+                        <div className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-3">
                             <span className="text-muted-foreground">Billing feature</span>
-                            <span className="font-medium">
+                            <span className="text-right wrap-anywhere font-medium">
                                 {(values.SELECTED_MODULES || []).includes("billing")
                                     ? "Included"
                                     : "Not included"}
@@ -119,7 +117,7 @@ export function WizardSummary({
                             </span>
                         </div>
                         <p className="mt-1 text-xs text-muted-foreground">
-                            {BASE_SCAFFOLD_CREDITS_COST} base credits
+                            {pricing.baseCredits} base credits
                             {pricing.moduleCredits.length > 0
                                 ? ` + ${pricing.moduleCredits
                                     .map((entry) => `${entry.credits} for ${entry.label}`)
@@ -131,7 +129,7 @@ export function WizardSummary({
                     <div className="rounded-2xl border border-border/60 p-4">
                         <div className="flex items-center gap-2">
                             <AlertTriangle className="h-4 w-4 text-amber-500" />
-                            <span className="text-sm font-medium">Missing Before Download</span>
+                            <span className="text-sm font-medium">Remaining Setup Details</span>
                         </div>
                         {missingLabels.length > 0 ? (
                             <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
@@ -144,7 +142,7 @@ export function WizardSummary({
                             </ul>
                         ) : (
                             <p className="mt-3 text-sm text-emerald-600 dark:text-emerald-400">
-                                Everything required for download is filled in.
+                                All required setup details are filled in.
                             </p>
                         )}
                     </div>

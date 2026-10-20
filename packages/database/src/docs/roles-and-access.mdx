@@ -1,0 +1,94 @@
+Access is checked on the server at three layers: page middleware, tRPC procedures and API route guards. Client-side checks only decide what to show.
+
+## User roles
+
+Stored on `User.role` (`USER_ROLE` enum):
+
+| Role | Can do |
+| --- | --- |
+| `user` | Everything a signed-in user can do in your product |
+| `admin` | Everything, plus the admin panel and admin-only procedures and routes |
+| `guest` | Read-only. Can open the app and some admin screens, but every mutation is refused |
+
+The first account created becomes `admin`. After that, admins change roles in **Admin → Users**.
+
+## The guest (demo) role
+
+The guest role lets visitors try your product without changing anything:
+
+- `protectedProcedure` rejects every **mutation** from a guest with `FORBIDDEN`.
+- Account changes (password, profile, delete, link accounts, organization changes) are blocked in a Better Auth hook (`guestGuard.ts`).
+- Session API routes reject guests unless their route policy sets `allowGuest`.
+- `/api/demo-login` refuses to sign in an account whose role is not `guest`.
+
+Set it up with **Admin → Users → Create Guest**, then `DEMO_GUEST_EMAIL` and `DEMO_GUEST_PASSWORD`. See [Local Development](/landing/doc/local-development#demo-account).
+
+## tRPC procedures
+
+`apps/web/trpc/init.ts` defines the builders. Pick the narrowest one:
+
+| Builder | Who | Use for |
+| --- | --- | --- |
+| `baseProcedure` | Anyone, signed in or not | Public reads such as landing content and docs |
+| `protectedProcedure` | Signed-in users; guests may only run queries | Anything tied to a user |
+| `adminProcedure` | Admins only | Admin writes and sensitive reads (PII, secrets) |
+| `guestReadableAdminProcedure` | Admins, plus guests for queries | Admin screens that are safe to demo |
+
+With the Organizations module, `orgProcedure` and `orgRoleProcedure("admin")` add workspace checks: see [Organizations & Teams](/landing/doc/organizations).
+
+```ts
+export const reportsRouter = createTRPCRouter({
+  list: protectedProcedure.query(({ ctx }) =>
+    db.report.findMany({ where: { userId: ctx.session.user.id } }),
+  ),
+  purge: adminProcedure.mutation(() => db.report.deleteMany()),
+});
+```
+
+Always scope data by `ctx.session.user.id` (or the active organization). Checking the role does not check ownership.
+
+Every procedure must be listed with its access level in `apps/web/trpc/apiRegistry.ts`, which powers **Admin → API**. A test fails when the registry and the router disagree.
+
+## Pages
+
+`apps/web/middleware.ts` gates pages by the session cookie, using `apps/web/lib/route-policy.ts`:
+
+- `/landing/**`, `/public/**` and `/auth-callback` are public.
+- Auth pages (`/sign-in`, `/sign-up`, `/forgot-password`, `/reset-password`, `/email-verified`, `/error`) redirect signed-in users to `/`.
+- **Everything else is protected**: visitors without a session are redirected to `/landing`.
+
+The middleware only checks that a cookie exists. Admin pages must still load their data through admin procedures, so a non-admin sees errors, not data.
+
+## API routes
+
+Every route under `app/api` has a row in `route-policy.ts` declaring its auth mode, roles, guest access, rate limit, body-size limit and input validation. Session routes call `guardRoute`:
+
+```ts
+import { guardRoute } from "@/server/routeGuard";
+
+export async function POST(req: Request) {
+  const guard = await guardRoute(req, "/api/cms/upload");
+  if (!guard.ok) {
+    return Response.json({ error: guard.error }, { status: guard.status });
+  }
+  const userId = guard.session.user.id;
+  // ...
+}
+```
+
+`guardRoute` answers 401 without a session, 403 for a missing role or a guest, and 429 over the rate limit. Details in [API Routes & Route Policy](/landing/doc/api-routes).
+
+## Invite-only registration
+
+**Admin → Users** has a registration switch:
+
+- **Open**: anyone can sign up.
+- **Invite only**: sign-up is refused unless the email has a pending, unexpired invitation (or a pending organization invitation).
+
+Admins send invitations from the same screen. Each invite is valid for 7 days, links to `/sign-up?invite=…&email=…`, and can be resent or revoked. The setting is stored in the `AppSetting` table under `registration_mode`.
+
+## Bans and other admin actions
+
+**Admin → Users** uses Better Auth's admin plugin to list users, create users, set roles, ban and unban, and remove users (the UI bans without a reason or expiry; the API supports both). A banned user cannot sign in.
+
+The admin plugin also supports impersonation (sessions last one hour) through `authClient.admin.impersonateUser`; there is no button for it in the UI.

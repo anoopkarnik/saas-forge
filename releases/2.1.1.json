@@ -1,0 +1,43 @@
+{
+  "version": "2.1.1",
+  "date": "2026-10-20",
+  "highlights": [],
+  "entries": [
+    {
+      "module": "core",
+      "type": "fix",
+      "title": "give next-intl a fixed time zone so server and client markup match"
+    },
+    {
+      "module": "core",
+      "type": "fix",
+      "title": "auth emails follow the browsing language when no locale is saved; add i18n:check to the starter"
+    },
+    {
+      "module": "analytics",
+      "type": "feature",
+      "title": "product analytics module and downloader funnel"
+    },
+    {
+      "module": "mcp",
+      "type": "feature",
+      "title": "SaaS Forge MCP server for coding agents"
+    },
+    {
+      "module": "mcp",
+      "type": "feature",
+      "title": "MCP server module for starters"
+    },
+    {
+      "module": "ai",
+      "type": "feature",
+      "title": "AI chat and agents call tools from MCP servers"
+    },
+    {
+      "module": "mcp",
+      "type": "fix",
+      "title": "name the connect snippets after the product, not \"app\""
+    }
+  ],
+  "draft": false
+}

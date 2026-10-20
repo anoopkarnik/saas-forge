@@ -54,10 +54,43 @@ export function SecurityBanner({ slug, count }: { slug: string; count: number })
   );
 }
 
+/** Downloads the free kit of the releases since the project's saved version. */
+export async function downloadReleaseUpdate(slug: string): Promise<void> {
+  const response = await fetch("/api/scaffold/upgrade", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ slug }),
+  });
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({}));
+    throw new Error(body?.error ?? "Update failed");
+  }
+  const url = window.URL.createObjectURL(await response.blob());
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${slug}-update.zip`;
+  document.body.appendChild(a);
+  a.click();
+  window.URL.revokeObjectURL(url);
+  document.body.removeChild(a);
+}
+
 /** The releases since the project's version, with what changed in its modules. */
 export function ReleaseNotesPanel({ slug }: { slug: string }) {
   const trpc = useTRPC();
+  const qc = useQueryClient();
   const releases = useQuery(trpc.project.releases.queryOptions({ slug }));
+  const update = useMutation({
+    mutationFn: () => downloadReleaseUpdate(slug),
+    onSuccess: async () => {
+      toast.success("Update kit downloaded. Unzip it into the project and run /upgrade-boilerplate in Claude Code.");
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: trpc.project.releases.queryKey({ slug }) }),
+        qc.invalidateQueries({ queryKey: trpc.project.list.queryKey() }),
+      ]);
+    },
+    onError: (error) => toast.error(error.message),
+  });
 
   if (releases.isLoading) return <p className="text-muted-foreground">Loading release notes…</p>;
   if (!releases.data) return null;
@@ -71,10 +104,15 @@ export function ReleaseNotesPanel({ slug }: { slug: string }) {
 
   return (
     <div className="flex flex-col gap-2">
-      <p className="text-muted-foreground">
-        v{releases.data.currentVersion} → v{releases.data.latestVersion}: {releases.data.behind} release
-        {releases.data.behind === 1 ? "" : "s"}. Only changes to this project&apos;s modules are listed.
-      </p>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-muted-foreground">
+          v{releases.data.currentVersion} → v{releases.data.latestVersion}: {releases.data.behind} release
+          {releases.data.behind === 1 ? "" : "s"}. Only changes to this project&apos;s modules are listed.
+        </p>
+        <Button size="sm" variant="secondary" disabled={update.isPending} onClick={() => update.mutate()}>
+          {update.isPending ? "Building update…" : "Get update (free)"}
+        </Button>
+      </div>
       <Accordion type="multiple" className="rounded-md border px-3">
         {[...releases.data.releases].reverse().map((release) => (
           <AccordionItem key={release.version} value={release.version}>

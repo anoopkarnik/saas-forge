@@ -128,11 +128,27 @@ describe("quote_upgrade", () => {
     expect(data.message).not.toContain("mark_project_current");
   });
 
-  it("points a project behind the latest release to mark_project_current", async () => {
+  it("offers a project behind the latest release the free release kit", async () => {
     mockFindFirst.mockResolvedValueOnce(project({ modules: ["billing"], templateVersion: "2.0.0" }));
     const { data } = await call("quote_upgrade", { slug: "acme" });
-    expect(data).toMatchObject({ nothingToUpgrade: true, templateVersion: "2.0.0", latestVersion: "2.1.0" });
-    expect(data.message).toContain("mark_project_current");
+    expect(data).toMatchObject({
+      nothingToUpgrade: false,
+      kind: "release",
+      fromVersion: "2.0.0",
+      latestVersion: "2.1.0",
+      credits: 0,
+      command: "npx create-saas-forge upgrade --project acme --yes",
+      previewCommand: "npx create-saas-forge upgrade --project acme --dry-run",
+    });
+    // When no snapshot of that release exists, the dry run says so and the agent falls back.
+    expect(data.nextSteps.join(" ")).toContain("mark_project_current");
+    expect(mockTrack).toHaveBeenCalledWith("mcp.quote_viewed", { kind: "release", credits: 0, modules: [] }, { distinctId: "u1" });
+  });
+
+  it("goes by the version in the repository when the agent passes it", async () => {
+    mockFindFirst.mockResolvedValueOnce(project({ modules: ["billing"], templateVersion: "2.0.0" }));
+    const { data } = await call("quote_upgrade", { slug: "acme", fromVersion: "2.1.0" });
+    expect(data).toMatchObject({ nothingToUpgrade: true, templateVersion: "2.1.0", latestVersion: "2.1.0" });
   });
 
   it("switches a provider for free", async () => {

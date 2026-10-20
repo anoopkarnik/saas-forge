@@ -19,6 +19,6 @@ declare module "@workspace/analytics/events" {
     "upgrade.preview_viewed": { addedModules: string[]; deltaCredits: number };
     "upgrade.purchased": { source: string; addedModules: string[]; tierSteps: number; deltaCredits: number };
     /** An agent asked the MCP server for a price; the purchase itself is tracked with `source: "api"`. */
-    "mcp.quote_viewed": { kind: "download" | "upgrade"; credits: number; modules: string[] };
+    "mcp.quote_viewed": { kind: "download" | "upgrade" | "release"; credits: number; modules: string[] };
   }
 }

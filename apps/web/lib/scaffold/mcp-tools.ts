@@ -38,7 +38,7 @@ export const platformMcpInstructions = `SaaS Forge sells a SaaS starter as modul
 
 - To start a project: get_catalog, create_project with every required module, quote_download, then run the returned command after the user approves the price.
 - To add modules to a project the user already downloaded: work inside that project's repository (its .saas-forge.json names the project slug), call quote_upgrade with addModules, show the price, and after approval run its command, then follow its nextSteps. Never use update_project to add modules to a downloaded project.
-- A release that adds no modules has no upgrade kit: get_release_notes lists its changes, which you apply to the repository by hand. Once they are applied and checked, call mark_project_current so the project stops showing as behind.
+- To bring a downloaded project up to the latest release: call quote_upgrade with the templateVersion from .saas-forge.json as fromVersion. A project behind gets a free release kit command; run it, then follow its nextSteps. Only when the dry run reports no snapshot for that release, apply the get_release_notes changes by hand and call mark_project_current.
 - Always show the credit price and get the user's explicit approval before running any create-saas-forge command. Leave database migrations (pnpm migrate) to the user.`;
 
 const tool = defineMcpTool;
@@ -206,8 +206,13 @@ const tools = [
         .record(z.string(), z.string())
         .optional()
         .describe('Provider switches, e.g. { "payment_gateway": "dodo" }. Switching is free.'),
+      fromVersion: z
+        .string()
+        .regex(/^\d+\.\d+\.\d+$/, 'Versions look like "2.1.0".')
+        .optional()
+        .describe("templateVersion from the repository's .saas-forge.json: the release its files are on."),
     }),
-    run: async ({ slug, addModules, tierId, providers }, { userId }) => {
+    run: async ({ slug, addModules, tierId, providers, fromVersion }, { userId }) => {
       const project = await requireProject(userId, slug);
       const fromModules = validateSelectedModules(project.modules);
       const requested = withRequirements([...project.modules, ...addModules]);
@@ -221,18 +226,38 @@ const tools = [
       );
       const delta = computeUpgradeDelta({ fromModules, toModules, fromTierId: project.tierId, toTierId });
 
+      const currentVersion = fromVersion ?? project.templateVersion;
       if (delta.addedModules.length === 0 && delta.tierSteps === 0 && switches.switched.length === 0) {
         const latestVersion = getTemplateVersion();
-        const behind = compareVersions(project.templateVersion, latestVersion) < 0;
+        if (compareVersions(currentVersion, latestVersion) >= 0) {
+          return {
+            slug,
+            nothingToUpgrade: true,
+            templateVersion: currentVersion,
+            latestVersion,
+            message: "The project already has these modules, tier and providers, and the latest release.",
+          };
+        }
+        // The kit's file counts need the release's snapshot, which only the
+        // download function reads: the dry run reports them, or that none exists.
+        await track("mcp.quote_viewed", { kind: "release", credits: 0, modules: [] }, { distinctId: userId });
+        const args = `upgrade --project ${slug}`;
         return {
           slug,
-          nothingToUpgrade: true,
-          templateVersion: project.templateVersion,
+          nothingToUpgrade: false,
+          kind: "release",
+          fromVersion: currentVersion,
           latestVersion,
-          message: behind
-            ? `The project already has these modules, tier and providers, but records v${project.templateVersion} (latest v${latestVersion}). ` +
-              "Releases without new modules have no kit: apply the get_release_notes changes by hand, then call mark_project_current."
-            : "The project already has these modules, tier and providers.",
+          credits: 0,
+          releases: getProjectReleases({ ...project, templateVersion: currentVersion }, loadReleases(), latestVersion),
+          command: `${CLI} ${args} --yes`,
+          previewCommand: `${CLI} ${args} --dry-run`,
+          nextSteps: [
+            "Run previewCommand inside the project's repository for the kit's file counts (free).",
+            "Run command there: the release kit is free and extracts into .upgrade/ with UPGRADE_SPEC.json, .upgrade-base/ and the latest /upgrade-boilerplate command.",
+            "Run the /upgrade-boilerplate command to merge it into the customized code.",
+            "If the dry run reports no snapshot for this release, apply the get_release_notes changes by hand instead, then call mark_project_current.",
+          ],
         };
       }
 
@@ -258,7 +283,7 @@ const tools = [
           to: switches.toProviders[toggle],
         })),
         credits: delta.deltaCredits,
-        releases: getProjectReleases(project, loadReleases(), getTemplateVersion()),
+        releases: getProjectReleases({ ...project, templateVersion: currentVersion }, loadReleases(), getTemplateVersion()),
         command: `${CLI} ${args.join(" ")} --yes`,
         previewCommand: `${CLI} ${args.join(" ")} --dry-run`,
         nextSteps: [

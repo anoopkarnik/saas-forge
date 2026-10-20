@@ -26,7 +26,7 @@ Names are stable: add events, never rename them.
 | `scaffold.download_failed` | `source`, `modules`, `error` (`insufficient_credits`, `charge_failed`, `build_failed`) | Charging or building fails | server |
 | `upgrade.preview_viewed` | `addedModules`, `deltaCredits` | The upgrade preview is loaded (each load is counted) | server |
 | `upgrade.purchased` | `source`, `addedModules`, `tierSteps`, `deltaCredits` | An upgrade kit is charged and returned | server |
-| `mcp.quote_viewed` | `kind` (`download` or `upgrade`), `credits`, `modules` (the build's, or the ones being added) | An agent calls `quote_download` or `quote_upgrade` on `/api/mcp` | server |
+| `mcp.quote_viewed` | `kind` (`download`, `upgrade`, or `release` for a free release kit), `credits`, `modules` (the build's, or the ones being added) | An agent calls `quote_download` or `quote_upgrade` on `/api/mcp` | server |
 
 Agents buy through the CLI, so an MCP quote that leads to a purchase shows up as `mcp.quote_viewed` followed by a `source: "api"` download or upgrade from the same user.
 

@@ -7,6 +7,7 @@ const HELP = `Usage:
   create-saas-forge [new] <dir> [--modules billing,ai] [--platforms web,mobile] [--name <name>] [--yes] [--install]
   create-saas-forge new <dir> --project <slug>      Download a saved project
   create-saas-forge upgrade [--add ai_agents] [--tier tier-3] [--provider payment_gateway=dodo] [--dry-run] [--yes]
+  create-saas-forge upgrade --mark-current           Record that the latest release's changes are applied (free)
   create-saas-forge credits
   create-saas-forge login
 
@@ -27,6 +28,7 @@ const { values: flags, positionals } = parseArgs({
     yes: { type: "boolean", short: "y" },
     install: { type: "boolean" },
     "dry-run": { type: "boolean" },
+    "mark-current": { type: "boolean" },
     help: { type: "boolean", short: "h" },
   },
 });

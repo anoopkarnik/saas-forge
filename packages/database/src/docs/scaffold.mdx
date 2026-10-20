@@ -103,6 +103,7 @@ The wizard's file preview (`scaffold.previewIndex`) compiles real variants, so i
 | `GET`, `PATCH /api/v1/projects/[slug]` | API key | Read or update a project |
 | `POST /api/v1/projects/[slug]/download` | API key (`scaffold:download`) | Download a project |
 | `GET`, `POST /api/v1/projects/[slug]/upgrade` | API key (`scaffold:upgrade`) | Quote or buy an upgrade kit |
+| `POST /api/v1/projects/[slug]/mark-current` | API key (`write:projects`) | Record that the releases since the project's version were applied by hand (free; releases without new modules have no kit) |
 
 ## Vercel file tracing
 

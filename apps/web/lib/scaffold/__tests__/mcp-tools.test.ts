@@ -125,6 +125,14 @@ describe("quote_upgrade", () => {
     mockFindFirst.mockResolvedValueOnce(project({ modules: ["billing"] }));
     const { data } = await call("quote_upgrade", { slug: "acme", addModules: ["billing"] });
     expect(data).toMatchObject({ nothingToUpgrade: true });
+    expect(data.message).not.toContain("mark_project_current");
+  });
+
+  it("points a project behind the latest release to mark_project_current", async () => {
+    mockFindFirst.mockResolvedValueOnce(project({ modules: ["billing"], templateVersion: "2.0.0" }));
+    const { data } = await call("quote_upgrade", { slug: "acme" });
+    expect(data).toMatchObject({ nothingToUpgrade: true, templateVersion: "2.0.0", latestVersion: "2.1.0" });
+    expect(data.message).toContain("mark_project_current");
   });
 
   it("switches a provider for free", async () => {
@@ -148,6 +156,47 @@ describe("quote_upgrade", () => {
     const result = await call("quote_upgrade", { slug: "acme", tierId: "tier-2; rm -rf ~" });
     expect(result.isError).toBe(true);
     expect(mockFindFirst).not.toHaveBeenCalled();
+  });
+});
+
+describe("mark_project_current", () => {
+  it("records the latest version and keeps a free re-download free", async () => {
+    const behind = project({ modules: ["billing"], templateVersion: "2.0.0" });
+    behind.lastBuiltHash = computeBuildHash(behind);
+    mockFindFirst.mockResolvedValueOnce(behind);
+    const { data } = await call("mark_project_current", { slug: "acme" });
+    expect(data).toMatchObject({ slug: "acme", fromVersion: "2.0.0", templateVersion: "2.1.0", credits: 0 });
+    expect(mockUpdate).toHaveBeenCalledWith({
+      where: { id: "p1" },
+      data: { templateVersion: "2.1.0", lastBuiltHash: computeBuildHash({ ...behind, templateVersion: "2.1.0" }) },
+    });
+  });
+
+  it("does not make a paid re-download free", async () => {
+    mockFindFirst.mockResolvedValueOnce(project({ templateVersion: "2.0.0", lastBuiltHash: "edited-since" }));
+    await call("mark_project_current", { slug: "acme" });
+    expect(mockUpdate).toHaveBeenCalledWith({ where: { id: "p1" }, data: { templateVersion: "2.1.0" } });
+  });
+
+  it("leaves a project already on the latest version alone", async () => {
+    mockFindFirst.mockResolvedValueOnce(project());
+    const { data } = await call("mark_project_current", { slug: "acme" });
+    expect(data).toMatchObject({ alreadyCurrent: true, templateVersion: "2.1.0" });
+    expect(mockUpdate).not.toHaveBeenCalled();
+  });
+
+  it("refuses a project that was never downloaded", async () => {
+    mockFindFirst.mockResolvedValueOnce(project({ templateVersion: "2.0.0", lastBuiltAt: null, lastBuiltHash: null }));
+    const result = await call("mark_project_current", { slug: "acme" });
+    expect(result.isError).toBe(true);
+    expect(result.text).toContain("never downloaded");
+    expect(mockUpdate).not.toHaveBeenCalled();
+  });
+
+  it("needs the write:projects scope", async () => {
+    const result = await call("mark_project_current", { slug: "acme" }, { userId: "u1", scopes: ["read:projects"] });
+    expect(result.isError).toBe(true);
+    expect(result.text).toContain("write:projects");
   });
 });
 

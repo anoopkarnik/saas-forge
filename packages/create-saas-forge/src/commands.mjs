@@ -104,6 +104,9 @@ export async function runUpgrade(flags, io) {
   const marker = fs.existsSync(markerPath) ? JSON.parse(fs.readFileSync(markerPath, "utf-8")) : {};
   const slug = flags.project || marker.project;
   if (!slug) throw new Error(`No project. Run this inside a project with ${MARKER}, or pass --project <slug>.`);
+  if (flags["mark-current"] && (flags.add || flags.tier || flags.provider?.length || flags["dry-run"])) {
+    throw new Error("--mark-current runs on its own; buy module, tier or provider upgrades separately.");
+  }
 
   // Never let a project file pick where the API key is sent: a cloned repo
   // could point .saas-forge.json at another server.
@@ -113,6 +116,22 @@ export async function runUpgrade(flags, io) {
       `${MARKER} points at ${marker.apiUrl}, but your API key is for ${config.baseUrl}. Pass --url to choose the server explicitly.`,
     );
   }
+
+  // A release that adds no modules has no kit: once its notes are applied by
+  // hand, this records the new version (free) so the project is not "behind".
+  if (flags["mark-current"]) {
+    const result = await client.markCurrent(slug);
+    if (fs.existsSync(markerPath)) {
+      fs.writeFileSync(markerPath, JSON.stringify({ ...marker, templateVersion: result.templateVersion }, null, 2) + "\n");
+    }
+    io.log(
+      result.alreadyCurrent
+        ? `"${slug}" is already on v${result.templateVersion}.`
+        : `"${slug}" marked up to date: ${result.fromVersion} -> ${result.templateVersion} (free).`,
+    );
+    return result;
+  }
+
   const [pricing, { project }] = await Promise.all([client.pricing(), client.getProject(slug)]);
   const toModules = withRequirements(pricing, [...project.modules, ...list(flags.add)]);
   const toTier = flags.tier || project.tierId;

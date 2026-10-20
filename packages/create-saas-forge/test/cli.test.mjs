@@ -215,6 +215,37 @@ describe("runUpgrade provider switch", () => {
   });
 });
 
+describe("runUpgrade --mark-current", () => {
+  it("records the latest version on the server and in the marker, for free", async () => {
+    const cwd = tempDir();
+    fs.writeFileSync(path.join(cwd, ".saas-forge.json"), JSON.stringify({ project: "my-app", templateVersion: "1.4.0" }));
+    const client = fakeClient({
+      pricing: vi.fn(),
+      markCurrent: vi.fn(async () => ({ fromVersion: "1.4.0", templateVersion: "1.4.1", alreadyCurrent: false })),
+    });
+    const lines = [];
+    const result = await runUpgrade({ "mark-current": true }, { ...io(cwd, client), log: (line) => lines.push(line) });
+
+    expect(client.markCurrent).toHaveBeenCalledWith("my-app");
+    expect(result).toMatchObject({ templateVersion: "1.4.1", alreadyCurrent: false });
+    expect(JSON.parse(fs.readFileSync(path.join(cwd, ".saas-forge.json"), "utf8"))).toMatchObject({
+      project: "my-app",
+      templateVersion: "1.4.1",
+    });
+    expect(lines.join("\n")).toContain("1.4.0 -> 1.4.1");
+    expect(client.pricing).not.toHaveBeenCalled();
+    expect(client.upgrade).not.toHaveBeenCalled();
+  });
+
+  it("cannot be combined with a paid upgrade", async () => {
+    const cwd = tempDir();
+    fs.writeFileSync(path.join(cwd, ".saas-forge.json"), JSON.stringify({ project: "my-app" }));
+    const client = fakeClient({ markCurrent: vi.fn() });
+    await expect(runUpgrade({ "mark-current": true, add: "ai" }, io(cwd, client))).rejects.toThrow(/on its own/);
+    expect(client.markCurrent).not.toHaveBeenCalled();
+  });
+});
+
 describe("runUpgrade server choice", () => {
   it("refuses to send the key to a server named only by the project file", async () => {
     const cwd = tempDir();

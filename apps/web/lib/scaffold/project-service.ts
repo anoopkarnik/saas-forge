@@ -6,6 +6,8 @@ import {
 } from "@/lib/scaffold-modules";
 import { stripSecrets } from "@/lib/scaffold/secret-keys";
 import { getTemplateVersion } from "@/lib/scaffold/template-version";
+import { computeBuildHash } from "@/lib/scaffold/project-rules";
+import { compareVersions } from "@/lib/scaffold/release-notes";
 import {
   projectDetailSelect,
   projectListSelect,
@@ -162,6 +164,40 @@ export function markProjectUpgraded(projectId: string, upgrade: ProjectUpgrade):
       },
     })
     .catch(() => {});
+}
+
+export type MarkCurrentResult =
+  | { status: "not_found" }
+  | { status: "not_downloaded" }
+  | { status: "current"; templateVersion: string }
+  | { status: "marked"; fromVersion: string; templateVersion: string };
+
+/**
+ * Records that the owner applied the releases since the project's version by
+ * hand. A release that adds no modules has no upgrade kit, so without this the
+ * project stays "behind" forever. Free: the build stamp moves to the new
+ * version only when the old one still matched, so a re-download that was free
+ * stays free and one that was paid stays paid.
+ */
+export async function markProjectCurrent(userId: string, slug: string): Promise<MarkCurrentResult> {
+  const project = await getProject(userId, slug);
+  if (!project) return { status: "not_found" };
+  if (!project.lastBuiltAt) return { status: "not_downloaded" };
+
+  const latest = getTemplateVersion();
+  if (compareVersions(project.templateVersion, latest) >= 0) {
+    return { status: "current", templateVersion: project.templateVersion };
+  }
+
+  const ownsBuild = !!project.lastBuiltHash && project.lastBuiltHash === computeBuildHash(project);
+  await db.projectConfig.update({
+    where: { id: project.id },
+    data: {
+      templateVersion: latest,
+      ...(ownsBuild ? { lastBuiltHash: computeBuildHash({ ...project, templateVersion: latest }) } : {}),
+    },
+  });
+  return { status: "marked", fromVersion: project.templateVersion, templateVersion: latest };
 }
 
 /** The projects of several owners, for release emails. */

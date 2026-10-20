@@ -13,9 +13,11 @@ import {
   createProject,
   getProject,
   listProjects,
+  markProjectCurrent,
   updateProject,
 } from "@/lib/scaffold/project-service";
 import { getPublicPricing } from "@/lib/scaffold/public-pricing";
+import { compareVersions } from "@/lib/scaffold/release-notes";
 import { getProjectReleases, loadReleases } from "@/lib/scaffold/releases";
 import {
   computeBuildHash,
@@ -36,6 +38,7 @@ export const platformMcpInstructions = `SaaS Forge sells a SaaS starter as modul
 
 - To start a project: get_catalog, create_project with every required module, quote_download, then run the returned command after the user approves the price.
 - To add modules to a project the user already downloaded: work inside that project's repository (its .saas-forge.json names the project slug), call quote_upgrade with addModules, show the price, and after approval run its command, then follow its nextSteps. Never use update_project to add modules to a downloaded project.
+- A release that adds no modules has no upgrade kit: get_release_notes lists its changes, which you apply to the repository by hand. Once they are applied and checked, call mark_project_current so the project stops showing as behind.
 - Always show the credit price and get the user's explicit approval before running any create-saas-forge command. Leave database migrations (pnpm migrate) to the user.`;
 
 const tool = defineMcpTool;
@@ -219,10 +222,17 @@ const tools = [
       const delta = computeUpgradeDelta({ fromModules, toModules, fromTierId: project.tierId, toTierId });
 
       if (delta.addedModules.length === 0 && delta.tierSteps === 0 && switches.switched.length === 0) {
+        const latestVersion = getTemplateVersion();
+        const behind = compareVersions(project.templateVersion, latestVersion) < 0;
         return {
           slug,
           nothingToUpgrade: true,
-          message: "The project already has these modules, tier and providers.",
+          templateVersion: project.templateVersion,
+          latestVersion,
+          message: behind
+            ? `The project already has these modules, tier and providers, but records v${project.templateVersion} (latest v${latestVersion}). ` +
+              "Releases without new modules have no kit: apply the get_release_notes changes by hand, then call mark_project_current."
+            : "The project already has these modules, tier and providers.",
         };
       }
 
@@ -273,6 +283,40 @@ const tools = [
     run: async ({ slug }, { userId }) => {
       const project = await requireProject(userId, slug);
       return getProjectReleases(project, loadReleases(), getTemplateVersion());
+    },
+  }),
+
+  tool({
+    name: "mark_project_current",
+    title: "Mark project up to date",
+    description:
+      "Record that a downloaded project now has the latest SaaS Forge release, after its get_release_notes changes " +
+      "were applied to the repository by hand. Free; it changes no code and no modules. Use it only once the " +
+      "changes are applied, since it clears the project's \"behind\" status and release reminders.",
+    scope: "write:projects",
+    readOnly: false,
+    input: slugInput,
+    run: async ({ slug }, { userId }) => {
+      const result = await markProjectCurrent(userId, slug);
+      switch (result.status) {
+        case "not_found":
+          throw new McpToolError(`No project with slug "${slug}". Call list_projects to see your projects.`);
+        case "not_downloaded":
+          throw new McpToolError(`"${slug}" was never downloaded; its first download already gets the latest version.`);
+        case "current":
+          return { slug, alreadyCurrent: true, templateVersion: result.templateVersion, credits: 0 };
+        case "marked":
+          return {
+            slug,
+            alreadyCurrent: false,
+            fromVersion: result.fromVersion,
+            templateVersion: result.templateVersion,
+            credits: 0,
+            nextSteps: [
+              `Set templateVersion to ${result.templateVersion} in the repository's .saas-forge.json and .boilerplate-version.`,
+            ],
+          };
+      }
     },
   }),
 ];

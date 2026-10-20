@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { authenticateApiKey } from "@/server/authenticateApiKey";
 import { getProject, markProjectBuilt } from "@/lib/scaffold/project-service";
+import { getTemplateVersion } from "@/lib/scaffold/template-version";
 import {
   InvalidScaffoldModuleError,
   calculateScaffoldCredits,
@@ -95,7 +96,11 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
   }
 
   // Mark built so an unchanged re-download is free next time (best-effort).
-  markProjectBuilt(project.id, currentHash);
+  const templateVersion = getTemplateVersion();
+  markProjectBuilt(project.id, {
+    templateVersion,
+    lastBuiltHash: computeBuildHash({ ...project, templateVersion }),
+  });
 
   return new NextResponse(download.bytes, {
     headers: {

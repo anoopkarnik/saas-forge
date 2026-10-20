@@ -175,4 +175,17 @@ describe("POST /api/v1/projects/[slug]/download", () => {
     expect(res.status).toBe(200);
     expect(mockDownload).toHaveBeenCalledWith(expect.objectContaining({ free: true }));
   });
+
+  it("records the starter version it delivered, keeping the re-download free", async () => {
+    mockAuth.mockResolvedValue({ ok: true, userId: "u1" });
+    mockHash.mockImplementation((project: any) => `hash-${project.templateVersion}`);
+    mockFindFirst.mockResolvedValue({ ...PROJECT, templateVersion: "1.4.0", lastBuiltHash: "hash-1.4.0" });
+    const res = await POST(reqWith(), ctx);
+    expect(res.status).toBe(200);
+    expect(mockDownload).toHaveBeenCalledWith(expect.objectContaining({ free: true }));
+    expect(mockUpdate).toHaveBeenCalledWith({
+      where: { id: "p1" },
+      data: { templateVersion: "1.4.1", lastBuiltHash: "hash-1.4.1", lastBuiltAt: expect.any(Date) },
+    });
+  });
 });

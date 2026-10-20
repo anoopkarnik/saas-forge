@@ -129,14 +129,18 @@ export async function duplicateProject(
 }
 
 /**
- * Best-effort: stamps a fresh download so an unchanged re-download is free.
+ * Best-effort: stamps a fresh download with the starter version it delivered,
+ * and the build hash for that version, so an unchanged re-download is free.
  * Only touches the build stamp, never the config, so a concurrent edit wins.
  */
-export function markProjectBuilt(projectId: string, lastBuiltHash: string): void {
+export function markProjectBuilt(
+  projectId: string,
+  stamp: { lastBuiltHash: string; templateVersion: string },
+): void {
   void db.projectConfig
     .update({
       where: { id: projectId },
-      data: { lastBuiltHash, lastBuiltAt: new Date() },
+      data: { templateVersion: stamp.templateVersion, lastBuiltHash: stamp.lastBuiltHash, lastBuiltAt: new Date() },
     })
     .catch(() => {});
 }
@@ -189,15 +193,28 @@ export async function markProjectCurrent(userId: string, slug: string): Promise<
     return { status: "current", templateVersion: project.templateVersion };
   }
 
+  await recordProjectVersion(project, latest);
+  return { status: "marked", fromVersion: project.templateVersion, templateVersion: latest };
+}
+
+/**
+ * Records that the project's code is now at `version` (a release kit or a
+ * hand-applied release). The build stamp moves with it only when the old one
+ * still matched, so a re-download that was free stays free and one that was
+ * paid stays paid.
+ */
+export async function recordProjectVersion(
+  project: NonNullable<Awaited<ReturnType<typeof getProject>>>,
+  version: string,
+): Promise<void> {
   const ownsBuild = !!project.lastBuiltHash && project.lastBuiltHash === computeBuildHash(project);
   await db.projectConfig.update({
     where: { id: project.id },
     data: {
-      templateVersion: latest,
-      ...(ownsBuild ? { lastBuiltHash: computeBuildHash({ ...project, templateVersion: latest }) } : {}),
+      templateVersion: version,
+      ...(ownsBuild ? { lastBuiltHash: computeBuildHash({ ...project, templateVersion: version }) } : {}),
     },
   });
-  return { status: "marked", fromVersion: project.templateVersion, templateVersion: latest };
 }
 
 /** The projects of several owners, for release emails. */

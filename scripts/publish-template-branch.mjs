@@ -8,6 +8,8 @@ import {
   loadScaffoldRegistry,
 } from "../apps/web/lib/scaffold-modules.ts";
 import { parseRelease } from "../apps/web/lib/scaffold/release-notes.ts";
+import { packReleaseSnapshot } from "../apps/web/lib/scaffold/release-snapshots.ts";
+import { releaseSnapshotStore } from "./release-snapshot-store.mjs";
 
 const BRANCH = "template/saas-boilerplate";
 const TAG_PREFIX = "template/v";
@@ -23,6 +25,7 @@ function parseArgs() {
   let version = null;
   let dryRun = false;
   let noPush = false;
+  let noSnapshot = false;
 
   for (let i = 0; i < args.length; i++) {
     if (args[i] === "--version" && args[i + 1]) {
@@ -31,15 +34,17 @@ function parseArgs() {
       dryRun = true;
     } else if (args[i] === "--no-push") {
       noPush = true;
+    } else if (args[i] === "--no-snapshot") {
+      noSnapshot = true;
     }
   }
 
   if (!version) {
-    console.error("Usage: node scripts/publish-template-branch.mjs --version <semver> [--dry-run] [--no-push]");
+    console.error("Usage: node scripts/publish-template-branch.mjs --version <semver> [--dry-run] [--no-push] [--no-snapshot]");
     process.exit(1);
   }
 
-  return { version, dryRun, noPush };
+  return { version, dryRun, noPush, noSnapshot };
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────
@@ -101,7 +106,7 @@ function removeContents(dir) {
 
 // ── Main ───────────────────────────────────────────────────────────────
 
-const { version, dryRun, noPush } = parseArgs();
+const { version, dryRun, noPush, noSnapshot } = parseArgs();
 const tag = `${TAG_PREFIX}${version}`;
 const worktreePath = path.join(os.tmpdir(), `template-publish-${Date.now()}`);
 
@@ -134,6 +139,15 @@ if (tagExists(tag)) {
   process.exit(1);
 }
 
+// Release kits diff a project's own release against the latest, so every
+// release needs its snapshot (the staged starter and its module rules) in R2.
+const snapshotStore = noSnapshot ? null : releaseSnapshotStore(repoRoot);
+if (!noSnapshot && !snapshotStore) {
+  console.error("No R2 credentials (R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET_NAME) in the shell or apps/web/.env.");
+  console.error("Release kits need the snapshot; pass --no-snapshot only to publish without one.");
+  process.exit(1);
+}
+
 const mainHash = git(["rev-parse", "--short", "HEAD"]);
 const commitMessage = `chore: update template to v${version} (from saas-forge@${mainHash})`;
 
@@ -143,6 +157,7 @@ if (dryRun) {
   console.log(`  Tag:    ${tag}`);
   console.log(`  Source: ${STAGE_ROOT}`);
   console.log(`  Commit: ${commitMessage}`);
+  console.log(`  Snapshot: ${noSnapshot ? "skipped (--no-snapshot)" : "uploaded to R2"}`);
   process.exit(0);
 }
 
@@ -191,6 +206,13 @@ try {
     process.exit(0);
   } catch {
     // diff --cached --quiet exits non-zero when there are staged changes — this is expected
+  }
+
+  // Upload before tagging: a release without its snapshot gets no release kits.
+  if (snapshotStore) {
+    const snapshot = await packReleaseSnapshot({ starterRoot: stageDir, rulesRoot: repoRoot });
+    await snapshotStore.put(version, snapshot);
+    console.log(`Uploaded the v${version} release snapshot (${(snapshot.length / 1024 / 1024).toFixed(1)} MB).`);
   }
 
   git(["commit", "-m", commitMessage], { cwd: worktreePath });

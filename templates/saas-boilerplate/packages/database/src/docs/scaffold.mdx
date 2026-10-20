@@ -85,6 +85,14 @@ Bump `BUILDER_VERSION` whenever compile or archive output changes; `build-cache.
 
 The wizard's file preview (`scaffold.previewIndex`) compiles real variants, so it follows the manifests automatically.
 
+## Release kits
+
+A downloaded project records its release in `.saas-forge.json` (`templateVersion`) and `.boilerplate-version`. When it is behind, `create-saas-forge status` lists the releases since then and `create-saas-forge upgrade` (no flags) downloads a free **release kit**: the files that changed between that release and the latest, compiled for the project's own modules, providers and platforms. The Upgrade Center's **Get update** button and the `quote_upgrade` MCP tool lead to the same kit.
+
+- `pnpm template:publish` uploads a snapshot of every release to R2 (`apps/web/lib/scaffold/release-snapshots.ts`): the staged starter with its markers plus that release's `scaffold-modules/` and `scaffold-providers/`, since an old starter only compiles with its own rules. Releases published earlier are added with `node scripts/backfill-release-snapshots.mjs <version>=<commit>`, which checks the snapshot against the `template/v<version>` tag before uploading.
+- Every upgrade kit diffs from the project's own release when its snapshot exists, so module upgrades carry the release changes too. Kits stage the old copy of each changed file under `.upgrade-base/` for a three-way merge, and the latest `/upgrade-boilerplate` command.
+- The CLI sends the version in the project's files (`fromVersion`); the web uses the saved one. Downloads now record the release they deliver. Without a snapshot for that release, a release-only request answers `422 release_kit_unavailable`: apply the notes by hand and run `upgrade --mark-current`.
+
 ## Secrets
 
 `packages/ui/src/lib/scaffold-secrets.ts` decides which env vars are secrets, for the browser and the server alike. `/api/scaffold` answers `400 secret_not_accepted` if a request contains one; the browser adds secrets to the ZIP with `zip-append.ts`.
@@ -94,7 +102,7 @@ The wizard's file preview (`scaffold.previewIndex`) compiles real variants, so i
 | Route | Auth | Purpose |
 | --- | --- | --- |
 | `POST /api/scaffold` | Session | Wizard download. Body: `name`, `modules`, public `envVars`, `expectedTotalCredits`. `409 price_changed` when the price moved |
-| `POST /api/scaffold/upgrade` | Session | Upgrade kit for a saved project |
+| `POST /api/scaffold/upgrade` | Session | Upgrade kit for a saved project; with no changes, the free release kit |
 | `POST /api/scaffold/builds/[jobId]` | Session | Free re-download of an owned build |
 | `/api/scaffold/trpc` | Per procedure | tRPC procedures that read the starter (preview, build keys, prewarm, upgrade previews) |
 | `GET /api/v1/scaffold/pricing` | API key | Catalog and prices |
@@ -102,7 +110,8 @@ The wizard's file preview (`scaffold.previewIndex`) compiles real variants, so i
 | `GET`, `POST /api/v1/projects` | API key | List or create saved projects |
 | `GET`, `PATCH /api/v1/projects/[slug]` | API key | Read or update a project |
 | `POST /api/v1/projects/[slug]/download` | API key (`scaffold:download`) | Download a project |
-| `GET`, `POST /api/v1/projects/[slug]/upgrade` | API key (`scaffold:upgrade`) | Quote or buy an upgrade kit |
+| `GET`, `POST /api/v1/projects/[slug]/upgrade` | API key (`scaffold:upgrade`) | Quote or buy an upgrade kit, or get the free release kit (no changes, `fromVersion` older than the latest). `GET` reports `releaseKit.available` |
+| `POST /api/v1/projects/[slug]/mark-current` | API key (`write:projects`) | Record that the releases since the project's version were applied by hand (free; for releases without a snapshot) |
 
 ## Vercel file tracing
 

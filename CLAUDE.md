@@ -133,6 +133,7 @@ A buyer downloads one variant: the staged starter compiled by `compileScaffoldVa
 - The wizard's pre-purchase file preview (`scaffold.previewIndex`, `apps/web/lib/scaffold/preview-index.ts`) is computed by compiling variants, so it follows manifests automatically; `preview-index.test.ts` checks it against real builds.
 - Vercel deploys each route with only its traced files, and the scaffold code reads `scaffold-modules/` and the starter with fs. `outputFileTracingIncludes` in `apps/web/next.config.mjs` ships the registry with every route and the starter only with `/api/scaffold/*` and the v1 project download/upgrade routes. tRPC procedures that hash or compile the starter (preview, build keys, prewarm, upgrade previews) are called through `useScaffoldTRPC()` (`apps/web/trpc/scaffold-client.ts`), which targets `/api/scaffold/trpc`; the main `/api/trpc` function stays small. `traceConfig.test.ts` checks the includes.
 - Every download goes through `downloadScaffold` in `apps/web/lib/scaffold/service.ts`: charge (free when the user already owns that build), build, then mark the `ScaffoldJob` ready or refund it exactly once.
+- Release kits: `pnpm template:publish` uploads each release's staged starter plus its `scaffold-modules/` and `scaffold-providers/` to R2 (`apps/web/lib/scaffold/release-snapshots.ts`). Upgrade kits diff from the project's own release (`resolveUpgradeBase`, the CLI's `fromVersion` from `.saas-forge.json`) to the latest, so `create-saas-forge upgrade` with no flags gets a free kit of the release changes and module upgrades carry them too; kits add `.upgrade-base/` old copies for a three-way merge. Backfill a release published without a snapshot with `node scripts/backfill-release-snapshots.mjs <version>=<commit>`.
 - Validate with `pnpm scaffold:matrix`: every module alone, every pair and all modules, each installed, generated, typechecked and arch-checked. Use `--full` for every subset, `--only <name|all|none>` for one variant and `--static` for compile and leak checks only. The matrix reads the registry, so a new module is covered automatically; a module marked `implemented: false` must keep an empty manifest.
 - CI runs the pairwise matrix on every PR. `.github/workflows/scaffold-nightly.yml` runs the full sweep plus `scripts/scaffold-boot-smoke.mjs` (migrate, seed, production build, start, sign up) for the `none` and `all` variants.
 
@@ -486,7 +487,7 @@ pnpm template:publish --version <semver>
 
 This runs `template:stage` then `scripts/publish-template-branch.mjs --version <semver>`, which:
 
-1. Creates a temporary git worktree on the `template/saas-boilerplate` orphan branch.
+1. Uploads the release snapshot to R2 (credentials from the shell or `apps/web/.env`; `--no-snapshot` skips it, and then that release gets no release kits) and creates a temporary git worktree on the `template/saas-boilerplate` orphan branch.
 2. Replaces its contents with `.generated/saas-boilerplate`.
 3. Writes a `.boilerplate-version` file.
 4. Commits and tags the branch as `template/v<semver>`.

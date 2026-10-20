@@ -165,30 +165,36 @@ export function resolveWorkspacePath(relativePath: string) {
   return path.resolve(cwd, relativePath);
 }
 
-export function loadScaffoldRegistry(): RegistryShape {
-  const registryPath = resolveWorkspacePath("scaffold-modules/registry.json");
+/**
+ * Where scaffold-modules/ and scaffold-providers/ live: `rulesRoot` (an old
+ * release's snapshot) when given, otherwise this workspace's.
+ */
+function rulesPath(relativePath: string, rulesRoot?: string) {
+  return rulesRoot ? path.join(rulesRoot, relativePath) : resolveWorkspacePath(relativePath);
+}
+
+export function loadScaffoldRegistry(rulesRoot?: string): RegistryShape {
+  const registryPath = rulesPath("scaffold-modules/registry.json", rulesRoot);
   return JSON.parse(fs.readFileSync(registryPath, "utf-8")) as RegistryShape;
 }
 
-export function loadModuleManifest(moduleId: ScaffoldModuleId): ModuleManifest {
-  const manifestPath = resolveWorkspacePath(
-    path.join("scaffold-modules", moduleId, "manifest.json"),
-  );
+export function loadModuleManifest(moduleId: ScaffoldModuleId, rulesRoot?: string): ModuleManifest {
+  const manifestPath = rulesPath(path.join("scaffold-modules", moduleId, "manifest.json"), rulesRoot);
   return JSON.parse(fs.readFileSync(manifestPath, "utf-8")) as ModuleManifest;
 }
 
-export function loadProviderRegistry(): ProviderRegistryShape {
-  const registryPath = resolveWorkspacePath("scaffold-providers/registry.json");
+export function loadProviderRegistry(rulesRoot?: string): ProviderRegistryShape {
+  const registryPath = rulesPath("scaffold-providers/registry.json", rulesRoot);
   if (!fs.existsSync(registryPath)) return { providers: [] };
   return JSON.parse(fs.readFileSync(registryPath, "utf-8")) as ProviderRegistryShape;
 }
 
-function getProviderRoot(toggleId: string, value: string) {
-  return resolveWorkspacePath(path.join("scaffold-providers", toggleId, value));
+function getProviderRoot(toggleId: string, value: string, rulesRoot?: string) {
+  return rulesPath(path.join("scaffold-providers", toggleId, value), rulesRoot);
 }
 
-function loadProviderManifest(toggleId: string, value: string): ProviderManifest | null {
-  const manifestPath = path.join(getProviderRoot(toggleId, value), "manifest.json");
+function loadProviderManifest(toggleId: string, value: string, rulesRoot?: string): ProviderManifest | null {
+  const manifestPath = path.join(getProviderRoot(toggleId, value, rulesRoot), "manifest.json");
   if (!fs.existsSync(manifestPath)) return null;
   return JSON.parse(fs.readFileSync(manifestPath, "utf-8")) as ProviderManifest;
 }
@@ -231,10 +237,8 @@ function providerStates(
   });
 }
 
-function getModuleRoot(moduleId: ScaffoldModuleId) {
-  return path.dirname(
-    resolveWorkspacePath(path.join("scaffold-modules", moduleId, "manifest.json")),
-  );
+function getModuleRoot(moduleId: ScaffoldModuleId, rulesRoot?: string) {
+  return path.dirname(rulesPath(path.join("scaffold-modules", moduleId, "manifest.json"), rulesRoot));
 }
 
 export function validateSelectedModules(
@@ -731,7 +735,8 @@ export function compileScaffoldVariant({
   selectedModules,
   platforms,
   providers = {},
-  registry = loadScaffoldRegistry(),
+  rulesRoot,
+  registry = loadScaffoldRegistry(rulesRoot),
 }: {
   baseRoot: string;
   tempDir: string;
@@ -739,6 +744,8 @@ export function compileScaffoldVariant({
   platforms: string[];
   /** Chosen providers; an empty object keeps them all. */
   providers?: ProviderChoices;
+  /** An old release's scaffold-modules/ and scaffold-providers/, to compile its starter. */
+  rulesRoot?: string;
   registry?: RegistryShape;
 }) {
   fs.cpSync(baseRoot, tempDir, {
@@ -752,8 +759,8 @@ export function compileScaffoldVariant({
   const selectedModuleSet = new Set(selectedModules);
 
   for (const registryModule of registry.modules) {
-    const manifest = loadModuleManifest(registryModule.id);
-    const moduleRoot = getModuleRoot(registryModule.id);
+    const manifest = loadModuleManifest(registryModule.id, rulesRoot);
+    const moduleRoot = getModuleRoot(registryModule.id, rulesRoot);
 
     if (selectedModuleSet.has(registryModule.id)) {
       applyModuleActions(tempDir, moduleRoot, manifest.selected);
@@ -763,11 +770,11 @@ export function compileScaffoldVariant({
   }
 
   // After the modules: a provider only prunes inside a selected module.
-  const providerSet = providerStates(selectedModuleSet, providers, loadProviderRegistry());
+  const providerSet = providerStates(selectedModuleSet, providers, loadProviderRegistry(rulesRoot));
   for (const provider of providerSet) {
     if (provider.kept && !provider.chosen) continue;
-    const manifest = loadProviderManifest(provider.toggleId, provider.value);
-    const root = getProviderRoot(provider.toggleId, provider.value);
+    const manifest = loadProviderManifest(provider.toggleId, provider.value, rulesRoot);
+    const root = getProviderRoot(provider.toggleId, provider.value, rulesRoot);
     applyModuleActions(tempDir, root, provider.chosen ? manifest?.selected : manifest?.unselected);
   }
 

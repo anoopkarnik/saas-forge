@@ -99,14 +99,12 @@ export async function runNew(dir, flags, io) {
   return { slug, target, charged };
 }
 
-export async function runUpgrade(flags, io) {
+/** The project in the current folder: its marker, slug, the release its files are on, and an API client. */
+function openProject(flags, io) {
   const markerPath = path.join(io.cwd, MARKER);
   const marker = fs.existsSync(markerPath) ? JSON.parse(fs.readFileSync(markerPath, "utf-8")) : {};
   const slug = flags.project || marker.project;
   if (!slug) throw new Error(`No project. Run this inside a project with ${MARKER}, or pass --project <slug>.`);
-  if (flags["mark-current"] && (flags.add || flags.tier || flags.provider?.length || flags["dry-run"])) {
-    throw new Error("--mark-current runs on its own; buy module, tier or provider upgrades separately.");
-  }
 
   // Never let a project file pick where the API key is sent: a cloned repo
   // could point .saas-forge.json at another server.
@@ -117,13 +115,81 @@ export async function runUpgrade(flags, io) {
     );
   }
 
+  // The files are the truth: the server's saved version can lag a re-download.
+  const versionFile = path.join(io.cwd, ".boilerplate-version");
+  const fromVersion =
+    marker.templateVersion || (fs.existsSync(versionFile) ? fs.readFileSync(versionFile, "utf-8").trim() : undefined) || undefined;
+  return { markerPath, marker, slug, fromVersion, client };
+}
+
+/** Writes the release the project's files are now on to the marker and .boilerplate-version. */
+function recordVersion(io, { markerPath, marker }, version) {
+  if (fs.existsSync(markerPath)) {
+    fs.writeFileSync(markerPath, JSON.stringify({ ...marker, templateVersion: version }, null, 2) + "\n");
+  }
+  const versionFile = path.join(io.cwd, ".boilerplate-version");
+  if (fs.existsSync(versionFile)) fs.writeFileSync(versionFile, `${version}\n`);
+}
+
+/** After extracting a kit: a kit that carried release changes moves the project to its `toVersion`. */
+function recordKitVersion(io, project) {
+  const specPath = path.join(io.cwd, "UPGRADE_SPEC.json");
+  if (!fs.existsSync(specPath)) return undefined;
+  const spec = JSON.parse(fs.readFileSync(specPath, "utf-8"));
+  if (!spec.toVersion || spec.fromVersion === spec.toVersion) return undefined;
+  recordVersion(io, project, spec.toVersion);
+  return spec.toVersion;
+}
+
+function logReleases(io, releases) {
+  for (const release of releases.releases) {
+    io.log(`  v${release.version}`);
+    for (const entry of release.entries) io.log(`    [${entry.type}] ${entry.title}${entry.migration ? " (migration)" : ""}`);
+  }
+}
+
+const noKitMessage = (version) =>
+  `No update kit exists for v${version}. Apply the release notes by hand (create-saas-forge status lists them), ` +
+  "then run create-saas-forge upgrade --mark-current.";
+
+/** Whether the project is behind the latest release, and what changed since its version. */
+export async function runStatus(flags, io) {
+  const { slug, fromVersion, client } = openProject(flags, io);
+  const { project } = await client.getProject(slug);
+  const { preview, releases, releaseKit } = await client.upgradePreview(slug, {
+    modules: project.modules,
+    tierId: project.tierId,
+    fromVersion,
+  });
+  const current = releaseKit?.fromVersion ?? releases.currentVersion;
+  const latest = releaseKit?.latestVersion ?? releases.latestVersion;
+  if (releases.behind === 0) {
+    io.log(`"${slug}" is up to date (v${current}).`);
+  } else {
+    io.log(`"${slug}" is on v${current}; the latest is v${latest} (${releases.behind} release(s) behind):`);
+    logReleases(io, releases);
+    if (releaseKit?.available) {
+      const { added, modified, removed } = preview.files;
+      io.log(`A free update kit is ready (${added} added, ${modified} changed, ${removed} removed). Run: create-saas-forge upgrade`);
+    } else if (releaseKit?.reason === "missing_snapshot") {
+      io.log(noKitMessage(current));
+    }
+  }
+  return { behind: releases.behind, fromVersion: current, latestVersion: latest, releaseKit };
+}
+
+export async function runUpgrade(flags, io) {
+  if (flags["mark-current"] && (flags.add || flags.tier || flags.provider?.length || flags["dry-run"])) {
+    throw new Error("--mark-current runs on its own; buy module, tier or provider upgrades separately.");
+  }
+  const opened = openProject(flags, io);
+  const { slug, fromVersion, client } = opened;
+
   // A release that adds no modules has no kit: once its notes are applied by
   // hand, this records the new version (free) so the project is not "behind".
   if (flags["mark-current"]) {
     const result = await client.markCurrent(slug);
-    if (fs.existsSync(markerPath)) {
-      fs.writeFileSync(markerPath, JSON.stringify({ ...marker, templateVersion: result.templateVersion }, null, 2) + "\n");
-    }
+    recordVersion(io, opened, result.templateVersion);
     io.log(
       result.alreadyCurrent
         ? `"${slug}" is already on v${result.templateVersion}.`
@@ -139,21 +205,35 @@ export async function runUpgrade(flags, io) {
   const providers = Object.fromEntries((flags.provider ?? []).map((pair) => pair.split("=").map((part) => part.trim())));
   const quote = quoteUpgrade(pricing, project.modules, toModules, project.tierId, toTier);
 
+  // Nothing bought: the free kit of the releases since the project's version.
+  if (quote.added.length === 0 && quote.tierSteps === 0 && Object.keys(providers).length === 0) {
+    const { preview, releases, releaseKit } = await client.upgradePreview(slug, { modules: toModules, tierId: toTier, fromVersion });
+    if (!releaseKit?.available) {
+      if (releaseKit?.reason === "missing_snapshot") throw new Error(noKitMessage(releaseKit.fromVersion));
+      throw new Error("Nothing to upgrade.");
+    }
+    const { added, modified, removed } = preview.files;
+    io.log(`Update "${slug}": v${releaseKit.fromVersion} -> v${releaseKit.latestVersion} (free). Files: ${added} added, ${modified} changed, ${removed} removed.`);
+    logReleases(io, releases);
+    if (flags["dry-run"]) return { dryRun: true, release: true, ...releaseKit, preview, releases };
+    if (!(await confirm(io, flags, "Get this free update?"))) return { cancelled: true };
+
+    const { bytes, charged } = await client.upgrade(slug, { modules: toModules, tierId: toTier, fromVersion });
+    extractZip(bytes, io.cwd);
+    const templateVersion = recordKitVersion(io, opened) ?? releaseKit.latestVersion;
+    io.log("Update kit saved. Run the upgrade-boilerplate skill in Claude Code to merge it, or follow UPGRADE.md.");
+    return { release: true, fromVersion: releaseKit.fromVersion, templateVersion, charged };
+  }
+
   io.log(`Upgrade "${slug}": adds ${quote.added.join(", ") || "no modules"}, ${quote.tierSteps} tier step(s), ${quote.credits} credits.`);
   if (flags["dry-run"]) {
     // The same preview as the Upgrade Center: the kit's files and the release notes since this project's version.
-    const { preview, releases } = await client.upgradePreview(slug, { modules: toModules, tierId: toTier, providers });
+    const { preview, releases } = await client.upgradePreview(slug, { modules: toModules, tierId: toTier, providers, fromVersion });
     const migrations = preview.migrations.length ? `; ${preview.migrations.length} new migration(s), run pnpm migrate after applying` : "";
     io.log(`Files: ${preview.files.added} added, ${preview.files.modified} changed, ${preview.files.removed} removed${migrations}.`);
     if (releases.behind > 0) io.log(`${releases.behind} release(s) since v${releases.currentVersion}:`);
-    for (const release of releases.releases) {
-      io.log(`  v${release.version}`);
-      for (const entry of release.entries) io.log(`    [${entry.type}] ${entry.title}${entry.migration ? " (migration)" : ""}`);
-    }
+    logReleases(io, releases);
     return { dryRun: true, ...quote, preview, releases };
-  }
-  if (quote.added.length === 0 && quote.tierSteps === 0 && Object.keys(providers).length === 0) {
-    throw new Error("Nothing to upgrade.");
   }
   if (!(await confirm(io, flags, "Buy this upgrade?"))) return { cancelled: true };
 
@@ -162,8 +242,10 @@ export async function runUpgrade(flags, io) {
     tierId: toTier,
     expectedTotalCredits: quote.credits,
     ...(Object.keys(providers).length ? { providers } : {}),
+    ...(fromVersion ? { fromVersion } : {}),
   });
   extractZip(bytes, io.cwd);
+  recordKitVersion(io, opened);
   io.log(`Upgrade kit saved (${charged} credits). Follow UPGRADE.md, or run the upgrade-boilerplate skill in Claude Code.`);
   return { charged, ...quote };
 }

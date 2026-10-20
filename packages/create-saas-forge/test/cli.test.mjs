@@ -5,7 +5,7 @@ import path from "node:path";
 import { crc32, deflateRawSync } from "node:zlib";
 import { describe, expect, it, vi } from "vitest";
 import { ApiError, createClient } from "../src/api.mjs";
-import { runNew, runUpgrade } from "../src/commands.mjs";
+import { runNew, runStatus, runUpgrade } from "../src/commands.mjs";
 import { credentialsPath, saveCredentials } from "../src/config.mjs";
 import { extractZip } from "../src/zip.mjs";
 
@@ -202,6 +202,96 @@ describe("runUpgrade", () => {
     expect(lines.join("\n")).toMatch(/40 added, 2 changed, 0 removed; 1 new migration/);
     expect(lines.join("\n")).toContain("[security] Verify webhooks");
     expect(client.upgrade).not.toHaveBeenCalled();
+  });
+});
+
+const releaseKit = (overrides = {}) => ({
+  preview: { files: { added: 0, modified: 3, removed: 0 }, migrations: [] },
+  releases: {
+    behind: 1,
+    currentVersion: "1.4.0",
+    latestVersion: "1.4.1",
+    releases: [{ version: "1.4.1", entries: [{ type: "fix", title: "Fix the sign-in redirect" }] }],
+  },
+  releaseKit: { available: true, fromVersion: "1.4.0", latestVersion: "1.4.1" },
+  ...overrides,
+});
+const releaseZip = () =>
+  makeZip({
+    "my-app/UPGRADE_SPEC.json": JSON.stringify({ kind: "release", fromVersion: "1.4.0", toVersion: "1.4.1" }),
+    "my-app/.upgrade/apps/web/lib/seo.ts": "new",
+  });
+
+describe("runStatus", () => {
+  it("lists the releases since the version in the project's files", async () => {
+    const cwd = tempDir();
+    fs.writeFileSync(path.join(cwd, ".saas-forge.json"), JSON.stringify({ project: "my-app", templateVersion: "1.4.0" }));
+    const client = fakeClient({ upgradePreview: vi.fn(async () => releaseKit()) });
+    const lines = [];
+    const status = await runStatus({}, { ...io(cwd, client), log: (line) => lines.push(line) });
+
+    expect(client.upgradePreview).toHaveBeenCalledWith("my-app", expect.objectContaining({ fromVersion: "1.4.0" }));
+    expect(status).toMatchObject({ behind: 1, fromVersion: "1.4.0", latestVersion: "1.4.1" });
+    const out = lines.join("\n");
+    expect(out).toContain("v1.4.0");
+    expect(out).toContain("[fix] Fix the sign-in redirect");
+    expect(out).toContain("create-saas-forge upgrade");
+  });
+
+  it("falls back to .boilerplate-version and says when the project is current", async () => {
+    const cwd = tempDir();
+    fs.writeFileSync(path.join(cwd, ".saas-forge.json"), JSON.stringify({ project: "my-app" }));
+    fs.writeFileSync(path.join(cwd, ".boilerplate-version"), "1.4.1\n");
+    const current = releaseKit({
+      releases: { behind: 0, currentVersion: "1.4.1", latestVersion: "1.4.1", releases: [] },
+      releaseKit: { available: false, fromVersion: "1.4.1", latestVersion: "1.4.1", reason: "current" },
+    });
+    const client = fakeClient({ upgradePreview: vi.fn(async () => current) });
+    const lines = [];
+    const status = await runStatus({}, { ...io(cwd, client), log: (line) => lines.push(line) });
+
+    expect(client.upgradePreview).toHaveBeenCalledWith("my-app", expect.objectContaining({ fromVersion: "1.4.1" }));
+    expect(status.behind).toBe(0);
+    expect(lines.join("\n")).toContain("up to date");
+  });
+});
+
+describe("runUpgrade release kit", () => {
+  it("gets the free update when nothing else is asked for, and records the new version", async () => {
+    const cwd = tempDir();
+    fs.writeFileSync(path.join(cwd, ".saas-forge.json"), JSON.stringify({ project: "my-app", templateVersion: "1.4.0" }));
+    fs.writeFileSync(path.join(cwd, ".boilerplate-version"), "1.4.0\n");
+    const client = fakeClient({
+      upgradePreview: vi.fn(async () => releaseKit()),
+      upgrade: vi.fn(async () => ({ bytes: releaseZip(), charged: 0 })),
+    });
+    const result = await runUpgrade({ yes: true }, io(cwd, client));
+
+    expect(client.upgrade).toHaveBeenCalledWith("my-app", { modules: ["billing"], tierId: "tier-1", fromVersion: "1.4.0" });
+    expect(result).toMatchObject({ release: true, fromVersion: "1.4.0", templateVersion: "1.4.1", charged: 0 });
+    expect(fs.existsSync(path.join(cwd, ".upgrade/apps/web/lib/seo.ts"))).toBe(true);
+    expect(JSON.parse(fs.readFileSync(path.join(cwd, ".saas-forge.json"), "utf8")).templateVersion).toBe("1.4.1");
+    expect(fs.readFileSync(path.join(cwd, ".boilerplate-version"), "utf8")).toBe("1.4.1\n");
+  });
+
+  it("points to --mark-current when the release has no snapshot", async () => {
+    const cwd = tempDir();
+    fs.writeFileSync(path.join(cwd, ".saas-forge.json"), JSON.stringify({ project: "my-app", templateVersion: "1.4.0" }));
+    const missing = releaseKit({ releaseKit: { available: false, fromVersion: "1.4.0", latestVersion: "1.4.1", reason: "missing_snapshot" } });
+    const client = fakeClient({ upgradePreview: vi.fn(async () => missing) });
+    await expect(runUpgrade({ yes: true }, io(cwd, client))).rejects.toThrow(/--mark-current/);
+    expect(client.upgrade).not.toHaveBeenCalled();
+  });
+
+  it("keeps the recorded version when a paid kit carried no release changes", async () => {
+    const cwd = tempDir();
+    fs.writeFileSync(path.join(cwd, ".saas-forge.json"), JSON.stringify({ project: "my-app", templateVersion: "1.4.0" }));
+    const kit = makeZip({ "my-app/UPGRADE_SPEC.json": JSON.stringify({ kind: "upgrade", fromVersion: "1.4.1", toVersion: "1.4.1" }) });
+    const client = fakeClient({ upgrade: vi.fn(async () => ({ bytes: kit, charged: 20 })) });
+    await runUpgrade({ add: "ai", yes: true }, io(cwd, client));
+
+    expect(client.upgrade).toHaveBeenCalledWith("my-app", expect.objectContaining({ fromVersion: "1.4.0" }));
+    expect(JSON.parse(fs.readFileSync(path.join(cwd, ".saas-forge.json"), "utf8")).templateVersion).toBe("1.4.0");
   });
 });
 

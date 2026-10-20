@@ -1,13 +1,15 @@
 #!/usr/bin/env node
 import { createInterface } from "node:readline/promises";
 import { parseArgs } from "node:util";
-import { runCredits, runLogin, runNew, runUpgrade } from "../src/commands.mjs";
+import { runCredits, runLogin, runNew, runStatus, runUpgrade } from "../src/commands.mjs";
 
 const HELP = `Usage:
   create-saas-forge [new] <dir> [--modules billing,ai] [--platforms web,mobile] [--name <name>] [--yes] [--install]
   create-saas-forge new <dir> --project <slug>      Download a saved project
   create-saas-forge upgrade [--add ai_agents] [--tier tier-3] [--provider payment_gateway=dodo] [--dry-run] [--yes]
+  create-saas-forge upgrade                          Get the free update kit when the project is behind the latest release
   create-saas-forge upgrade --mark-current           Record that the latest release's changes are applied (free)
+  create-saas-forge status                           Show the project's release and what changed since
   create-saas-forge credits
   create-saas-forge login
 
@@ -46,6 +48,7 @@ const [first, ...rest] = positionals;
 try {
   if (flags.help) console.log(HELP);
   else if (first === "upgrade") await runUpgrade(flags, io);
+  else if (first === "status") await runStatus(flags, io);
   else if (first === "credits") await runCredits(flags, io);
   else if (first === "login") await runLogin(flags, io);
   else if (first === "new") await runNew(rest[0], flags, io);

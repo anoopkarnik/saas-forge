@@ -53,8 +53,9 @@ export function createClient({ baseUrl, apiKey, fetchImpl = globalThis.fetch }) 
       zip(`/api/v1/projects/${encodeURIComponent(slug)}/download`, { expectedTotalCredits }),
     upgrade: (slug, input) => zip(`/api/v1/projects/${encodeURIComponent(slug)}/upgrade`, input),
     markCurrent: (slug) => json("POST", `/api/v1/projects/${encodeURIComponent(slug)}/mark-current`),
-    upgradePreview: (slug, { modules, tierId, providers = {} }) => {
+    upgradePreview: (slug, { modules, tierId, providers = {}, fromVersion }) => {
       const query = new URLSearchParams({ modules: modules.join(","), tierId });
+      if (fromVersion) query.set("fromVersion", fromVersion);
       const switches = Object.entries(providers).map(([toggle, value]) => `${toggle}:${value}`);
       if (switches.length) query.set("providers", switches.join(","));
       return json("GET", `/api/v1/projects/${encodeURIComponent(slug)}/upgrade?${query}`);

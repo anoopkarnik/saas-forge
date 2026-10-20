@@ -36,7 +36,8 @@ vi.mock("@/lib/scaffold/service", () => ({
   computeBuildHash: () => "hash",
   computeUpgradeDelta: mockDelta,
   upgradeProviders: (config: unknown) => ({ fromProviders: {}, toProviders: {}, switched: [], config }),
-  resolveUpgradeBase: mockResolveBase,
+  resolveProjectUpgradeBase: mockResolveBase,
+  buildUpgradeKitFromBase: mockBuildKit,
 }));
 
 import { POST } from "../route";
@@ -69,9 +70,9 @@ describe("POST /api/scaffold/upgrade release kit", () => {
 
     expect(res.status).toBe(200);
     expect(res.headers.get("X-Upgrade-Kind")).toBe("release");
-    expect(mockResolveBase).toHaveBeenCalledWith("1.4.0");
+    expect(mockResolveBase).toHaveBeenCalledWith("u1", ["billing"], "1.4.0");
     expect(mockCharge).toHaveBeenCalledWith(expect.objectContaining({ amount: 0 }));
-    expect(mockBuildKit).toHaveBeenCalledWith(expect.objectContaining({ fromBase: BASE }));
+    expect(mockBuildKit).toHaveBeenCalledWith(expect.objectContaining({ fromBase: BASE }), expect.anything());
     expect(mockUpdate).toHaveBeenCalledWith({ where: { id: "p1" }, data: { templateVersion: "1.4.1" } });
   });
 
@@ -80,6 +81,13 @@ describe("POST /api/scaffold/upgrade release kit", () => {
     const res = await POST(req({ slug: "my-app" }));
     expect(res.status).toBe(422);
     expect((await res.json()).error).toMatch(/release notes/);
+    expect(mockCharge).not.toHaveBeenCalled();
+  });
+
+  it("403s when the user never bought the project's modules", async () => {
+    mockResolveBase.mockResolvedValueOnce({ status: "not_owned" });
+    const res = await POST(req({ slug: "my-app" }));
+    expect(res.status).toBe(403);
     expect(mockCharge).not.toHaveBeenCalled();
   });
 

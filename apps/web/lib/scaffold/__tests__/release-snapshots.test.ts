@@ -71,6 +71,34 @@ describe("release snapshots", () => {
     expect(store.get).toHaveBeenCalledWith("2.1.0");
   });
 
+  it("keeps at most two unpacked releases", async () => {
+    const store = fakeStore(await packReleaseSnapshot(fixture()));
+    const cacheRoot = tempDir();
+    for (const version of ["1.0.0", "1.0.1", "1.0.2"]) await loadReleaseSnapshot(version, { store, cacheRoot });
+    const cached = fs.readdirSync(cacheRoot).filter((name) => name.startsWith("saas-forge-release-"));
+    expect(cached).toHaveLength(2);
+    expect(cached).toContain("saas-forge-release-1.0.2");
+  });
+
+  it("removes staging folders a killed request left behind", async () => {
+    const store = fakeStore(await packReleaseSnapshot(fixture()));
+    const cacheRoot = tempDir();
+    fs.mkdirSync(path.join(cacheRoot, "saas-forge-release-1.0.0-AbC123"));
+    await loadReleaseSnapshot("1.0.1", { store, cacheRoot });
+    expect(fs.readdirSync(cacheRoot)).toEqual(["saas-forge-release-1.0.1"]);
+  });
+
+  it("downloads a version once when requests overlap", async () => {
+    const store = fakeStore(await packReleaseSnapshot(fixture()));
+    const cacheRoot = tempDir();
+    const [a, b] = await Promise.all([
+      loadReleaseSnapshot("1.0.0", { store, cacheRoot }),
+      loadReleaseSnapshot("1.0.0", { store, cacheRoot }),
+    ]);
+    expect(a).toEqual(b);
+    expect(store.get).toHaveBeenCalledTimes(1);
+  });
+
   it("returns null without a store or without a snapshot for that version", async () => {
     expect(await loadReleaseSnapshot("2.1.0", { store: null, cacheRoot: tempDir() })).toBeNull();
     expect(await loadReleaseSnapshot("2.1.0", { store: fakeStore(null), cacheRoot: tempDir() })).toBeNull();

@@ -145,6 +145,22 @@ export function markProjectBuilt(
     .catch(() => {});
 }
 
+/**
+ * Best-effort: after a web download for a saved project, stamps it like an API
+ * download, but only when the download built that project's modules and platforms.
+ */
+export async function markProjectDownloaded(
+  userId: string,
+  slug: string,
+  build: { modules: string[]; platforms: string[] },
+): Promise<void> {
+  const project = await getProject(userId, slug).catch(() => null);
+  const same = (a: string[], b: string[]) => a.length === b.length && a.every((item) => b.includes(item));
+  if (!project || !same(project.modules, build.modules) || !same(project.platforms, build.platforms)) return;
+  const templateVersion = getTemplateVersion();
+  markProjectBuilt(project.id, { templateVersion, lastBuiltHash: computeBuildHash({ ...project, templateVersion }) });
+}
+
 export type ProjectUpgrade = {
   modules: string[];
   tierId: string;

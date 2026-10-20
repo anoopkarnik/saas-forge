@@ -92,6 +92,7 @@ A downloaded project records its release in `.saas-forge.json` (`templateVersion
 - `pnpm template:publish` uploads a snapshot of every release to R2 (`apps/web/lib/scaffold/release-snapshots.ts`): the staged starter with its markers plus that release's `scaffold-modules/` and `scaffold-providers/`, since an old starter only compiles with its own rules. Releases published earlier are added with `node scripts/backfill-release-snapshots.mjs <version>=<commit>`, which checks the snapshot against the `template/v<version>` tag before uploading.
 - Every upgrade kit diffs from the project's own release when its snapshot exists, so module upgrades carry the release changes too. Kits stage the old copy of each changed file under `.upgrade-base/` for a three-way merge, and the latest `/upgrade-boilerplate` command.
 - The CLI sends the version in the project's files (`fromVersion`); the web uses the saved one. Downloads now record the release they deliver. Without a snapshot for that release, a release-only request answers `422 release_kit_unavailable`: apply the notes by hand and run `upgrade --mark-current`.
+- A kit from an old release carries the current code of every file changed since, so it is built only for modules the user has a delivered download or upgrade of (`403 release_kit_not_owned`; paid upgrades then diff latest-vs-latest). A snapshot that fails to load counts as missing, and a paid kit whose old release no longer compiles falls back to latest-vs-latest. Each function instance keeps at most two unpacked releases in `/tmp`.
 
 ## Secrets
 

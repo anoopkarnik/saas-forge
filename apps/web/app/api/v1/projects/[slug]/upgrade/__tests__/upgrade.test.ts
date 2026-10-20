@@ -87,7 +87,8 @@ vi.mock("@/lib/scaffold/service", () => ({
   computeBuildHash: mockHash,
   previewUpgrade: mockPreview,
   upgradeProviders: mockProviders,
-  resolveUpgradeBase: mockResolveBase,
+  resolveProjectUpgradeBase: mockResolveBase,
+  buildUpgradeKitFromBase: mockBuildKit,
 }));
 vi.mock("@/lib/scaffold/releases", () => ({
   loadReleases: () => [],
@@ -196,7 +197,7 @@ describe("POST /api/v1/projects/[slug]/upgrade", () => {
     expect(mockCharge).toHaveBeenCalledWith(
       expect.objectContaining({ amount: 23, idempotencyKey: "idem-9" }),
     );
-    expect(mockBuildKit).toHaveBeenCalledWith(expect.objectContaining({ guidePreferences: { mode: "founder", deployment: "docker", launchpadState: {mode:"founder",deployment:"docker"} } }));
+    expect(mockBuildKit).toHaveBeenCalledWith(expect.objectContaining({ guidePreferences: { mode: "founder", deployment: "docker", launchpadState: {mode:"founder",deployment:"docker"} } }), expect.anything());
     expect(mockUpdate).toHaveBeenCalled();
   });
 });
@@ -220,9 +221,9 @@ describe("POST /api/v1/projects/[slug]/upgrade release kit", () => {
 
     expect(res.status).toBe(200);
     expect(res.headers.get("X-Upgrade-Kind")).toBe("release");
-    expect(mockResolveBase).toHaveBeenCalledWith("1.4.0");
+    expect(mockResolveBase).toHaveBeenCalledWith("u1", ["billing"], "1.4.0");
     expect(mockCharge).toHaveBeenCalledWith(expect.objectContaining({ amount: 0 }));
-    expect(mockBuildKit).toHaveBeenCalledWith(expect.objectContaining({ fromBase: BASE }));
+    expect(mockBuildKit).toHaveBeenCalledWith(expect.objectContaining({ fromBase: BASE }), expect.anything());
     expect(mockUpdate).toHaveBeenCalledWith({ where: { id: "p1" }, data: { templateVersion: "1.4.1" } });
   });
 
@@ -230,7 +231,7 @@ describe("POST /api/v1/projects/[slug]/upgrade release kit", () => {
     mockFindFirst.mockResolvedValue({ ...PROJECT, templateVersion: "1.3.0" });
     mockResolveBase.mockResolvedValueOnce({ status: "snapshot", base: { ...BASE, version: "1.3.0" } });
     expect((await POST(makeReq({}), ctx)).status).toBe(200);
-    expect(mockResolveBase).toHaveBeenCalledWith("1.3.0");
+    expect(mockResolveBase).toHaveBeenCalledWith("u1", ["billing"], "1.3.0");
   });
 
   it("422s when no snapshot of that release was published", async () => {
@@ -241,6 +242,22 @@ describe("POST /api/v1/projects/[slug]/upgrade release kit", () => {
     expect(body.error.code).toBe("release_kit_unavailable");
     expect(body.error.message).toContain("--mark-current");
     expect(mockCharge).not.toHaveBeenCalled();
+  });
+
+  it("403s a release kit for modules the user never bought", async () => {
+    mockResolveBase.mockResolvedValueOnce({ status: "not_owned" });
+    const res = await POST(makeReq({ fromVersion: "1.4.0" }), ctx);
+    expect(res.status).toBe(403);
+    expect((await res.json()).error.code).toBe("release_kit_not_owned");
+    expect(mockCharge).not.toHaveBeenCalled();
+    expect(mockBuildKit).not.toHaveBeenCalled();
+  });
+
+  it("builds a paid upgrade without the old release when its modules were never bought", async () => {
+    mockDelta.mockReturnValue({ addedModules: ["ai"], removedModules: [], tierSteps: 0, deltaCredits: 20 });
+    mockResolveBase.mockResolvedValueOnce({ status: "not_owned" });
+    expect((await POST(makeReq({ modules: ["billing", "ai"], fromVersion: "1.4.0" }), ctx)).status).toBe(200);
+    expect(mockBuildKit).toHaveBeenCalledWith(expect.objectContaining({ fromBase: undefined }), { releaseOnly: false });
   });
 
   it("400s when the project is already on the latest release", async () => {
@@ -265,14 +282,14 @@ describe("POST /api/v1/projects/[slug]/upgrade release kit", () => {
     expect(res.status).toBe(200);
     expect(res.headers.get("X-Upgrade-Kind")).toBe("upgrade");
     expect(mockCharge).toHaveBeenCalledWith(expect.objectContaining({ amount: 20 }));
-    expect(mockBuildKit).toHaveBeenCalledWith(expect.objectContaining({ fromBase: BASE }));
+    expect(mockBuildKit).toHaveBeenCalledWith(expect.objectContaining({ fromBase: BASE }), expect.anything());
   });
 
   it("keeps a module upgrade working when the old release has no snapshot", async () => {
     mockDelta.mockReturnValue({ addedModules: ["ai"], removedModules: [], tierSteps: 0, deltaCredits: 20 });
     mockResolveBase.mockResolvedValueOnce({ status: "missing", version: "1.4.0" });
     expect((await POST(makeReq({ modules: ["billing", "ai"], fromVersion: "1.4.0" }), ctx)).status).toBe(200);
-    expect(mockBuildKit).toHaveBeenCalledWith(expect.objectContaining({ fromBase: undefined }));
+    expect(mockBuildKit).toHaveBeenCalledWith(expect.objectContaining({ fromBase: undefined }), expect.anything());
   });
 });
 
@@ -298,7 +315,7 @@ describe("POST /api/v1/projects/[slug]/upgrade provider switch", () => {
     expect(res.status).toBe(200);
     expect(mockProviders).toHaveBeenCalledWith(PROJECT.config, ["billing"], ["billing"], { payment_gateway: "dodo" });
     expect(mockBuildKit).toHaveBeenCalledWith(
-      expect.objectContaining({ fromProviders: { payment_gateway: "stripe" }, toProviders: { payment_gateway: "dodo" } }),
+      expect.objectContaining({ fromProviders: { payment_gateway: "stripe" }, toProviders: { payment_gateway: "dodo" } }), expect.anything(),
     );
     expect(mockUpdate).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ config: { NEXT_PUBLIC_PAYMENT_GATEWAY: "dodo" } }) }),

@@ -759,8 +759,43 @@ export async function resolveUpgradeBase(
 ): Promise<UpgradeBaseResolution> {
   if (!isReleaseVersion(fromVersion)) return { status: "invalid" };
   if (compareVersions(fromVersion, getTemplateVersion()) >= 0) return { status: "current" };
-  const base = await load(fromVersion);
-  return base ? { status: "snapshot", base } : { status: "missing", version: fromVersion };
+  let base: UpgradeBase | null;
+  try {
+    base = await load(fromVersion);
+  } catch (err) {
+    // Storage trouble must not block paid upgrades: they fall back to the latest-vs-latest kit.
+    console.error(`[scaffold] Could not load the v${fromVersion} release snapshot`, err);
+    return { status: "missing", version: fromVersion };
+  }
+  if (!base) {
+    console.warn(
+      `[scaffold] No v${fromVersion} release snapshot in R2. Publish or backfill it, and check that this deploy's ` +
+        "R2_SECRET_ACCESS_KEY matches the publisher's: snapshot object names are keyed with it.",
+    );
+    return { status: "missing", version: fromVersion };
+  }
+  return { status: "snapshot", base };
+}
+
+/**
+ * `resolveUpgradeBase` for a project: a kit from an old release carries the
+ * current code of every file changed since, so it is only built for modules
+ * the user has a delivered download or upgrade of. Saved projects are free to
+ * create and edit, so their module list proves nothing.
+ */
+export async function resolveProjectUpgradeBase(
+  userId: string,
+  modules: readonly string[],
+  fromVersion: string,
+  load?: (version: string) => Promise<UpgradeBase | null>,
+): Promise<UpgradeBaseResolution | { status: "not_owned" }> {
+  if (isReleaseVersion(fromVersion) && compareVersions(fromVersion, getTemplateVersion()) >= 0) return { status: "current" };
+  if (isReleaseVersion(fromVersion)) {
+    const jobs = await db.scaffoldJob.findMany({ where: { userId, status: "ready" }, select: { toModules: true } });
+    const owned = new Set(jobs.flatMap((job) => job.toModules));
+    if (jobs.length === 0 || modules.some((moduleId) => !owned.has(moduleId))) return { status: "not_owned" };
+  }
+  return resolveUpgradeBase(fromVersion, load);
 }
 
 /**
@@ -947,6 +982,25 @@ export function buildUpgradeKit(
   } catch (err) {
     cleanup();
     throw err;
+  }
+}
+
+/**
+ * `buildUpgradeKit` from the project's own release. If that old starter no
+ * longer compiles with today's builder, a paid kit falls back to the
+ * latest-vs-latest diff (upgrades before release kits); a release-only kit
+ * has nothing to fall back to.
+ */
+export function buildUpgradeKitFromBase(
+  input: BuildUpgradeKitInput,
+  { releaseOnly }: { releaseOnly: boolean },
+): BuildUpgradeKitResult {
+  if (!input.fromBase || releaseOnly) return buildUpgradeKit(input);
+  try {
+    return buildUpgradeKit(input);
+  } catch (err) {
+    console.error(`[scaffold] The v${input.fromBase.version} release no longer compiles; building the kit without it`, err);
+    return buildUpgradeKit({ ...input, fromBase: undefined, releases: [] });
   }
 }
 

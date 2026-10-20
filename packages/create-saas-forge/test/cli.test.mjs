@@ -283,6 +283,14 @@ describe("runUpgrade release kit", () => {
     expect(client.upgrade).not.toHaveBeenCalled();
   });
 
+  it("explains when the project's modules were never bought", async () => {
+    const cwd = tempDir();
+    fs.writeFileSync(path.join(cwd, ".saas-forge.json"), JSON.stringify({ project: "my-app", templateVersion: "1.4.0" }));
+    const notOwned = releaseKit({ releaseKit: { available: false, fromVersion: "1.4.0", latestVersion: "1.4.1", reason: "not_owned" } });
+    const client = fakeClient({ upgradePreview: vi.fn(async () => notOwned) });
+    await expect(runUpgrade({ yes: true }, io(cwd, client))).rejects.toThrow(/downloaded or bought/);
+  });
+
   it("keeps the recorded version when a paid kit carried no release changes", async () => {
     const cwd = tempDir();
     fs.writeFileSync(path.join(cwd, ".saas-forge.json"), JSON.stringify({ project: "my-app", templateVersion: "1.4.0" }));

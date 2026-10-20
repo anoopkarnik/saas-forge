@@ -152,6 +152,9 @@ const noKitMessage = (version) =>
   `No update kit exists for v${version}. Apply the release notes by hand (create-saas-forge status lists them), ` +
   "then run create-saas-forge upgrade --mark-current.";
 
+const NOT_OWNED_MESSAGE =
+  "Release kits cover the modules you have downloaded or bought. Download this project (or buy its modules) first.";
+
 /** Whether the project is behind the latest release, and what changed since its version. */
 export async function runStatus(flags, io) {
   const { slug, fromVersion, client } = openProject(flags, io);
@@ -173,6 +176,8 @@ export async function runStatus(flags, io) {
       io.log(`A free update kit is ready (${added} added, ${modified} changed, ${removed} removed). Run: create-saas-forge upgrade`);
     } else if (releaseKit?.reason === "missing_snapshot") {
       io.log(noKitMessage(current));
+    } else if (releaseKit?.reason === "not_owned") {
+      io.log(NOT_OWNED_MESSAGE);
     }
   }
   return { behind: releases.behind, fromVersion: current, latestVersion: latest, releaseKit };
@@ -210,6 +215,7 @@ export async function runUpgrade(flags, io) {
     const { preview, releases, releaseKit } = await client.upgradePreview(slug, { modules: toModules, tierId: toTier, fromVersion });
     if (!releaseKit?.available) {
       if (releaseKit?.reason === "missing_snapshot") throw new Error(noKitMessage(releaseKit.fromVersion));
+      if (releaseKit?.reason === "not_owned") throw new Error(NOT_OWNED_MESSAGE);
       throw new Error("Nothing to upgrade.");
     }
     const { added, modified, removed } = preview.files;

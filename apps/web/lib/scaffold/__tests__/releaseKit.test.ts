@@ -3,13 +3,20 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import JSZip from "jszip";
-import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("@workspace/database/client", () => ({ default: {} }));
+const { mockJobs } = vi.hoisted(() => ({ mockJobs: vi.fn(async (): Promise<Array<{ toModules: string[] }>> => []) }));
+vi.mock("@workspace/database/client", () => ({ default: { scaffoldJob: { findMany: mockJobs } } }));
 
 import { resolveWorkspacePath, type ScaffoldModuleId } from "@/lib/scaffold-modules";
 import type { UpgradeBase } from "@/lib/scaffold/release-snapshots";
-import { buildUpgradeKit, previewUpgrade, resolveUpgradeBase } from "@/lib/scaffold/service";
+import {
+  buildUpgradeKit,
+  buildUpgradeKitFromBase,
+  previewUpgrade,
+  resolveProjectUpgradeBase,
+  resolveUpgradeBase,
+} from "@/lib/scaffold/service";
 import { getTemplateVersion } from "@/lib/scaffold/template-version";
 
 // A release kit diffs the project's own release (an old snapshot, compiled with
@@ -109,7 +116,65 @@ describe("resolveUpgradeBase", () => {
   });
 
   it("finds the snapshot of an older version, or reports it missing", async () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
     expect(await resolveUpgradeBase("0.0.1", vi.fn(async () => base))).toEqual({ status: "snapshot", base });
     expect(await resolveUpgradeBase("0.0.1", vi.fn(async () => null))).toEqual({ status: "missing", version: "0.0.1" });
+  });
+
+  it("says where to look when a snapshot is missing", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    await resolveUpgradeBase("0.0.1", vi.fn(async () => null));
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("R2_SECRET_ACCESS_KEY"));
+  });
+
+  it("treats a storage failure as a missing snapshot, so paid upgrades keep working", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const load = vi.fn(async () => {
+      throw new Error("R2 503");
+    });
+    expect(await resolveUpgradeBase("0.0.1", load)).toEqual({ status: "missing", version: "0.0.1" });
+  });
+});
+
+describe("resolveProjectUpgradeBase", () => {
+  const load = vi.fn(async () => base);
+  beforeEach(() => mockJobs.mockClear());
+
+  it("uses the old release only for modules the user has a delivered build of", async () => {
+    mockJobs.mockResolvedValueOnce([{ toModules: ["billing"] }, { toModules: ["ai"] }]);
+    expect(await resolveProjectUpgradeBase("u1", ["billing", "ai"], "0.0.1", load)).toEqual({ status: "snapshot", base });
+    expect(mockJobs).toHaveBeenCalledWith(expect.objectContaining({ where: { userId: "u1", status: "ready" } }));
+  });
+
+  it("refuses modules saved on the project but never bought", async () => {
+    mockJobs.mockResolvedValueOnce([{ toModules: ["billing"] }]);
+    expect(await resolveProjectUpgradeBase("u1", ["billing", "ai"], "0.0.1", load)).toEqual({ status: "not_owned" });
+  });
+
+  it("refuses a user with no delivered build at all", async () => {
+    mockJobs.mockResolvedValueOnce([]);
+    expect(await resolveProjectUpgradeBase("u1", [], "0.0.1", load)).toEqual({ status: "not_owned" });
+  });
+
+  it("does not look up ownership for a current project", async () => {
+    expect(await resolveProjectUpgradeBase("u1", ["billing"], getTemplateVersion(), load)).toEqual({ status: "current" });
+    expect(mockJobs).not.toHaveBeenCalled();
+  });
+});
+
+describe("buildUpgradeKitFromBase", () => {
+  const broken = () => ({ version: "1.0.0", starterRoot: base.starterRoot, rulesRoot: path.join(root, "no-rules") });
+
+  it("falls back to the latest-vs-latest kit when the old release no longer compiles", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const kit = buildUpgradeKitFromBase({ ...kitInput([], ["billing"]), fromBase: broken() }, { releaseOnly: false });
+    const zip = await JSZip.loadAsync(new Uint8Array(await new Response(kit.stream).arrayBuffer()));
+    const spec = JSON.parse(await zip.file("demo/UPGRADE_SPEC.json")!.async("string"));
+    expect(spec.fromVersion).toBe(getTemplateVersion());
+    expect(spec.changedFiles.added).toContain(BILLING_ONLY);
+  }, 60_000);
+
+  it("cannot fall back for a release-only kit", () => {
+    expect(() => buildUpgradeKitFromBase({ ...kitInput([], []), fromBase: broken() }, { releaseOnly: true })).toThrow();
   });
 });

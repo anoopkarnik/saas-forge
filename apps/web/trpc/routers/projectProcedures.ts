@@ -32,7 +32,7 @@ import { launchpadProcedures } from "@/lib/scaffold/launchpad/procedures";
 import {
   ownsBuild,
   previewUpgrade,
-  resolveUpgradeBase,
+  resolveProjectUpgradeBase,
   scaffoldBuildKey,
   selectionProviders,
   upgradeProviders,
@@ -273,7 +273,7 @@ export const projectRouter = createTRPCRouter({
         : project.modules;
       // From the project's own release when its snapshot exists, so the
       // counts include the release changes the kit would carry.
-      const base = await resolveUpgradeBase(project.templateVersion);
+      const base = await resolveProjectUpgradeBase(ctx.session.user.id, project.modules, project.templateVersion);
       const preview = await withModuleValidation(() => {
         const providers = upgradeProviders(
           project.config as Record<string, unknown>,

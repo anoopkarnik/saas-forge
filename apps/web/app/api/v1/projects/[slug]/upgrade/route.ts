@@ -15,13 +15,13 @@ import { getProjectReleases, loadReleases } from "@/lib/scaffold/releases";
 import {
   InsufficientCreditsError,
   ScaffoldRootNotFoundError,
-  buildUpgradeKit,
+  buildUpgradeKitFromBase,
   chargeScaffoldCredits,
   computeBuildHash,
   computeUpgradeDelta,
   upgradeProviders,
   previewUpgrade,
-  resolveUpgradeBase,
+  resolveProjectUpgradeBase,
 } from "@/lib/scaffold/service";
 
 export const runtime = "nodejs";
@@ -43,6 +43,8 @@ const upgradeInput = z.object({
 const RELEASE_KIT_UNAVAILABLE =
   "No snapshot of this project's release was published, so there is no release kit. " +
   "Apply the release notes by hand, then run `create-saas-forge upgrade --mark-current`.";
+const RELEASE_KIT_NOT_OWNED =
+  "Release kits cover the modules you have downloaded or bought. Download this project (or buy its modules) first.";
 
 function jsonError(code: string, message: string, status: number) {
   return NextResponse.json({ error: { code, message } }, { status });
@@ -69,7 +71,7 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
     (params.get("providers") ?? "").split(",").filter(Boolean).map((pair) => pair.split(":").map((part) => part.trim())),
   ) as Record<string, string>;
   const fromVersion = params.get("fromVersion")?.trim() || project.templateVersion;
-  const base = await resolveUpgradeBase(fromVersion);
+  const base = await resolveProjectUpgradeBase(auth.userId, project.modules, fromVersion);
   if (base.status === "invalid") return jsonError("invalid_version", `"${fromVersion}" is not a release version.`, 400);
   const latestVersion = getTemplateVersion();
   try {
@@ -90,7 +92,13 @@ export async function GET(req: NextRequest, ctx: RouteContext) {
       available: base.status === "snapshot",
       fromVersion,
       latestVersion,
-      ...(base.status === "current" ? { reason: "current" } : base.status === "missing" ? { reason: "missing_snapshot" } : {}),
+      ...(base.status === "current"
+        ? { reason: "current" }
+        : base.status === "missing"
+          ? { reason: "missing_snapshot" }
+          : base.status === "not_owned"
+            ? { reason: "not_owned" }
+            : {}),
     };
     return NextResponse.json({ preview, releases, releaseKit });
   } catch (err) {
@@ -153,7 +161,7 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
   });
 
   const fromVersion = parsed.data.fromVersion ?? project.templateVersion;
-  const base = await resolveUpgradeBase(fromVersion);
+  const base = await resolveProjectUpgradeBase(auth.userId, fromModules, fromVersion);
   if (base.status === "invalid") return jsonError("invalid_version", `"${fromVersion}" is not a release version.`, 400);
   const fromBase = base.status === "snapshot" ? base.base : undefined;
 
@@ -169,6 +177,9 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
   }
   if (releaseOnly && base.status === "missing") {
     return jsonError("release_kit_unavailable", RELEASE_KIT_UNAVAILABLE, 422);
+  }
+  if (releaseOnly && base.status === "not_owned") {
+    return jsonError("release_kit_not_owned", RELEASE_KIT_NOT_OWNED, 403);
   }
   if (isPriceChanged(parsed.data.expectedTotalCredits, delta.deltaCredits)) {
     return jsonError(
@@ -208,7 +219,7 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
   const nextTemplateVersion = getTemplateVersion();
   let kit;
   try {
-    kit = buildUpgradeKit({
+    kit = buildUpgradeKitFromBase({
       guidePreferences,
       name: project.name,
       projectName: project.slug,
@@ -225,7 +236,7 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
       fromBase,
       releases: getProjectReleases({ ...project, templateVersion: fromVersion }, loadReleases(), nextTemplateVersion)
         .releases,
-    });
+    }, { releaseOnly });
   } catch (err) {
     if (err instanceof ScaffoldRootNotFoundError) {
       return jsonError("scaffold_root_missing", err.message, 500);

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { guardRoute } from "@/server/routeGuard";
+import { markProjectDownloaded } from "@/lib/scaffold/project-service";
 import { DESKTOP_APP_ORIGIN } from "@workspace/auth/better-auth/desktop-origin";
 import {
   calculateScaffoldCredits,
@@ -153,6 +154,9 @@ export async function POST(req: NextRequest) {
       versionId: "custom",
       envVars,
     });
+
+    // The saved project now holds this release: its update kits start here.
+    if (body.projectSlug) await markProjectDownloaded(session.user.id, body.projectSlug, { modules, platforms });
 
     revalidatePath("/(home)");
 

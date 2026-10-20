@@ -116,9 +116,29 @@ export async function unpackReleaseSnapshot(
   return { starterRoot: path.join(root, "starter"), rulesRoot: path.join(root, "rules") };
 }
 
+/** Unpacked releases kept per cache root: each is ~60 MB and Vercel's /tmp holds 512 MB. */
+const MAX_CACHED = 2;
+const CACHED = /^saas-forge-release-\d+\.\d+\.\d+$/;
+const STAGING = /^saas-forge-release-\d+\.\d+\.\d+-.+$/;
+const inflight = new Map<string, Promise<UpgradeBase | null>>();
+const staging = new Set<string>();
+
+/** Drops leftover staging folders and all but the most recently used releases, keeping `keep`. */
+function pruneCache(cacheRoot: string, keep: string) {
+  const entries = fs.readdirSync(cacheRoot).map((name) => path.join(cacheRoot, name));
+  for (const entry of entries) {
+    if (STAGING.test(path.basename(entry)) && !staging.has(entry)) fs.rmSync(entry, { recursive: true, force: true });
+  }
+  const cached = entries
+    .filter((entry) => entry !== keep && CACHED.test(path.basename(entry)))
+    .sort((a, b) => fs.statSync(b).mtimeMs - fs.statSync(a).mtimeMs);
+  for (const entry of cached.slice(MAX_CACHED - 1)) fs.rmSync(entry, { recursive: true, force: true });
+}
+
 /**
  * The release `version`, unpacked under `cacheRoot` (reused while the function
  * instance lives), or null when there is no store or no snapshot for it.
+ * Overlapping requests for one version share a download.
  */
 export async function loadReleaseSnapshot(
   version: string,
@@ -126,25 +146,41 @@ export async function loadReleaseSnapshot(
 ): Promise<UpgradeBase | null> {
   assertVersion(version);
   const dir = path.join(cacheRoot, `saas-forge-release-${version}`);
+  const pending = inflight.get(dir);
+  if (pending) return pending;
+  const load = loadUncached(version, dir, store).finally(() => inflight.delete(dir));
+  inflight.set(dir, load);
+  return load;
+}
+
+async function loadUncached(version: string, dir: string, store: SnapshotStore | null): Promise<UpgradeBase | null> {
   const base = { version, starterRoot: path.join(dir, "starter"), rulesRoot: path.join(dir, "rules") };
   const complete = path.join(dir, ".complete");
-  if (fs.existsSync(complete)) return base;
+  if (fs.existsSync(complete)) {
+    const now = new Date();
+    fs.utimesSync(dir, now, now); // most recently used survives pruning
+    return base;
+  }
   if (!store) return null;
 
   const bytes = await store.get(version);
   if (!bytes) return null;
 
-  const staging = fs.mkdtempSync(`${dir}-`);
+  pruneCache(path.dirname(dir), dir);
+  const stagingDir = fs.mkdtempSync(`${dir}-`);
+  staging.add(stagingDir);
   try {
-    await unpackReleaseSnapshot(bytes, staging);
-    fs.writeFileSync(path.join(staging, ".complete"), "");
+    await unpackReleaseSnapshot(bytes, stagingDir);
+    fs.writeFileSync(path.join(stagingDir, ".complete"), "");
     fs.rmSync(dir, { recursive: true, force: true });
-    fs.renameSync(staging, dir);
+    fs.renameSync(stagingDir, dir);
   } catch (err) {
-    fs.rmSync(staging, { recursive: true, force: true });
-    // A concurrent request may have finished the same version first.
+    fs.rmSync(stagingDir, { recursive: true, force: true });
+    // A request on another instance sharing this /tmp may have finished it first.
     if (fs.existsSync(complete)) return base;
     throw err;
+  } finally {
+    staging.delete(stagingDir);
   }
   return base;
 }

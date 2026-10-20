@@ -15,11 +15,11 @@ import { getProjectReleases, loadReleases } from "@/lib/scaffold/releases";
 import {
   InsufficientCreditsError,
   ScaffoldRootNotFoundError,
-  buildUpgradeKit,
+  buildUpgradeKitFromBase,
   chargeScaffoldCredits,
   computeBuildHash,
   computeUpgradeDelta,
-  resolveUpgradeBase,
+  resolveProjectUpgradeBase,
   upgradeProviders,
 } from "@/lib/scaffold/service";
 
@@ -42,6 +42,8 @@ const input = z.object({
 const RELEASE_KIT_UNAVAILABLE =
   "No snapshot of this project's release was published, so there is no update kit. " +
   "Apply the release notes by hand, then run `create-saas-forge upgrade --mark-current`.";
+const RELEASE_KIT_NOT_OWNED =
+  "Release kits cover the modules you have downloaded or bought. Download this project (or buy its modules) first.";
 
 export async function POST(req: NextRequest) {
   const guard = await guardRoute(req, "/api/scaffold/upgrade");
@@ -91,11 +93,14 @@ export async function POST(req: NextRequest) {
   });
   // No module, tier or provider change: a free kit of the releases since the
   // saved version, when that release's snapshot exists.
-  const base = await resolveUpgradeBase(project.templateVersion);
+  const base = await resolveProjectUpgradeBase(session.user.id, fromModules, project.templateVersion);
   const fromBase = base.status === "snapshot" ? base.base : undefined;
   const releaseOnly = delta.addedModules.length === 0 && delta.tierSteps === 0 && providers.switched.length === 0;
   if (releaseOnly && base.status === "missing") {
     return NextResponse.json({ error: RELEASE_KIT_UNAVAILABLE }, { status: 422 });
+  }
+  if (releaseOnly && base.status === "not_owned") {
+    return NextResponse.json({ error: RELEASE_KIT_NOT_OWNED }, { status: 403 });
   }
   if (releaseOnly && base.status !== "snapshot") {
     return NextResponse.json({ error: "Nothing to upgrade" }, { status: 400 });
@@ -133,7 +138,7 @@ export async function POST(req: NextRequest) {
   const nextTemplateVersion = getTemplateVersion();
   let kit;
   try {
-    kit = buildUpgradeKit({
+    kit = buildUpgradeKitFromBase({
       guidePreferences,
       name: project.name,
       projectName: project.slug,
@@ -149,7 +154,7 @@ export async function POST(req: NextRequest) {
       toProviders: providers.toProviders,
       fromBase,
       releases: getProjectReleases(project, loadReleases(), nextTemplateVersion).releases,
-    });
+    }, { releaseOnly });
   } catch (err) {
     if (err instanceof ScaffoldRootNotFoundError) {
       return NextResponse.json({ error: err.message }, { status: 500 });

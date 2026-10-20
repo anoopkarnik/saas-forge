@@ -21,10 +21,16 @@ vi.mock("@workspace/auth/better-auth/auth", () => ({
 
 // Mock DB
 const mockUserUpdate = vi.fn();
+const mockProjectFind = vi.fn();
+const mockProjectUpdate = vi.fn(async () => ({}));
 vi.mock("@workspace/database/client", () => ({
   default: {
     user: {
       update: (...args: any[]) => mockUserUpdate(...args),
+    },
+    projectConfig: {
+      findFirst: (...args: any[]) => mockProjectFind(...args),
+      update: (...args: any[]) => (mockProjectUpdate as any)(...args),
     },
   },
 }));
@@ -426,6 +432,48 @@ describe("Scaffold Route Integration Tests", () => {
         }),
       );
       expect(response.headers.get("X-Credits-Charged")).toBe("20");
+    });
+
+    it("records the starter version on the saved project it downloaded", async () => {
+      const { POST } = await import("../../app/api/scaffold/route.js");
+      const { computeBuildHash } = await import("@/lib/scaffold/project-rules");
+      const project = {
+        id: "p1", slug: "acme", name: "Acme", modules: ["billing"], platforms: ["web"], config: {},
+        tierId: "tier-1", versionId: "balanced", templateVersion: "1.4.0", lastBuiltHash: null,
+      };
+      mockProjectFind.mockResolvedValueOnce(project);
+
+      const response = await POST(
+        createScaffoldRequest("http://localhost:3000/api/scaffold", {
+          method: "POST",
+          body: JSON.stringify({ name: "acme", projectSlug: "acme", modules: ["billing"], envVars: {} }),
+        }) as any,
+      );
+
+      expect(response.status).toBe(200);
+      expect(mockProjectUpdate).toHaveBeenCalledWith({
+        where: { id: "p1" },
+        data: {
+          templateVersion: "1.4.1",
+          lastBuiltHash: computeBuildHash({ ...project, templateVersion: "1.4.1" }),
+          lastBuiltAt: expect.any(Date),
+        },
+      });
+    });
+
+    it("leaves the saved project alone when the download differs from it", async () => {
+      const { POST } = await import("../../app/api/scaffold/route.js");
+      mockProjectFind.mockResolvedValueOnce({
+        id: "p1", slug: "acme", name: "Acme", modules: [], platforms: ["web"], config: {},
+        tierId: "tier-1", versionId: "balanced", templateVersion: "1.4.0", lastBuiltHash: null,
+      });
+      await POST(
+        createScaffoldRequest("http://localhost:3000/api/scaffold", {
+          method: "POST",
+          body: JSON.stringify({ name: "acme", projectSlug: "acme", modules: ["billing"], envVars: {} }),
+        }) as any,
+      );
+      expect(mockProjectUpdate).not.toHaveBeenCalled();
     });
 
     it("should add selected module credits to the scaffold total", async () => {

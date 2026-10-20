@@ -34,6 +34,8 @@ import {
 } from "@/lib/scaffold/build-cache";
 import { appendFilesToZip, renameZipRoot } from "@workspace/ui/lib/zip-append";
 import { getPreviewIndex } from "@/lib/scaffold/preview-index";
+import { compareVersions, type Release } from "@/lib/scaffold/release-notes";
+import { isReleaseVersion, loadReleaseSnapshot, type UpgradeBase } from "@/lib/scaffold/release-snapshots";
 
 /**
  * Shared scaffold service: the one builder behind the session route
@@ -723,6 +725,10 @@ export type BuildUpgradeKitInput = {
   /** The project's providers before and after (a provider switch is an upgrade). */
   fromProviders?: ProviderChoices;
   toProviders?: ProviderChoices;
+  /** The project's own release, when older than the deployed starter. */
+  fromBase?: UpgradeBase;
+  /** Release notes between `fromBase` and the latest, for UPGRADE.md. */
+  releases?: Release[];
 };
 
 export type BuildUpgradeKitResult = {
@@ -737,10 +743,32 @@ export type BuildUpgradeKitResult = {
  * `/upgrade-boilerplate` command to integrate into the user's customized code.
  * Runs on the user's own Claude Code — the platform only generates the kit.
  */
+export type UpgradeBaseResolution =
+  | { status: "current" }
+  | { status: "snapshot"; base: UpgradeBase }
+  | { status: "missing"; version: string }
+  | { status: "invalid" };
+
+/**
+ * The release a kit diffs from: the snapshot of `fromVersion` when it is older
+ * than the deployed starter. `missing` means no snapshot was published for it.
+ */
+export async function resolveUpgradeBase(
+  fromVersion: string,
+  load: (version: string) => Promise<UpgradeBase | null> = loadReleaseSnapshot,
+): Promise<UpgradeBaseResolution> {
+  if (!isReleaseVersion(fromVersion)) return { status: "invalid" };
+  if (compareVersions(fromVersion, getTemplateVersion()) >= 0) return { status: "current" };
+  const base = await load(fromVersion);
+  return base ? { status: "snapshot", base } : { status: "missing", version: fromVersion };
+}
+
 /**
  * Compiles the current and target variants into temp dirs and diffs them. The
- * upgrade kit stages `diff.added` and `diff.modified` from `targetDir`; the
- * preview only counts them, so both always agree. Call `cleanup` when done.
+ * current side is the project's own release (`fromBase`) when given, so the
+ * kit also carries the release changes since then. The upgrade kit stages
+ * `diff.added` and `diff.modified` from `targetDir`; the preview only counts
+ * them, so both always agree. Call `cleanup` when done.
  */
 function compileUpgradeDiff(input: {
   fromModules: string[];
@@ -749,6 +777,7 @@ function compileUpgradeDiff(input: {
   /** The project's providers before and after; a changed choice is part of the upgrade. */
   fromProviders?: ProviderChoices;
   toProviders?: ProviderChoices;
+  fromBase?: UpgradeBase;
 }) {
   const registry = loadScaffoldRegistry();
   const fromModules = validateSelectedModules(input.fromModules, registry);
@@ -770,13 +799,14 @@ function compileUpgradeDiff(input: {
   };
 
   try {
+    const fromBase = input.fromBase;
     compileScaffoldVariant({
-      baseRoot: scaffoldRoot,
+      baseRoot: fromBase?.starterRoot ?? scaffoldRoot,
       tempDir: tempA,
       selectedModules: fromModules,
       platforms: input.platforms,
       providers: input.fromProviders,
-      registry,
+      ...(fromBase ? { rulesRoot: fromBase.rulesRoot } : { registry }),
     });
     compileScaffoldVariant({
       baseRoot: scaffoldRoot,
@@ -786,7 +816,7 @@ function compileUpgradeDiff(input: {
       providers: input.toProviders,
       registry,
     });
-    return { fromModules, toModules, targetDir: tempB, diff: diffTrees(tempA, tempB), cleanup };
+    return { fromModules, toModules, fromDir: tempA, targetDir: tempB, diff: diffTrees(tempA, tempB), cleanup };
   } catch (err) {
     cleanup();
     throw err;
@@ -810,6 +840,7 @@ export function previewUpgrade(input: {
   platforms: string[];
   fromProviders?: ProviderChoices;
   toProviders?: ProviderChoices;
+  fromBase?: UpgradeBase;
 }): UpgradePreview {
   const { fromModules, toModules, diff, cleanup } = compileUpgradeDiff(input);
   try {
@@ -833,7 +864,7 @@ export function previewUpgrade(input: {
 export function buildUpgradeKit(
   input: BuildUpgradeKitInput,
 ): BuildUpgradeKitResult {
-  const { fromModules, toModules, targetDir: tempB, diff, cleanup } = compileUpgradeDiff(input);
+  const { fromModules, toModules, fromDir: tempA, targetDir: tempB, diff, cleanup } = compileUpgradeDiff(input);
 
   try {
     const delta = computeUpgradeDelta({
@@ -855,9 +886,19 @@ export function buildUpgradeKit(
       ...input.guidePreferences,
     });
 
+    const latestVersion = getTemplateVersion();
+    const switched = Object.entries(input.toProviders ?? {}).some(([toggle, value]) => input.fromProviders?.[toggle] !== value);
     const spec = {
       generatedAt: new Date().toISOString(),
-      templateVersion: getTemplateVersion(),
+      templateVersion: latestVersion,
+      /** "release": no module, tier or provider change, only the releases since `fromVersion`. */
+      kind:
+        delta.addedModules.length === 0 && delta.removedModules.length === 0 && delta.tierSteps === 0 && !switched
+          ? "release"
+          : "upgrade",
+      fromVersion: input.fromBase?.version ?? latestVersion,
+      toVersion: latestVersion,
+      releases: input.releases ?? [],
       from: { modules: fromModules, tierId: input.fromTierId },
       to: {
         modules: toModules,
@@ -879,6 +920,18 @@ export function buildUpgradeKit(
         name: `${input.projectName}/.upgrade/${rel.split(path.sep).join("/")}`,
       });
     }
+    // The old version of each changed file, for a three-way merge with the
+    // project's copy (many projects have no git history to diff against).
+    for (const rel of [...diff.modified, ...diff.removed]) {
+      archive.file(path.join(tempA, rel), {
+        name: `${input.projectName}/.upgrade-base/${rel.split(path.sep).join("/")}`,
+      });
+    }
+    // An older project carries an older copy of the command that applies the kit.
+    const command = path.join(".claude", "commands", "upgrade-boilerplate.md");
+    if (fs.existsSync(path.join(tempB, command))) {
+      archive.file(path.join(tempB, command), { name: `${input.projectName}/.claude/commands/upgrade-boilerplate.md` });
+    }
     archive.append(JSON.stringify(spec, null, 2) + "\n", {
       name: `${input.projectName}/UPGRADE_SPEC.json`,
     });
@@ -898,6 +951,9 @@ export function buildUpgradeKit(
 }
 
 function renderUpgradeReadme(spec: {
+  fromVersion: string;
+  toVersion: string;
+  releases: Release[];
   addedModules: string[];
   removedModules: string[];
   tierSteps: number;
@@ -934,6 +990,15 @@ function renderUpgradeReadme(spec: {
     `- **Files:** ${spec.changedFiles.added.length} added, ${spec.changedFiles.modified.length} modified, ${spec.changedFiles.removed.length} to remove`,
   );
   if (spec.newEnvKeys.length) lines.push(`- **New env vars:** see SETUP.md`);
+  if (spec.fromVersion !== spec.toVersion) {
+    lines.push(`- **Starter:** v${spec.fromVersion} → v${spec.toVersion}`);
+    for (const release of spec.releases) {
+      lines.push(`  - v${release.version}`);
+      for (const entry of release.entries) {
+        lines.push(`    - [${entry.type}] ${entry.title}${entry.migration ? " (database migration)" : ""}`);
+      }
+    }
+  }
   lines.push("");
   return lines.join("\n");
 }

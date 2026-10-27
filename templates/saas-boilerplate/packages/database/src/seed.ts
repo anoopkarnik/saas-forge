@@ -24,7 +24,7 @@ async function main() {
     );
   }
 
-  const { landingPageData, documentationData } = await import("./constants");
+  const { landingPageData, documentationData, blogPostData } = await import("./constants");
 
   console.log(`Seeding database for SaaS Name: ${saasName}`);
 
@@ -162,6 +162,14 @@ async function main() {
   });
 
   await seedPrompt({
+    key: "blog.assistant",
+    name: "Blog Assistant",
+    description: "Drafts and fills blog posts in the admin blog editor.",
+    content:
+      "You help admins write blog posts that search engines and AI assistants can find and quote. Open with a short answer-first summary, use descriptive headings, keep claims accurate and specific, and write in Markdown. When asked to fill a form, return only JSON matching the requested fields.",
+  });
+
+  await seedPrompt({
     key: "cms.assistant",
     name: "CMS Assistant",
     description: "Drafts and fills landing page CMS section forms.",
@@ -290,6 +298,46 @@ async function main() {
       });
     }
     console.log(`Seeded ${documentationData.length} documentation files limits.`);
+  }
+
+  // Blog
+  if (blogPostData && blogPostData.length > 0) {
+    const blogDirPath = path.join(path.dirname(fileURLToPath(import.meta.url)), "blog");
+
+    for (const post of blogPostData) {
+      const filePath = path.join(blogDirPath, post.filePath);
+      let content = "";
+      try {
+        content = await fs.readFile(filePath, "utf-8");
+      } catch (err) {
+        console.error(`Warning: Could not read MDX file for blog post: ${filePath}`);
+        continue;
+      }
+
+      const fields = {
+        title: post.title,
+        excerpt: post.excerpt,
+        summary: post.summary ?? null,
+        content,
+        coverImage: post.coverImage ?? null,
+        authorName: post.authorName,
+        authorAvatar: post.authorAvatar ?? null,
+        tags: post.tags,
+        status: post.status,
+        publishedAt: new Date(post.publishedAt),
+        updatedAt: new Date(post.updatedAt),
+        seoTitle: post.seoTitle ?? null,
+        seoDescription: post.seoDescription ?? null,
+        canonicalUrl: post.canonicalUrl ?? null,
+        landingPageId: pageId,
+      };
+      await prisma.blogPost.upsert({
+        where: { slug: post.slug },
+        update: fields,
+        create: { slug: post.slug, ...fields },
+      });
+    }
+    console.log(`Seeded ${blogPostData.length} blog posts.`);
   }
 
   // Guest demo user (read-only role). No credential/password is set here —

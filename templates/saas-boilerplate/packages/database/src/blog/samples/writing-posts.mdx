@@ -1,0 +1,30 @@
+## Two ways to write a post
+
+| Where | Best for | How it goes live |
+| --- | --- | --- |
+| MDX file in `packages/database/src/blog/` | Posts you want versioned and reviewed with your code | Register it in `constants/blog.ts`, then run `pnpm seed` |
+| Admin → Blog | Quick posts and edits without a deploy | Press **Publish** |
+
+Both end up in the same table, so you can start a post as a file and polish it later in the admin.
+
+## The fields that matter for discovery
+
+- **Excerpt**: one or two sentences shown on the blog index and used as the page description.
+- **TL;DR**: a short, direct answer shown at the top of the post. Search engines and AI assistants often quote a page's opening summary, so make it stand on its own.
+- **Tags**: group related posts; each tag gets its own filtered view.
+- **Cover image**: used when the post is shared on social networks.
+
+## Drafts
+
+A post stays a draft until you publish it. Drafts never appear on the blog page, in the sitemap, the RSS feed or `llms.txt`.
+
+## A code example
+
+```ts
+// Posts are plain Markdown with GitHub-flavoured extras.
+export const greeting = (name: string) => `Hello, ${name}!`;
+```
+
+## What happens when you publish
+
+Each post gets page metadata, Open Graph tags, `BlogPosting` structured data, a sitemap entry with its real update date, an RSS item and a plain-markdown copy linked from `llms.txt`.

@@ -27,7 +27,7 @@ export type AiWebhookMessage = {
 };
 
 export type AiWebhookContext = Record<string, unknown> & {
-  flow: "chat" | "documentation" | "cms";
+  flow: "chat" | "documentation" | "blog" | "cms";
 };
 
 export type AiWebhookRequest = {

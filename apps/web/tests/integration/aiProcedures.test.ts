@@ -479,6 +479,49 @@ describe("AI router", () => {
     );
   });
 
+  it("generates a blog assistant draft", async () => {
+    vi.mocked((db as any).aiPrompt.findUnique).mockResolvedValue({
+      id: "prompt_2",
+      activeVersion: {
+        id: "version_2",
+        content: "Write posts.",
+        provider: "gateway",
+        model: "openai/gpt-5.4",
+      },
+    });
+    vi.mocked(generateText).mockResolvedValue({
+      text: JSON.stringify({
+        title: "Launch week",
+        slug: "launch-week",
+        excerpt: "What shipped.",
+        summary: "Five features shipped.",
+        content: "## Day one",
+        tags: ["launch"],
+      }),
+    } as any);
+
+    const caller = aiRouter.createCaller(createContext());
+    const result = await caller.generateAdminDraft({
+      kind: "blog",
+      current: { title: "Launch week" },
+    });
+
+    expect(result).toEqual({
+      kind: "blog",
+      values: {
+        title: "Launch week",
+        slug: "launch-week",
+        excerpt: "What shipped.",
+        summary: "Five features shipped.",
+        content: "## Day one",
+        tags: ["launch"],
+      },
+    });
+    expect((db as any).aiPrompt.findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { key: "blog.assistant" } }),
+    );
+  });
+
   it("generates a CMS assistant draft through webhook provider", async () => {
     vi.stubEnv("N8N_WEBHOOK_URL", "https://n8n.example/");
     vi.stubEnv("N8N_WEBHOOK_JWT_KEY", "secret-key");

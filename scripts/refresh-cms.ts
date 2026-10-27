@@ -35,6 +35,10 @@ const updatedSlugs = new Set([
   "launchpad",
 ]);
 
+// Blog posts (by slug) to push from packages/database/src/blog; add a slug when
+// a post file is new or changed.
+const updatedBlogSlugs = new Set<string>([]);
+
 async function main() {
   const args = process.argv.slice(2);
   if (args.some((arg) => !["--apply", "--publish-assets"].includes(arg)))
@@ -46,7 +50,7 @@ async function main() {
     throw new Error(
       "Configure NEXT_PUBLIC_SAAS_NAME and DATABASE_URL locally first.",
     );
-  const { landingPageData, documentationData } =
+  const { landingPageData, documentationData, blogPostData } =
     await import("../packages/database/src/constants/index.ts");
   const { default: prisma } =
     await import("../packages/database/src/client.ts");
@@ -72,6 +76,27 @@ async function main() {
       throw new Error(
         "Refresh list contains an unregistered documentation slug.",
       );
+    const posts = await Promise.all(
+      blogPostData
+        .filter((post) => updatedBlogSlugs.has(post.slug))
+        .map(async ({ filePath, ...post }) => ({
+          ...post,
+          summary: post.summary ?? null,
+          coverImage: post.coverImage ?? null,
+          authorAvatar: post.authorAvatar ?? null,
+          seoTitle: post.seoTitle ?? null,
+          seoDescription: post.seoDescription ?? null,
+          canonicalUrl: post.canonicalUrl ?? null,
+          publishedAt: new Date(post.publishedAt),
+          updatedAt: new Date(post.updatedAt),
+          content: await fs.readFile(
+            path.join(root, "packages/database/src/blog", filePath),
+            "utf8",
+          ),
+        })),
+    );
+    if (posts.length !== updatedBlogSlugs.size)
+      throw new Error("Refresh list contains an unregistered blog slug.");
     for (const item of [...hero.heroImages, ...features.features]) {
       if (!item.imageUrl.startsWith("/cms/"))
         throw new Error("Expected a local CMS asset.");
@@ -84,6 +109,7 @@ async function main() {
         features: true,
         faqs: true,
         documentations: { where: { slug: { in: [...updatedSlugs] } } },
+        blogPosts: { where: { slug: { in: [...updatedBlogSlugs] } } },
       },
     });
     if (!existing)
@@ -100,8 +126,18 @@ async function main() {
       throw new Error(
         "A documentation slug belongs to another landing page; resolve it before refreshing.",
       );
+    const blogConflicts = await prisma.blogPost.count({
+      where: {
+        slug: { in: [...updatedBlogSlugs] },
+        landingPageId: { not: existing.id },
+      },
+    });
+    if (blogConflicts)
+      throw new Error(
+        "A blog slug belongs to another landing page; resolve it before refreshing.",
+      );
     console.log(
-      `CMS: ${name}. Refresh ${hero.heroImages.length} hero images, ${features.features.length} features, ${faq.faqs.length} FAQs and ${docs.length} guides.`,
+      `CMS: ${name}. Refresh ${hero.heroImages.length} hero images, ${features.features.length} features, ${faq.faqs.length} FAQs, ${docs.length} guides and ${posts.length} blog posts.`,
     );
     console.log(
       `Current CMS: ${existing.heroImages.length} hero images, ${existing.features.length} features, ${existing.faqs.length} FAQs; ${existing.documentations.length} matching guides.`,
@@ -258,6 +294,13 @@ async function main() {
             create: { ...doc, landingPageId: existing.id },
           });
         }
+        for (const post of posts) {
+          await tx.blogPost.upsert({
+            where: { slug: post.slug },
+            update: { ...post, landingPageId: existing.id },
+            create: { ...post, landingPageId: existing.id },
+          });
+        }
       },
       { timeout: 30_000 },
     );
@@ -277,6 +320,7 @@ async function main() {
           "features",
           "faqs",
           "documentations",
+          "blogPosts",
           "tagline",
           "description",
           "codeSnippet",
@@ -314,6 +358,17 @@ async function main() {
       )
     )
       throw new Error("CMS verification failed. Inspect backup.");
+    const savedPosts = await prisma.blogPost.findMany({
+      where: { slug: { in: [...updatedBlogSlugs] }, landingPageId: existing.id },
+    });
+    if (
+      posts.some(
+        (post) =>
+          savedPosts.find((row) => row.slug === post.slug)?.content !==
+          post.content,
+      )
+    )
+      throw new Error("Blog verification failed. Inspect backup.");
     if (
       process.env.UPSTASH_REDIS_REST_URL &&
       process.env.UPSTASH_REDIS_REST_TOKEN
@@ -328,8 +383,9 @@ async function main() {
         await redis.del(
           `${name.toLowerCase()}-landing-page:cms:v1`,
           `${name.toLowerCase()}-documentation:v1`,
+          `${name.toLowerCase()}-blog:v1`,
         );
-        console.log("Cleared landing and documentation caches.");
+        console.log("Cleared landing, documentation and blog caches.");
       } catch {
         console.log(
           "Content saved and verified; cache invalidation failed. Cached content expires within one hour.",

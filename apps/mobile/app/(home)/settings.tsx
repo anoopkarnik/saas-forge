@@ -98,6 +98,19 @@ export default function Settings() {
                             Read guides {"\u203A"}
                         </MutedText>
                     </View>
+                    <View className="flex-row items-center gap-3 p-4 border-t border-border/20">
+                        <MutedText className="text-lg">{"\uD83D\uDCF0"}</MutedText>
+                        <View className="flex-1">
+                            <Label className="text-sm">Blog</Label>
+                        </View>
+                        <MutedText
+                            className="text-sm"
+                            numberOfLines={1}
+                            onPress={() => router.push("/blog")}
+                        >
+                            Read posts {"\u203A"}
+                        </MutedText>
+                    </View>
                     {calendlyUrl && (
                         <View className="flex-row items-center gap-3 p-4 border-t border-border/20">
                             <MutedText className="text-lg">{"\uD83D\uDCC5"}</MutedText>

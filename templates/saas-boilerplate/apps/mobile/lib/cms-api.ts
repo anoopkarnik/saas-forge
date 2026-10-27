@@ -1,3 +1,5 @@
+import type { CmsFeature, FeatureGroup } from "@workspace/ui/lib/feature-content";
+
 const baseURL = process.env.EXPO_PUBLIC_API_URL;
 
 export type LandingData = {
@@ -21,13 +23,8 @@ export type LandingData = {
     featureSection: {
         heading?: string;
         description?: string;
-        features?: Array<{
-            id?: string;
-            title: string;
-            description: string;
-            category?: string;
-            imageUrl: string;
-        }>;
+        groups?: FeatureGroup[];
+        features?: CmsFeature[];
     };
     testimonialSection: {
         heading?: string;

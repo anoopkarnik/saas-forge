@@ -5,6 +5,7 @@
     "descriptionFallback": "Ship your product with a production-ready SaaS foundation.",
     "comingSoon": "Coming Soon",
     "documentation": "Documentation",
+    "blog": "Blog",
     "gettingStarted": "Getting Started",
     "productVideo": "Product Video",
     "slideAlt": "Hero Slide",
@@ -15,5 +16,6 @@
   "testimonials": { "label": "Customer testimonials" },
   "footer": { "madeBy": "© 2026 Made by" },
   "docs": { "documentation": "Documentation", "breadcrumb": "Docs", "notFound": "No documentation found.", "lastUpdated": "Last updated:" },
+  "blog": {"title": "Blog", "description": "Product updates, guides and lessons learned.", "breadcrumb": "Blog", "empty": "No posts yet. Check back soon.", "minRead": "{minutes} min read", "published": "Published", "updated": "Updated", "tldr": "TL;DR", "by": "By {author}", "allPosts": "All posts", "taggedWith": "Posts tagged “{tag}”", "rss": "RSS feed", "readDocs": "Read the documentation", "home": "Home"},
   "meta": { "title": "Build and deploy SaaS products" }
 }

@@ -8,7 +8,7 @@ import {
 import { MessageCircleQuestion } from "lucide-react";
 import { TiMessage } from "react-icons/ti";
 import { FaCalendarAlt } from "react-icons/fa";
-import { IoNewspaper } from "react-icons/io5";
+import { IoNewspaper, IoCreate } from "react-icons/io5";
 
 import Message from "./Message";
 import Newsletter from "./Newsletter";
@@ -85,6 +85,20 @@ const Support = () => {
                   <IoNewspaper size={24} />
                 </div>
                 <div className="text-center text-xs font-medium">Documentation</div>
+              </div>
+
+              <div
+                className="group flex flex-col items-center gap-3 p-4 rounded-xl cursor-pointer
+                  bg-muted/50 hover:bg-muted transition-all duration-200 border border-transparent hover:border-border/50"
+                onClick={() => {
+                  setOpen(false);
+                  navigate('/blog');
+                }}
+              >
+                <div className="bg-orange-500/10 text-orange-500 group-hover:bg-orange-500/20 group-hover:scale-110 transition-all duration-300 rounded-full p-3 flex items-center justify-center">
+                  <IoCreate size={24} />
+                </div>
+                <div className="text-center text-xs font-medium">Blog</div>
               </div>
 
               {/* <div

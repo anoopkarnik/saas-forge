@@ -90,6 +90,7 @@ export default function HomeLayout() {
                 />
                 {/* Hidden routes — kept as screens but not shown in tab bar */}
                 <Tabs.Screen name="documentation" options={{ href: null }} />
+                <Tabs.Screen name="blog" options={{ href: null }} />
             </Tabs>
         </View>
         {/* scaffold:begin billing */}

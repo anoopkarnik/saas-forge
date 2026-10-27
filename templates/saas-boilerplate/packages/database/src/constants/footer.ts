@@ -7,6 +7,12 @@ export const footerSectionData = {
   "creatorLink": "https://anoopkarnik.net",
   "links": [
     {
+      "id": "6f1c2b9e-3d4a-4c8e-9a51-0b7e2f6d8c31",
+      "label": "Blog",
+      "href": "/landing/blog",
+      "type": "Resources"
+    },
+    {
       "id": "2ca1d3fa-a0a0-8001-86e8-cb3d4db1e2c6",
       "label": "Linkedin",
       "href": "https://www.linkedin.com/in/anoopkarnik/\n",

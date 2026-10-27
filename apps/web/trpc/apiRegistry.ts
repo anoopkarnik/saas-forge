@@ -61,6 +61,19 @@ export const API_REGISTRY: ApiGroup[] = [
     ],
   },
   {
+    group: "blog",
+    label: "Blog",
+    calls: [
+      { name: "getBlogIndex", type: "query", access: "public" },
+      { name: "getBlogPostBySlug", type: "query", access: "public" },
+      { name: "listAdminPosts", type: "query", access: "adminGuestRead" },
+      { name: "getAdminPostById", type: "query", access: "adminGuestRead" },
+      { name: "createPost", type: "mutation", access: "admin" },
+      { name: "updatePost", type: "mutation", access: "admin" },
+      { name: "deletePost", type: "mutation", access: "admin" },
+    ],
+  },
+  {
     group: "home",
     label: "Home",
     calls: [

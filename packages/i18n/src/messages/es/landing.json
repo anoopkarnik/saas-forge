@@ -5,6 +5,7 @@
     "descriptionFallback": "Lanza tu producto sobre una base SaaS lista para producción.",
     "comingSoon": "Próximamente",
     "documentation": "Documentación",
+    "blog": "Blog",
     "gettingStarted": "Primeros pasos",
     "productVideo": "Vídeo del producto",
     "slideAlt": "Diapositiva principal",
@@ -15,5 +16,6 @@
   "testimonials": { "label": "Testimonios de clientes" },
   "footer": { "madeBy": "© 2026 Creado por" },
   "docs": { "documentation": "Documentación", "breadcrumb": "Documentación", "notFound": "No se encontró documentación.", "lastUpdated": "Última actualización:" },
+  "blog": {"title": "Blog", "description": "Novedades del producto, guías y lecciones aprendidas.", "breadcrumb": "Blog", "empty": "Todavía no hay publicaciones. Vuelve pronto.", "minRead": "{minutes} min de lectura", "published": "Publicado", "updated": "Actualizado", "tldr": "En resumen", "by": "Por {author}", "allPosts": "Todas las publicaciones", "taggedWith": "Publicaciones etiquetadas «{tag}»", "rss": "Feed RSS", "readDocs": "Leer la documentación", "home": "Inicio"},
   "meta": { "title": "Crea y despliega productos SaaS" }
 }

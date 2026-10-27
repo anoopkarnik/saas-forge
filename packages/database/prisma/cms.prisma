@@ -48,6 +48,7 @@ model LandingPage {
   faqs         FAQ[]
   footerLinks  FooterLink[]
   documentations Documentation[]
+  blogPosts      BlogPost[]
 
   @@schema("cms_schema")
 }
@@ -134,6 +135,29 @@ model Documentation {
   content       String      
   order         Int         @default(0)
   lastUpdated   DateTime    @default(now())
+
+  @@schema("cms_schema")
+}
+
+model BlogPost {
+  id             String      @id @default(cuid())
+  landingPageId  String
+  landingPage    LandingPage @relation(fields: [landingPageId], references: [id], onDelete: Cascade)
+  slug           String      @unique
+  title          String
+  excerpt        String
+  summary        String?
+  content        String
+  coverImage     String?
+  authorName     String
+  authorAvatar   String?
+  tags           String[]    @default([])
+  status         String      @default("draft")
+  publishedAt    DateTime?
+  updatedAt      DateTime    @updatedAt
+  seoTitle       String?
+  seoDescription String?
+  canonicalUrl   String?
 
   @@schema("cms_schema")
 }

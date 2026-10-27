@@ -75,7 +75,8 @@
     "packages/email/src/resend/release.ts",
     "packages/email/src/templates/ReleaseNotes.tsx",
     "apps/web/trpc/routers/__tests__/launchpadAgentBoundary.test.ts",
-    "apps/web/app/api/ai/agents/__tests__/launchpadAgentBoundary.test.ts"
+    "apps/web/app/api/ai/agents/__tests__/launchpadAgentBoundary.test.ts",
+    "packages/database/src/blog/saas-forge"
   ],
   "templateOverrides": [
     "apps/backend/package.json",
@@ -99,6 +100,7 @@
     "packages/database/prisma/user.prisma",
     "apps/web/trpc/routers/_app.ts",
     "apps/web/trpc/apiRegistry.ts",
-    "apps/web/lib/mcp/platform.ts"
+    "apps/web/lib/mcp/platform.ts",
+    "packages/database/src/constants/blog.ts"
   ]
 }

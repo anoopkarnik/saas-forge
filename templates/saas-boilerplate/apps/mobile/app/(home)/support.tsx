@@ -165,6 +165,23 @@ export default function SupportTab() {
                     </View>
                     <MutedText className="text-lg">›</MutedText>
                 </TouchableOpacity>
+
+                <TouchableOpacity
+                    activeOpacity={0.7}
+                    onPress={() => router.push("/blog")}
+                    className="flex-row items-center gap-4 p-4 rounded-xl bg-card border border-border/30"
+                >
+                    <View className="w-12 h-12 rounded-xl bg-orange-500/15 items-center justify-center">
+                        <MutedText className="text-2xl">✍️</MutedText>
+                    </View>
+                    <View className="flex-1">
+                        <Label className="text-base">Blog</Label>
+                        <MutedText className="text-xs mt-0.5">
+                            Product updates, guides and lessons learned
+                        </MutedText>
+                    </View>
+                    <MutedText className="text-lg">›</MutedText>
+                </TouchableOpacity>
             </View>
         </ScrollView >
     );

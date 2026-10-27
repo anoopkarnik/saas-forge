@@ -5,15 +5,17 @@
     "descriptionFallback": "Ship your product with a production-ready SaaS foundation.",
     "comingSoon": "Coming Soon",
     "documentation": "Documentation",
+    "blog": "Blog",
     "gettingStarted": "Getting Started",
     "productVideo": "Product Video",
     "slideAlt": "Hero Slide",
     "addScreenshots": "Add your product screenshots in the CMS"
   },
-  "feature": { "imageAlt": "Feature Image", "visualPreview": "Visual Preview" },
+  "feature": {"imageAlt": "Feature Image", "visualPreview": "Visual Preview", "general": "General", "navigation": "Explore features", "included": "Included in the starter", "optional": "Optional module", "platform": "SaaS Forge platform", "capabilities": "What you can do", "tools": "Tools and integrations", "dependencies": "Requires", "documentation": "Read documentation", "builtWith": "Built with", "chooseOne": "Choose one provider", "signIn": "Sign-in options", "compatible": "Compatible tools", "opensNewTab": "(opens in a new tab)"},
   "pricing": { "mostPopular": "Most popular" },
   "testimonials": { "label": "Customer testimonials" },
   "footer": { "madeBy": "© 2026 Made by" },
   "docs": { "documentation": "Documentation", "breadcrumb": "Docs", "notFound": "No documentation found.", "lastUpdated": "Last updated:" },
+  "blog": {"title": "Blog", "description": "Product updates, guides and lessons learned.", "breadcrumb": "Blog", "empty": "No posts yet. Check back soon.", "minRead": "{minutes} min read", "published": "Published", "updated": "Updated", "tldr": "TL;DR", "by": "By {author}", "allPosts": "All posts", "taggedWith": "Posts tagged “{tag}”", "rss": "RSS feed", "readDocs": "Read the documentation", "home": "Home"},
   "meta": { "title": "Build and deploy SaaS products" }
 }

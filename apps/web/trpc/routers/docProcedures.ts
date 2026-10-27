@@ -1,4 +1,5 @@
 import { fetchDocumentation } from "@/lib/functions/fetchDocumentation";
+import { fetchDocumentationContent } from "@/lib/functions/fetchDocumentationContent";
 import { DocumentationProps } from "@/lib/ts-types/doc";
 import { redis } from "@/server/redis";
 import { createTRPCRouter, baseProcedure, adminProcedure, guestReadableAdminProcedure } from "@/trpc/init";
@@ -111,27 +112,11 @@ export const documentationRouter = createTRPCRouter({
         throw new Error("Documentation not found");
       }
 
-      if (cmsProvider === "constant") {
-        const { documentationData } = await import("@workspace/database/constants");
-        const fs = await import("fs/promises");
-        const path = await import("path");
-        const docMeta = documentationData.find((d: any) => d.slug === input.slug);
-        if (!docMeta) throw new Error("Documentation not found");
-        
-        // Resolve path to packages/database/src/docs
-        const targetPath = path.join(process.cwd(), "../../packages/database/src/docs", docMeta.filePath);
-        return await fs.readFile(targetPath, "utf-8");
+      const content = await fetchDocumentationContent(input.slug);
+      if (content === null) {
+        throw new Error(cmsProvider === "postgres" ? "Documentation not found in database" : "Documentation not found");
       }
-
-      if (cmsProvider === "postgres") {
-        const prisma = (await import("@workspace/database/client")).default;
-        const page = await prisma.documentation.findUnique({ where: { slug: input.slug } });
-        if (!page) throw new Error("Documentation not found in database");
-        return page.content;
-      }
-
-
-      throw new Error(`CMS "${cmsProvider}" is not supported`);
+      return content;
     }),
     listAdminDocs: guestReadableAdminProcedure
     .query(async () => {

@@ -1,5 +1,6 @@
 import { parse } from "node-html-parser";
 import { fetchDocumentation } from "@/lib/functions/fetchDocumentation";
+import { getCachedBlogIndex } from "@/lib/blog/cache";
 import { PUBLIC_SEO_STATIC_ROUTES } from "@/lib/seo";
 import type {
   SeoAuditResponse,
@@ -78,7 +79,16 @@ async function resolvePagesToCheck(): Promise<string[]> {
     console.error("[SEO] audit documentation route error:", e);
   }
 
-  return [...PUBLIC_SEO_STATIC_ROUTES, ...docRoutes];
+  let blogRoutes: string[] = [];
+
+  try {
+    const blog = await getCachedBlogIndex();
+    blogRoutes = blog.posts.map((post) => `/landing/blog/${post.slug}`);
+  } catch (e) {
+    console.error("[SEO] audit blog route error:", e);
+  }
+
+  return [...PUBLIC_SEO_STATIC_ROUTES, ...docRoutes, ...blogRoutes];
 }
 
 function scoreChecks(checks: SeoCheckResult[]): number {

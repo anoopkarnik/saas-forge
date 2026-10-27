@@ -2,6 +2,7 @@ import { supportRouter } from './supportProcedures';
 import {  createTRPCRouter } from '../init';
 import { landingRouter } from './landingProcedures';
 import { documentationRouter } from './docProcedures';
+import { blogRouter } from './blogProcedures';
 import { homeRouter } from './homeProcedures';
 import { billingRouter } from './billingProcedures';
 import { usageRouter } from './usageProcedures';
@@ -25,6 +26,7 @@ export const appRouter = createTRPCRouter({
     support: supportRouter,
     landing: landingRouter,
     documentation: documentationRouter,
+    blog: blogRouter,
     home: homeRouter,
     billing: billingRouter,
     usage: usageRouter,

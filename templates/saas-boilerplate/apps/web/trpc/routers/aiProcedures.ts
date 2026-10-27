@@ -65,6 +65,11 @@ const assistantPrompts = [
     description: "Drafts and fills documentation pages in the admin documentation editor.",
   },
   {
+    key: "blog.assistant",
+    name: "Blog Assistant",
+    description: "Drafts and fills blog posts in the admin blog editor.",
+  },
+  {
     key: "cms.assistant",
     name: "CMS Assistant",
     description: "Drafts and fills landing page CMS section forms.",
@@ -117,7 +122,7 @@ function buildAdminDraftPrompt({
   current,
   instruction,
 }: {
-  kind: "documentation" | "cms";
+  kind: "documentation" | "blog" | "cms";
   section?: z.infer<typeof cmsAssistantSectionSchema>;
   current: Record<string, unknown>;
   instruction?: string;
@@ -129,6 +134,10 @@ function buildAdminDraftPrompt({
 
   if (kind === "documentation") {
     return `Fill this documentation form. Return only JSON with these exact keys: title, slug, type, order, content. Content must be useful Markdown or MDX.\nCurrent form values:\n${currentJson}${instructionText}`;
+  }
+
+  if (kind === "blog") {
+    return `Fill this blog post form. Return only JSON with these exact keys: title, slug, excerpt, summary, content, tags. The slug uses lowercase letters, numbers and hyphens. The excerpt is one or two sentences. The summary is a 2-3 sentence answer-first TL;DR that stands on its own. Content is Markdown with descriptive ## and ### headings. Tags is an array of at most 5 short lowercase strings.\nCurrent form values:\n${currentJson}${instructionText}`;
   }
 
   return `Fill the ${section} CMS form. Return only JSON containing fields for that section, using the same keys and shapes as the current form values. Preserve image URLs when you cannot improve them.\nCurrent form values:\n${currentJson}${instructionText}`;
@@ -340,7 +349,7 @@ export const aiRouter = createTRPCRouter({
   generateAdminDraft: adminProcedure
     .input(
       z.object({
-        kind: z.enum(["documentation", "cms"]),
+        kind: z.enum(["documentation", "blog", "cms"]),
         section: cmsAssistantSectionSchema.optional(),
         current: z.record(z.string(), z.unknown()).default({}),
         instruction: z.string().max(1000).optional(),
@@ -354,8 +363,8 @@ export const aiRouter = createTRPCRouter({
         });
       }
 
-      const promptKey =
-        input.kind === "documentation" ? "documentation.assistant" : "cms.assistant";
+      const promptKey = `${input.kind}.assistant`;
+      const assistantLabel = { documentation: "Documentation", blog: "Blog", cms: "CMS" }[input.kind];
       const prompt = await (db as any).aiPrompt.findUnique({
         where: { key: promptKey },
         include: { activeVersion: true },
@@ -364,7 +373,7 @@ export const aiRouter = createTRPCRouter({
       if (!prompt?.activeVersion) {
         throw new TRPCError({
           code: "PRECONDITION_FAILED",
-          message: `${input.kind === "documentation" ? "Documentation" : "CMS"} assistant prompt is not configured.`,
+          message: `${assistantLabel} assistant prompt is not configured.`,
         });
       }
 
@@ -413,6 +422,21 @@ export const aiRouter = createTRPCRouter({
             type: z.string().trim().min(1),
             order: z.coerce.number().int().min(0),
             content: z.string().min(1),
+          })
+          .parse(parsed);
+
+        return { kind: input.kind, values };
+      }
+
+      if (input.kind === "blog") {
+        const values = z
+          .object({
+            title: z.string().trim().min(1),
+            slug: z.string().trim().min(1),
+            excerpt: z.string().trim().min(1),
+            summary: z.string().trim().optional(),
+            content: z.string().min(1),
+            tags: z.array(z.string().trim().min(1)).default([]),
           })
           .parse(parsed);
 

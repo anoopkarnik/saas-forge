@@ -5,8 +5,9 @@ import { Heading, Subtitle, Label, MutedText } from "@/components/common";
 import UserManagement from "@/components/admin/UserManagement";
 import CmsManagement from "@/components/admin/CmsManagement";
 import DocManagement from "@/components/admin/DocManagement";
+import BlogManagement from "@/components/admin/BlogManagement";
 
-type AdminSection = "menu" | "users" | "cms" | "docs";
+type AdminSection = "menu" | "users" | "cms" | "docs" | "blog";
 
 export default function Admin() {
     const { user } = useAuth();
@@ -34,6 +35,10 @@ export default function Admin() {
         return <DocManagement onBack={() => setActiveSection("menu")} />;
     }
 
+    if (activeSection === "blog") {
+        return <BlogManagement onBack={() => setActiveSection("menu")} />;
+    }
+
     const menuItems = [
         {
             title: "User Management",
@@ -55,6 +60,13 @@ export default function Admin() {
             icon: "📄",
             iconBg: "bg-amber-500/15",
             onPress: () => setActiveSection("docs"),
+        },
+        {
+            title: "Blog Management",
+            description: "Create and publish blog posts",
+            icon: "📰",
+            iconBg: "bg-orange-500/15",
+            onPress: () => setActiveSection("blog"),
         },
     ];
 

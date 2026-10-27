@@ -5,6 +5,8 @@ import { adminProcedure, createTRPCRouter, baseProcedure } from "@/trpc/init";
 import { z } from "zod";
 import { getCmsProvider } from "@/lib/cms-provider";
 import prisma from "@workspace/database/client";
+import { cmsFeaturesSchema, featureGroupsSchema } from "@workspace/ui/lib/feature-content";
+import { saveLandingFeatures } from "@/lib/cms/feature-persistence";
 // scaffold:begin audit_log
 import { audit, userActor } from "@/lib/audit/audit";
 // scaffold:end audit_log
@@ -59,6 +61,7 @@ export const landingRouter = createTRPCRouter({
             // Features & Testimonials
             featureHeading: z.string().optional(),
             featureDescription: z.string().optional(),
+            featureGroups: featureGroupsSchema.optional(),
             testimonialHeading: z.string().optional(),
             testimonialDescription: z.string().optional(),
 
@@ -86,13 +89,7 @@ export const landingRouter = createTRPCRouter({
                 title: z.string(),
                 imageUrl: z.string()
             })).optional(),
-            features: z.array(z.object({
-                id: z.string().optional(),
-                title: z.string(),
-                description: z.string(),
-                category: z.string().optional(),
-                imageUrl: z.string()
-            })).optional(),
+            features: cmsFeaturesSchema.optional(),
             testimonials: z.array(z.object({
                 id: z.string().optional(),
                 name: z.string(),
@@ -125,7 +122,8 @@ export const landingRouter = createTRPCRouter({
             }
 
             if (cmsProvider === "postgres") {
-                const existingPage = await prisma.landingPage.findUnique({
+                await prisma.$transaction(async (tx) => {
+                const existingPage = await tx.landingPage.findUnique({
                     where: { title: saasName }
                 });
 
@@ -146,6 +144,7 @@ export const landingRouter = createTRPCRouter({
 
                 if (input.featureHeading !== undefined) pageData.featureHeading = input.featureHeading;
                 if (input.featureDescription !== undefined) pageData.featureDescription = input.featureDescription;
+                if (input.featureGroups !== undefined) pageData.featureGroups = input.featureGroups;
                 if (input.testimonialHeading !== undefined) pageData.testimonialHeading = input.testimonialHeading;
                 if (input.testimonialDescription !== undefined) pageData.testimonialDescription = input.testimonialDescription;
                 if (input.pricingHeading !== undefined) pageData.pricingHeading = input.pricingHeading;
@@ -166,42 +165,37 @@ export const landingRouter = createTRPCRouter({
 
                 let pageId = "";
                 if (existingPage) {
-                    await prisma.landingPage.update({ where: { title: saasName }, data: pageData });
+                    await tx.landingPage.update({ where: { title: saasName }, data: pageData });
                     pageId = existingPage.id;
                 } else {
                     pageData.title = pageData.title || saasName;
-                    const newPage = await prisma.landingPage.create({ data: pageData });
+                    const newPage = await tx.landingPage.create({ data: pageData });
                     pageId = newPage.id;
                 }
 
                 if (input.heroImages !== undefined) {
-                    await prisma.heroImage.deleteMany({ where: { landingPageId: pageId } });
+                    await tx.heroImage.deleteMany({ where: { landingPageId: pageId } });
                     if (input.heroImages.length > 0) {
-                        await prisma.heroImage.createMany({
+                        await tx.heroImage.createMany({
                             data: input.heroImages.map(img => ({ landingPageId: pageId, title: img.title, imageUrl: img.imageUrl }))
                         });
                     }
                 }
                 if (input.features !== undefined) {
-                    await prisma.feature.deleteMany({ where: { landingPageId: pageId } });
-                    if (input.features.length > 0) {
-                        await prisma.feature.createMany({
-                            data: input.features.map(f => ({ landingPageId: pageId, title: f.title, description: f.description, imageUrl: f.imageUrl, category: f.category }))
-                        });
-                    }
+                    await saveLandingFeatures(tx, pageId, input.features);
                 }
                 if (input.testimonials !== undefined) {
-                    await prisma.testimonial.deleteMany({ where: { landingPageId: pageId } });
+                    await tx.testimonial.deleteMany({ where: { landingPageId: pageId } });
                     if (input.testimonials.length > 0) {
-                        await prisma.testimonial.createMany({
+                        await tx.testimonial.createMany({
                             data: input.testimonials.map(t => ({ landingPageId: pageId, name: t.name, position: t.position, comment: t.comment, imageUrl: t.imageUrl, category: t.category }))
                         });
                     }
                 }
                 if (input.plans !== undefined) {
-                    await prisma.pricingPlan.deleteMany({ where: { landingPageId: pageId } });
+                    await tx.pricingPlan.deleteMany({ where: { landingPageId: pageId } });
                     if (input.plans.length > 0) {
-                        await prisma.pricingPlan.createMany({
+                        await tx.pricingPlan.createMany({
                             data: input.plans.map(p => ({
                                 landingPageId: pageId,
                                 title: p.title,
@@ -215,21 +209,21 @@ export const landingRouter = createTRPCRouter({
                     }
                 }
                 if (input.faqs !== undefined) {
-                    await prisma.fAQ.deleteMany({ where: { landingPageId: pageId } });
+                    await tx.fAQ.deleteMany({ where: { landingPageId: pageId } });
                     if (input.faqs.length > 0) {
-                        await prisma.fAQ.createMany({
+                        await tx.fAQ.createMany({
                             data: input.faqs.map(f => ({ landingPageId: pageId, question: f.question, answer: f.answer }))
                         });
                     }
                 }
 
+                // scaffold:begin audit_log
+                await audit(tx, "cms.landing_updated", { actor: userActor(ctx.session.user.id), metadata: {}, headers: ctx.headers });
+                // scaffold:end audit_log
+                }, { timeout: 30_000 });
                 if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
                     await redis.del(getLandingCacheKey());
                 }
-
-                // scaffold:begin audit_log
-                await audit(prisma, "cms.landing_updated", { actor: userActor(ctx.session.user.id), metadata: {}, headers: ctx.headers });
-                // scaffold:end audit_log
                 return { success: true };
             }
 

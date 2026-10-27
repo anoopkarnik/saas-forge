@@ -2,6 +2,7 @@ import { supportRouter } from './supportProcedures';
 import {  createTRPCRouter } from '../init';
 import { landingRouter } from './landingProcedures';
 import { documentationRouter } from './docProcedures';
+import { blogRouter } from './blogProcedures';
 import { homeRouter } from './homeProcedures';
 import { seoRouter } from './seoProcedures';
 import { siteConfigRouter } from './siteConfigProcedures';
@@ -45,6 +46,7 @@ export const appRouter = createTRPCRouter({
     support: supportRouter,
     landing: landingRouter,
     documentation: documentationRouter,
+    blog: blogRouter,
     home: homeRouter,
     seo: seoRouter,
     siteConfig: siteConfigRouter,

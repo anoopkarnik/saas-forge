@@ -57,3 +57,16 @@ These SaaS Forge docs are seeded into every new project. To publish your own pro
 - **Constant CMS:** replace the MDX files and `docs.ts`; they are read at request time.
 
 Some features link to specific doc slugs (the setup wizard links to `overview`, `authentication-overview`, `postgres`, `storage` and others in `packages/ui/src/lib/constants/module.ts`). Keep those slugs or update the links.
+
+## Blog
+
+The blog lives at `/landing/blog` and is linked from the hero and the footer. It works like the docs: posts are files in the repo first, seeded into Postgres, and editable in **Admin → Blog**.
+
+- **Writing a post as a file:** add an MDX file under `packages/database/src/blog/` and register it in `packages/database/src/constants/blog.ts` with its slug, title, excerpt, author, tags, status and dates. Run `pnpm seed` to copy it into Postgres. With the constant CMS, posts are read from the files at request time.
+- **Writing a post in the browser:** open **Admin → Blog**, fill in the form and switch it to **Published**. The publish date is set the first time you publish and kept afterwards.
+- **Drafts** never appear publicly: not on the blog, in the sitemap, the RSS feed, `llms.txt` or the markdown copies.
+- **TL;DR** is a short, direct answer shown first on the post. Search engines and AI assistants often quote a page's opening, so write it to stand on its own.
+
+Every published post gets page metadata with Open Graph article tags, `BlogPosting` and breadcrumb structured data, a sitemap entry with its real update date, an item in the RSS feed at `/landing/blog/rss.xml`, and a plain-markdown copy at `/landing/blog/<slug>/markdown`. The root `/llms.txt` lists the docs and posts for AI assistants, and `robots.txt` allows the main AI crawlers.
+
+The blog index is cached in Redis like the docs index (key `<name>-blog:v1`); admin edits clear it. The two sample posts are there to show the format; delete them in the admin panel or remove them from `blog.ts` once you have your own.

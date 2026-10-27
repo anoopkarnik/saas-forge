@@ -14,7 +14,7 @@ import {
 } from "@workspace/ui/components/shadcn/sidebar";
 import { useTheme } from "next-themes";
 import { cn } from "@workspace/ui/lib/utils";
-import { Database, FileText, HomeIcon, Settings, Timer, Users } from "lucide-react";
+import { Database, FileText, HomeIcon, Newspaper, Settings, Timer, Users } from "lucide-react";
 // scaffold:begin audit_log
 import { ScrollText } from "lucide-react";
 // scaffold:end audit_log
@@ -180,6 +180,21 @@ export function AppSidebar() {
                   <div className="flex items-center gap-3">
                     <FileText className="h-5 w-5 text-amber-500" />
                     <div className="text-xs">{t("documentation")}</div>
+                  </div>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  tooltip={t("blog")}
+                  className={cn(
+                    "h-10 cursor-pointer transition-all duration-200 ease-in-out hover:pl-3",
+                    pathname === "/admin/blog" && "bg-sidebar-accent font-medium text-sidebar-accent-foreground shadow-sm"
+                  )}
+                  onClick={() => router.push("/admin/blog")}
+                >
+                  <div className="flex items-center gap-3">
+                    <Newspaper className="h-5 w-5 text-orange-500" />
+                    <div className="text-xs">{t("blog")}</div>
                   </div>
                 </SidebarMenuButton>
               </SidebarMenuItem>

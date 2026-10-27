@@ -42,6 +42,9 @@ export const AUDIT_ACTIONS = {
   "doc.created": action({ targetType: "doc", schema: z.object({ title: z.string() }) }),
   "doc.updated": action({ targetType: "doc", schema: z.object({ title: z.string().optional() }) }),
   "doc.deleted": action({ targetType: "doc", schema: none }),
+  "blog.created": action({ targetType: "blog", schema: z.object({ title: z.string() }) }),
+  "blog.updated": action({ targetType: "blog", schema: z.object({ title: z.string().optional() }) }),
+  "blog.deleted": action({ targetType: "blog", schema: none }),
   // scaffold:begin multi_tenancy
   "org.updated": action({ targetType: "organization", schema: z.object({ name: z.string() }) }),
   "org.member.invited": action({ targetType: "invitation", schema: z.object({ email: z.string(), role: z.string() }) }),

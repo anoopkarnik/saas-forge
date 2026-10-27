@@ -13,6 +13,7 @@ import VerificationRoute from "./components/auth/VerificationRoute";
 import AuthCallbackRoute from "./components/auth/AuthCallbackRoute";
 import DashboardRoute from "./components/home/DashboardRoute";
 import DocRoute from "./components/doc/DocRoute";
+import BlogRoute from "./components/blog/BlogRoute";
 import ErrorRoute from "./components/auth/ErrorRoute";
 import ResetPasswordRoute from "./components/auth/ResetPasswordRoute";
 import AdminUsersRoute from "./components/admin/AdminUsersRoute";
@@ -64,6 +65,8 @@ function App() {
             <Route path="/admin/cms" element={<AdminCmsRoute />} />
             <Route path="/doc" element={<DocRoute />} />
             <Route path="/doc/:slug" element={<DocRoute />} />
+            <Route path="/blog" element={<BlogRoute />} />
+            <Route path="/blog/:slug" element={<BlogRoute />} />
             <Route path="/" element={<DashboardRoute />} />
           </Routes>
         </div>

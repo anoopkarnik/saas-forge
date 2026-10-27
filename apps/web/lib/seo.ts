@@ -83,6 +83,7 @@ export function createSeoMetadata({
 
 export const PUBLIC_SEO_STATIC_ROUTES = [
   "/landing",
+  "/landing/blog",
   "/landing/legal/privacy-policy",
   "/landing/legal/terms-of-service",
   "/landing/legal/cancellation-refund-policies",

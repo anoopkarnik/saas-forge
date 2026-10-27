@@ -1,6 +1,6 @@
 "use client"
 import { useTranslations } from "next-intl";
-import { ArrowRight, BookIcon } from "lucide-react";
+import { ArrowRight, BookIcon, NewspaperIcon } from "lucide-react";
 import { Button } from "@workspace/ui/components/shadcn/button";
 import { useEffect, useState } from "react";
 import { HeroSectionProps } from "@/lib/ts-types/landing";
@@ -133,6 +133,15 @@ const HeroSection = ({ heroSection }: { heroSection: HeroSectionProps }): ReactE
           >
             <BookIcon size={15} />
             <p className="text-sm">{t("hero.documentation")}</p>
+          </Button>
+          <Button
+            className="flex items-center gap-1"
+            variant="secondary"
+            size="default"
+            onClick={() => router.push("/landing/blog")}
+          >
+            <NewspaperIcon size={15} />
+            <p className="text-sm">{t("hero.blog")}</p>
           </Button>
           <form method="post" action="/api/demo-login" onSubmit={openDemo}>
             <Button

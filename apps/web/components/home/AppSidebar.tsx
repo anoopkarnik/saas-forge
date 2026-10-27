@@ -13,7 +13,7 @@ import {
 } from "@workspace/ui/components/shadcn/sidebar";
 import { useTheme } from "next-themes";
 import { cn } from "@workspace/ui/lib/utils";
-import { Bot, Users, Database, FileText, Search, Network, Boxes, Timer, Settings, ScrollText, Gauge, Flag } from "lucide-react";
+import { Bot, Users, Database, FileText, Newspaper, Search, Network, Boxes, Timer, Settings, ScrollText, Gauge, Flag } from "lucide-react";
 import { MdSaveAs } from "react-icons/md";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
@@ -150,6 +150,16 @@ export function AppSidebar() {
                                     <div className="flex items-center gap-3">
                                         <FileText className="w-5 h-5 text-amber-500" />
                                         <div className="text-sm">{t("documentation")}</div>
+                                    </div>
+                                </SidebarMenuButton>
+                            </SidebarMenuItem>
+                            <SidebarMenuItem>
+                                <SidebarMenuButton tooltip={t("blog")}
+                                    className={cn("cursor-pointer transition-all duration-200 ease-in-out  h-10", pathname === "/admin/blog" && "bg-sidebar-accent text-sidebar-accent-foreground font-medium shadow-sm")}
+                                    onClick={() => router.push("/admin/blog")}>
+                                    <div className="flex items-center gap-3">
+                                        <Newspaper className="w-5 h-5 text-orange-500" />
+                                        <div className="text-sm">{t("blog")}</div>
                                     </div>
                                 </SidebarMenuButton>
                             </SidebarMenuItem>

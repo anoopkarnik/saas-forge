@@ -1,8 +1,11 @@
+![Web, desktop and mobile use the web API and shared services](/cms/v2/architecture.png)
+
 Everything SaaS Forge ships, grouped by what every project gets (core), what you choose (modules and providers), and where it runs (platforms).
 
 ## Core: in every project
 
 **Authentication** ([details](/landing/doc/authentication-overview))
+
 - Email and password sign-up with email verification, password reset, change email and delete account.
 - Google, GitHub and LinkedIn OAuth, each behind its own toggle, with account linking.
 - Roles: `user`, `admin` and a read-only `guest` for public demos. The first account to sign up becomes admin.
@@ -10,12 +13,14 @@ Everything SaaS Forge ships, grouped by what every project gets (core), what you
 - Bans and role changes from the admin panel. Impersonation is available through Better Auth's admin API.
 
 **Landing site and documentation** ([details](/landing/doc/content-management))
+
 - Hero, features, testimonials, pricing, FAQ and footer sections.
 - Terms of service, privacy policy, cancellation and refund, and contact pages.
 - A documentation site at `/landing/doc` with categories and a sidebar.
 - Content comes from code constants or Postgres (editable in the admin panel).
 
 **Admin panel** ([details](/landing/doc/admin-panel))
+
 - Users: create, change role, ban, unban, remove, and create the demo guest account.
 - Invitations and registration mode.
 - Landing page editor with image uploads, and a documentation editor.
@@ -23,6 +28,7 @@ Everything SaaS Forge ships, grouped by what every project gets (core), what you
 - A catalog of every tRPC procedure and the role it requires.
 
 **Platform features**
+
 - [Email](/landing/doc/email): Resend with React Email templates.
 - [File storage](/landing/doc/storage): avatars and CMS images, validated and re-encoded with sharp, stored in Vercel Blob or Cloudflare R2.
 - [Support widget](/landing/doc/support): send a message, open the docs, book a meeting.
@@ -31,11 +37,18 @@ Everything SaaS Forge ships, grouped by what every project gets (core), what you
 - [Caching and rate limiting](/landing/doc/performance) with Upstash Redis.
 
 **Production hardening** ([details](/landing/doc/security))
+
 - Boot-time environment validation that refuses weak or missing secrets in production.
 - A route policy table that declares auth, roles, rate limits and body-size limits for every route.
 - Secret redaction in logs and idempotent payment webhooks.
 
+**Runtime settings and localization**
+
+- [Admin settings](/landing/doc/runtime-settings) for branding, themes, registration and other non-secret values, without redeploying.
+- [English and Spanish localization](/landing/doc/internationalization), locale-aware formatting and recipient-aware emails.
+
 **Developer tooling**
+
 - `pnpm doctor`: fills `.env` files, generates secrets and checks each service with a live call.
 - Vitest across apps and packages, dependency-cruiser architecture checks, ESLint, Prettier.
 - GitHub Actions CI, a Docker image for the web app, and Docker Compose for local services.
@@ -44,30 +57,38 @@ Everything SaaS Forge ships, grouped by what every project gets (core), what you
 
 Modules are optional features. The open-source repository contains all of them. A download contains only the ones you pick, and you can add others later.
 
-| Module | ID | What it adds | Credits |
-| --- | --- | --- | --- |
-| [Billing & Payments](/landing/doc/billing) | `billing` | Credit purchases, checkout, transactions, Stripe and Dodo webhooks | 10 |
-| [Organizations / Teams](/landing/doc/organizations) | `multi_tenancy` | Workspaces, invitations, workspace switcher, owner/admin/member/viewer roles | 50 |
-| [AI Platform](/landing/doc/ai-platform) | `ai` | Streaming chat, admin-managed prompts, multi-provider models, speech, token-based credit metering | 20 |
-| [AI Agents & RAG](/landing/doc/ai-agents) | `ai_agents` | Python FastAPI service, LangGraph agents, background jobs, RAG collections on pgvector. Requires `ai` | 30 |
-| [API Keys](/landing/doc/api-keys) | `api_keys` | Scoped, hashed API keys with per-key rate limits and a REST API | 5 |
+| Module                                                 | ID              | What it adds                                                                                                                                                                                                                                                         | Requires     | Credits |
+| ------------------------------------------------------ | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ | ------- |
+| [Billing & Payments](/landing/doc/billing)             | `billing`       | Checkout, transactions, credits purchase UI, payment webhooks, and a usage ledger with a /usage dashboard: spend by meter, rates, balance history and threshold alerts.                                                                                              | —            | 10      |
+| [Organizations / Teams](/landing/doc/organizations)    | `multi_tenancy` | Workspaces, member invites, workspace switching, and owner/admin/member/viewer roles.                                                                                                                                                                                | —            | 50      |
+| [AI Platform](/landing/doc/ai-platform)                | `ai`            | Chat UI, prompt management, multi-provider abstraction, speech (TTS/STT), and token-aware credit metering.                                                                                                                                                           | —            | 20      |
+| [AI Agents & RAG (Python)](/landing/doc/ai-agents)     | `ai_agents`     | FastAPI execution with LangGraph agents and RAG, dispatched by web Inngest. Requires AI Platform and Jobs.                                                                                                                                                           | `ai`, `jobs` | 30      |
+| [API Keys](/landing/doc/api-keys)                      | `api_keys`      | Scoped API keys users create in Settings, hashed at rest, with per-key rate limits and an /api/v1/me endpoint.                                                                                                                                                       | —            | 5       |
+| [MCP server](/landing/doc/mcp)                         | `mcp`           | An MCP endpoint at /api/mcp so your users can connect Claude, ChatGPT, Cursor and other AI agents to their account with an API key. Tools come from the modules you pick: profile and credits, plus usage, workspaces and notifications. Requires API Keys.          | `api_keys`   | 10      |
+| [Background jobs & cron](/landing/doc/background-jobs) | `jobs`          | Typed background jobs on Inngest with retries, a dead-letter queue and replay, cron schedules, and email sent through the queue. Without it, jobs run inline.                                                                                                        | —            | 15      |
+| [Notifications](/landing/doc/notifications)            | `notifications` | An in-app bell and inbox on web, desktop and mobile, per-type email and in-app preferences, and email delivered as a background job. Ships with payment, low-credit and invitation events.                                                                           | —            | 5       |
+| [Audit log](/landing/doc/audit-log)                    | `audit_log`     | An append-only trail of admin, invitation, organization, API key, CMS and prompt changes, with filters and CSV export at /admin/audit, workspace activity for organization admins, and retention set in Settings.                                                    | —            | 10      |
+| [Outgoing webhooks](/landing/doc/outgoing-webhooks)    | `webhooks`      | Customer-managed webhook endpoints with HMAC-signed, versioned events, retries with backoff for 24 hours, a delivery log with replay, secret rotation and SSRF protection. Requires background jobs.                                                                 | `jobs`       | 10      |
+| [Feature flags](/landing/doc/feature-flags)            | `feature_flags` | Per-user feature flags evaluated on the server: role, user, workspace and percentage rules, an admin page with rule editor, preview and history, useFlag() in the UI and flagProcedure() to enforce them. Without it every flag keeps its code default.              | —            | 10      |
+| [Onboarding](/landing/doc/onboarding)                  | `onboarding`    | A skippable welcome wizard and a setup checklist whose tasks come from the modules you pick (profile, team invite, credits, first AI chat, API key), completed from real data. Toggle both in Settings.                                                              | —            | 5       |
+| [Product analytics](/landing/doc/product-analytics)    | `analytics`     | Typed product events on PostHog (or console logging in development): sign-up, sign-in and an event per module, sent from the server with ids only. No autocapture, Do Not Track and Global Privacy Control honoured, and an optional consent banner set in Settings. | —            | 5       |
 
-A download always costs the 20-credit base plus the modules you select. A Notifications module appears in the catalog but is not built yet, so it cannot be selected.
+A download starts at 20 base credits plus the selected modules; the quote shows stage adjustments and the final cost. Required dependencies are included in the selection. All 13 modules above are implemented in this repository.
 
 ## Providers: one choice per integration
 
 Some integrations have interchangeable providers. A download keeps only the provider you choose. The open-source repository keeps all of them and picks one at runtime from an env var.
 
-| Integration | Env var | Choices | Module |
-| --- | --- | --- | --- |
-| Payment gateway | `NEXT_PUBLIC_PAYMENT_GATEWAY` | `stripe`, `dodo`, `none` | Billing |
-| Image storage | `NEXT_PUBLIC_IMAGE_STORAGE` | `vercel_blob`, `cloudflare_r2` | Core |
-| CMS | `NEXT_PUBLIC_CMS` | `constant`, `postgres` | Core |
+| Integration     | Env var                       | Choices                        | Module  |
+| --------------- | ----------------------------- | ------------------------------ | ------- |
+| Payment gateway | `NEXT_PUBLIC_PAYMENT_GATEWAY` | `stripe`, `dodo`, `none`       | Billing |
+| Image storage   | `NEXT_PUBLIC_IMAGE_STORAGE`   | `vercel_blob`, `cloudflare_r2` | Core    |
+| CMS             | `NEXT_PUBLIC_CMS`             | `constant`, `postgres`         | Core    |
 
 ## Platforms
 
-| Platform | App | Notes |
-| --- | --- | --- |
-| Web | `apps/web` | Always included. Hosts the API every other client uses |
-| Desktop | `apps/desktop` | [Electron app](/landing/doc/desktop-app) with auth, docs, support, admin and settings |
-| Mobile | `apps/mobile` | [Expo app](/landing/doc/mobile-app) with auth, docs, support, settings and admin |
+| Platform | App            | Notes                                                                                 |
+| -------- | -------------- | ------------------------------------------------------------------------------------- |
+| Web      | `apps/web`     | Always included. Hosts the API every other client uses                                |
+| Desktop  | `apps/desktop` | [Electron app](/landing/doc/desktop-app) with auth, docs, support, admin and settings |
+| Mobile   | `apps/mobile`  | [Expo app](/landing/doc/mobile-app) with auth, docs, support, settings and admin      |

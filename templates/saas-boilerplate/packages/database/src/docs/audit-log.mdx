@@ -1,0 +1,15 @@
+The optional **Audit log** module (`audit_log`) records important configuration and account changes in an append-only trail. It covers admin actions, invitations, organizations, API keys, CMS edits and prompt changes when those modules are present.
+
+## Review activity
+
+Open **Admin → Audit** (`/admin/audit`) to filter the trail and export CSV. Organization admins can also inspect workspace activity on `/organization`. Metadata is redacted before storage and reduced to the fields allowed by each action's schema.
+
+## Record an action
+
+Add an action to `apps/web/lib/audit/actions.ts` with its target type, metadata schema and redaction keys, inside the owning module's markers. Call `audit(tx, action, { actor: userActor(id), targetId, organizationId, metadata, headers })` using the transaction client of the change: both records commit or roll back together.
+
+For Better Auth writes, audit after the operation succeeds. The auth route uses `withAuthAudit` for Better Auth admin endpoints. Audit configuration changes rather than per-request usage; usage belongs in the [usage ledger](/landing/doc/usage-ledger).
+
+## Retention
+
+Set `audit.retentionDays` in runtime Settings. With Jobs, `cleanup.auditRetention` removes records older than that setting. Schedule cleanup when operating in production; append-only describes normal application writes, not indefinite retention.

@@ -1,0 +1,15 @@
+The **Billing** module includes a usage ledger at `/usage`: spend by meter, rate descriptions, balance history and alerts when usage crosses 80% or 95%.
+
+## Record usage atomically
+
+Use `recordUsage(tx, { userId, meter, quantity, credits, sourceType, sourceId, idempotencyKey })` in the same transaction as the product work. It inserts a `UsageEvent` and increments `creditsUsed`. A repeated idempotency key records and charges nothing.
+
+The return value identifies crossed thresholds; call `announceUsageAlerts` after commit. If existing code already updated `creditsUsed`, use `logUsage` to record it without moving the balance again. Add meters and their rate text to `apps/web/lib/usage/meters.ts`.
+
+## History and reconciliation
+
+A user's first ledger event carries earlier spend as `balance.opening`, so event totals can reconcile with `creditsUsed`. With Jobs, `usage.reconcile` checks and logs drift. Investigate the underlying operation before adjusting history.
+
+Without Billing, `lib/usage/record.ts` becomes a compatible stub that only moves `creditsUsed`. Callers such as AI chat keep the same interface, while the Billing ledger UI is absent.
+
+See [Billing & Credits](/landing/doc/billing), [Notifications](/landing/doc/notifications) and [Background Jobs](/landing/doc/background-jobs).

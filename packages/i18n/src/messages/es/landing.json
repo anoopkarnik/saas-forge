@@ -10,7 +10,7 @@
     "slideAlt": "Diapositiva principal",
     "addScreenshots": "Añade capturas de tu producto en el CMS"
   },
-  "feature": { "imageAlt": "Imagen de la función", "visualPreview": "Vista previa" },
+  "feature": {"imageAlt": "Imagen de la función", "visualPreview": "Vista previa", "general": "General", "navigation": "Explorar funciones", "included": "Incluido en la plantilla", "optional": "Módulo opcional", "platform": "Plataforma SaaS Forge", "capabilities": "Qué puedes hacer", "tools": "Herramientas e integraciones", "dependencies": "Requiere", "documentation": "Leer documentación", "builtWith": "Desarrollado con", "chooseOne": "Elige un proveedor", "signIn": "Opciones de inicio de sesión", "compatible": "Herramientas compatibles", "opensNewTab": "(se abre en una pestaña nueva)"},
   "pricing": { "mostPopular": "Más popular" },
   "testimonials": { "label": "Testimonios de clientes" },
   "footer": { "madeBy": "© 2026 Creado por" },

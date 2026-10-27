@@ -1,0 +1,21 @@
+The optional **Onboarding** module (`onboarding`) gives end users a skippable welcome wizard and a setup checklist on the home page. Tasks follow the modules included in the project.
+
+## What it covers
+
+Core tasks include a profile picture, email verification and a documentation visit. Selected modules add actions such as inviting a teammate, buying credits, sending a first AI chat and creating an API key. Tasks check real data when possible, so users do not have to tick off actions the app already knows are complete.
+
+The wizard and checklist never block the app. They can be turned off in Settings using `onboarding.wizard` and `onboarding.checklist`; the checklist also follows the `onboarding.checklist` feature flag. Demo guests see neither.
+
+## Add a task
+
+Add an entry to `apps/web/lib/onboarding/tasks.ts`, inside the module's markers. Supply a stable key, title, description and a useful link or hint. Prefer a `done(userId)` check on real application data. Without one, `onboarding.complete` records manual completion.
+
+## Existing installations
+
+After adding this module to a product with existing users, run:
+
+```bash
+pnpm --dir packages/database backfill:onboarding
+```
+
+This prevents an unwanted first-run wizard for those users. Product onboarding is separate from SaaS Forge's [Project Launchpad](/landing/doc/launchpad), which guides the developer setting up a downloaded starter.

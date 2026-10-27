@@ -1,0 +1,25 @@
+The app includes **English and Spanish** catalogs through `packages/i18n`. The active locale has no URL prefix.
+
+## Locale selection
+
+The locale is resolved from the signed-in user's saved choice, then `NEXT_LOCALE`, then `Accept-Language`, then the `i18n.defaultLocale` site setting. A signed-in user changes it with `authClient.updateUser({ locale })`, which refreshes the cached session cookie.
+
+## Translate a surface
+
+Messages live in `packages/i18n/src/messages/<locale>/<namespace>.json`, imported by each locale's `index.ts`. English defines the message type. Web code uses `next-intl`; shared UI, desktop and emails use `use-intl`. Format dates and money with `@workspace/i18n/format` and `useLocale()`.
+
+Put module-only messages in `<module id>.json`, import them inside the module's markers and list the file in the module's removal manifest. Add translated surfaces to the `react/jsx-no-literals` coverage in the web or UI ESLint config.
+
+```bash
+pnpm i18n:check
+```
+
+The check detects missing or extra keys, invalid ICU messages and placeholder drift. Use typographic quote marks around ICU placeholders; an apostrophe before `{` escapes it.
+
+## Emails and CMS content
+
+Pass the recipient's locale to `sendEmail({ ..., locale })`. This is optional so existing queued jobs remain valid. Locale-aware app messages do not automatically translate CMS records: the landing copy and Markdown documentation are authored content and should be translated separately if your product needs that.
+
+## Add a language
+
+Add it to `LOCALES` in `src/config.ts`, copy the English catalogs into its directory, translate them, then add the language's endonym to `common.locales` in every locale. Run the catalog check before shipping.

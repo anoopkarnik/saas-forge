@@ -38,7 +38,9 @@
     "desktop:install:linux": "pnpm --dir apps/desktop build:prod && pnpm --dir apps/desktop package:snap && pnpm --dir apps/desktop install:locally",
     "publish:npm:package": "pnpm login && pnpm publish",
     "mobile:publish:android:preview": "pnpm --dir apps/mobile deploy:android:preview",
-    "mobile:publish:android:production": "pnpm --dir apps/mobile deploy:android:production"
+    "mobile:publish:android:production": "pnpm --dir apps/mobile deploy:android:production",
+    "cms:refresh": "pnpm --dir packages/database exec tsx ../../scripts/refresh-cms.ts",
+    "cms:visuals": "node scripts/generate-cms-visuals.mjs"
   },
   "files": [
     "scripts/cli.js",

@@ -1,0 +1,82 @@
+{
+  "resend.svg": {
+    "source": "react-icons/si SiResend (react-icons 5.5.0; Simple Icons, CC0-1.0)",
+    "upstream": "https://github.com/react-icons/react-icons"
+  },
+  "google.svg": {
+    "source": "react-icons/si SiGoogle (react-icons 5.5.0; Simple Icons, CC0-1.0)",
+    "upstream": "https://github.com/react-icons/react-icons"
+  },
+  "github.svg": {
+    "source": "react-icons/si SiGithub (react-icons 5.5.0; Simple Icons, CC0-1.0)",
+    "upstream": "https://github.com/react-icons/react-icons"
+  },
+  "linkedin.svg": {
+    "source": "react-icons/si SiLinkedin (react-icons 5.5.0; Simple Icons, CC0-1.0)",
+    "upstream": "https://github.com/react-icons/react-icons"
+  },
+  "postgresql.svg": {
+    "source": "react-icons/si SiPostgresql (react-icons 5.5.0; Simple Icons, CC0-1.0)",
+    "upstream": "https://github.com/react-icons/react-icons"
+  },
+  "prisma.svg": {
+    "source": "react-icons/si SiPrisma (react-icons 5.5.0; Simple Icons, CC0-1.0)",
+    "upstream": "https://github.com/react-icons/react-icons"
+  },
+  "cloudflare.svg": {
+    "source": "react-icons/si SiCloudflare (react-icons 5.5.0; Simple Icons, CC0-1.0)",
+    "upstream": "https://github.com/react-icons/react-icons"
+  },
+  "vercel.svg": {
+    "source": "react-icons/si SiVercel (react-icons 5.5.0; Simple Icons, CC0-1.0)",
+    "upstream": "https://github.com/react-icons/react-icons"
+  },
+  "nextjs.svg": {
+    "source": "react-icons/si SiNextdotjs (react-icons 5.5.0; Simple Icons, CC0-1.0)",
+    "upstream": "https://github.com/react-icons/react-icons"
+  },
+  "electron.svg": {
+    "source": "react-icons/si SiElectron (react-icons 5.5.0; Simple Icons, CC0-1.0)",
+    "upstream": "https://github.com/react-icons/react-icons"
+  },
+  "expo.svg": {
+    "source": "react-icons/si SiExpo (react-icons 5.5.0; Simple Icons, CC0-1.0)",
+    "upstream": "https://github.com/react-icons/react-icons"
+  },
+  "stripe.svg": {
+    "source": "react-icons/si SiStripe (react-icons 5.5.0; Simple Icons, CC0-1.0)",
+    "upstream": "https://github.com/react-icons/react-icons"
+  },
+  "openai.svg": {
+    "source": "react-icons/si SiOpenai (react-icons 5.5.0; Simple Icons, CC0-1.0)",
+    "upstream": "https://github.com/react-icons/react-icons"
+  },
+  "anthropic.svg": {
+    "source": "react-icons/si SiAnthropic (react-icons 5.5.0; Simple Icons, CC0-1.0)",
+    "upstream": "https://github.com/react-icons/react-icons"
+  },
+  "fastapi.svg": {
+    "source": "react-icons/si SiFastapi (react-icons 5.5.0; Simple Icons, CC0-1.0)",
+    "upstream": "https://github.com/react-icons/react-icons"
+  },
+  "posthog.svg": {
+    "source": "react-icons/si SiPosthog (react-icons 5.5.0; Simple Icons, CC0-1.0)",
+    "upstream": "https://github.com/react-icons/react-icons"
+  },
+  "better-auth.png": {
+    "source": "https://www.better-auth.com/favicon/apple-touch-icon.png",
+    "upstream": "Official project website favicon"
+  },
+  "react-email.svg": {
+    "source": "https://react.email/meta/favicon.svg",
+    "upstream": "Official project website favicon"
+  },
+  "inngest.svg": {
+    "source": "https://www.inngest.com/favicon-june-2025-light.svg",
+    "upstream": "Official project website favicon"
+  },
+  "dodo-payments.png": {
+    "source": "https://docs.dodopayments.com/mintlify-assets/_mintlify/favicons/dodopayments/KuV_TozyHuGHOyyc/_generated/favicon/android-chrome-192x192.png",
+    "upstream": "Official project website favicon"
+  }
+}

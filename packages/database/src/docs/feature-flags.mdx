@@ -1,0 +1,17 @@
+The optional **Feature flags** module (`feature_flags`) controls per-user boolean access to features, with rules evaluated on the server.
+
+## Configure a rollout
+
+Open **Admin → Flags** (`/admin/flags`) to edit rules, preview a user and review history. Rules run in order and the first match wins. Supported targets are role, user id, workspace id when Organizations is installed, and a stable percentage. Otherwise the code default applies.
+
+Percentage targeting uses a stable hash of the flag key and user id, or the anonymous `sf_aid` cookie. Repeated visits stay in the same bucket.
+
+## Add and enforce a flag
+
+Declare the key, description and default in `apps/web/lib/flags/definitions.ts`, inside the owning module's markers. Use `useFlag(key)` in UI code. The root layout evaluates flags and hydrates `FlagsProvider`, so rule definitions never reach the browser.
+
+Protect the server operation with `flagProcedure(key)` in tRPC or `requireFlag(key, req)` in a route handler. Hiding a button alone does not enforce access. If the module is absent, the stub keeps each flag's code default.
+
+## Flags or settings?
+
+Use a flag for a per-user rollout such as enabling voice for a percentage of accounts. Use [runtime settings](/landing/doc/runtime-settings) for global values such as your theme, product name or default locale. Secrets belong in environment files.

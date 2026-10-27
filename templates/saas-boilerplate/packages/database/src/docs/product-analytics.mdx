@@ -1,0 +1,17 @@
+The optional **Product analytics** module (`analytics`) adds typed events for activation and feature use through `packages/analytics`. It is separate from GA4 traffic reports and the SEO admin tools.
+
+## Configure it
+
+Set `NEXT_PUBLIC_POSTHOG_KEY` and the host documented in `.env.example` to use PostHog. Development can log to the console; without production configuration no analytics adapter loads. Enable `analytics.consentRequired` in runtime Settings when you want the consent banner to gate loading.
+
+Tracking skips visitors who decline, send Do Not Track or enable Global Privacy Control. There is no autocapture or session recording. Signed-in users are identified by id; event properties use ids, counts and enums rather than names, emails or free text.
+
+## Add an event
+
+Declare it in `packages/analytics/src/events.ts`, with typed properties, inside its module's markers. Server code calls `await track(event, props, { distinctId: userId, headers, groups })` from `@workspace/analytics/server`; browser code uses `@workspace/analytics/client`.
+
+Server tracking gives up after one second and never throws, so analytics does not block product work. Keep event names stable and add new names when semantics change. Wrap emit sites in other modules' files in `analytics` markers.
+
+## Start with activation
+
+Use sign-up, sign-in and the selected module's first meaningful action as an activation funnel. `packages/analytics/README.md` lists events and includes a PostHog dashboard template. SaaS Forge downloader-funnel analytics live separately in `apps/web/lib/scaffold/analytics-events.ts` and do not ship as starter product events.

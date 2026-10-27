@@ -1,0 +1,19 @@
+The optional **Outgoing webhooks** module (`webhooks`) lets customers connect their own endpoints to versioned product events. It requires **Jobs**.
+
+![After commit, a delivery job signs and sends events to a customer endpoint](/cms/v2/event-delivery.png)
+
+## Connect an endpoint
+
+Open **Settings → Webhooks**, add a public endpoint, select event types and save the signing secret shown on creation. Workspace endpoints require the appropriate organization access. Secrets are encrypted at rest using `WEBHOOK_SECRET_KEY`; configure and retain that key before using the module.
+
+## Delivery and verification
+
+Each JSON envelope has an event id, type, API version, creation time and event data. Verify `SaaSForge-Signature` against the raw body using HMAC-SHA256 over `t.body`, and reject stale timestamps. Use the stable event id to deduplicate retries and replays. After secret rotation, the old secret continues signing for 24 hours.
+
+Inngest schedules retries over about 24 hours. Inline delivery makes one attempt. Failed deliveries appear in the delivery log for replay, and an endpoint pauses after 15 consecutive failed attempts. Redirects are refused. Response bodies are ignored.
+
+## Extend events
+
+Declare the payload schema in `apps/web/lib/webhooks/events.ts`, then call `emitWebhook(type, data, { userId, organizationId })` after the change commits. It never throws. Never change a payload under an existing API version.
+
+URLs are checked for private and reserved ranges both when saved and at connect time. Localhost is refused even in development; test through a public HTTPS tunnel. Full receiver examples are in `apps/web/lib/webhooks/README.md`.

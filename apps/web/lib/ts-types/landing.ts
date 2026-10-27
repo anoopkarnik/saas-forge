@@ -1,4 +1,5 @@
 import { CancellationRefundPoliciesProps, ContactUsProps, PrivacyPolicyProps, TermsOfServiceProps } from "./legal";
+import type { FeatureDetails, FeatureGroup } from "@workspace/ui/lib/feature-content";
 
 export interface LandingPageProps {
     navbarSection: NavbarSectionProps;
@@ -42,6 +43,7 @@ export interface HeroImageProps {
 export interface FeatureSectionProps {
     heading: string;
     description: string;
+    groups?: FeatureGroup[];
     features: FeatureProps[];
 }
 
@@ -51,6 +53,8 @@ export interface FeatureProps {
     description: string;
     category?: string;
     imageUrl: string;
+    details?: FeatureDetails | null;
+    sortOrder?: number;
 }
 
 export interface TestimonialSectionProps {

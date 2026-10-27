@@ -1,12 +1,22 @@
 Modules are optional features. The open-source repository contains all of them; a download contains only the modules you select, with no leftover files, imports, env vars, Prisma models or migrations from the others.
 
-| Module | ID | Requires | Credits | Docs |
-| --- | --- | --- | --- | --- |
-| Billing & Payments | `billing` | — | 10 | [Billing](/landing/doc/billing), [Payment Gateways](/landing/doc/payments) |
-| Organizations / Teams | `multi_tenancy` | — | 50 | [Organizations & Teams](/landing/doc/organizations) |
-| AI Platform | `ai` | — | 20 | [AI Platform](/landing/doc/ai-platform) |
-| AI Agents & RAG | `ai_agents` | `ai` | 30 | [AI Agents & RAG](/landing/doc/ai-agents) |
-| API Keys | `api_keys` | — | 5 | [API Keys & REST API](/landing/doc/api-keys) |
+![Choose modules and providers, compile the selected starter, then run setup locally](/cms/v2/module-selection.png)
+
+| Module                                                 | ID              | What it adds                                                                                                                                                                                                                                                         | Requires     | Credits |
+| ------------------------------------------------------ | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ | ------- |
+| [Billing & Payments](/landing/doc/billing)             | `billing`       | Checkout, transactions, credits purchase UI, payment webhooks, and a usage ledger with a /usage dashboard: spend by meter, rates, balance history and threshold alerts.                                                                                              | —            | 10      |
+| [Organizations / Teams](/landing/doc/organizations)    | `multi_tenancy` | Workspaces, member invites, workspace switching, and owner/admin/member/viewer roles.                                                                                                                                                                                | —            | 50      |
+| [AI Platform](/landing/doc/ai-platform)                | `ai`            | Chat UI, prompt management, multi-provider abstraction, speech (TTS/STT), and token-aware credit metering.                                                                                                                                                           | —            | 20      |
+| [AI Agents & RAG (Python)](/landing/doc/ai-agents)     | `ai_agents`     | FastAPI execution with LangGraph agents and RAG, dispatched by web Inngest. Requires AI Platform and Jobs.                                                                                                                                                           | `ai`, `jobs` | 30      |
+| [API Keys](/landing/doc/api-keys)                      | `api_keys`      | Scoped API keys users create in Settings, hashed at rest, with per-key rate limits and an /api/v1/me endpoint.                                                                                                                                                       | —            | 5       |
+| [MCP server](/landing/doc/mcp)                         | `mcp`           | An MCP endpoint at /api/mcp so your users can connect Claude, ChatGPT, Cursor and other AI agents to their account with an API key. Tools come from the modules you pick: profile and credits, plus usage, workspaces and notifications. Requires API Keys.          | `api_keys`   | 10      |
+| [Background jobs & cron](/landing/doc/background-jobs) | `jobs`          | Typed background jobs on Inngest with retries, a dead-letter queue and replay, cron schedules, and email sent through the queue. Without it, jobs run inline.                                                                                                        | —            | 15      |
+| [Notifications](/landing/doc/notifications)            | `notifications` | An in-app bell and inbox on web, desktop and mobile, per-type email and in-app preferences, and email delivered as a background job. Ships with payment, low-credit and invitation events.                                                                           | —            | 5       |
+| [Audit log](/landing/doc/audit-log)                    | `audit_log`     | An append-only trail of admin, invitation, organization, API key, CMS and prompt changes, with filters and CSV export at /admin/audit, workspace activity for organization admins, and retention set in Settings.                                                    | —            | 10      |
+| [Outgoing webhooks](/landing/doc/outgoing-webhooks)    | `webhooks`      | Customer-managed webhook endpoints with HMAC-signed, versioned events, retries with backoff for 24 hours, a delivery log with replay, secret rotation and SSRF protection. Requires background jobs.                                                                 | `jobs`       | 10      |
+| [Feature flags](/landing/doc/feature-flags)            | `feature_flags` | Per-user feature flags evaluated on the server: role, user, workspace and percentage rules, an admin page with rule editor, preview and history, useFlag() in the UI and flagProcedure() to enforce them. Without it every flag keeps its code default.              | —            | 10      |
+| [Onboarding](/landing/doc/onboarding)                  | `onboarding`    | A skippable welcome wizard and a setup checklist whose tasks come from the modules you pick (profile, team invite, credits, first AI chat, API key), completed from real data. Toggle both in Settings.                                                              | —            | 5       |
+| [Product analytics](/landing/doc/product-analytics)    | `analytics`     | Typed product events on PostHog (or console logging in development): sign-up, sign-in and an event per module, sent from the server with ids only. No autocapture, Do Not Track and Global Privacy Control honoured, and an optional consent banner set in Settings. | —            | 5       |
 
 ## Which modules does my project have?
 
@@ -32,6 +42,7 @@ Module code lives in three forms, and the download builder handles each:
    ```
 
    The markers themselves never ship.
+
 3. **Small slots** that differ by module, such as the workspace switcher in the sidebar, are replaced by a no-op stub.
 
 Every variant is checked in SaaS Forge's CI: each module alone, every pair and all modules are compiled, installed, typechecked and scanned for leftovers, and a nightly job boots the smallest and largest variants against a fresh database.
@@ -40,11 +51,11 @@ Every variant is checked in SaaS Forge's CI: each module alone, every pair and a
 
 Some integrations have interchangeable providers. They are pruned the same way, inside the module that owns them:
 
-| Toggle | Env var | Choices | Owner |
-| --- | --- | --- | --- |
-| `payment_gateway` | `NEXT_PUBLIC_PAYMENT_GATEWAY` | `stripe`, `dodo`, `none` | Billing |
-| `image_storage` | `NEXT_PUBLIC_IMAGE_STORAGE` | `vercel_blob`, `cloudflare_r2` | Core |
-| `cms` | `NEXT_PUBLIC_CMS` | `constant`, `postgres` | Core |
+| Toggle            | Env var                       | Choices                        | Owner   |
+| ----------------- | ----------------------------- | ------------------------------ | ------- |
+| `payment_gateway` | `NEXT_PUBLIC_PAYMENT_GATEWAY` | `stripe`, `dodo`, `none`       | Billing |
+| `image_storage`   | `NEXT_PUBLIC_IMAGE_STORAGE`   | `vercel_blob`, `cloudflare_r2` | Core    |
+| `cms`             | `NEXT_PUBLIC_CMS`             | `constant`, `postgres`         | Core    |
 
 A download keeps only the provider you picked and pins the default to it. Leave a toggle unset in the wizard to keep every choice, or set `KEEP_ALL_PROVIDERS=true`. Switching provider later is a free upgrade.
 

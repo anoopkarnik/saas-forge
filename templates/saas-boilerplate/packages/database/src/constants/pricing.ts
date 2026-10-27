@@ -1,6 +1,6 @@
-
 export const pricingSectionData = {
-  "heading": "Pricing\n",
-  "description": "Choose the best plan for you. We offer a free plan, pro plan and the premium plan\n",
-  "plans": []
+  heading: "Pricing\n",
+  description:
+    "Start with the open-source repository or configure a starter. The builder shows the credit cost for your modules and stage before you confirm.",
+  plans: [],
 };

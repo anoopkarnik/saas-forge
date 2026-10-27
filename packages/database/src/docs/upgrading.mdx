@@ -17,9 +17,25 @@ Open **My Projects** (`/projects`) on [saasforge.cc](https://saasforge.cc) and e
 - **Upgrade preview**: pick modules to add, a later stage (tier), or a different provider, and see the files the upgrade adds, changes and removes, plus the price, before you pay.
 - **Release emails**: opt in to one email per release that changes one of your projects.
 
-## Three ways to apply an upgrade
+![Check your installed version, review a release kit, merge the delta and verify locally](/cms/v2/release-upgrades.png)
 
-### 1. Merge the template branch (free fixes)
+## Free release updates for the code you own
+
+Open the project's Upgrade Center or run:
+
+```bash
+npx create-saas-forge status
+npx create-saas-forge upgrade --dry-run
+npx create-saas-forge upgrade
+```
+
+The release kit compares the project's recorded starter release with the latest available snapshot. It carries changes for the modules you already own, rather than adding unselected modules. Review `UPGRADE.md`, `UPGRADE_SPEC.json` and the staged `.upgrade/` files, then merge the changes with your custom code.
+
+A release kit depends on the required release snapshots being available. When it is unavailable, follow the release notes and apply the changes manually. Use `npx create-saas-forge upgrade --mark-current` only after you have applied and verified them; it records completion rather than applying code.
+
+## Other upgrade paths
+
+### Merge the template branch
 
 Every release is published to the `template/saas-boilerplate` branch with a `template/v<version>` tag. Merging it brings in fixes and improvements for the code you have. Full steps are in `UPGRADING.md` at the root of your project; the short version:
 
@@ -40,7 +56,7 @@ pnpm test
 
 The template branch contains the full starter with every module. If your project left modules out, delete the files they bring back, or prefer an upgrade kit.
 
-### 2. Buy an upgrade kit (new modules, stages, providers)
+### Add modules, move stages or switch providers
 
 From the Upgrade Center or the CLI:
 
@@ -49,11 +65,11 @@ npx create-saas-forge upgrade --add api_keys --dry-run
 npx create-saas-forge upgrade --add api_keys --yes
 ```
 
-| Change | Price |
-| --- | --- |
-| Add a module | That module's credits |
-| Move to a later stage (tier) | 3 credits per step |
-| Switch a provider (for example Stripe to Dodo) | Free |
+| Change                                         | Price                 |
+| ---------------------------------------------- | --------------------- |
+| Add a module                                   | That module's credits |
+| Move to a later stage (tier)                   | 3 credits per step    |
+| Switch a provider (for example Stripe to Dodo) | Free                  |
 
 The kit is a ZIP with:
 
@@ -61,7 +77,7 @@ The kit is a ZIP with:
 - `UPGRADE_SPEC.json`: added and removed modules, new env vars, and the added, modified and removed files;
 - `.upgrade/`: the staged new and changed files.
 
-### 3. Apply a kit with Claude Code
+### Apply a kit with Claude Code
 
 Every project ships a `/upgrade-boilerplate` command for Claude Code. Unpack the kit into your project, then:
 
@@ -82,11 +98,11 @@ It reads `UPGRADE_SPEC.json` and `.upgrade/`, merges the changes into your custo
 
 ## Resolving merge conflicts
 
-| Files | Usual strategy |
-| --- | --- |
-| `pnpm-lock.yaml` | Take theirs, then `pnpm install` |
-| `packages/auth`, `packages/ui`, `packages/email` | Usually take the boilerplate's version |
-| `packages/database/prisma/*.prisma` | Merge by hand, then create a migration |
-| `apps/web/middleware.ts`, `apps/web/trpc/`, `apps/web/lib/route-policy.ts` | Merge both sides carefully |
-| Your product code under `apps/web/app/(home)/` | Keep yours |
-| `*.env.example` | Merge, then add new variables to your `.env` |
+| Files                                                                      | Usual strategy                               |
+| -------------------------------------------------------------------------- | -------------------------------------------- |
+| `pnpm-lock.yaml`                                                           | Take theirs, then `pnpm install`             |
+| `packages/auth`, `packages/ui`, `packages/email`                           | Usually take the boilerplate's version       |
+| `packages/database/prisma/*.prisma`                                        | Merge by hand, then create a migration       |
+| `apps/web/middleware.ts`, `apps/web/trpc/`, `apps/web/lib/route-policy.ts` | Merge both sides carefully                   |
+| Your product code under `apps/web/app/(home)/`                             | Keep yours                                   |
+| `*.env.example`                                                            | Merge, then add new variables to your `.env` |

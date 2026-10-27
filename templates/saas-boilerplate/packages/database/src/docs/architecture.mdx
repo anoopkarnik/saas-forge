@@ -1,5 +1,7 @@
 How the pieces fit, and the rules that keep them apart.
 
+![Clients call the Next.js API, which authorizes access to services and storage](/cms/v2/architecture.png)
+
 ## Request flow
 
 ```text
@@ -20,27 +22,27 @@ Browser / Desktop / Mobile
 
 ## Layers
 
-| Layer | Location | May import |
-| --- | --- | --- |
-| Pages and layouts | `apps/web/app/**/page.tsx`, `layout.tsx` | tRPC (server proxy or hooks), components, `lib` services |
-| Components and hooks | `apps/web/components`, `apps/web/blocks`, `apps/web/hooks`, `packages/ui` | tRPC hooks, other components |
-| tRPC routers and route handlers | `apps/web/trpc/routers`, `apps/web/app/api` | `lib` services, `server` helpers, packages, Prisma |
-| Services | `apps/web/lib` | Packages, Prisma |
-| Server helpers | `apps/web/server` | Packages, Prisma |
-| Shared packages | `packages/*` | Other packages, never apps |
+| Layer                           | Location                                                                  | May import                                               |
+| ------------------------------- | ------------------------------------------------------------------------- | -------------------------------------------------------- |
+| Pages and layouts               | `apps/web/app/**/page.tsx`, `layout.tsx`                                  | tRPC (server proxy or hooks), components, `lib` services |
+| Components and hooks            | `apps/web/components`, `apps/web/blocks`, `apps/web/hooks`, `packages/ui` | tRPC hooks, other components                             |
+| tRPC routers and route handlers | `apps/web/trpc/routers`, `apps/web/app/api`                               | `lib` services, `server` helpers, packages, Prisma       |
+| Services                        | `apps/web/lib`                                                            | Packages, Prisma                                         |
+| Server helpers                  | `apps/web/server`                                                         | Packages, Prisma                                         |
+| Shared packages                 | `packages/*`                                                              | Other packages, never apps                               |
 
 ## Enforced rules
 
 `pnpm arch:check` runs [dependency-cruiser](https://github.com/sverweij/dependency-cruiser) with `.dependency-cruiser.cjs`, in CI on every pull request:
 
-| Rule | Why |
-| --- | --- |
-| `no-circular` | No import cycles, including type-only ones |
-| `packages-not-to-apps` | Shared packages never depend on an app |
-| `ui-not-to-database` | Components, hooks, `packages/ui`, the desktop renderer and mobile never import `@workspace/database`; they go through tRPC or a `lib` service |
-| `pages-not-to-database` | Pages and layouts load data through tRPC hydration or a `lib` service |
-| `services-not-to-controllers` | `apps/web/lib` never imports route handlers or tRPC routers |
-| `ui-components-not-to-blocks` | In `packages/ui`, blocks compose components, never the reverse |
+| Rule                          | Why                                                                                                                                           |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `no-circular`                 | No import cycles, including type-only ones                                                                                                    |
+| `packages-not-to-apps`        | Shared packages never depend on an app                                                                                                        |
+| `ui-not-to-database`          | Components, hooks, `packages/ui`, the desktop renderer and mobile never import `@workspace/database`; they go through tRPC or a `lib` service |
+| `pages-not-to-database`       | Pages and layouts load data through tRPC hydration or a `lib` service                                                                         |
+| `services-not-to-controllers` | `apps/web/lib` never imports route handlers or tRPC routers                                                                                   |
+| `ui-components-not-to-blocks` | In `packages/ui`, blocks compose components, never the reverse                                                                                |
 
 Fix a violation by moving the code to the right layer, for example a Prisma query from a page into a procedure or a `lib` service.
 
@@ -71,4 +73,4 @@ const { data } = useSuspenseQuery(trpc.reports.list.queryOptions());
 
 ## Configuration
 
-Feature toggles are environment variables, read where they are used. There is no central config service. Boot validation (`apps/web/lib/env.ts`) makes sure the toggles you turn on have their credentials.
+Integration credentials and provider toggles live in environment variables. Boot validation (`apps/web/lib/env.ts`) checks enabled integrations. Non-secret runtime values are resolved by the [site-config service](/landing/doc/runtime-settings): database override, then environment default, then code default. Per-user access to gradual releases belongs in [feature flags](/landing/doc/feature-flags).

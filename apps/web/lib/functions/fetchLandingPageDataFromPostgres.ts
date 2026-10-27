@@ -16,6 +16,7 @@ import {
 } from "@/lib/ts-types/landing";
 import { CancellationRefundPoliciesProps, ContactUsProps, PrivacyPolicyProps, TermsOfServiceProps } from "@/lib/ts-types/legal";
 import prisma from "@workspace/database/client";
+import { readFeatureDetails, readFeatureGroups } from "@workspace/ui/lib/feature-content";
 
 export async function fetchLandingPageDataFromPostgres(): Promise<LandingPageProps> {
     const saasName = process.env.NEXT_PUBLIC_SAAS_NAME || "";
@@ -26,7 +27,7 @@ export async function fetchLandingPageDataFromPostgres(): Promise<LandingPagePro
         },
         include: {
             heroImages: true,
-            features: true,
+            features: { orderBy: [{ sortOrder: "asc" }, { id: "asc" }] },
             testimonials: true,
             pricingPlans: true,
             faqs: true,
@@ -64,12 +65,15 @@ export async function fetchLandingPageDataFromPostgres(): Promise<LandingPagePro
     const featureSection: FeatureSectionProps = {
         heading: landingPageData.featureHeading || "",
         description: landingPageData.featureDescription || "",
+        groups: readFeatureGroups(landingPageData.featureGroups),
         features: landingPageData.features.map((item: any) => ({
             id: item.id,
             title: item.title,
             description: item.description || "",
             imageUrl: item.imageUrl || "",
             category: item.category || "",
+            details: readFeatureDetails(item.details),
+            sortOrder: item.sortOrder,
         })),
     };
 

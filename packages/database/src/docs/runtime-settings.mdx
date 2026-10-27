@@ -1,0 +1,17 @@
+Change non-secret product settings at **Admin → Settings** (`/admin/settings`) without redeploying. The source of truth is `apps/web/lib/site-config/registry.ts`.
+
+## Resolution order
+
+1. A saved `AppSetting` database override.
+2. The setting's environment variable, if configured.
+3. Its code default.
+
+Settings include branding, theme, visible auth buttons, registration, analytics consent and the default locale. Availability follows installed modules. Hiding an auth button does not configure its provider: credentials are still required in the environment.
+
+## Read settings
+
+Server code calls `getSiteConfig()`; client code calls `useSiteConfig()` from the hydrated provider. `siteConfig.get` returns only public keys. The root layout is dynamic so runtime changes can take effect. Redis caches settings when enabled, with an in-memory fallback; updates invalidate the cache.
+
+To add a setting, declare its Zod schema, public visibility, environment default and code default in the registry. Secret-looking names are rejected. API tokens, database passwords and signing keys remain in `.env`; support email also remains an environment value because it is the sender identity.
+
+Use [feature flags](/landing/doc/feature-flags) for targeted boolean rollouts rather than global configuration.

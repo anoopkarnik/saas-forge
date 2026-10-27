@@ -23,7 +23,7 @@ npx create-saas-forge my-app --modules billing,ai --platforms web,mobile --yes
 npx create-saas-forge new my-app --project my-saved-project --yes
 ```
 
-The CLI saves the selection as a project on your account, shows the price before charging, adds modules a selection requires (AI Agents needs AI Platform), and extracts the archive into `my-app`. It writes `.saas-forge.json` with the project slug so later upgrades know which project this is. Downloading a build you already own is free.
+The CLI saves the selection as a project on your account, shows the price before charging, adds modules a selection requires (AI Agents needs AI Platform and Jobs), and extracts the archive into `my-app`. It writes `.saas-forge.json` with the project slug so later upgrades know which project this is. Downloading a build you already own is free.
 
 Add `--install` to also run `git init`, add the published template branch as a `saas-forge` git remote, and run `pnpm install` and `pnpm generate`.
 
@@ -53,18 +53,28 @@ npx create-saas-forge credits   # remaining credits
 npx create-saas-forge --help
 ```
 
-| Option | Meaning |
-| --- | --- |
-| `--modules a,b` | Modules to include (`billing`, `multi_tenancy`, `ai`, `ai_agents`, `api_keys`) |
-| `--platforms a,b` | Platforms: `web`, `desktop`, `mobile` (default `web`) |
-| `--name <name>` | Project name (defaults to the directory name) |
-| `--project <slug>` | Use an existing saved project |
-| `--api-key <key>` | Use this key instead of the saved one or `SAAS_FORGE_API_KEY` |
-| `--url <server>` | Point at another SaaS Forge server (`SAAS_FORGE_URL`); the default is `https://saasforge.cc` |
-| `--yes`, `-y` | Skip confirmations (required without a terminal) |
-| `--install` | Run git and pnpm setup after extracting |
-| `--dry-run` | Upgrade only: show the plan and price without buying |
+| Option             | Meaning                                                                                      |
+| ------------------ | -------------------------------------------------------------------------------------------- |
+| `--modules a,b`    | Comma-separated module IDs; see [all 13 modules](/landing/doc/modules-overview)              |
+| `--platforms a,b`  | Platforms: `web`, `desktop`, `mobile` (default `web`)                                        |
+| `--name <name>`    | Project name (defaults to the directory name)                                                |
+| `--project <slug>` | Use an existing saved project                                                                |
+| `--api-key <key>`  | Use this key instead of the saved one or `SAAS_FORGE_API_KEY`                                |
+| `--url <server>`   | Point at another SaaS Forge server (`SAAS_FORGE_URL`); the default is `https://saasforge.cc` |
+| `--yes`, `-y`      | Skip confirmations (required without a terminal)                                             |
+| `--install`        | Run git and pnpm setup after extracting                                                      |
+| `--dry-run`        | Upgrade only: show the plan and price without buying                                         |
 
 `upgrade` refuses to send your key to a server other than the one it was created for unless you pass `--url` explicitly.
 
 The older `npx saas-forge` command clones the whole open-source repository. It prints a deprecation notice and will be removed in a later release.
+
+## Check and update your release
+
+```bash
+npx create-saas-forge status
+npx create-saas-forge upgrade --dry-run
+npx create-saas-forge upgrade
+```
+
+Release kits update the code you already own at no credit cost. Review the staged changes before merging them into your app. If you applied the release manually, `upgrade --mark-current` records that completed work. See [Upgrading Your Project](/landing/doc/upgrading) for snapshot requirements and verification.

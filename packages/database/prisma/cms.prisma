@@ -18,6 +18,7 @@ model LandingPage {
   // Section headings
   featureHeading        String?
   featureDescription    String?
+  featureGroups         Json?
   testimonialHeading    String?
   testimonialDescription String?
   pricingHeading        String?
@@ -69,6 +70,8 @@ model Feature {
   description   String?
   imageUrl      String?
   category      String?
+  details       Json?
+  sortOrder     Int         @default(0)
 
   @@schema("cms_schema")
 }

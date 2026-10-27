@@ -1,0 +1,15 @@
+The optional **Notifications** module (`notifications`) adds a bell and inbox on web, desktop and mobile, plus per-type preferences for in-app and email delivery.
+
+![Notifications are emitted after commit and email is delivered through a job](/cms/v2/event-delivery.png)
+
+## What users see
+
+Users control notification channels in Settings. Included event types cover invitations and, when their owning modules are selected, successful payments and low credits. The bell refreshes its unread count every five minutes, on window focus and when opened. Demo guests can read the inbox but cannot mark notifications read.
+
+## Add a notification
+
+Declare its label, default channels and render function in `apps/web/lib/notifications/catalog.ts`, inside its module's scaffold markers. After the work commits, call `notify(definition, userId, data, { dedupeKey, organizationId })`.
+
+A repeated dedupe key skips the duplicate instead of throwing. In-app notifications are stored in the database; email runs through `notification.deliver` and the user's saved preferences. Configure your [email provider](/landing/doc/email) for delivery. With Jobs on Inngest, deliveries run in the background; otherwise the inline job fallback applies.
+
+Keep notification emit sites in other modules' files inside `notifications` scaffold markers so a starter without this module compiles cleanly.

@@ -1,0 +1,19 @@
+Move email, scheduled maintenance and other slow work out of the request path with the optional **Jobs** module (`jobs`).
+
+![Committed work is dispatched through jobs to notifications and customer webhooks](/cms/v2/event-delivery.png)
+
+## Run it
+
+Set `JOBS_DRIVER=inngest` and configure the Inngest credentials listed in `apps/web/.env.example`. The web app serves registered functions at `/api/inngest`. Without a queue, jobs run inline with the same job-level retries; this is useful locally but does not provide durable background execution.
+
+Open **Admin → Jobs** (`/admin/jobs`) to inspect dead letters and replay work after fixing the cause. Cron schedules use a recorded time window so the same window is claimed once.
+
+## Add a job
+
+Use `defineJob(name, zodSchema, handler, { retries, version })` from `@workspace/jobs/index`, then call `enqueue(job, payload, { delayMs, dedupeKey })`. Register its module in `apps/web/lib/jobs/functions.ts`. Use `defineSchedule(name, cron, job)` for recurring work and `PermanentJobError` for failures a retry cannot fix.
+
+Keep handlers idempotent: a retry or manual replay must not duplicate a payment, email or other side effect. Send email with `sendEmail` from `@workspace/email/jobs`, which uses the `email.send` job.
+
+## Related modules
+
+[Outgoing webhooks](/landing/doc/outgoing-webhooks) and [AI Agents & RAG](/landing/doc/ai-agents) require Jobs. [Notifications](/landing/doc/notifications) can use the inline fallback, with email delivered through its job.

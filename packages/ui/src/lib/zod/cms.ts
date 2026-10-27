@@ -1,4 +1,5 @@
 import * as z from "zod";
+import { cmsFeaturesSchema, featureGroupsSchema } from "../feature-content";
 
 export type CmsAssistantSection =
     | "navbar"
@@ -56,13 +57,8 @@ export type HeroFormValues = z.infer<typeof heroFormSchema>;
 export const featuresFormSchema = z.object({
     featureHeading: z.string().optional(),
     featureDescription: z.string().optional(),
-    features: z.array(z.object({
-        id: z.string().optional(),
-        title: z.string(),
-        description: z.string(),
-        category: z.string().optional(),
-        imageUrl: z.string()
-    })).optional(),
+    featureGroups: featureGroupsSchema.optional(),
+    features: cmsFeaturesSchema.optional(),
 });
 export type FeaturesFormValues = z.infer<typeof featuresFormSchema>;
 

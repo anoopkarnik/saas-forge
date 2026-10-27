@@ -4,10 +4,10 @@ The Billing & Payments module (`billing`) sells **credits**: users buy them thro
 
 Every user has two counters on the `User` model:
 
-| Field | Meaning |
-| --- | --- |
+| Field          | Meaning                                                                 |
+| -------------- | ----------------------------------------------------------------------- |
 | `creditsTotal` | Credits granted or bought. New users start with 20 (the schema default) |
-| `creditsUsed` | Credits spent |
+| `creditsUsed`  | Credits spent                                                           |
 
 Remaining credits = `creditsTotal - creditsUsed`. The sidebar user menu shows a progress bar, and **Settings → Plans & Billing** shows the balance, a purchase slider and the transaction history.
 
@@ -24,7 +24,9 @@ import { useMutation } from "@tanstack/react-query";
 import { useTRPC } from "@/trpc/client";
 
 const trpc = useTRPC();
-const checkout = useMutation(trpc.billing.createCheckoutSession.mutationOptions());
+const checkout = useMutation(
+  trpc.billing.createCheckoutSession.mutationOptions(),
+);
 
 const { checkoutUrl } = await checkout.mutateAsync({ credits: 100 });
 if (checkoutUrl) window.location.href = checkoutUrl;
@@ -65,7 +67,10 @@ export const reportsRouter = createTRPCRouter({
           select: { creditsTotal: true, creditsUsed: true },
         });
         if (user.creditsTotal - user.creditsUsed < REPORT_COST) {
-          throw new TRPCError({ code: "FORBIDDEN", message: "Not enough credits" });
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Not enough credits",
+          });
         }
         await tx.user.update({
           where: { id: userId },
@@ -86,12 +91,12 @@ If the work can fail after charging, refund with `creditsUsed: { decrement: REPO
 
 ## Procedures
 
-| Procedure | Type | Purpose |
-| --- | --- | --- |
-| `billing.createCheckoutSession` | mutation | Start a checkout for N credits |
-| `billing.createNewCustomer` | mutation | Create a customer at the gateway |
-| `billing.getCreditsBalance` | query | `creditsTotal` and `creditsUsed` |
-| `billing.getTransactions` | query | Payment history |
+| Procedure                       | Type     | Purpose                          |
+| ------------------------------- | -------- | -------------------------------- |
+| `billing.createCheckoutSession` | mutation | Start a checkout for N credits   |
+| `billing.createNewCustomer`     | mutation | Create a customer at the gateway |
+| `billing.getCreditsBalance`     | query    | `creditsTotal` and `creditsUsed` |
+| `billing.getTransactions`       | query    | Payment history                  |
 
 All require a signed-in, non-guest user.
 
@@ -100,3 +105,7 @@ All require a signed-in, non-guest user.
 The module sells one-time credit packs. For subscriptions, use your gateway's subscription products and handle their events in the webhook. The Dodo handler already has an `onSubscriptionActive` hook where that logic goes. Store the plan on the user (the `access` field — `TRIAL`, `PRO`, `ENTERPRISE`, `UNLIMITED` — is there for this) and check it in your procedures.
 
 Gateway setup and webhooks are on [Payment Gateways](/landing/doc/payments).
+
+## Usage history
+
+The Billing module also includes a [usage ledger](/landing/doc/usage-ledger) at `/usage`, with spend by meter, balance history and threshold alerts. Record usage inside the transaction of the work so retries cannot charge twice.

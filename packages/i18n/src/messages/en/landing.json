@@ -10,7 +10,7 @@
     "slideAlt": "Hero Slide",
     "addScreenshots": "Add your product screenshots in the CMS"
   },
-  "feature": { "imageAlt": "Feature Image", "visualPreview": "Visual Preview" },
+  "feature": {"imageAlt": "Feature Image", "visualPreview": "Visual Preview", "general": "General", "navigation": "Explore features", "included": "Included in the starter", "optional": "Optional module", "platform": "SaaS Forge platform", "capabilities": "What you can do", "tools": "Tools and integrations", "dependencies": "Requires", "documentation": "Read documentation", "builtWith": "Built with", "chooseOne": "Choose one provider", "signIn": "Sign-in options", "compatible": "Compatible tools", "opensNewTab": "(opens in a new tab)"},
   "pricing": { "mostPopular": "Most popular" },
   "testimonials": { "label": "Customer testimonials" },
   "footer": { "madeBy": "© 2026 Made by" },

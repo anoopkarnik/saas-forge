@@ -1,0 +1,23 @@
+SaaS Forge supports MCP in two directions: your product can expose read-only account tools to AI clients, and AI chat can call tools on remote MCP servers.
+
+![An AI client presents a scoped key, then validated read-only tools access account services](/cms/v2/mcp-access.png)
+
+## Expose your product: MCP server module
+
+The optional `mcp` module requires `api_keys` and serves `/api/mcp` with stateless Streamable HTTP. Create a key in **Settings → API keys**, select the scopes needed and use the connect commands shown there for your AI client.
+
+Tools follow the installed modules: profile and credits, plus usage, workspaces and notifications when available. The key's user id supplies account context; tools do not accept another user id as input. Revocation, expiry, scopes and per-key rate limits are checked on the server.
+
+To add a tool, use `defineMcpTool` in `apps/web/lib/mcp/catalog.ts` and add its scope to `packages/auth/src/api-keys/scopes.ts`, with the appropriate module markers. Call a service from `run`; `callMcpTool` checks scope and validates input again. Use `McpToolError` for actionable messages. Other errors are logged and returned generically.
+
+Keep tools read-only. Credit-spending or destructive actions need a confirmation step outside the model.
+
+## Call remote tools: AI chat client
+
+With AI Platform installed, server-only `AI_MCP_SERVERS` is a JSON array of `{ name, url, headers? }`. The chat route connects per request, adds tools as `<server>_<tool>`, allows up to five steps and accounts for total usage across them. Connections have a five-second timeout and refuse redirects. Bad configurations or unreachable servers are logged and skipped.
+
+Every signed-in user shares this server list and its headers. Configure only data sources all those users may access. The Python `mcp_tools` agent reads the same setting; tool results remain untrusted data.
+
+## SaaS Forge platform tools
+
+The source repository also provides catalog, saved-project, quote and release-note tools through `apps/web/lib/scaffold/mcp-tools.ts`. These platform tools are replaced with an empty slot in the starter. Quotes never charge credits or download code.

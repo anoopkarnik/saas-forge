@@ -1,8 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { featureSectionData } from "@workspace/database/constants/features";
-import { documentationData } from "@workspace/database/constants/docs";
+import { documentationData, landingPageData } from "@workspace/database/constants";
 import { cmsFeaturesSchema, featureGroupsSchema } from "@workspace/ui/lib/feature-content";
 
 const root = path.resolve(import.meta.dirname, "../../../..");
@@ -14,6 +13,7 @@ const moduleFeatures: Record<string, string[]> = {
   notifications: ["notifications"], audit_log: ["audit-log"], webhooks: ["webhooks"],
   feature_flags: ["feature-flags"], onboarding: ["onboarding"], analytics: ["analytics"],
 };
+const featureSectionData = landingPageData.featureSection;
 const features = featureSectionData.features;
 const byKey = new Map(features.map((feature) => [feature.details.key, feature]));
 

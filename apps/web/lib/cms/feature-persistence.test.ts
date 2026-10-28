@@ -31,7 +31,7 @@ describe('feature persistence', () => {
  it('allows explicitly clearing structured content and deleting all items',async()=>{
   const tx=transaction();
   await saveLandingFeatures(tx as never,'page',[{id:'owned',title:'Email',description:'',imageUrl:'',details:null}]);
-  expect(tx.feature.update.mock.calls[0][0].data.details).not.toEqual(details);
+  expect(tx.feature.update.mock.calls[0]![0].data.details).not.toEqual(details);
   await saveLandingFeatures(tx as never,'page',[]);
   expect(tx.feature.deleteMany).toHaveBeenLastCalledWith({where:{landingPageId:'page',id:{notIn:[]}}});
  });

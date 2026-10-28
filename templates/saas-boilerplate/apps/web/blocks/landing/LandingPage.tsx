@@ -1,12 +1,11 @@
 "use client"
-import dynamic from 'next/dynamic'
-
-const FeatureSection = dynamic(() => import('@/components/landing/FeatureSection'))
-const FooterSection = dynamic(() => import('@/components/landing/FooterSection'))
-const PricingSection = dynamic(() => import('@/components/landing/PricingSection'))
-const TestimonialSection = dynamic(() => import('@/components/landing/TestimonialSection'))
-const FAQSection = dynamic(() => import('@/components/landing/FAQSection'))
-
+// Static imports: every section is server-rendered, and a next/dynamic (React.lazy)
+// wrapper that resolves during hydration makes useId differ from the server HTML.
+import FAQSection from '@/components/landing/FAQSection'
+import FeatureSection from '@/components/landing/FeatureSection'
+import FooterSection from '@/components/landing/FooterSection'
+import PricingSection from '@/components/landing/PricingSection'
+import TestimonialSection from '@/components/landing/TestimonialSection'
 import HeroSection from '@/components/landing/HeroSection'
 import NavbarSection from '@/components/landing/NavbarSection'
 import { useTRPC } from '@/trpc/client'

@@ -20,6 +20,7 @@
     "@hookform/resolvers": "^5.2.2",
     "@react-native-community/slider": "^5.1.2",
     "@workspace/auth": "workspace:*",
+    "@workspace/ui": "workspace:*",
     "better-auth": "^1.5.5",
     "expo": "~55.0.5",
     "expo-constants": "^55.0.7",

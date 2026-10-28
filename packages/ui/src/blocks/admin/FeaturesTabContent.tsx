@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect } from "react";
-import { useForm, useWatch } from "react-hook-form";
+import { useForm, useWatch, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@workspace/ui/components/shadcn/form";
 import { Input } from "@workspace/ui/components/shadcn/input";
@@ -15,7 +15,8 @@ import { featuresFormSchema, type FeaturesFormValues, type SectionTabProps } fro
 
 export function FeaturesTabContent({ initialData, onSave, isSaving, uploadUrl, aiDraft, isAiFilling, onAIFill }: SectionTabProps) {
     const form = useForm<FeaturesFormValues>({
-        resolver: zodResolver(featuresFormSchema),
+        // The schema defaults imageUrl for older API clients; this form always sets it.
+        resolver: zodResolver(featuresFormSchema) as Resolver<FeaturesFormValues>,
         defaultValues: {
             featureHeading: "", featureDescription: "", featureGroups: [], features: [],
         },

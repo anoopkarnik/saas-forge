@@ -54,7 +54,7 @@ vi.mock("@workspace/auth/better-auth/auth", () => ({ auth: { api: { getSession }
 
 import { audit, userActor } from "@/lib/audit/audit";
 import { withAuthAudit } from "@/lib/audit/auth-events";
-import { deleteAuditEventsOlderThan, exportAuditCsv } from "@/lib/audit/service";
+import { deleteAuditEventsOlderThan, exportAuditCsv } from "@workspace/audit/service";
 import { auditRouter } from "@/trpc/routers/auditProcedures";
 
 const CANARY = "canary-secret-7f3a";

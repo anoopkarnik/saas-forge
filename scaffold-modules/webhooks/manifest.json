@@ -11,7 +11,8 @@
     "emitWebhook",
     "webhook.deliver",
     "WEBHOOK_SECRET_KEY",
-    "SaaSForge-Signature"
+    "SaaSForge-Signature",
+    "@workspace/webhooks"
   ],
   "unselected": {
     "remove": [
@@ -21,15 +22,28 @@
       "packages/database/prisma/webhooks.prisma",
       "packages/database/prisma/migrations/20261007123820_webhooks",
       "packages/i18n/src/messages/en/webhooks.json",
-      "packages/i18n/src/messages/es/webhooks.json"
+      "packages/i18n/src/messages/es/webhooks.json",
+      "packages/webhooks",
+      "packages/ui/src/components/webhooks",
+      "packages/ui/src/blocks/webhooks"
     ],
     "jsonRemove": [
       {
         "file": "turbo.json",
         "keys": {
-          "globalEnv": [
-            "WEBHOOK_SECRET_KEY"
-          ]
+          "globalEnv": ["WEBHOOK_SECRET_KEY"]
+        }
+      },
+      {
+        "file": "apps/web/package.json",
+        "keys": {
+          "dependencies": ["@workspace/webhooks"]
+        }
+      },
+      {
+        "file": "packages/billing/package.json",
+        "keys": {
+          "dependencies": ["@workspace/webhooks"]
         }
       }
     ]

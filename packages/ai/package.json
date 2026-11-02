@@ -10,7 +10,9 @@
   },
   "exports": {
     ".": "./src/index.ts",
-    "./mcp": "./src/mcp.ts"
+    "./mcp": "./src/mcp.ts",
+    "./speech": "./src/speech.ts",
+    "./agent-stream": "./src/agent-stream.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^2.0.0",

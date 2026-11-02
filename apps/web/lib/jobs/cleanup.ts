@@ -3,10 +3,10 @@ import db from "@workspace/database/client";
 import { defineJob, defineSchedule } from "@workspace/jobs/index";
 // scaffold:begin billing
 import { logger } from "@workspace/observability/winston-logger";
-import { findUsageDrift } from "@/lib/usage/service";
+import { findUsageDrift } from "@workspace/billing/usage/service";
 // scaffold:end billing
 // scaffold:begin audit_log
-import { deleteAuditEventsOlderThan } from "@/lib/audit/service";
+import { deleteAuditEventsOlderThan } from "@workspace/audit/service";
 import { getSiteConfig } from "@/lib/site-config/service";
 // scaffold:end audit_log
 

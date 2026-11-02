@@ -39,12 +39,12 @@ describe("feature explorer catalog", () => {
     const modules = registry.modules.filter((module: { implemented: boolean }) => module.implemented);
     expect(modules).toHaveLength(13);
     expect(Object.keys(moduleFeatures).sort()).toEqual(modules.map((module: { id: string }) => module.id).sort());
-    for (const module of modules) {
-      for (const key of moduleFeatures[module.id]!) {
+    for (const moduleEntry of modules) {
+      for (const key of moduleFeatures[moduleEntry.id]!) {
         const feature = byKey.get(key)!;
-        expect(feature, module.id).toBeDefined();
+        expect(feature, moduleEntry.id).toBeDefined();
         expect(feature.details.inclusion).toBe("optional");
-        expect(feature.details.dependencies).toEqual(module.requires.map((required: string) => moduleFeatures[required]![0]));
+        expect(feature.details.dependencies).toEqual(moduleEntry.requires.map((required: string) => moduleFeatures[required]![0]));
       }
     }
     expect(features.filter(({ details }) => details.inclusion === "optional").map(({ details }) => details.key).sort())

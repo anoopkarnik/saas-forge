@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { track } from "@workspace/analytics/server";
-import { McpToolError, defineMcpTool, type McpTool } from "@/lib/mcp/define";
+import { McpToolError, defineMcpTool, type McpTool } from "@workspace/mcp/define";
 import {
   InvalidScaffoldModuleError,
   calculateScaffoldCredits,

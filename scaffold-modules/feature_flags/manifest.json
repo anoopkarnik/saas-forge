@@ -9,7 +9,8 @@
     "model FeatureFlag",
     "/admin/flags",
     "ANONYMOUS_ID_COOKIE",
-    "feature-flags:v1"
+    "feature-flags:v1",
+    "@workspace/flags"
   ],
   "unselected": {
     "remove": [
@@ -21,12 +22,21 @@
       "packages/database/prisma/flags.prisma",
       "packages/database/prisma/migrations/20261007162235_feature_flags",
       "packages/i18n/src/messages/en/feature_flags.json",
-      "packages/i18n/src/messages/es/feature_flags.json"
+      "packages/i18n/src/messages/es/feature_flags.json",
+      "packages/flags"
     ],
     "copy": [
       {
         "from": "overrides/unselected/apps/web/lib/flags/flags.ts",
         "to": "apps/web/lib/flags/flags.ts"
+      }
+    ],
+    "jsonRemove": [
+      {
+        "file": "apps/web/package.json",
+        "keys": {
+          "dependencies": ["@workspace/flags"]
+        }
       }
     ]
   }

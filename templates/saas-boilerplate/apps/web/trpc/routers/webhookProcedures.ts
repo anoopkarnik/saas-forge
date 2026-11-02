@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { WEBHOOK_EVENTS } from "@/lib/webhooks/events";
-import { WebhookConfigError } from "@/lib/webhooks/signing";
+import { WEBHOOK_EVENTS } from "@workspace/webhooks/events";
+import { WebhookConfigError } from "@workspace/webhooks/signing";
 import {
   createEndpoint,
   deleteEndpoint,
@@ -13,7 +13,7 @@ import {
   updateEndpoint,
   WebhookInputError,
   type WebhookOwner,
-} from "@/lib/webhooks/service";
+} from "@workspace/webhooks/service";
 import { createTRPCRouter, protectedProcedure } from "../init";
 // scaffold:begin multi_tenancy
 import db from "@workspace/database/client";

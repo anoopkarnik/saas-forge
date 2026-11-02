@@ -39,6 +39,15 @@ module.exports = {
       to: { path: DATABASE },
     },
     {
+      name: "ui-not-to-module-services",
+      severity: "error",
+      comment: "Module backend packages run on the server; views receive data and action props from app adapters.",
+      from: {
+        path: "^(packages/ui|apps/web/components|apps/web/hooks|apps/desktop/src/renderer|apps/mobile)/",
+      },
+      to: { path: "^packages/(billing|notifications|audit|webhooks|flags|onboarding|mcp)/" },
+    },
+    {
       name: "pages-not-to-database",
       severity: "error",
       comment: "Next.js pages/layouts load data via tRPC hydration or a lib service.",

@@ -13,7 +13,7 @@ import { Switch } from "@workspace/ui/components/shadcn/switch";
 import { useAdminGuard } from "@/hooks/useAdminGuard";
 import { useTRPC } from "@/trpc/client";
 import type { FlagKey } from "@/lib/flags/definitions";
-import type { FlagRule } from "@/lib/flags/rules";
+import type { FlagRule } from "@workspace/flags/rules";
 
 const RULE_TYPES = [
   { type: "role", label: "Role is one of" },

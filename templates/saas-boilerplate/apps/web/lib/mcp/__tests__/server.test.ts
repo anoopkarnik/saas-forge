@@ -12,13 +12,13 @@ vi.mock("@workspace/database/client", () => ({
   default: { user: { findUnique: mockUser }, member: { findMany: mockMembers } },
 }));
 // scaffold:begin billing
-vi.mock("@/lib/usage/service", () => ({ recentUsage: mockRecentUsage }));
+vi.mock("@workspace/billing/usage/service", () => ({ recentUsage: mockRecentUsage }));
 // scaffold:end billing
 // scaffold:begin notifications
-vi.mock("@/lib/notifications/service", () => ({ listInbox: mockInbox, unreadCount: mockUnread }));
+vi.mock("@workspace/notifications/service", () => ({ listInbox: mockInbox, unreadCount: mockUnread }));
 // scaffold:end notifications
 
-import { appMcpTools } from "@/lib/mcp/catalog";
+import { appMcpTools } from "@workspace/mcp/catalog";
 import { callMcpTool } from "@/lib/mcp/server";
 
 const caller = { userId: "u1", scopes: ["read:me", "read:credits", "read:usage", "read:workspaces", "read:notifications"] };

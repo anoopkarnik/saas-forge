@@ -3,7 +3,7 @@ import { auth } from "@workspace/auth/better-auth/auth";
 import db from "@workspace/database/client";
 import { logger } from "@workspace/observability/winston-logger";
 import { audit, userActor } from "@/lib/audit/audit";
-import type { AuditAction } from "@/lib/audit/actions";
+import type { AuditAction } from "@workspace/audit/actions";
 
 type Body = Record<string, unknown>;
 type AuthEvent = { action: AuditAction; targetId?: string; metadata: Record<string, unknown> };

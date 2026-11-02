@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // scaffold:begin notifications
-vi.mock("@/lib/notifications/notify", () => ({ notify: vi.fn(async () => true), notifyIfCreditsLow: vi.fn() }));
+vi.mock("@workspace/notifications/notify", () => ({ notify: vi.fn(async () => true), notifyIfCreditsLow: vi.fn() }));
 // scaffold:end notifications
 // scaffold:begin audit_log
 vi.mock("@/lib/audit/audit", () => ({ audit: vi.fn(async () => undefined), userActor: (userId: string) => ({ type: "user", userId }) }));

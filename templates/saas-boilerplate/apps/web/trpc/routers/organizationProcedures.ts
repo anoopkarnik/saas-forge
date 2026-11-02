@@ -10,14 +10,14 @@ import {
 } from '@workspace/auth/better-auth/organization-helpers';
 import { createTRPCRouter, protectedProcedure } from '../init';
 // scaffold:begin notifications
-import { notifyInvitedUser } from '@/lib/notifications/notify';
+import { notifyInvitedUser } from '@workspace/notifications/notify';
 // scaffold:end notifications
 // scaffold:begin webhooks
-import { emitWebhook } from '@/lib/webhooks/service';
+import { emitWebhook } from '@workspace/webhooks/service';
 // scaffold:end webhooks
 // scaffold:begin audit_log
 import { audit, userActor } from '@/lib/audit/audit';
-import type { AuditAction, AuditMetadata } from '@/lib/audit/actions';
+import type { AuditAction, AuditMetadata } from '@workspace/audit/actions';
 // scaffold:end audit_log
 // scaffold:begin analytics
 import { track } from '@workspace/analytics/server';

@@ -7,6 +7,8 @@ node_modules
 # Local env files
 .env
 .env.*
+**/.env
+**/.env.*
 !*.env.example
 !**/*.env.example
 
@@ -44,10 +46,15 @@ docker-compose*.yaml
 
 # Python artifacts
 __pycache__/
+**/__pycache__/
 *.pyc
+**/*.pyc
 .venv/
+**/.venv/
 .pytest_cache/
+**/.pytest_cache/
 .ruff_cache/
+**/.ruff_cache/
 
 # Misc
 .DS_Store

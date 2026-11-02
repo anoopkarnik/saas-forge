@@ -3,6 +3,7 @@ from unittest.mock import patch
 import pytest
 from langchain_core.messages import AIMessage
 from langchain_core.tools import tool
+from pydantic import HttpUrl
 
 from saas_forge_backend.llm.mcp import McpServerConfig, load_mcp_tools, parse_mcp_servers
 
@@ -61,8 +62,8 @@ async def test_load_mcp_tools_skips_an_unreachable_server():
             return [docs_search]
 
     servers = [
-        McpServerConfig(name="docs", url="https://docs.example.com/mcp"),
-        McpServerConfig(name="down", url="https://down.example.com/mcp"),
+        McpServerConfig(name="docs", url=HttpUrl("https://docs.example.com/mcp")),
+        McpServerConfig(name="down", url=HttpUrl("https://down.example.com/mcp")),
     ]
     with patch("saas_forge_backend.llm.mcp.MultiServerMCPClient", FakeClient):
         tools = await load_mcp_tools(servers)

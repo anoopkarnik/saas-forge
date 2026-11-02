@@ -7,7 +7,7 @@ import {
   completeAiJob,
   failAiJob,
 } from "@/lib/ai-jobs/service";
-import { consumeAgentStream } from "@/lib/ai-jobs/stream";
+import { consumeAgentStream } from "@workspace/ai/agent-stream";
 import { validateAgentResult } from "./ai-schema";
 import type { SourcePack } from "./types";
 import { LAUNCHPAD_AGENT } from "./ai-runtime";

@@ -17,7 +17,8 @@
     "ai/ingest.requested",
     "ai/job.cancelled",
     "AiCollection",
-    "CREATE EXTENSION IF NOT EXISTS vector"
+    "CREATE EXTENSION IF NOT EXISTS vector",
+    "consumeAgentStream"
   ],
   "selected": {},
   "unselected": {
@@ -37,15 +38,15 @@
       "packages/database/prisma/migrations/20260601143928_pgvector_embedding",
       "packages/database/prisma/migrations/20260608123000_drop_ai_document_chunk_embedding_idx",
       "packages/database/prisma/migrations/20261005133657_modified_the_schema_so_that_modules_can_be_deleted",
-      "packages/database/prisma/migrations/20261010080725_added_ai_jobs"
+      "packages/database/prisma/migrations/20261010080725_added_ai_jobs",
+      "packages/ai/src/agent-stream.ts",
+      "packages/ai/src/__tests__/agent-stream.test.ts"
     ],
     "jsonRemove": [
       {
         "file": "packages/observability/package.json",
         "keys": {
-          "exports": [
-            "./signed-fetch"
-          ]
+          "exports": ["./signed-fetch"]
         }
       },
       {
@@ -57,6 +58,12 @@
             "BACKEND_HMAC_SECRET_NEXT",
             "BACKEND_URL"
           ]
+        }
+      },
+      {
+        "file": "packages/ai/package.json",
+        "keys": {
+          "exports": ["./agent-stream"]
         }
       }
     ],

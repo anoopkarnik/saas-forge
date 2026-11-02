@@ -12,7 +12,8 @@
     "backfill:onboarding",
     "onboarding.checklist",
     "onboarding.wizard",
-    "backfillOnboarding"
+    "backfillOnboarding",
+    "@workspace/onboarding"
   ],
   "unselected": {
     "remove": [
@@ -24,15 +25,20 @@
       "packages/database/prisma/migrations/20261007171215_onboarding",
       "packages/database/scripts/backfill-onboarding.ts",
       "packages/database/src/backfillOnboarding.ts",
-      "packages/database/src/backfillOnboarding.test.ts"
+      "packages/database/src/backfillOnboarding.test.ts",
+      "packages/onboarding"
     ],
     "jsonRemove": [
       {
         "file": "packages/database/package.json",
         "keys": {
-          "scripts": [
-            "backfill:onboarding"
-          ]
+          "scripts": ["backfill:onboarding"]
+        }
+      },
+      {
+        "file": "apps/web/package.json",
+        "keys": {
+          "dependencies": ["@workspace/onboarding"]
         }
       }
     ]

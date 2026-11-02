@@ -25,7 +25,8 @@
     "logUsage",
     "UsageChart",
     "\"/usage\"",
-    "usage.reconcile"
+    "usage.reconcile",
+    "@workspace/billing"
   ],
   "selected": {},
   "unselected": {
@@ -48,17 +49,26 @@
       "packages/database/prisma/usage.prisma",
       "packages/database/prisma/migrations/20261007154251_usage_ledger",
       "packages/i18n/src/messages/en/billing.json",
-      "packages/i18n/src/messages/es/billing.json"
+      "packages/i18n/src/messages/es/billing.json",
+      "packages/billing"
     ],
     "jsonRemove": [
       {
         "file": "apps/web/package.json",
         "keys": {
-          "dependencies": [
-            "@dodopayments/nextjs",
-            "dodopayments",
-            "stripe"
-          ]
+          "dependencies": ["@dodopayments/nextjs", "dodopayments", "stripe"]
+        }
+      },
+      {
+        "file": "apps/web/package.json",
+        "keys": {
+          "dependencies": ["@workspace/billing"]
+        }
+      },
+      {
+        "file": "packages/mcp/package.json",
+        "keys": {
+          "dependencies": ["@workspace/billing"]
         }
       }
     ],

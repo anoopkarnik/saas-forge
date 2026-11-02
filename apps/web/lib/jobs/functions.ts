@@ -1,15 +1,15 @@
 import "@workspace/email/jobs";
 import "@/lib/jobs/cleanup";
 // scaffold:begin notifications
-import "@/lib/notifications/deliver";
+import "@workspace/notifications/deliver";
 // scaffold:end notifications
 // scaffold:begin webhooks
-import "@/lib/webhooks/deliver";
+import "@workspace/webhooks/deliver";
 // scaffold:end webhooks
 import { NonRetriableError } from "inngest";
 import { enqueue, getJob, listJobs, listSchedules, PermanentJobError, type JobDefinition } from "@workspace/jobs/index";
 import { inngest, jobEvent, type JobEventData } from "@workspace/jobs/inngest";
-import { claimScheduleWindow, recordDeadLetter } from "@/lib/jobs/service";
+import { claimScheduleWindow, recordDeadLetter } from "@workspace/jobs/persistence";
 import { launchpadJobFunction } from "@/lib/scaffold/launchpad/ai-jobs";
 // scaffold:begin ai_agents
 import { aiJobFunctions } from "@/lib/ai-jobs/functions";

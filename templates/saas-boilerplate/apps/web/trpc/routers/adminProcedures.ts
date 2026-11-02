@@ -5,8 +5,8 @@ import { TRPCError } from "@trpc/server";
 import db from "@workspace/database/client";
 import { sendEmail } from "@workspace/email/jobs";
 // scaffold:begin notifications
-import { invitationSent } from "@/lib/notifications/catalog";
-import { notify } from "@/lib/notifications/notify";
+import { invitationSent } from "@workspace/notifications/catalog";
+import { notify } from "@workspace/notifications/notify";
 // scaffold:end notifications
 // scaffold:begin audit_log
 import { audit, userActor } from "@/lib/audit/audit";

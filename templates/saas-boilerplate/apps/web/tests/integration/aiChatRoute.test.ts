@@ -18,7 +18,7 @@ const N8N_WEBHOOK_TEMPLATE = `{
 }`;
 
 // scaffold:begin notifications
-vi.mock("@/lib/notifications/notify", () => ({ notify: vi.fn(async () => true), notifyIfCreditsLow: vi.fn() }));
+vi.mock("@workspace/notifications/notify", () => ({ notify: vi.fn(async () => true), notifyIfCreditsLow: vi.fn() }));
 // scaffold:end notifications
 const { recordUsage } = vi.hoisted(() => ({ recordUsage: vi.fn(async () => ({ charged: true, alerts: [] })) }));
 vi.mock("@/lib/usage/record", () => ({ recordUsage, announceUsageAlerts: vi.fn() }));

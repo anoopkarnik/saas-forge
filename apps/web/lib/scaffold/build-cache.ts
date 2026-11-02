@@ -2,7 +2,11 @@ import { createHash, createHmac } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import archiver from "archiver";
-import { GetObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import {
+  GetObjectCommand,
+  PutObjectCommand,
+  S3Client,
+} from "@aws-sdk/client-s3";
 import {
   compileScaffoldVariant,
   createTempScaffoldDir,
@@ -26,13 +30,17 @@ import {
  * Bump whenever the output of buildBaseArchive or compileScaffoldVariant
  * changes; build-cache.test.ts fails when their sources change without it.
  */
-export const BUILDER_VERSION = 16;
+export const BUILDER_VERSION = 17;
 
 /** Neutral top-level folder of a cached archive, renamed per download. */
 export const BASE_ROOT = "saas-forge-app";
 
 /** .env.example templates are kept so a cache hit can still write .env files. */
-const ENV_EXAMPLES = ["apps/web/.env.example", "apps/mobile/.env.example", "apps/desktop/.env.example"];
+const ENV_EXAMPLES = [
+  "apps/web/.env.example",
+  "apps/mobile/.env.example",
+  "apps/desktop/.env.example",
+];
 
 const IGNORE_DIRS = new Set([
   "node_modules",
@@ -52,7 +60,11 @@ const IGNORE_FILES = new Set([".DS_Store", "Thumbs.db"]);
 export function isIgnoredPath(relPath: string): boolean {
   const parts = relPath.split(path.sep);
   const name = path.basename(relPath);
-  return parts.some((part) => IGNORE_DIRS.has(part)) || IGNORE_FILES.has(name) || isLocalEnvFile(name);
+  return (
+    parts.some((part) => IGNORE_DIRS.has(part)) ||
+    IGNORE_FILES.has(name) ||
+    isLocalEnvFile(name)
+  );
 }
 
 export type BaseManifest = {
@@ -63,11 +75,18 @@ export type BaseManifest = {
   snippets: Record<string, string>;
 };
 
-export type BaseArchive = { bytes: Uint8Array<ArrayBuffer>; manifest: BaseManifest };
+export type BaseArchive = {
+  bytes: Uint8Array<ArrayBuffer>;
+  manifest: BaseManifest;
+};
 
 function hasAgentFiles(manifest: BaseManifest): boolean {
   const paths = manifest.files.map((file) => file.path);
-  return paths.includes("AGENTS.md") && paths.some((file) => file.startsWith(".agents/")) && paths.some((file) => file.startsWith(".claude/"));
+  return (
+    paths.includes("AGENTS.md") &&
+    paths.some((file) => file.startsWith(".agents/")) &&
+    paths.some((file) => file.startsWith(".claude/"))
+  );
 }
 
 export interface BuildCacheStore {
@@ -87,12 +106,19 @@ export function templateFingerprint(scaffoldRoot: string): string {
 
   const hash = createHash("sha256");
   const walk = (dir: string) => {
-    for (const entry of fs.readdirSync(dir, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
+    for (const entry of fs
+      .readdirSync(dir, { withFileTypes: true })
+      .sort((a, b) => a.name.localeCompare(b.name))) {
       const full = path.join(dir, entry.name);
       const rel = path.relative(scaffoldRoot, full);
       if (isIgnoredPath(rel)) continue;
       if (entry.isDirectory()) walk(full);
-      else if (entry.isFile()) hash.update(rel).update("\0").update(fs.readFileSync(full)).update("\0");
+      else if (entry.isFile())
+        hash
+          .update(rel)
+          .update("\0")
+          .update(fs.readFileSync(full))
+          .update("\0");
     }
   };
   walk(scaffoldRoot);
@@ -101,10 +127,17 @@ export function templateFingerprint(scaffoldRoot: string): string {
     if (!fs.existsSync(manifestsDir)) continue;
     hash.update(`${name}\0`);
     const walkManifests = (dir: string) => {
-      for (const entry of fs.readdirSync(dir, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
+      for (const entry of fs
+        .readdirSync(dir, { withFileTypes: true })
+        .sort((a, b) => a.name.localeCompare(b.name))) {
         const full = path.join(dir, entry.name);
         if (entry.isDirectory()) walkManifests(full);
-        else if (entry.isFile()) hash.update(path.relative(manifestsDir, full)).update("\0").update(fs.readFileSync(full)).update("\0");
+        else if (entry.isFile())
+          hash
+            .update(path.relative(manifestsDir, full))
+            .update("\0")
+            .update(fs.readFileSync(full))
+            .update("\0");
       }
     };
     walkManifests(manifestsDir);
@@ -127,7 +160,9 @@ export function computeBuildKey(input: {
         template: input.templateFingerprint,
         modules: [...input.modules].sort(),
         platforms: [...input.platforms].sort(),
-        providers: Object.entries(input.providers ?? {}).sort(([a], [b]) => a.localeCompare(b)),
+        providers: Object.entries(input.providers ?? {}).sort(([a], [b]) =>
+          a.localeCompare(b),
+        ),
         builder: BUILDER_VERSION,
       }),
     )
@@ -140,22 +175,43 @@ function objectName(buildKey: string, secret: string): string {
 }
 
 /** R2 store when its credentials are configured, otherwise no cache (every download builds). */
-export function getBuildCacheStore(env: NodeJS.ProcessEnv = process.env): BuildCacheStore | null {
-  const { R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET_NAME } = env;
-  if (!R2_ACCOUNT_ID || !R2_ACCESS_KEY_ID || !R2_SECRET_ACCESS_KEY || !R2_BUCKET_NAME) return null;
+export function getBuildCacheStore(
+  env: NodeJS.ProcessEnv = process.env,
+): BuildCacheStore | null {
+  const {
+    R2_ACCOUNT_ID,
+    R2_ACCESS_KEY_ID,
+    R2_SECRET_ACCESS_KEY,
+    R2_BUCKET_NAME,
+  } = env;
+  if (
+    !R2_ACCOUNT_ID ||
+    !R2_ACCESS_KEY_ID ||
+    !R2_SECRET_ACCESS_KEY ||
+    !R2_BUCKET_NAME
+  )
+    return null;
 
   const client = new S3Client({
     region: "auto",
     endpoint: `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
-    credentials: { accessKeyId: R2_ACCESS_KEY_ID, secretAccessKey: R2_SECRET_ACCESS_KEY },
+    credentials: {
+      accessKeyId: R2_ACCESS_KEY_ID,
+      secretAccessKey: R2_SECRET_ACCESS_KEY,
+    },
   });
-  const key = (name: string) => `scaffold-builds/${objectName(name, R2_SECRET_ACCESS_KEY)}`;
+  const key = (name: string) =>
+    `scaffold-builds/${objectName(name, R2_SECRET_ACCESS_KEY)}`;
 
   return {
     async get(name) {
       try {
-        const object = await client.send(new GetObjectCommand({ Bucket: R2_BUCKET_NAME, Key: key(name) }));
-        return object.Body ? new Uint8Array(await object.Body.transformToByteArray()) : null;
+        const object = await client.send(
+          new GetObjectCommand({ Bucket: R2_BUCKET_NAME, Key: key(name) }),
+        );
+        return object.Body
+          ? new Uint8Array(await object.Body.transformToByteArray())
+          : null;
       } catch (err) {
         if ((err as { name?: string })?.name === "NoSuchKey") return null;
         throw err;
@@ -163,7 +219,12 @@ export function getBuildCacheStore(env: NodeJS.ProcessEnv = process.env): BuildC
     },
     async put(name, bytes, contentType) {
       await client.send(
-        new PutObjectCommand({ Bucket: R2_BUCKET_NAME, Key: key(name), Body: bytes, ContentType: contentType }),
+        new PutObjectCommand({
+          Bucket: R2_BUCKET_NAME,
+          Key: key(name),
+          Body: bytes,
+          ContentType: contentType,
+        }),
       );
     },
   };
@@ -214,7 +275,11 @@ export async function buildBaseArchive(input: {
         const rel = path.relative(tempDir, full);
         if (isIgnoredPath(rel)) continue;
         if (entry.isDirectory()) walk(full);
-        else if (entry.isFile()) files.push({ path: rel.split(path.sep).join("/"), size: fs.statSync(full).size });
+        else if (entry.isFile())
+          files.push({
+            path: rel.split(path.sep).join("/"),
+            size: fs.statSync(full).size,
+          });
       }
     };
     walk(tempDir);
@@ -265,18 +330,26 @@ export async function getOrBuildBaseArchive(input: {
   });
 
   if (store) {
-    for (const key of new Set([input.preferredBuildKey, buildKey].filter(Boolean) as string[])) {
+    for (const key of new Set(
+      [input.preferredBuildKey, buildKey].filter(Boolean) as string[],
+    )) {
       try {
         const [bytes, manifestBytes] = await Promise.all([
           store.get(`${key}.zip`),
           store.get(`${key}.manifest.json`),
         ]);
         if (bytes && manifestBytes) {
-          const manifest = JSON.parse(new TextDecoder().decode(manifestBytes)) as BaseManifest;
-          if (hasAgentFiles(manifest)) return { bytes, manifest, cacheHit: true };
+          const manifest = JSON.parse(
+            new TextDecoder().decode(manifestBytes),
+          ) as BaseManifest;
+          if (hasAgentFiles(manifest))
+            return { bytes, manifest, cacheHit: true };
         }
       } catch (err) {
-        console.warn("[scaffold] build cache read failed; building instead", err);
+        console.warn(
+          "[scaffold] build cache read failed; building instead",
+          err,
+        );
       }
     }
   }
@@ -286,7 +359,11 @@ export async function getOrBuildBaseArchive(input: {
     try {
       await Promise.all([
         store.put(`${buildKey}.zip`, built.bytes, "application/zip"),
-        store.put(`${buildKey}.manifest.json`, new TextEncoder().encode(JSON.stringify(built.manifest)), "application/json"),
+        store.put(
+          `${buildKey}.manifest.json`,
+          new TextEncoder().encode(JSON.stringify(built.manifest)),
+          "application/json",
+        ),
       ]);
     } catch (err) {
       console.warn("[scaffold] build cache write failed", err);

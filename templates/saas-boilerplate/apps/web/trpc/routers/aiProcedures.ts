@@ -13,7 +13,7 @@ import {
   normalizeSpeechUrl,
   parseSpeechSampleBody,
   type SpeechCapability,
-} from "@/lib/aiSpeech";
+} from "@workspace/ai/speech";
 import {
   getN8nWebhookEnvConfig,
   isN8nWebhookProvider,

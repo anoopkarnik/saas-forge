@@ -1,13 +1,13 @@
-import path from "path"
-import createNextIntlPlugin from "next-intl/plugin"
-import { fileURLToPath } from "url"
+import path from "path";
+import createNextIntlPlugin from "next-intl/plugin";
+import { fileURLToPath } from "url";
 
-const appRoot = path.dirname(fileURLToPath(import.meta.url))
-const monorepoRoot = path.join(appRoot, "../..")
+const appRoot = path.dirname(fileURLToPath(import.meta.url));
+const monorepoRoot = path.join(appRoot, "../..");
 const scaffoldTraceRoots = [
   "../../.generated/saas-boilerplate",
   "../../templates/saas-boilerplate",
-]
+];
 const scaffoldTraceEntries = [
   ".agents/**/*",
   ".claude/**/*",
@@ -27,13 +27,13 @@ const scaffoldTraceEntries = [
   "tsconfig.json",
   "turbo.json",
   "vitest.workspace.ts",
-]
+];
 const scaffoldTraceIncludes = [
   ...scaffoldTraceRoots.flatMap((root) =>
     scaffoldTraceEntries.map((entry) => `${root}/${entry}`),
   ),
   "../../template-sync.manifest.json",
-]
+];
 
 const scaffoldTraceExcludes = [
   ...scaffoldTraceRoots.flatMap((root) => [
@@ -57,7 +57,7 @@ const scaffoldTraceExcludes = [
   "**/.next/cache/**",
   "apps/web/.next/cache/**",
   "apps/web/public/**",
-]
+];
 
 // Build artifacts no serverless function needs at runtime. lib/scaffold-modules.ts
 // reaches the filesystem through dynamically computed paths (resolveWorkspacePath
@@ -93,7 +93,7 @@ const globalTraceExcludes = [
   "../../node_modules/.pnpm/@img+sharp-libvips-linux-riscv64*/**",
   "../../node_modules/.pnpm/@img+sharp-linux-s390x*/**",
   "../../node_modules/.pnpm/@img+sharp-libvips-linux-s390x*/**",
-]
+];
 
 // Only the scaffold routes package starter source; nothing else needs the
 // template trees or the Python backend.
@@ -102,11 +102,32 @@ const nonScaffoldTraceExcludes = [
   "../../templates/**",
   "../../.generated/**",
   "../../apps/backend/**",
-]
+];
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   transpilePackages: [
+    // scaffold:begin billing
+    "@workspace/billing",
+    // scaffold:end billing
+    // scaffold:begin notifications
+    "@workspace/notifications",
+    // scaffold:end notifications
+    // scaffold:begin audit_log
+    "@workspace/audit",
+    // scaffold:end audit_log
+    // scaffold:begin webhooks
+    "@workspace/webhooks",
+    // scaffold:end webhooks
+    // scaffold:begin feature_flags
+    "@workspace/flags",
+    // scaffold:end feature_flags
+    // scaffold:begin onboarding
+    "@workspace/onboarding",
+    // scaffold:end onboarding
+    // scaffold:begin mcp
+    "@workspace/mcp",
+    // scaffold:end mcp
     "@workspace/ui",
     "@workspace/auth",
     "@workspace/database",
@@ -119,8 +140,8 @@ const nextConfig = {
   outputFileTracingRoot: monorepoRoot,
   images: {
     remotePatterns: [
-      { hostname: 'strapi.bayesian-labs.com', protocol: 'https' },
-      { hostname: 'localhost', protocol: 'http' },
+      { hostname: "strapi.bayesian-labs.com", protocol: "https" },
+      { hostname: "localhost", protocol: "http" },
     ],
     // CMS logos/marketing images change rarely. Next keys the optimizer cache by
     // source URL, so a long TTL is safe. Keeps the CPU-heavy sharp re-encode
@@ -154,14 +175,17 @@ const nextConfig = {
       {
         source: "/_next/:path*",
         headers: [
-          { key: "Access-Control-Allow-Origin", value: "http://localhost:5173" },
+          {
+            key: "Access-Control-Allow-Origin",
+            value: "http://localhost:5173",
+          },
           { key: "Access-Control-Allow-Methods", value: "GET, OPTIONS" },
         ],
       },
-    ]
+    ];
   },
-}
+};
 
-const withNextIntl = createNextIntlPlugin("./i18n/request.ts")
+const withNextIntl = createNextIntlPlugin("./i18n/request.ts");
 
-export default withNextIntl(nextConfig)
+export default withNextIntl(nextConfig);

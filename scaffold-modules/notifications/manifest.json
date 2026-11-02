@@ -10,7 +10,8 @@
     "notifications-api",
     "model Notification",
     "notification.deliver",
-    "sendNotificationEmail"
+    "sendNotificationEmail",
+    "@workspace/notifications"
   ],
   "unselected": {
     "remove": [
@@ -26,7 +27,34 @@
       "packages/database/prisma/notifications.prisma",
       "packages/database/prisma/migrations/20261007103304_notifications",
       "packages/i18n/src/messages/en/notifications.json",
-      "packages/i18n/src/messages/es/notifications.json"
+      "packages/i18n/src/messages/es/notifications.json",
+      "packages/notifications"
+    ],
+    "jsonRemove": [
+      {
+        "file": "apps/web/package.json",
+        "keys": {
+          "dependencies": ["@workspace/notifications"]
+        }
+      },
+      {
+        "file": "packages/webhooks/package.json",
+        "keys": {
+          "dependencies": ["@workspace/notifications"]
+        }
+      },
+      {
+        "file": "packages/billing/package.json",
+        "keys": {
+          "dependencies": ["@workspace/notifications"]
+        }
+      },
+      {
+        "file": "packages/mcp/package.json",
+        "keys": {
+          "dependencies": ["@workspace/notifications"]
+        }
+      }
     ]
   }
 }

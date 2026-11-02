@@ -24,11 +24,23 @@
       "packages/database/prisma/jobs.prisma",
       "packages/database/prisma/migrations/20261007033702_jobs",
       "packages/i18n/src/messages/en/jobs.json",
-      "packages/i18n/src/messages/es/jobs.json"
+      "packages/i18n/src/messages/es/jobs.json",
+      "packages/jobs/src/persistence.ts"
     ],
     "jsonRemove": [
-      { "file": "packages/jobs/package.json", "keys": { "dependencies": ["inngest"] } },
-      { "file": "apps/web/package.json", "keys": { "dependencies": ["inngest"], "devDependencies": ["@inngest/test"] } },
+      {
+        "file": "packages/jobs/package.json",
+        "keys": {
+          "dependencies": ["inngest"]
+        }
+      },
+      {
+        "file": "apps/web/package.json",
+        "keys": {
+          "dependencies": ["inngest"],
+          "devDependencies": ["@inngest/test"]
+        }
+      },
       {
         "file": "turbo.json",
         "keys": {
@@ -41,8 +53,20 @@
             "JOBS_DRIVER"
           ]
         }
+      },
+      {
+        "file": "packages/jobs/package.json",
+        "keys": {
+          "dependencies": ["@workspace/database"]
+        }
       }
     ],
-    "textReplace": [{ "file": "packages/database/prisma/schema.prisma", "find": ",\"jobs_schema\"", "replace": "" }]
+    "textReplace": [
+      {
+        "file": "packages/database/prisma/schema.prisma",
+        "find": ",\"jobs_schema\"",
+        "replace": ""
+      }
+    ]
   }
 }

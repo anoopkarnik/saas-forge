@@ -4,7 +4,7 @@ import { BackendHttpError, openAgentStream, runBackendIngestion } from "@/lib/ba
 import {
   appendAiJobEvent, claimAiJobRun, completeAiJob, failAiJob, sweepPendingAiJobs,
 } from "@/lib/ai-jobs/service";
-import { consumeAgentStream } from "@/lib/ai-jobs/stream";
+import { consumeAgentStream } from "@workspace/ai/agent-stream";
 
 const cancelOn = [{ event: "ai/job.cancelled", match: "data.jobId" }] as const;
 const concurrency = { limit: 2, key: '"ai-jobs"', scope: "env" } as const;

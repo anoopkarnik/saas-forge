@@ -77,6 +77,16 @@ This starter is the released SaaS template. It does not include the root repo's 
 - Do not describe root-only tooling or unreleased templates as part of this starter.
 - If you add a new shared feature, keep web, desktop, and mobile behavior aligned where the starter already exposes that surface.
 
+## Module Package Ownership
+
+- Selectable backend implementations live in `packages/billing`, `notifications`, `audit`, `webhooks`, `flags`, `onboarding`, and `mcp`; AI, jobs and analytics use their existing packages.
+- Shared visual components/blocks stay grouped by module under `packages/ui/src/components` and `packages/ui/src/blocks`. Pass data and callbacks from app containers; never import an app router or database into shared UI.
+- App routes/tRPC own authorization, request parsing and orchestration. Audit and onboarding adapters pass runtime site settings into their packages; flags keep the application registry/request adapter; MCP keeps its root-only platform slot.
+- A module manifest removes its owned package and every dependency on it. Optional integrations retain markers and dependency-pruning actions. Keep provider-owned SDKs/files pruned inside the module.
+- `apps/web/lib/usage/record.ts` and `apps/web/lib/flags/flags.ts` are intentional fallback slots; preserve their disabled-module replacements.
+- Jobs persistence is `@workspace/jobs/persistence` and is removed when jobs is off; the inline queue core remains available.
+- See `packages/README.md` for the package ownership map and extraction rules.
+
 ## Imports and Boundaries
 
 Cross-package imports use `@workspace/`:
@@ -135,50 +145,56 @@ Background jobs (`packages/jobs`):
 <!-- scaffold:end jobs -->
 
 <!-- scaffold:begin notifications -->
-Notifications (`apps/web/lib/notifications`):
+
+Notifications (`packages/notifications/src`):
 
 - Add a type to `catalog.ts` (label, default channels, `render`) inside its module's markers, then call `notify(definition, userId, data, { dedupeKey, organizationId })` after the work commits. It writes the in-app row (duplicates of a `dedupeKey` are skipped, never thrown) and emails through the `notification.deliver` job on the channels the user keeps on. Wrap emit sites in other modules' files in `notifications` markers.
 - The bell (`packages/ui/src/components/notifications/NotificationBell.tsx`) is presentational; web and desktop wrap it with their own clients and poll `notification.unreadCount` every 5 min, on window focus and when the bell opens. Guests can read the inbox but not mark it read.
 <!-- scaffold:end notifications -->
 
 <!-- scaffold:begin audit_log -->
-Audit log (`apps/web/lib/audit`):
 
-- Add an action to `actions.ts` (target type, metadata schema, `redact` keys) inside its module's markers. Call `audit(tx, action, { actor: userActor(id), targetId, organizationId, metadata, headers })` with the transaction client of the change, so both commit or roll back together; for Better Auth writes, call it after the call succeeds. Wrap emit sites in other modules' files in `audit_log` markers.
+Audit log (`packages/audit`, runtime config and auth adapters in `apps/web/lib/audit`):
+
+- Add an action to `packages/audit/src/actions.ts` (target type, metadata schema, `redact` keys) inside its module's markers. Call `audit(tx, action, { actor: userActor(id), targetId, organizationId, metadata, headers })` with the transaction client of the change, so both commit or roll back together; for Better Auth writes, call it after the call succeeds. Wrap emit sites in other modules' files in `audit_log` markers.
 - Metadata is redacted (listed and secret-looking keys), then reduced to the keys its schema lists. Audit configuration changes, never per-call usage. Better Auth admin endpoints (`/api/auth/admin/*`) are audited in the auth route by `withAuthAudit`.
 - The trail is append-only: `/admin/audit` (admin-only, CSV export) and the workspace activity on `/organization` read it; the `cleanup.auditRetention` job (with `jobs`) deletes events older than the `audit.retentionDays` site setting.
 <!-- scaffold:end audit_log -->
 
 <!-- scaffold:begin webhooks -->
-Outgoing webhooks (`apps/web/lib/webhooks`, guide in its `README.md`):
+
+Outgoing webhooks (`packages/webhooks/src`, guide in its `README.md`):
 
 - Add an event to `events.ts` (description, Zod schema) inside its module's markers; never change a payload under an existing `apiVersion`. Call `emitWebhook(type, data, { userId, organizationId })` after the change commits; it never throws, and wraps nothing in a transaction. Wrap emit sites in other modules' files in `webhooks` markers.
 - Each delivery is a `webhook.deliver` job: signed `SaaSForge-Signature: t=…,v1=…` (HMAC-SHA256 of `t.body`), retried on Inngest for about 24 hours, endpoint paused after 15 failures in a row. Secrets are AES-256-GCM encrypted under `WEBHOOK_SECRET_KEY`. URLs are checked against private ranges when saved and at connect time (`ssrf.ts`); keep both checks.
 <!-- scaffold:end webhooks -->
 
 <!-- scaffold:begin billing -->
-Usage ledger (`apps/web/lib/usage`, billing module):
+
+Usage ledger (`packages/billing/src/usage`, billing module; fallback slot in `apps/web/lib/usage/record.ts`):
 
 - Spend credits with `recordUsage(tx, { userId, meter, quantity, credits, sourceType, sourceId, idempotencyKey })` inside the transaction of the work: it inserts a `UsageEvent` (a repeated key records and charges nothing) and increments `creditsUsed`, then returns crossed 80%/95% thresholds for `announceUsageAlerts` after commit. Code that already moved `creditsUsed` calls `logUsage`. Add each meter to `meters.ts` with its rate text; `/usage` shows the table.
 - Without billing, `lib/usage/record.ts` is replaced by a stub with the same exports that only moves `creditsUsed`, so callers such as AI chat stay unchanged. A user's first event carries their earlier spend (`balance.opening`), so events always add up to `creditsUsed`; the `usage.reconcile` job (with jobs) logs any drift.
 <!-- scaffold:end billing -->
 
-Feature flags (`apps/web/lib/flags`):
+Feature flags (`packages/flags`, app registry and request adapters in `apps/web/lib/flags`):
 
 - Declare a flag in `definitions.ts` (description, code default) inside its module's markers. Read it with `useFlag(key)` (the root layout evaluates every flag on the server and hydrates `FlagsProvider`; no rule reaches the browser), and enforce it with `flagProcedure(key)` (`apps/web/trpc/flag-procedure.ts`) or `requireFlag(key, req)` in route handlers. Hiding UI is never enough on its own.
 <!-- scaffold:begin feature_flags -->
-- Rules (`rules.ts`) run in order, first match wins: role, user id, workspace id (multi_tenancy), percentage (stable SHA-256 bucket of key and user or `sf_aid` cookie id); otherwise the flag's default. `/admin/flags` edits them, previews a user and keeps history; changes clear the cache before the response.
+- Rules (`packages/flags/src/rules.ts`) run in order, first match wins: role, user id, workspace id (multi_tenancy), percentage (stable SHA-256 bucket of key and user or `sf_aid` cookie id); otherwise the flag's default. `/admin/flags` edits them, previews a user and keeps history; changes clear the cache before the response.
 <!-- scaffold:end feature_flags -->
 - Flags are per-user booleans; global values belong in site config. Without the feature_flags module, `flags.ts` is a stub and every flag keeps its default.
 
 <!-- scaffold:begin onboarding -->
-Onboarding (`apps/web/lib/onboarding`):
 
-- Checklist tasks live in `tasks.ts`, each module's inside its markers. Give a task a `done(userId)` check on real data (avatar set, key created); a task without one is completed by `onboarding.complete`. The wizard and checklist render on the home page, never block anything, and can be turned off in Settings (`onboarding.wizard`, `onboarding.checklist`) or by the `onboarding.checklist` flag. The demo guest sees neither.
+Onboarding (`packages/onboarding/src`):
+
+- Checklist tasks live in `packages/onboarding/src/tasks.ts`, each module's inside its markers. Give a task a `done(userId)` check on real data (avatar set, key created); a task without one is completed by `onboarding.complete`. The wizard and checklist render on the home page, never block anything, and can be turned off in Settings (`onboarding.wizard`, `onboarding.checklist`) or by the `onboarding.checklist` flag. The demo guest sees neither.
 - After installing it in an app that already has users, run `pnpm --dir packages/database backfill:onboarding` so existing users are not shown the wizard.
 <!-- scaffold:end onboarding -->
 
 <!-- scaffold:begin analytics -->
+
 Product analytics (`packages/analytics`, guide and event registry in its `README.md`):
 
 - Add an event to `src/events.ts` (typed properties: ids, counts and enums, never emails or names) inside its module's markers, and never rename one. Server code calls `await track(event, props, { distinctId: userId, headers, groups })` from `@workspace/analytics/server`; it skips visitors who declined, Do Not Track or Global Privacy Control, gives up after 1s and never throws. Browser code uses `@workspace/analytics/client`. Wrap call sites in other modules' files in `analytics` markers.
@@ -186,21 +202,23 @@ Product analytics (`packages/analytics`, guide and event registry in its `README
 <!-- scaffold:end analytics -->
 
 <!-- scaffold:begin mcp -->
-MCP server (`apps/web/lib/mcp`, route `/api/mcp`, mcp module):
 
-- Add a tool to `catalog.ts` with `defineMcpTool({ name, title, description, scope, readOnly, input, run })` inside its module's markers, and its scope to `API_KEY_SCOPES` (`packages/auth/src/api-keys/scopes.ts`) inside nested `mcp` and module markers. `run(input, { userId, scopes })` gets the API key's user and calls an `apps/web/lib` service; never take a user id as input.
+MCP server (`packages/mcp`, app composition in `apps/web/lib/mcp`, route `/api/mcp`, mcp module):
+
+- Add a tool to `packages/mcp/src/catalog.ts` with `defineMcpTool({ name, title, description, scope, readOnly, input, run })` inside its module's markers, and its scope to `API_KEY_SCOPES` (`packages/auth/src/api-keys/scopes.ts`) inside nested `mcp` and module markers. `run(input, { userId, scopes })` gets the API key's user and calls an `apps/web/lib` service; never take a user id as input.
 - `callMcpTool` checks the scope, parses the input again and runs the tool. Throw `McpToolError` for messages the agent can act on; other errors are logged and returned as a generic failure, so database details never reach the model. Tools stay read-only: anything that spends credits or deletes data needs a confirmation step outside the model.
 - The route authenticates with `authenticateApiKey(req, { scopes: [] })` (revocation, expiry, per-key rate limit) and serves stateless Streamable HTTP through `@modelcontextprotocol/server`. Settings → API keys shows the connect commands.
 <!-- scaffold:end mcp -->
 
 <!-- scaffold:begin ai -->
+
 MCP client (ai module, `packages/ai/src/mcp.ts`):
 
 - `AI_MCP_SERVERS` (server-only JSON array of `{ name, url, headers? }`) lists remote MCP servers for the AI chat. `/api/ai/chat` connects per request (`connectMcpTools`, 5s timeout, redirects refused), adds their tools as `<server>_<tool>`, allows up to 5 steps and charges `totalUsage` across them. A bad config or an unreachable server is logged and skipped; `env.ts` checks the shape at boot. Every user reaches the same servers with the same headers, so configure only servers whose data every signed-in user may see.
 <!-- scaffold:begin ai_agents -->
 - The Python backend reads the same variable for the `mcp_tools` agent (`apps/backend/src/saas_forge_backend/agents/mcp_tools.py`, via `langchain-mcp-adapters`): a bounded tool loop that streams `tool_call` and `tool_result` events. Tool results are untrusted data, never instructions.
-<!-- scaffold:end ai_agents -->
-<!-- scaffold:end ai -->
+  <!-- scaffold:end ai_agents -->
+  <!-- scaffold:end ai -->
 
 Internationalization (`packages/i18n`):
 
@@ -234,6 +252,7 @@ Runtime site config (`apps/web/lib/site-config/`): env is the default, an admin 
 <!-- scaffold:begin ai_agents -->
 
 The Python backend validates its own env in `apps/backend/src/saas_forge_backend/config.py` when `APP_ENV=production`, including a strong `BACKEND_HMAC_SECRET`.
+
 <!-- scaffold:end ai_agents -->
 
 - When an integration toggle gains a required credential, add it to `INTEGRATION_REQUIREMENTS` in `apps/web/lib/env.ts`.

@@ -5,7 +5,7 @@ import {
   OPENAI_STT_URL,
   applySpeechTemplate,
   hasSpeechFilePlaceholder,
-} from "@/lib/aiSpeech";
+} from "@workspace/ai/speech";
 import {
   extractSpeechText,
   getPersistedSpeechConfig,

@@ -2,7 +2,9 @@
   "id": "analytics",
   "ownedIdentifiers": [
     "@workspace/analytics",
-    "posthog",
+    "\"posthog-js\"",
+    "'posthog-js'",
+    "posthogHost",
     "POSTHOG",
     "AnalyticsProvider",
     "analytics.consentRequired",
@@ -20,12 +22,46 @@
       "packages/i18n/src/messages/es/analytics.json"
     ],
     "jsonRemove": [
-      { "file": "apps/web/package.json", "keys": { "dependencies": ["@workspace/analytics"] } },
-      { "file": "packages/auth/package.json", "keys": { "dependencies": ["@workspace/analytics"] } },
-      { "file": "turbo.json", "keys": { "globalEnv": ["NEXT_PUBLIC_POSTHOG_HOST", "NEXT_PUBLIC_POSTHOG_KEY"] } }
+      {
+        "file": "apps/web/package.json",
+        "keys": {
+          "dependencies": [
+            "@workspace/analytics"
+          ]
+        }
+      },
+      {
+        "file": "packages/auth/package.json",
+        "keys": {
+          "dependencies": [
+            "@workspace/analytics"
+          ]
+        }
+      },
+      {
+        "file": "turbo.json",
+        "keys": {
+          "globalEnv": [
+            "NEXT_PUBLIC_POSTHOG_HOST",
+            "NEXT_PUBLIC_POSTHOG_KEY"
+          ]
+        }
+      },
+      {
+        "file": "packages/billing/package.json",
+        "keys": {
+          "dependencies": [
+            "@workspace/analytics"
+          ]
+        }
+      }
     ],
     "textReplace": [
-      { "file": "packages/auth/src/better-auth/auth.ts", "find": "after: async (user, ctx) => {", "replace": "after: async (user) => {" }
+      {
+        "file": "packages/auth/src/better-auth/auth.ts",
+        "find": "after: async (user, ctx) => {",
+        "replace": "after: async (user) => {"
+      }
     ]
   }
 }

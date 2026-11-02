@@ -2,7 +2,7 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { isFlagKey, type FlagKey } from "@/lib/flags/definitions";
 import { evaluateFlags, sessionSubject } from "@/lib/flags/flags";
-import { rulesSchema } from "@/lib/flags/rules";
+import { rulesSchema } from "@workspace/flags/rules";
 import { flagHistory, listFlags, previewFlagsFor, updateFlag } from "@/lib/flags/service";
 import { adminProcedure, createTRPCRouter, guestReadableAdminProcedure, protectedProcedure } from "../init";
 

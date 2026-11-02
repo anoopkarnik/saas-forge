@@ -8,7 +8,7 @@ The optional `mcp` module requires `api_keys` and serves `/api/mcp` with statele
 
 Tools follow the installed modules: profile and credits, plus usage, workspaces and notifications when available. The key's user id supplies account context; tools do not accept another user id as input. Revocation, expiry, scopes and per-key rate limits are checked on the server.
 
-To add a tool, use `defineMcpTool` in `apps/web/lib/mcp/catalog.ts` and add its scope to `packages/auth/src/api-keys/scopes.ts`, with the appropriate module markers. Call a service from `run`; `callMcpTool` checks scope and validates input again. Use `McpToolError` for actionable messages. Other errors are logged and returned generically.
+To add a tool, use `defineMcpTool` in `packages/mcp/src/catalog.ts` and add its scope to `packages/auth/src/api-keys/scopes.ts`, with the appropriate module markers. Call a service from `run`; `callMcpTool` checks scope and validates input again. Use `McpToolError` for actionable messages. Other errors are logged and returned generically.
 
 Keep tools read-only. Credit-spending or destructive actions need a confirmation step outside the model.
 

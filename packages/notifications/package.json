@@ -1,0 +1,27 @@
+{
+  "name": "@workspace/notifications",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests",
+    "test:coverage": "vitest run --coverage --passWithNoTests"
+  },
+  "exports": {
+    "./*": "./src/*.ts"
+  },
+  "dependencies": {
+    "@workspace/database": "workspace:*",
+    "@workspace/email": "workspace:*",
+    "@workspace/jobs": "workspace:*",
+    "@workspace/i18n": "workspace:*",
+    "@workspace/observability": "workspace:*",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.1",
+    "@workspace/typescript-config": "workspace:*",
+    "vitest": "^4.0.18"
+  }
+}

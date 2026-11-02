@@ -5,7 +5,7 @@ model UsageEvent {
     userId         String
     user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
     organizationId String?
-    /// From the meter registry (apps/web/lib/usage/meters.ts), e.g. ai.tokens.
+    /// From the meter registry (packages/billing/src/usage/meters.ts), e.g. ai.tokens.
     meter          String
     quantity       Int
     credits        Int

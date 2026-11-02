@@ -48,7 +48,7 @@ vi.mock("@workspace/auth/better-auth/auth", () => ({ auth: { api: { getSession: 
 vi.mock("@/lib/site-config/service", () => ({ getSiteConfig: async () => ({ ...config }) }));
 vi.mock("@/lib/flags/flags", () => ({ isEnabled: async () => flag.on, sessionSubject: async () => ({}) }));
 
-import { ONBOARDING_TASKS } from "@/lib/onboarding/tasks";
+import { ONBOARDING_TASKS } from "@workspace/onboarding/tasks";
 import { onboardingRouter } from "@/trpc/routers/onboardingProcedures";
 
 const caller = (role = "user") =>

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { exportAuditCsv, listAuditEvents } from "@/lib/audit/service";
+import { exportAuditCsv, listAuditEvents } from "@workspace/audit/service";
 import { adminProcedure, createTRPCRouter } from "../init";
 // scaffold:begin multi_tenancy
 import { orgRoleProcedure } from "../org";

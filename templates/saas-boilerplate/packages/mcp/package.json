@@ -1,0 +1,29 @@
+{
+  "name": "@workspace/mcp",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests",
+    "test:coverage": "vitest run --coverage --passWithNoTests"
+  },
+  "exports": {
+    "./*": "./src/*.ts"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/server": "2.2.0",
+    "@workspace/auth": "workspace:*",
+    "@workspace/database": "workspace:*",
+    "@workspace/observability": "workspace:*",
+    "@workspace/billing": "workspace:*",
+    "@workspace/notifications": "workspace:*",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.1",
+    "@workspace/typescript-config": "workspace:*",
+    "typescript": "^5.9.2",
+    "vitest": "^4.0.18"
+  }
+}

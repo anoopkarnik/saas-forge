@@ -17,7 +17,7 @@ const { db, tx, signature } = vi.hoisted(() => {
 vi.mock("@workspace/database/client", () => ({ default: db }));
 // scaffold:begin notifications
 const notify = vi.hoisted(() => vi.fn(async () => true));
-vi.mock("@/lib/notifications/notify", () => ({ notify }));
+vi.mock("@workspace/notifications/notify", () => ({ notify }));
 // scaffold:end notifications
 vi.mock("next/headers", () => ({
   headers: async () => new Headers({ "Stripe-Signature": signature.value }),

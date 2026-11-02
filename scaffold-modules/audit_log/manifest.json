@@ -11,7 +11,8 @@
     "/admin/audit",
     "audit.retentionDays",
     "cleanup.auditRetention",
-    "withAuthAudit"
+    "withAuthAudit",
+    "@workspace/audit"
   ],
   "unselected": {
     "remove": [
@@ -22,7 +23,17 @@
       "packages/database/prisma/audit.prisma",
       "packages/database/prisma/migrations/20261007114952_audit_log",
       "packages/i18n/src/messages/en/audit_log.json",
-      "packages/i18n/src/messages/es/audit_log.json"
+      "packages/i18n/src/messages/es/audit_log.json",
+      "packages/audit",
+      "packages/ui/src/components/audit"
+    ],
+    "jsonRemove": [
+      {
+        "file": "apps/web/package.json",
+        "keys": {
+          "dependencies": ["@workspace/audit"]
+        }
+      }
     ]
   }
 }

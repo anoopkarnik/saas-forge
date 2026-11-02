@@ -91,6 +91,10 @@ function createCallerContext(session: any = null) {
 describe('Landing Router Integration Tests', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Landing writes now use the transaction client, including optional audit.
+    Object.assign(prisma, {
+      $transaction: vi.fn(async (run: (tx: typeof prisma) => Promise<unknown>) => run(prisma)),
+    });
     vi.stubEnv('NEXT_PUBLIC_SAAS_NAME', 'Test SaaS');
     vi.mocked(auth.api.getSession).mockResolvedValue({
       session: { id: 'session_1' },

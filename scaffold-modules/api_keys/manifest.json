@@ -26,16 +26,14 @@
       "packages/database/prisma/api-keys.prisma",
       "packages/database/prisma/migrations/20260608090000_add_api_keys",
       "packages/i18n/src/messages/en/api_keys.json",
-      "packages/i18n/src/messages/es/api_keys.json"
+      "packages/i18n/src/messages/es/api_keys.json",
+      "packages/ui/src/components/api-keys"
     ],
     "jsonRemove": [
       {
         "file": "packages/auth/package.json",
         "keys": {
-          "exports": [
-            "./api-keys",
-            "./api-keys/scopes"
-          ]
+          "exports": ["./api-keys", "./api-keys/scopes"]
         }
       }
     ]

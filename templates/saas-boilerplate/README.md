@@ -249,6 +249,8 @@ saas-forge/
     └── saas-boilerplate/     # Clean staged starter used for validation/builds
 ```
 
+Selectable backend modules have dedicated workspace packages, with visual components grouped by module inside `packages/ui`. See the [package ownership guide](packages/README.md) for module locations, app adapters, optional integrations and scaffold removal rules.
+
 Only `templates/saas-boilerplate` is part of the released template workflow today. Other directories inside `templates/` are not documented here because they are not user-ready.
 
 ## 🧪 Commands

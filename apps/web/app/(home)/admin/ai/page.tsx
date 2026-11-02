@@ -8,7 +8,7 @@ import {
   stringifySpeechSampleBody,
   type SpeechCapability,
   type SpeechProvider,
-} from "@/lib/aiSpeech";
+} from "@workspace/ai/speech";
 import {
   AI_LEGACY_WEBHOOK_PROVIDER,
   AI_N8N_WEBHOOK_PROVIDER,

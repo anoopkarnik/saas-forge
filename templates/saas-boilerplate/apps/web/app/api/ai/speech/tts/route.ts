@@ -3,7 +3,7 @@ import { requireFlag } from "@/lib/flags/flags";
 import {
   OPENAI_TTS_URL,
   applySpeechTemplate,
-} from "@/lib/aiSpeech";
+} from "@workspace/ai/speech";
 import {
   getPersistedSpeechConfig,
   jsonSpeechError,

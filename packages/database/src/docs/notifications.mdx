@@ -8,7 +8,7 @@ Users control notification channels in Settings. Included event types cover invi
 
 ## Add a notification
 
-Declare its label, default channels and render function in `apps/web/lib/notifications/catalog.ts`, inside its module's scaffold markers. After the work commits, call `notify(definition, userId, data, { dedupeKey, organizationId })`.
+Declare its label, default channels and render function in `packages/notifications/src/catalog.ts`, inside its module's scaffold markers. After the work commits, call `notify(definition, userId, data, { dedupeKey, organizationId })`.
 
 A repeated dedupe key skips the duplicate instead of throwing. In-app notifications are stored in the database; email runs through `notification.deliver` and the user's saved preferences. Configure your [email provider](/landing/doc/email) for delivery. With Jobs on Inngest, deliveries run in the background; otherwise the inline job fallback applies.
 

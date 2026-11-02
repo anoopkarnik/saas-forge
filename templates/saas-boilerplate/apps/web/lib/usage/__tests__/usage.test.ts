@@ -15,7 +15,8 @@ const { db, store } = vi.hoisted(() => {
     (!where?.userId || row.userId === where.userId) &&
     (!where?.occurredAt?.gte || row.occurredAt >= where.occurredAt.gte) &&
     (!where?.NOT?.meter || row.meter !== where.NOT.meter);
-  const byNewest = (a: any, b: any) => b.occurredAt - a.occurredAt || (a.id < b.id ? 1 : -1);
+  const byNewest = (a: any, b: any) =>
+    b.occurredAt - a.occurredAt || (a.id < b.id ? 1 : -1);
   const db: any = {
     user: {
       findUnique: vi.fn(async ({ where }: any) => {
@@ -28,25 +29,46 @@ const { db, store } = vi.hoisted(() => {
         return user;
       }),
       findMany: vi.fn(async ({ where }: any) =>
-        where.id.in.map((id: string) => ({ id, creditsUsed: store.users.get(id)!.creditsUsed })),
+        where.id.in.map((id: string) => ({
+          id,
+          creditsUsed: store.users.get(id)!.creditsUsed,
+        })),
       ),
     },
     usageEvent: {
       createMany: vi.fn(async ({ data }: any) => {
         let count = 0;
         for (const row of data) {
-          if (store.events.some((e) => e.idempotencyKey === row.idempotencyKey)) continue;
-          store.events.push({ id: `ev${String(++seq).padStart(3, "0")}`, occurredAt: row.occurredAt ?? new Date(), sourceId: null, ...row });
+          if (store.events.some((e) => e.idempotencyKey === row.idempotencyKey))
+            continue;
+          store.events.push({
+            id: `ev${String(++seq).padStart(3, "0")}`,
+            occurredAt: row.occurredAt ?? new Date(),
+            sourceId: null,
+            ...row,
+          });
           count++;
         }
         return { count };
       }),
-      findFirst: vi.fn(async ({ where }: any) => store.events.find((row) => matchEvent(row, where)) ?? null),
-      findMany: vi.fn(async ({ where, take }: any) => store.events.filter((row) => matchEvent(row, where)).sort(byNewest).slice(0, take)),
+      findFirst: vi.fn(
+        async ({ where }: any) =>
+          store.events.find((row) => matchEvent(row, where)) ?? null,
+      ),
+      findMany: vi.fn(async ({ where, take }: any) =>
+        store.events
+          .filter((row) => matchEvent(row, where))
+          .sort(byNewest)
+          .slice(0, take),
+      ),
       groupBy: vi.fn(async () => {
         const sums = new Map<string, number>();
-        for (const row of store.events) sums.set(row.userId, (sums.get(row.userId) ?? 0) + row.credits);
-        return [...sums].map(([userId, credits]) => ({ userId, _sum: { credits } }));
+        for (const row of store.events)
+          sums.set(row.userId, (sums.get(row.userId) ?? 0) + row.credits);
+        return [...sums].map(([userId, credits]) => ({
+          userId,
+          _sum: { credits },
+        }));
       }),
     },
     usageAlert: {
@@ -60,30 +82,51 @@ const { db, store } = vi.hoisted(() => {
         }
         return { count };
       }),
-      findFirst: vi.fn(async ({ where }: any) =>
-        store.alerts.filter((a) => a.userId === where.userId && a.cycle === where.cycle).sort((a, b) => b.threshold - a.threshold)[0] ?? null,
+      findFirst: vi.fn(
+        async ({ where }: any) =>
+          store.alerts
+            .filter((a) => a.userId === where.userId && a.cycle === where.cycle)
+            .sort((a, b) => b.threshold - a.threshold)[0] ?? null,
       ),
     },
     transaction: {
-      findMany: vi.fn(async ({ where }: any) => store.transactions.filter((t) => t.userId === where.userId)),
+      findMany: vi.fn(async ({ where }: any) =>
+        store.transactions.filter((t) => t.userId === where.userId),
+      ),
     },
   };
   return { db, store };
 });
 vi.mock("@workspace/database/client", () => ({ default: db }));
-vi.mock("@workspace/auth/better-auth/auth", () => ({ auth: { api: { getSession: vi.fn() } } }));
+vi.mock("@workspace/auth/better-auth/auth", () => ({
+  auth: { api: { getSession: vi.fn() } },
+}));
 // scaffold:begin notifications
-vi.mock("@/lib/notifications/notify", () => ({ notify: vi.fn(async () => true) }));
+vi.mock("@workspace/notifications/notify", () => ({
+  notify: vi.fn(async () => true),
+}));
 // scaffold:end notifications
 
 import { announceUsageAlerts, logUsage, recordUsage } from "@/lib/usage/record";
-import { balanceLedger, dailyUsage, findUsageDrift, usageSummary } from "@/lib/usage/service";
+import {
+  balanceLedger,
+  dailyUsage,
+  findUsageDrift,
+  usageSummary,
+} from "@workspace/billing/usage/service";
 // scaffold:begin notifications
-import { notify } from "@/lib/notifications/notify";
+import { notify } from "@workspace/notifications/notify";
 // scaffold:end notifications
 
 const charge = (credits: number, key: string, meter = "ai.tokens") =>
-  recordUsage(db, { userId: "u1", meter, quantity: credits * 1000, credits, sourceType: "test", idempotencyKey: key });
+  recordUsage(db, {
+    userId: "u1",
+    meter,
+    quantity: credits * 1000,
+    credits,
+    sourceType: "test",
+    idempotencyKey: key,
+  });
 
 beforeEach(() => {
   store.users.clear();
@@ -117,26 +160,39 @@ describe("recordUsage", () => {
   it("reports drift when creditsUsed moved outside the ledger", async () => {
     await charge(3, "k1");
     store.users.get("u1")!.creditsUsed += 4;
-    expect(await findUsageDrift()).toEqual([{ userId: "u1", creditsUsed: 7, ledger: 3 }]);
+    expect(await findUsageDrift()).toEqual([
+      { userId: "u1", creditsUsed: 7, ledger: 3 },
+    ]);
   });
 
   it("crossing 80% alerts once per credit cycle; 95% alerts separately", async () => {
     store.users.get("u1")!.creditsUsed = 75;
-    expect((await charge(6, "a")).alerts).toEqual([{ percent: 80, remaining: 19 }]);
+    expect((await charge(6, "a")).alerts).toEqual([
+      { percent: 80, remaining: 19 },
+    ]);
     expect((await charge(1, "b")).alerts).toEqual([]);
-    expect((await charge(13, "c")).alerts).toEqual([{ percent: 95, remaining: 5 }]);
+    expect((await charge(13, "c")).alerts).toEqual([
+      { percent: 95, remaining: 5 },
+    ]);
 
     // A purchase starts a new cycle (creditsTotal changes): 80% of 200 alerts again.
     store.users.get("u1")!.creditsTotal = 200;
     store.users.get("u1")!.creditsUsed = 155;
-    expect((await charge(5, "d")).alerts).toEqual([{ percent: 80, remaining: 40 }]);
+    expect((await charge(5, "d")).alerts).toEqual([
+      { percent: 80, remaining: 40 },
+    ]);
     expect(store.alerts).toHaveLength(3);
   });
 
   // scaffold:begin notifications
   it("announces alerts through notifications", async () => {
     await announceUsageAlerts("u1", [{ percent: 80, remaining: 19 }]);
-    expect(notify).toHaveBeenCalledWith(expect.objectContaining({ type: "usage.threshold" }), "u1", { percent: 80, remaining: 19 }, expect.anything());
+    expect(notify).toHaveBeenCalledWith(
+      expect.objectContaining({ type: "usage.threshold" }),
+      "u1",
+      { percent: 80, remaining: 19 },
+      expect.anything(),
+    );
   });
   // scaffold:end notifications
 });
@@ -144,9 +200,25 @@ describe("recordUsage", () => {
 describe("logUsage", () => {
   it("records spend a caller already applied (scaffold downloads and refunds)", async () => {
     store.users.get("u1")!.creditsUsed = 10; // 5 earlier + 5 just charged by the caller
-    await logUsage(db, { userId: "u1", meter: "scaffold.download", quantity: 1, credits: 5, sourceType: "scaffold_job", sourceId: "j1", idempotencyKey: "scaffold:j1" });
+    await logUsage(db, {
+      userId: "u1",
+      meter: "scaffold.download",
+      quantity: 1,
+      credits: 5,
+      sourceType: "scaffold_job",
+      sourceId: "j1",
+      idempotencyKey: "scaffold:j1",
+    });
     store.users.get("u1")!.creditsUsed = 5; // the caller refunds the job
-    await logUsage(db, { userId: "u1", meter: "scaffold.refund", quantity: 1, credits: -5, sourceType: "scaffold_job", sourceId: "j1", idempotencyKey: "scaffold-refund:j1" });
+    await logUsage(db, {
+      userId: "u1",
+      meter: "scaffold.refund",
+      quantity: 1,
+      credits: -5,
+      sourceType: "scaffold_job",
+      sourceId: "j1",
+      idempotencyKey: "scaffold-refund:j1",
+    });
 
     expect(store.events.map((e) => [e.meter, e.credits])).toEqual([
       ["balance.opening", 5],
@@ -161,16 +233,38 @@ describe("dashboard", () => {
   it("sums credits per day and meter, without the opening balance", async () => {
     store.users.get("u1")!.creditsUsed = 4;
     await charge(3, "k1");
-    await logUsage(db, { userId: "u1", meter: "scaffold.download", quantity: 1, credits: 2, sourceType: "x", idempotencyKey: "k2" });
+    await logUsage(db, {
+      userId: "u1",
+      meter: "scaffold.download",
+      quantity: 1,
+      credits: 2,
+      sourceType: "x",
+      idempotencyKey: "k2",
+    });
     const { meters, days } = await dailyUsage("u1", 30);
     expect(days).toHaveLength(30);
-    expect(meters.map((m) => m.meter)).toEqual(["ai.tokens", "scaffold.download"]);
-    expect(days.at(-1)).toMatchObject({ "ai.tokens": 3, "scaffold.download": 2 });
-    expect(meters.find((m) => m.meter === "scaffold.download")!.label).toBe("Scaffold download");
+    expect(meters.map((m) => m.meter)).toEqual([
+      "ai.tokens",
+      "scaffold.download",
+    ]);
+    expect(days.at(-1)).toMatchObject({
+      "ai.tokens": 3,
+      "scaffold.download": 2,
+    });
+    expect(meters.find((m) => m.meter === "scaffold.download")!.label).toBe(
+      "Scaffold download",
+    );
   });
 
   it("explains the balance with purchases and usage, newest first", async () => {
-    store.transactions.push({ id: "t1", userId: "u1", date: new Date(Date.now() - 60_000), description: "100 credits", amount: 500, currency: "usd" });
+    store.transactions.push({
+      id: "t1",
+      userId: "u1",
+      date: new Date(Date.now() - 60_000),
+      description: "100 credits",
+      amount: 500,
+      currency: "usd",
+    });
     await charge(3, "k1");
     const ledger = await balanceLedger("u1");
     expect(ledger.map((entry) => entry.kind)).toEqual(["usage", "purchase"]);
@@ -180,6 +274,9 @@ describe("dashboard", () => {
   it("shows the highest threshold reached in the current cycle", async () => {
     store.users.get("u1")!.creditsUsed = 79;
     await charge(2, "k1");
-    expect(await usageSummary("u1")).toMatchObject({ remaining: 19, alert: { threshold: 80 } });
+    expect(await usageSummary("u1")).toMatchObject({
+      remaining: 19,
+      alert: { threshold: 80 },
+    });
   });
 });

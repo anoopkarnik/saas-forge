@@ -6,7 +6,7 @@ Open **Admin → Audit** (`/admin/audit`) to filter the trail and export CSV. Or
 
 ## Record an action
 
-Add an action to `apps/web/lib/audit/actions.ts` with its target type, metadata schema and redaction keys, inside the owning module's markers. Call `audit(tx, action, { actor: userActor(id), targetId, organizationId, metadata, headers })` using the transaction client of the change: both records commit or roll back together.
+Add an action to `packages/audit/src/actions.ts` with its target type, metadata schema and redaction keys, inside the owning module's markers. Call `audit(tx, action, { actor: userActor(id), targetId, organizationId, metadata, headers })` using the transaction client of the change: both records commit or roll back together.
 
 For Better Auth writes, audit after the operation succeeds. The auth route uses `withAuthAudit` for Better Auth admin endpoints. Audit configuration changes rather than per-request usage; usage belongs in the [usage ledger](/landing/doc/usage-ledger).
 

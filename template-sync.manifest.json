@@ -56,6 +56,7 @@
     "packages/database/prisma/migrations/20261005162142_scaffold_build_cache",
     "packages/database/prisma/migrations/20261005165906_scaffold_job_project_name",
     "apps/web/lib/scaffold",
+    "apps/web/lib/__tests__/featureCatalog.test.ts",
     "apps/web/trpc/routers/projectProcedures.ts",
     "apps/web/trpc/routers/scaffoldCatalogProcedures.ts",
     "packages/ui/src/lib/zip-append.ts",

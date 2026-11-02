@@ -30,7 +30,7 @@ import { announceUsageAlerts, recordUsage } from "@/lib/usage/record";
 import { track } from "@workspace/analytics/server";
 // scaffold:end analytics
 // scaffold:begin notifications
-import { notifyIfCreditsLow } from "@/lib/notifications/notify";
+import { notifyIfCreditsLow } from "@workspace/notifications/notify";
 // scaffold:end notifications
 import {
   convertToModelMessages,

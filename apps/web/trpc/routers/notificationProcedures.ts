@@ -1,6 +1,6 @@
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
-import { CHANNELS } from "@/lib/notifications/catalog";
+import { CHANNELS } from "@workspace/notifications/catalog";
 import {
   UnknownNotificationTypeError,
   getPreferences,
@@ -9,7 +9,7 @@ import {
   markRead,
   setPreference,
   unreadCount,
-} from "@/lib/notifications/service";
+} from "@workspace/notifications/service";
 import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
 // scaffold:begin multi_tenancy
 import { getActiveOrganizationId } from "@/trpc/org";

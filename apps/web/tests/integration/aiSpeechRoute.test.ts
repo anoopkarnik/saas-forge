@@ -8,7 +8,7 @@ import {
   OPENAI_STT_URL,
   OPENAI_TTS_SAMPLE_BODY,
   OPENAI_TTS_URL,
-} from "@/lib/aiSpeech";
+} from "@workspace/ai/speech";
 
 vi.mock("@workspace/auth/better-auth/auth", () => ({
   auth: {

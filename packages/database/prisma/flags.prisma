@@ -6,7 +6,7 @@ model FeatureFlag {
     description String   @default("")
     /// The value when no rule matches.
     enabled     Boolean
-    /// Ordered rules, first match wins (see apps/web/lib/flags/rules.ts).
+    /// Ordered rules, first match wins (see packages/flags/src/rules.ts).
     rules       Json     @default("[]")
     updatedById String?
     updatedAt   DateTime @updatedAt

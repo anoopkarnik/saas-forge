@@ -65,7 +65,14 @@
     "stripe": "^20.4.0",
     "typewriter-effect": "^2.22.0",
     "vitest": "^4.0.18",
-    "zod": "^4.3.6"
+    "zod": "^4.3.6",
+    "@workspace/billing": "workspace:*",
+    "@workspace/notifications": "workspace:*",
+    "@workspace/audit": "workspace:*",
+    "@workspace/webhooks": "workspace:*",
+    "@workspace/flags": "workspace:*",
+    "@workspace/onboarding": "workspace:*",
+    "@workspace/mcp": "workspace:*"
   },
   "devDependencies": {
     "@inngest/test": "^1.0.0",

@@ -13,7 +13,7 @@ import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
 import { audit, userActor } from "@/lib/audit/audit";
 // scaffold:end audit_log
 // scaffold:begin webhooks
-import { emitWebhook } from "@/lib/webhooks/service";
+import { emitWebhook } from "@workspace/webhooks/service";
 // scaffold:end webhooks
 
 const scopeSchema = z

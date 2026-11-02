@@ -7,11 +7,34 @@
         "find": "const DEFAULT_PAYMENT_GATEWAY = \"dodo\";",
         "replace": "const DEFAULT_PAYMENT_GATEWAY = \"stripe\";"
       },
-      { "file": "apps/web/.env.example", "find": "NEXT_PUBLIC_PAYMENT_GATEWAY=\n", "replace": "NEXT_PUBLIC_PAYMENT_GATEWAY=stripe\n" }
+      {
+        "file": "apps/web/.env.example",
+        "find": "NEXT_PUBLIC_PAYMENT_GATEWAY=\n",
+        "replace": "NEXT_PUBLIC_PAYMENT_GATEWAY=stripe\n"
+      }
     ]
   },
   "unselected": {
-    "remove": ["apps/web/app/api/payments/stripe", "apps/web/tests/integration/stripeWebhookRoute.test.ts"],
-    "jsonRemove": [{ "file": "apps/web/package.json", "keys": { "dependencies": ["stripe"] } }]
+    "remove": [
+      "apps/web/app/api/payments/stripe",
+      "apps/web/tests/integration/stripeWebhookRoute.test.ts",
+      "packages/billing/src/providers/stripe.ts",
+      "packages/billing/src/payments/stripe.ts",
+      "packages/billing/src/payments/stripe.test.ts"
+    ],
+    "jsonRemove": [
+      {
+        "file": "apps/web/package.json",
+        "keys": {
+          "dependencies": ["stripe"]
+        }
+      },
+      {
+        "file": "packages/billing/package.json",
+        "keys": {
+          "dependencies": ["stripe"]
+        }
+      }
+    ]
   }
 }

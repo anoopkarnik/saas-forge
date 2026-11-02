@@ -8,7 +8,7 @@ import {
   listDeadLetters,
   replayJobRun,
   scheduleOverview,
-} from "@/lib/jobs/service";
+} from "@workspace/jobs/persistence";
 
 const runInput = z.object({ id: z.string().min(1) });
 

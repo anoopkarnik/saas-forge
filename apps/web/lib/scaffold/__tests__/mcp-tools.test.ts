@@ -18,7 +18,7 @@ vi.mock("@workspace/analytics/server", () => ({ track: mockTrack }));
 vi.mock("@/lib/scaffold/template-version", () => ({ getTemplateVersion: () => "2.1.0" }));
 vi.mock("@/lib/site-config/service", () => ({ getSiteConfig: async () => ({ "branding.saasName": "SaaS Forge" }) }));
 
-import type { McpTool } from "@/lib/mcp/define";
+import type { McpTool } from "@workspace/mcp/define";
 import { callMcpTool } from "@/lib/mcp/server";
 import { platformMcpTools } from "@/lib/scaffold/mcp-tools";
 import { computeBuildHash } from "@/lib/scaffold/service";

@@ -41,7 +41,7 @@ vi.mock("@/lib/audit/audit", () => ({ audit: vi.fn(async () => undefined), userA
 
 import { FLAGS } from "@/lib/flags/definitions";
 import { isEnabled, requireFlag } from "@/lib/flags/flags";
-import { bucket, evaluateFlag } from "@/lib/flags/rules";
+import { bucket, evaluateFlag } from "@workspace/flags/rules";
 import { updateFlag } from "@/lib/flags/service";
 import { flagProcedure } from "@/trpc/flag-procedure";
 import { createTRPCRouter } from "@/trpc/init";

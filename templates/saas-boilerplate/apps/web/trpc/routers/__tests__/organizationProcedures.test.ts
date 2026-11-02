@@ -28,7 +28,7 @@ const { db, api } = vi.hoisted(() => ({
 }));
 
 // scaffold:begin notifications
-vi.mock("@/lib/notifications/notify", () => ({ notifyInvitedUser: vi.fn() }));
+vi.mock("@workspace/notifications/notify", () => ({ notifyInvitedUser: vi.fn() }));
 // scaffold:end notifications
 // scaffold:begin audit_log
 vi.mock("@/lib/audit/audit", () => ({ audit: vi.fn(async () => undefined), userActor: (userId: string) => ({ type: "user", userId }) }));

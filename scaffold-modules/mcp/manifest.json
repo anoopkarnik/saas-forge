@@ -7,16 +7,30 @@
     "appMcpTools",
     "read:usage",
     "read:workspaces",
-    "read:notifications"
+    "read:notifications",
+    "@workspace/mcp"
   ],
   "unselected": {
     "remove": [
       "apps/web/app/api/mcp",
       "apps/web/lib/mcp",
-      "apps/web/components/mcp"
+      "apps/web/components/mcp",
+      "packages/mcp",
+      "packages/ui/src/components/mcp"
     ],
     "jsonRemove": [
-      { "file": "apps/web/package.json", "keys": { "dependencies": ["@modelcontextprotocol/server"] } }
+      {
+        "file": "apps/web/package.json",
+        "keys": {
+          "dependencies": ["@modelcontextprotocol/server"]
+        }
+      },
+      {
+        "file": "apps/web/package.json",
+        "keys": {
+          "dependencies": ["@workspace/mcp"]
+        }
+      }
     ]
   }
 }

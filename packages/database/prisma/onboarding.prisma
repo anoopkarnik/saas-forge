@@ -1,5 +1,5 @@
 /// A user's first-run state (onboarding module). Checklist completion is
-/// mostly derived from real data (apps/web/lib/onboarding/tasks.ts).
+/// mostly derived from real data (packages/onboarding/src/tasks.ts).
 model OnboardingState {
     userId               String    @id
     user                 User      @relation(fields: [userId], references: [id], onDelete: Cascade)

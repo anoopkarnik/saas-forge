@@ -170,7 +170,9 @@ export function resolveWorkspacePath(relativePath: string) {
  * release's snapshot) when given, otherwise this workspace's.
  */
 function rulesPath(relativePath: string, rulesRoot?: string) {
-  return rulesRoot ? path.join(rulesRoot, relativePath) : resolveWorkspacePath(relativePath);
+  return rulesRoot
+    ? path.join(rulesRoot, relativePath)
+    : resolveWorkspacePath(relativePath);
 }
 
 export function loadScaffoldRegistry(rulesRoot?: string): RegistryShape {
@@ -178,23 +180,40 @@ export function loadScaffoldRegistry(rulesRoot?: string): RegistryShape {
   return JSON.parse(fs.readFileSync(registryPath, "utf-8")) as RegistryShape;
 }
 
-export function loadModuleManifest(moduleId: ScaffoldModuleId, rulesRoot?: string): ModuleManifest {
-  const manifestPath = rulesPath(path.join("scaffold-modules", moduleId, "manifest.json"), rulesRoot);
+export function loadModuleManifest(
+  moduleId: ScaffoldModuleId,
+  rulesRoot?: string,
+): ModuleManifest {
+  const manifestPath = rulesPath(
+    path.join("scaffold-modules", moduleId, "manifest.json"),
+    rulesRoot,
+  );
   return JSON.parse(fs.readFileSync(manifestPath, "utf-8")) as ModuleManifest;
 }
 
-export function loadProviderRegistry(rulesRoot?: string): ProviderRegistryShape {
+export function loadProviderRegistry(
+  rulesRoot?: string,
+): ProviderRegistryShape {
   const registryPath = rulesPath("scaffold-providers/registry.json", rulesRoot);
   if (!fs.existsSync(registryPath)) return { providers: [] };
-  return JSON.parse(fs.readFileSync(registryPath, "utf-8")) as ProviderRegistryShape;
+  return JSON.parse(
+    fs.readFileSync(registryPath, "utf-8"),
+  ) as ProviderRegistryShape;
 }
 
 function getProviderRoot(toggleId: string, value: string, rulesRoot?: string) {
   return rulesPath(path.join("scaffold-providers", toggleId, value), rulesRoot);
 }
 
-function loadProviderManifest(toggleId: string, value: string, rulesRoot?: string): ProviderManifest | null {
-  const manifestPath = path.join(getProviderRoot(toggleId, value, rulesRoot), "manifest.json");
+function loadProviderManifest(
+  toggleId: string,
+  value: string,
+  rulesRoot?: string,
+): ProviderManifest | null {
+  const manifestPath = path.join(
+    getProviderRoot(toggleId, value, rulesRoot),
+    "manifest.json",
+  );
   if (!fs.existsSync(manifestPath)) return null;
   return JSON.parse(fs.readFileSync(manifestPath, "utf-8")) as ProviderManifest;
 }
@@ -206,14 +225,18 @@ function loadProviderManifest(toggleId: string, value: string, rulesRoot?: strin
 export function resolveProviderChoices(
   env: Record<string, unknown>,
   modules: readonly string[],
-  { keepAll = false, registry = loadProviderRegistry() }: { keepAll?: boolean; registry?: ProviderRegistryShape } = {},
+  {
+    keepAll = false,
+    registry = loadProviderRegistry(),
+  }: { keepAll?: boolean; registry?: ProviderRegistryShape } = {},
 ): ProviderChoices {
   if (keepAll) return {};
   const choices: ProviderChoices = {};
   for (const toggle of registry.providers) {
     if (toggle.module && !modules.includes(toggle.module)) continue;
     const value = env[toggle.env];
-    if (typeof value === "string" && toggle.values.includes(value)) choices[toggle.id] = value;
+    if (typeof value === "string" && toggle.values.includes(value))
+      choices[toggle.id] = value;
   }
   return choices;
 }
@@ -238,7 +261,12 @@ function providerStates(
 }
 
 function getModuleRoot(moduleId: ScaffoldModuleId, rulesRoot?: string) {
-  return path.dirname(rulesPath(path.join("scaffold-modules", moduleId, "manifest.json"), rulesRoot));
+  return path.dirname(
+    rulesPath(
+      path.join("scaffold-modules", moduleId, "manifest.json"),
+      rulesRoot,
+    ),
+  );
 }
 
 export function validateSelectedModules(
@@ -299,7 +327,8 @@ export function calculateScaffoldCredits(
     const entry = registryMap.get(moduleId);
     // Not-yet-implemented modules (empty manifests) stay selectable but free
     // until their scaffold actions are authored.
-    const credits = entry && entry.implemented === false ? 0 : entry?.creditsCost ?? 0;
+    const credits =
+      entry && entry.implemented === false ? 0 : (entry?.creditsCost ?? 0);
     return { moduleId, credits };
   });
 
@@ -312,12 +341,16 @@ export function calculateScaffoldCredits(
   };
 }
 
-export function getScaffoldCatalog(registry = loadScaffoldRegistry()): ScaffoldCatalog {
+export function getScaffoldCatalog(
+  registry = loadScaffoldRegistry(),
+): ScaffoldCatalog {
   const { moduleCredits } = calculateScaffoldCredits(
     registry.modules.map((module) => module.id),
     registry,
   );
-  const effectiveCost = new Map(moduleCredits.map((entry) => [entry.moduleId, entry.credits]));
+  const effectiveCost = new Map(
+    moduleCredits.map((entry) => [entry.moduleId, entry.credits]),
+  );
 
   return {
     baseCredits: registry.baseCreditsCost,
@@ -327,7 +360,8 @@ export function getScaffoldCatalog(registry = loadScaffoldRegistry()): ScaffoldC
       label: module.label,
       description: module.description,
       creditsCost: effectiveCost.get(module.id) ?? 0,
-      available: module.downloadEnabled !== false && module.implemented !== false,
+      available:
+        module.downloadEnabled !== false && module.implemented !== false,
       requires: module.requires,
       incompatibleWith: module.incompatibleWith,
     })),
@@ -339,8 +373,14 @@ export function getScaffoldCatalog(registry = loadScaffoldRegistry()): ScaffoldC
  * True when a client quoted a total that no longer matches the server price.
  * Clients that send no expectation (older builds) are not rejected.
  */
-export function isPriceChanged(expectedTotalCredits: unknown, totalCredits: number) {
-  return typeof expectedTotalCredits === "number" && expectedTotalCredits !== totalCredits;
+export function isPriceChanged(
+  expectedTotalCredits: unknown,
+  totalCredits: number,
+) {
+  return (
+    typeof expectedTotalCredits === "number" &&
+    expectedTotalCredits !== totalCredits
+  );
 }
 
 /** Sum of module credits only (no base), implemented-aware. Used for upgrade deltas. */
@@ -348,10 +388,10 @@ export function calculateModulesCredits(
   selectedModules: ScaffoldModuleId[],
   registry = loadScaffoldRegistry(),
 ): number {
-  return calculateScaffoldCredits(selectedModules, registry).moduleCredits.reduce(
-    (total, entry) => total + entry.credits,
-    0,
-  );
+  return calculateScaffoldCredits(
+    selectedModules,
+    registry,
+  ).moduleCredits.reduce((total, entry) => total + entry.credits, 0);
 }
 
 /** Credits charged per tier step on an upgrade (tier-1 -> tier-3 = 2 steps). */
@@ -365,7 +405,11 @@ function ensureParent(filePath: string) {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
 }
 
-function copyActionFile(tempDir: string, moduleRoot: string, action: ReplaceAction) {
+function copyActionFile(
+  tempDir: string,
+  moduleRoot: string,
+  action: ReplaceAction,
+) {
   const sourcePath = path.join(moduleRoot, action.from);
   const destinationPath = path.join(tempDir, action.to);
 
@@ -407,12 +451,14 @@ function applyModuleActions(
   tempDir: string,
   moduleRoot: string,
   actions: ModuleActions | undefined,
+  removedPaths: Set<string>,
 ) {
   if (!actions) {
     return;
   }
 
   for (const removePath of actions.remove ?? []) {
+    removedPaths.add(path.normalize(removePath));
     fs.rmSync(path.join(tempDir, removePath), {
       recursive: true,
       force: true,
@@ -432,7 +478,7 @@ function applyModuleActions(
   }
 
   for (const action of actions.jsonRemove ?? []) {
-    removeJsonKeys(tempDir, action);
+    removeJsonKeys(tempDir, action, removedPaths);
   }
 
   for (const action of actions.textReplace ?? []) {
@@ -449,26 +495,51 @@ function replaceTextOnce(tempDir: string, action: TextReplaceAction) {
       `textReplace: expected exactly one ${JSON.stringify(action.find)} in ${action.file}, found ${occurrences}`,
     );
   }
-  fs.writeFileSync(filePath, content.replace(action.find, () => action.replace));
+  fs.writeFileSync(
+    filePath,
+    content.replace(action.find, () => action.replace),
+  );
 }
 
 /**
  * Throws when a key is already gone: a silent no-op would hide manifest drift.
  */
-function removeJsonKeys(tempDir: string, action: JsonRemoveAction) {
+function removeJsonKeys(
+  tempDir: string,
+  action: JsonRemoveAction,
+  removedPaths: Set<string>,
+) {
   const filePath = path.join(tempDir, action.file);
+  // An optional integration can target a consumer package removed by an earlier
+  // module. Only skip files covered by an explicit removal; typos still fail.
+  if (
+    !fs.existsSync(filePath) &&
+    [...removedPaths].some((removed) => {
+      const relative = path.relative(removed, path.normalize(action.file));
+      return (
+        relative === "" ||
+        (!relative.startsWith(`..${path.sep}`) &&
+          relative !== ".." &&
+          !path.isAbsolute(relative))
+      );
+    })
+  )
+    return;
   const json = JSON.parse(fs.readFileSync(filePath, "utf-8"));
 
   for (const [section, keys] of Object.entries(action.keys)) {
     for (const key of keys) {
       const target = json[section];
-      const present = Array.isArray(target) ? target.includes(key) : !!target && key in target;
+      const present = Array.isArray(target)
+        ? target.includes(key)
+        : !!target && key in target;
       if (!present) {
         throw new InvalidScaffoldModuleError(
           `jsonRemove: "${section}.${key}" not found in ${action.file}`,
         );
       }
-      if (Array.isArray(target)) json[section] = target.filter((value: unknown) => value !== key);
+      if (Array.isArray(target))
+        json[section] = target.filter((value: unknown) => value !== key);
       else delete target[key];
     }
   }
@@ -481,11 +552,25 @@ function removeJsonKeys(tempDir: string, action: JsonRemoveAction) {
 // (or a provider, `payment_gateway.stripe`), then a matching "scaffold:end"
 // line. When the module or provider is not kept the region is dropped; either
 // way the marker lines themselves never ship.
-const MARKER_PATTERN = /\bscaffold:(begin|end)\s+([a-z0-9_]+(?:\.[a-z0-9_]+)?)\b/;
-const MARKER_EXTENSIONS = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".prisma", ".yml", ".yaml", ".md"]);
+const MARKER_PATTERN =
+  /\bscaffold:(begin|end)\s+([a-z0-9_]+(?:\.[a-z0-9_]+)?)\b/;
+const MARKER_EXTENSIONS = new Set([
+  ".ts",
+  ".tsx",
+  ".js",
+  ".jsx",
+  ".mjs",
+  ".cjs",
+  ".prisma",
+  ".yml",
+  ".yaml",
+  ".md",
+]);
 
 function isMarkerCandidate(fileName: string) {
-  return fileName === ".env.example" || MARKER_EXTENSIONS.has(path.extname(fileName));
+  return (
+    fileName === ".env.example" || MARKER_EXTENSIONS.has(path.extname(fileName))
+  );
 }
 
 /** Pure: returns `content` with marker lines removed and unselected regions dropped. */
@@ -502,19 +587,24 @@ export function stripScaffoldMarkers(
   lines.forEach((line, index) => {
     const match = line.match(MARKER_PATTERN);
     if (!match) {
-      if (open.every((region) => selectedModules.has(region.id))) kept.push(line);
+      if (open.every((region) => selectedModules.has(region.id)))
+        kept.push(line);
       return;
     }
 
     const [, kind, id] = match as unknown as [string, "begin" | "end", string];
     const where = `${fileLabel}:${index + 1}`;
     if (!knownModules.has(id)) {
-      throw new InvalidScaffoldModuleError(`Unknown module or provider "${id}" in scaffold marker at ${where}`);
+      throw new InvalidScaffoldModuleError(
+        `Unknown module or provider "${id}" in scaffold marker at ${where}`,
+      );
     }
     if (kind === "begin") {
       open.push({ id, line: index + 1 });
     } else if (open.pop()?.id !== id) {
-      throw new InvalidScaffoldModuleError(`Unmatched scaffold:end ${id} at ${where}`);
+      throw new InvalidScaffoldModuleError(
+        `Unmatched scaffold:end ${id} at ${where}`,
+      );
     }
   });
 
@@ -576,24 +666,41 @@ export function findScaffoldLeaks(
   const owned = registry.modules
     .filter((module) => !selected.has(module.id))
     .flatMap((module) =>
-      (loadModuleManifest(module.id).ownedIdentifiers ?? []).map((identifier) => ({
-        moduleId: module.id as string,
-        identifier,
-      })),
+      (loadModuleManifest(module.id).ownedIdentifiers ?? []).map(
+        (identifier) => ({
+          moduleId: module.id as string,
+          identifier,
+        }),
+      ),
     );
-  for (const provider of providerStates(selected, providers, loadProviderRegistry())) {
+  for (const provider of providerStates(
+    selected,
+    providers,
+    loadProviderRegistry(),
+  )) {
     if (provider.kept) continue;
-    for (const identifier of loadProviderManifest(provider.toggleId, provider.value)?.ownedIdentifiers ?? []) {
+    for (const identifier of loadProviderManifest(
+      provider.toggleId,
+      provider.value,
+    )?.ownedIdentifiers ?? []) {
       owned.push({ moduleId: provider.markerId, identifier });
     }
   }
 
   const leaks: string[] = [];
   walkFiles(variantDir, (filePath) => {
-    const relativePath = path.relative(variantDir, filePath).split(path.sep).join("/");
-    if (LEAK_SCAN_SKIP.some((prefix) => relativePath.startsWith(prefix))) return;
+    const relativePath = path
+      .relative(variantDir, filePath)
+      .split(path.sep)
+      .join("/");
+    if (LEAK_SCAN_SKIP.some((prefix) => relativePath.startsWith(prefix)))
+      return;
     const fileName = path.basename(filePath);
-    if (fileName !== ".env.example" && !LEAK_SCAN_EXTENSIONS.has(path.extname(fileName))) return;
+    if (
+      fileName !== ".env.example" &&
+      !LEAK_SCAN_EXTENSIONS.has(path.extname(fileName))
+    )
+      return;
 
     const content = fs.readFileSync(filePath, "utf-8");
     if (MARKER_PATTERN.test(content)) {
@@ -601,14 +708,20 @@ export function findScaffoldLeaks(
     }
     for (const { moduleId, identifier } of owned) {
       if (content.includes(identifier)) {
-        leaks.push(`${relativePath}: "${identifier}" (owned by unselected ${moduleId})`);
+        leaks.push(
+          `${relativePath}: "${identifier}" (owned by unselected ${moduleId})`,
+        );
       }
     }
   });
   return leaks;
 }
 
-const DEPENDENCY_SECTIONS = new Set(["dependencies", "devDependencies", "optionalDependencies"]);
+const DEPENDENCY_SECTIONS = new Set([
+  "dependencies",
+  "devDependencies",
+  "optionalDependencies",
+]);
 
 type DependencyManifest = Partial<Record<string, Record<string, string>>>;
 
@@ -627,7 +740,9 @@ export function pruneLockfileImporters(
   const lines = lockfile.split("\n");
   const start = lines.indexOf("importers:");
   if (start === -1) return lockfile;
-  const blockEnd = lines.findIndex((line, index) => index > start && /^\S/.test(line));
+  const blockEnd = lines.findIndex(
+    (line, index) => index > start && /^\S/.test(line),
+  );
   const end = blockEnd === -1 ? lines.length : blockEnd;
 
   const kept: string[] = [];
@@ -643,7 +758,10 @@ export function pruneLockfileImporters(
       continue;
     }
     const indent = line.length - line.trimStart().length;
-    const key = line.trim().replace(/:.*$/, "").replace(/^(['"])(.*)\1$/, "$2");
+    const key = line
+      .trim()
+      .replace(/:.*$/, "")
+      .replace(/^(['"])(.*)\1$/, "$2");
 
     if (indent === 2) {
       manifest = readManifest(key);
@@ -678,25 +796,35 @@ export function pruneLockfileImporters(
     kept.push(line);
   }
 
-  return [...lines.slice(0, start + 1), ...kept, ...lines.slice(end)].join("\n");
+  return [...lines.slice(0, start + 1), ...kept, ...lines.slice(end)].join(
+    "\n",
+  );
 }
 
 function pruneVariantLockfile(tempDir: string) {
   const lockPath = path.join(tempDir, "pnpm-lock.yaml");
   if (!fs.existsSync(lockPath)) return;
 
-  const pruned = pruneLockfileImporters(fs.readFileSync(lockPath, "utf-8"), (importerDir) => {
-    const manifestPath = path.join(tempDir, importerDir, "package.json");
-    return fs.existsSync(manifestPath)
-      ? (JSON.parse(fs.readFileSync(manifestPath, "utf-8")) as DependencyManifest)
-      : null;
-  });
+  const pruned = pruneLockfileImporters(
+    fs.readFileSync(lockPath, "utf-8"),
+    (importerDir) => {
+      const manifestPath = path.join(tempDir, importerDir, "package.json");
+      return fs.existsSync(manifestPath)
+        ? (JSON.parse(
+            fs.readFileSync(manifestPath, "utf-8"),
+          ) as DependencyManifest)
+        : null;
+    },
+  );
   fs.writeFileSync(lockPath, pruned);
 }
 
 export function prunePlatforms(tempDir: string, platforms: string[]) {
   if (!platforms.includes("mobile")) {
-    fs.rmSync(path.join(tempDir, "apps/mobile"), { recursive: true, force: true });
+    fs.rmSync(path.join(tempDir, "apps/mobile"), {
+      recursive: true,
+      force: true,
+    });
   }
 
   if (!platforms.includes("desktop")) {
@@ -753,37 +881,65 @@ export function compileScaffoldVariant({
     filter: (src) =>
       !SCAFFOLD_IGNORE_DIRS.has(path.basename(src)) &&
       !isLocalEnvFile(path.basename(src)) &&
-      path.relative(baseRoot, src) !== path.join("packages", "database", "src", "generated"),
+      path.relative(baseRoot, src) !==
+        path.join("packages", "database", "src", "generated"),
   });
 
   const selectedModuleSet = new Set(selectedModules);
+  const removedPaths = new Set<string>();
 
   for (const registryModule of registry.modules) {
     const manifest = loadModuleManifest(registryModule.id, rulesRoot);
     const moduleRoot = getModuleRoot(registryModule.id, rulesRoot);
 
     if (selectedModuleSet.has(registryModule.id)) {
-      applyModuleActions(tempDir, moduleRoot, manifest.selected);
+      applyModuleActions(tempDir, moduleRoot, manifest.selected, removedPaths);
     } else {
-      applyModuleActions(tempDir, moduleRoot, manifest.unselected);
+      applyModuleActions(
+        tempDir,
+        moduleRoot,
+        manifest.unselected,
+        removedPaths,
+      );
     }
   }
 
   // After the modules: a provider only prunes inside a selected module.
-  const providerSet = providerStates(selectedModuleSet, providers, loadProviderRegistry(rulesRoot));
+  const providerSet = providerStates(
+    selectedModuleSet,
+    providers,
+    loadProviderRegistry(rulesRoot),
+  );
   for (const provider of providerSet) {
     if (provider.kept && !provider.chosen) continue;
-    const manifest = loadProviderManifest(provider.toggleId, provider.value, rulesRoot);
+    const manifest = loadProviderManifest(
+      provider.toggleId,
+      provider.value,
+      rulesRoot,
+    );
     const root = getProviderRoot(provider.toggleId, provider.value, rulesRoot);
-    applyModuleActions(tempDir, root, provider.chosen ? manifest?.selected : manifest?.unselected);
+    applyModuleActions(
+      tempDir,
+      root,
+      provider.chosen ? manifest?.selected : manifest?.unselected,
+      removedPaths,
+    );
   }
 
   prunePlatforms(tempDir, platforms);
   pruneVariantLockfile(tempDir);
   applyScaffoldMarkers(
     tempDir,
-    new Set<string>([...selectedModuleSet, ...providerSet.filter((provider) => provider.kept).map((provider) => provider.markerId)]),
-    new Set<string>([...registry.modules.map((module) => module.id), ...providerSet.map((provider) => provider.markerId)]),
+    new Set<string>([
+      ...selectedModuleSet,
+      ...providerSet
+        .filter((provider) => provider.kept)
+        .map((provider) => provider.markerId),
+    ]),
+    new Set<string>([
+      ...registry.modules.map((module) => module.id),
+      ...providerSet.map((provider) => provider.markerId),
+    ]),
   );
 
   return tempDir;

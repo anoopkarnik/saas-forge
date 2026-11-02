@@ -14,6 +14,6 @@ Inngest schedules retries over about 24 hours. Inline delivery makes one attempt
 
 ## Extend events
 
-Declare the payload schema in `apps/web/lib/webhooks/events.ts`, then call `emitWebhook(type, data, { userId, organizationId })` after the change commits. It never throws. Never change a payload under an existing API version.
+Declare the payload schema in `packages/webhooks/src/events.ts`, then call `emitWebhook(type, data, { userId, organizationId })` after the change commits. It never throws. Never change a payload under an existing API version.
 
-URLs are checked for private and reserved ranges both when saved and at connect time. Localhost is refused even in development; test through a public HTTPS tunnel. Full receiver examples are in `apps/web/lib/webhooks/README.md`.
+URLs are checked for private and reserved ranges both when saved and at connect time. Localhost is refused even in development; test through a public HTTPS tunnel. Full receiver examples are in `packages/webhooks/README.md`.
